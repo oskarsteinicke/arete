@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-// HVI — Application Logic
+// Northstar — Application Logic
 // ══════════════════════════════════════════════════════════════════════════
 
 // ── STATE ─────────────────────────────────────────────────────────────────
@@ -182,7 +182,7 @@ function renderAuth() {
 
   const isSignIn = _authMode === 'signin';
   overlay.innerHTML = `
-    <div class="auth-logo">HVI</div>
+    <div class="auth-logo">NORTHSTAR</div>
     <div class="auth-title">${isSignIn ? 'Welcome back.' : 'Start your journey.'}</div>
     <div class="auth-sub">${isSignIn ? 'Sign in to access your data on any device.' : 'Create your account to get started.'}</div>
     <div style="width:100%;max-width:360px">
@@ -981,7 +981,7 @@ function renderHome() {
   document.getElementById('view').innerHTML = `
     <div class="h-head ani">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div><div class="h-eyebrow">Your HVI</div><div class="h-day">${dayName()}.</div></div>
+        <div><div class="h-eyebrow">Your Northstar</div><div class="h-day">${dayName()}.</div></div>
         <div class="g-score-ring" onclick="go('stats')">
           <div class="g-score-val" style="color:${scoreColor}">${score}</div>
           <div class="g-score-lbl">Score</div>
@@ -2694,7 +2694,7 @@ function shareRecap() {
   canvas.toBlob(async blob => {
     const file = new File([blob], 'hvi-recap.png', { type: 'image/png' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try { await navigator.share({ files: [file], title: 'My HVI Weekly Recap' }); return; } catch {}
+      try { await navigator.share({ files: [file], title: 'My Northstar Weekly Recap' }); return; } catch {}
     }
     // Fallback: download
     const a = document.createElement('a');

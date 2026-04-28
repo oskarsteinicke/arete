@@ -1,7 +1,7 @@
 {
-  "name": "HVI Lifestyle",
-  "short_name": "HVI",
-  "description": "Your High Value Individual daily tracker — habits, workouts, diet, and growth.",
+  "name": "Northstar",
+  "short_name": "Northstar",
+  "description": "Your guiding star — habits, workouts, diet, and growth.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0908",
