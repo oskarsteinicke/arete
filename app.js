@@ -232,6 +232,13 @@ async function submitAuth() {
 
   // Signed in — remove overlay and start app
   document.getElementById('auth-overlay')?.remove();
+  // Run all style injections that normally happen in init()
+  injectAdaptiveStyles();
+  injectExerciseBrowserStyles();
+  injectGamificationStyles();
+  injectOnboardingStyles();
+  injectAuthStyles(); // no-op if already injected
+  checkReset();
   setSyncStatus('pending');
   await cloudPull();
   setSyncStatus('ok');
