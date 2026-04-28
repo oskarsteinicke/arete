@@ -27,51 +27,112 @@ let builderSearchLoading = false;
 let gamification, achievements;
 const USDA_KEY = 'DEMO_KEY'; // replace with your free key from https://fdc.nal.usda.gov/api-guide.html
 
-// ── SUPABASE CLOUD SYNC ───────────────────────────────────────────────────
+// ── SUPABASE AUTH + CLOUD SYNC ────────────────────────────────────────────
 const SUPABASE_URL = 'https://socflncohsenjptgkkax.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_J2qJ8iTfCESrML5Hm6NGbQ_mz9uPeug';
 const SYNC_KEYS = ['hvi_habits','hvi_log','hvi_journal3','hvi_meta','hvi_workout_log','hvi_workout_meta','hvi_meal_log','hvi_diet_meta','hvi_weight_log','hvi_prs','hvi_gamification','hvi_achievements','hvi_tdee_profile','hvi_custom_programs','hvi_onboarded','hvi_wger_cache'];
 
-function getUID() {
-  let uid = localStorage.getItem('hvi_uid');
-  if (!uid) { uid = crypto.randomUUID(); localStorage.setItem('hvi_uid', uid); }
-  return uid;
+// ── AUTH HELPERS ──────────────────────────────────────────────────────────
+function getSession() {
+  try { return JSON.parse(localStorage.getItem('hvi_session')); } catch { return null; }
+}
+function getAccessToken() {
+  return getSession()?.access_token || null;
+}
+function getCurrentUserId() {
+  return getSession()?.user?.id || null;
 }
 
+async function authSignUp(email, password) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+  return await res.json();
+}
+
+async function authSignIn(email, password) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+  const data = await res.json();
+  if (data.access_token) {
+    localStorage.setItem('hvi_session', JSON.stringify(data));
+    return { ok: true, data };
+  }
+  return { ok: false, error: data.error_description || data.msg || 'Sign in failed' };
+}
+
+async function authRefresh() {
+  const session = getSession();
+  if (!session?.refresh_token) return false;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: session.refresh_token })
+    });
+    const data = await res.json();
+    if (data.access_token) { localStorage.setItem('hvi_session', JSON.stringify(data)); return true; }
+  } catch {}
+  return false;
+}
+
+async function authSignOut() {
+  const token = getAccessToken();
+  if (token) {
+    try {
+      await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}` }
+      });
+    } catch {}
+  }
+  localStorage.removeItem('hvi_session');
+  SYNC_KEYS.forEach(k => localStorage.removeItem(k));
+  location.reload();
+}
+
+// ── SYNC HELPERS ──────────────────────────────────────────────────────────
 let _syncDebounce = null;
-let _syncPending = false;
 
 function setSyncStatus(state) {
   let el = document.getElementById('sync-dot');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'sync-dot';
-    el.title = 'Cloud sync';
-    document.body.appendChild(el);
-  }
-  el.className = 'sync-' + state; // 'ok', 'pending', 'offline'
+  if (!el) { el = document.createElement('div'); el.id = 'sync-dot'; el.title = 'Cloud sync'; document.body.appendChild(el); }
+  el.className = 'sync-' + state;
+}
+
+function authHeaders(extra = {}) {
+  const token = getAccessToken();
+  return { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', ...extra };
 }
 
 async function cloudPush() {
-  const uid = getUID();
+  const uid = getCurrentUserId();
+  if (!uid) return;
   const data = {};
   SYNC_KEYS.forEach(k => { const v = localStorage.getItem(k); if (v !== null) { try { data[k] = JSON.parse(v); } catch {} } });
   setSyncStatus('pending');
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/hvi_data`, {
       method: 'POST',
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+      headers: authHeaders({ 'Prefer': 'resolution=merge-duplicates' }),
       body: JSON.stringify({ user_id: uid, data, updated_at: new Date().toISOString() })
     });
-    setSyncStatus(res.ok ? 'ok' : 'offline');
+    if (res.status === 401) { await authRefresh(); }
+    setSyncStatus(res.ok || res.status === 401 ? 'ok' : 'offline');
   } catch { setSyncStatus('offline'); }
 }
 
 async function cloudPull() {
-  const uid = getUID();
+  const uid = getCurrentUserId();
+  if (!uid) return false;
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/hvi_data?user_id=eq.${uid}&select=data`, {
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      headers: authHeaders()
     });
     if (!res.ok) return false;
     const rows = await res.json();
@@ -85,6 +146,89 @@ async function cloudPull() {
 function schedulePush() {
   clearTimeout(_syncDebounce);
   _syncDebounce = setTimeout(cloudPush, 2500);
+}
+
+// ── AUTH UI ───────────────────────────────────────────────────────────────
+let _authMode = 'signin'; // 'signin' | 'signup'
+
+function injectAuthStyles() {
+  if (document.getElementById('auth-styles')) return;
+  const s = document.createElement('style');
+  s.id = 'auth-styles';
+  s.textContent = `
+    #auth-overlay{position:fixed;inset:0;background:var(--bg);z-index:3000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 28px}
+    .auth-logo{font-family:var(--serif);font-size:18px;letter-spacing:4px;text-transform:uppercase;color:var(--accent-b);margin-bottom:48px;text-align:center}
+    .auth-title{font-family:var(--serif);font-size:36px;color:var(--text);text-align:center;margin-bottom:8px;line-height:1.2}
+    .auth-sub{font-size:13px;color:var(--text-dim);text-align:center;margin-bottom:36px;line-height:1.6}
+    .auth-input{width:100%;padding:16px 18px;border:1px solid rgba(255,255,255,0.1);border-radius:12px;background:var(--surface);color:var(--text);font-size:15px;margin-bottom:12px;outline:none;transition:border .2s;box-sizing:border-box}
+    .auth-input:focus{border-color:var(--accent)}
+    .auth-btn{width:100%;padding:18px;border:none;border-radius:14px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:8px;transition:transform .15s,opacity .15s}
+    .auth-btn:active{transform:scale(0.98)}
+    .auth-btn:disabled{opacity:0.5;cursor:not-allowed}
+    .auth-switch{margin-top:24px;font-size:13px;color:var(--text-dim);text-align:center}
+    .auth-switch span{color:var(--accent-b);cursor:pointer;font-weight:600}
+    .auth-error{color:#d46f6f;font-size:13px;text-align:center;margin-top:8px;min-height:20px}
+    .auth-divider{display:flex;align-items:center;gap:12px;margin:20px 0;width:100%}
+    .auth-divider-line{flex:1;height:1px;background:rgba(255,255,255,0.08)}
+    .auth-divider-text{font-size:11px;color:var(--text-muted);letter-spacing:1px}
+  `;
+  document.head.appendChild(s);
+}
+
+function renderAuth() {
+  injectAuthStyles();
+  let overlay = document.getElementById('auth-overlay');
+  if (!overlay) { overlay = document.createElement('div'); overlay.id = 'auth-overlay'; document.body.appendChild(overlay); }
+
+  const isSignIn = _authMode === 'signin';
+  overlay.innerHTML = `
+    <div class="auth-logo">HVI</div>
+    <div class="auth-title">${isSignIn ? 'Welcome back.' : 'Start your journey.'}</div>
+    <div class="auth-sub">${isSignIn ? 'Sign in to access your data on any device.' : 'Create your account to get started.'}</div>
+    <div style="width:100%;max-width:360px">
+      <input class="auth-input" type="email" id="auth-email" placeholder="Email address" autocomplete="email">
+      <input class="auth-input" type="password" id="auth-password" placeholder="Password" autocomplete="${isSignIn ? 'current-password' : 'new-password'}" onkeydown="if(event.key==='Enter')submitAuth()">
+      ${!isSignIn ? `<input class="auth-input" type="password" id="auth-confirm" placeholder="Confirm password" onkeydown="if(event.key==='Enter')submitAuth()">` : ''}
+      <div class="auth-error" id="auth-error"></div>
+      <button class="auth-btn" id="auth-btn" onclick="submitAuth()">${isSignIn ? 'SIGN IN' : 'CREATE ACCOUNT'}</button>
+      <div class="auth-switch">
+        ${isSignIn ? "Don't have an account? <span onclick="_authMode='signup';renderAuth()">Sign up</span>" : "Already have an account? <span onclick="_authMode='signin';renderAuth()">Sign in</span>"}
+      </div>
+    </div>`;
+}
+
+async function submitAuth() {
+  const email = document.getElementById('auth-email')?.value?.trim();
+  const password = document.getElementById('auth-password')?.value;
+  const confirm = document.getElementById('auth-confirm')?.value;
+  const errEl = document.getElementById('auth-error');
+  const btn = document.getElementById('auth-btn');
+
+  if (!email || !password) { errEl.textContent = 'Please fill in all fields.'; return; }
+  if (_authMode === 'signup' && password !== confirm) { errEl.textContent = 'Passwords do not match.'; return; }
+  if (password.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; return; }
+
+  btn.disabled = true; btn.textContent = _authMode === 'signin' ? 'SIGNING IN...' : 'CREATING ACCOUNT...';
+  errEl.textContent = '';
+
+  if (_authMode === 'signup') {
+    const res = await authSignUp(email, password);
+    if (res.error) { errEl.textContent = res.error.message || 'Sign up failed.'; btn.disabled = false; btn.textContent = 'CREATE ACCOUNT'; return; }
+    // Auto sign in after signup
+    _authMode = 'signin';
+  }
+
+  const result = await authSignIn(email, password);
+  if (!result.ok) { errEl.textContent = result.error; btn.disabled = false; btn.textContent = 'SIGN IN'; return; }
+
+  // Signed in — remove overlay and start app
+  document.getElementById('auth-overlay')?.remove();
+  setSyncStatus('pending');
+  await cloudPull();
+  setSyncStatus('ok');
+  cloudPush();
+  const isNew = !LS.get('hvi_onboarded', false);
+  if (isNew) { renderOnboarding(1); } else { go('home', {}, false); }
 }
 
 // ── STORAGE ───────────────────────────────────────────────────────────────
@@ -636,6 +780,12 @@ const NAV_PARENT = {
 
 // ── INIT ──────────────────────────────────────────────────────────────────
 async function init() {
+  injectAuthStyles();
+  // If not signed in, show auth screen
+  if (!getAccessToken()) {
+    renderAuth();
+    return;
+  }
   setSyncStatus('pending');
   await cloudPull();
   const stored = LS.get('hvi_habits', null);
@@ -2221,7 +2371,8 @@ function renderStats() {
       <div class="q-auth" id="qa">\u2014 ${esc(q.author)}</div>
       <div class="q-nav"><button class="q-btn" onclick="rotQ(-1)">\u2190</button><button class="q-btn" onclick="rotQ(1)">\u2192</button></div>
     </div>
-    <button class="w-action-btn" style="margin:16px 24px 32px" onclick="shareRecap()">📤 Share Weekly Recap</button>`;
+    <button class="w-action-btn" style="margin:16px 24px 8px" onclick="shareRecap()">📤 Share Weekly Recap</button>
+    <button class="w-action-btn" style="margin:0 24px 32px;color:var(--fat);border-color:var(--fat)" onclick="if(confirm('Sign out?'))authSignOut()">Sign Out</button>`;
   qTimer = setInterval(() => rotQ(1), 30000);
 }
 
