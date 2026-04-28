@@ -230,21 +230,9 @@ async function submitAuth() {
     btn.disabled = false; btn.textContent = 'SIGN IN'; return;
   }
 
-  // Signed in — remove overlay and start app
+  // Signed in — remove overlay and boot app normally
   document.getElementById('auth-overlay')?.remove();
-  // Run all style injections that normally happen in init()
-  injectAdaptiveStyles();
-  injectExerciseBrowserStyles();
-  injectGamificationStyles();
-  injectOnboardingStyles();
-  injectAuthStyles(); // no-op if already injected
-  checkReset();
-  setSyncStatus('pending');
-  await cloudPull();
-  setSyncStatus('ok');
-  cloudPush();
-  const isNew = !LS.get('hvi_onboarded', false);
-  if (isNew) { renderOnboarding(1); } else { go('home', {}, false); }
+  init();
 }
 
 // ── STORAGE ───────────────────────────────────────────────────────────────
