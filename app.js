@@ -192,7 +192,7 @@ function renderAuth() {
       <div class="auth-error" id="auth-error"></div>
       <button class="auth-btn" id="auth-btn" onclick="submitAuth()">${isSignIn ? 'SIGN IN' : 'CREATE ACCOUNT'}</button>
       <div class="auth-switch">
-        ${isSignIn ? "Don't have an account? <span onclick="_authMode='signup';renderAuth()">Sign up</span>" : "Already have an account? <span onclick="_authMode='signin';renderAuth()">Sign in</span>"}
+        ${isSignIn ? `Don't have an account? <span onclick="_authMode='signup';renderAuth()">Sign up</span>` : `Already have an account? <span onclick="_authMode='signin';renderAuth()">Sign in</span>`}
       </div>
     </div>`;
 }
