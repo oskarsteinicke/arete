@@ -20,6 +20,7 @@ let prs;
 let browserContext = null;
 let pendingExercise = null;
 let browserState = { category: null, equipment: null, search: '', results: [], nextUrl: null, loading: false, expanded: null };
+let _habitEditMode = false;
 let browserSearchDebounce = null;
 let builderSearchDebounce = null;
 let builderSearchResults = [];
@@ -907,9 +908,14 @@ function pillarHabits(pid) { const p = PILLARS.find(x => x.id === pid); return h
 function pillarPct(pid) { const ph = pillarHabits(pid); if (!ph.length) return {done:0,total:0,pct:0}; const d = ph.filter(h => log[h.id]?.completedToday).length; return {done:d,total:ph.length,pct:d/ph.length}; }
 function totalPct() { const d = habits.filter(h => log[h.id]?.completedToday).length; return {done:d,total:habits.length,pct:habits.length?d/habits.length:0}; }
 
-function habitRowHTML(h, suffix = '') {
+function habitRowHTML(h, suffix = '', editMode = false) {
   const e = log[h.id] || {}, s = e.streak || 0;
   const streakTxt = s > 0 ? `${s >= 3 ? '\uD83D\uDD25 ' : ''}${s} day streak` : 'Start your streak';
+  if (editMode) {
+    return `<div class="hi" id="hi${suffix}-${h.id}" style="opacity:0.85">
+      <div class="hi-info"><div class="hi-name">${esc(h.name)}</div><div class="hi-streak" id="hs${suffix}-${h.id}">${streakTxt}</div></div>
+      <button class="habit-del-btn" onclick="event.stopPropagation();deleteHabit('${h.id}')">&times;</button></div>`;
+  }
   return `<div class="hi${e.completedToday?' done':''}" id="hi${suffix}-${h.id}" onclick="tapHabit('${h.id}','${suffix}')">
     <div class="hi-info"><div class="hi-name">${esc(h.name)}</div><div class="hi-streak${s>=3?' hot':''}" id="hs${suffix}-${h.id}">${streakTxt}</div></div>
     <div class="hi-check" id="hc${suffix}-${h.id}">\u2713</div></div>`;
@@ -921,12 +927,15 @@ function tapHabit(id, suffix) {
   if (!e.completedToday) { e.streak = e.lastCompletedDate === y ? e.streak + 1 : 1; e.lastCompletedDate = t; e.completedToday = true; }
   else { e.completedToday = false; }
   LS.set('hvi_log', log);
+  const habit = habits.find(h => h.id === id);
+  const pillarId = habit ? PILLARS.find(p => p.cats.includes(habit.category))?.id : null;
   if (e.completedToday) {
     navigator.vibrate && navigator.vibrate(10);
-    const habit = habits.find(h => h.id === id);
-    const pillarId = habit ? PILLARS.find(p => p.cats.includes(habit.category))?.id : null;
     awardXP(10, pillarId || undefined);
     if (wasFirst) launchConfetti(0.5);
+  } else {
+    // Deduct XP when unchecking — prevents farming
+    awardXP(-10, pillarId || undefined);
   }
   const row = document.getElementById(`hi${suffix}-${id}`), chk = document.getElementById(`hc${suffix}-${id}`), stk = document.getElementById(`hs${suffix}-${id}`);
   if (!row) return;
@@ -1036,22 +1045,19 @@ function renderHabits() {
   const groups = PILLARS.map(p => {
     const ph = pillarHabits(p.id);
     if (!ph.length) return '';
-    const rows = ph.map(h => {
-      const row = habitRowHTML(h, 'a');
-      if (h.id.startsWith('cu_')) {
-        return row.replace('</div></div>', `</div><button class="d-del-btn" style="pointer-events:auto;margin-left:8px" onclick="event.stopPropagation();deleteHabit('${h.id}')">\u00D7</button></div></div>`);
-      }
-      return row;
-    }).join('');
+    const rows = ph.map(h => habitRowHTML(h, 'a', _habitEditMode)).join('');
     return `<div class="sec-lbl" style="padding-top:20px">${p.name}</div>${rows}`;
   }).join('');
   document.getElementById('view').innerHTML = `
     <div class="ah-head ani" style="display:flex;align-items:flex-start;justify-content:space-between">
       <div><div class="ah-title">All Habits</div><div class="ah-sub">Reflect on your day. Recalibrate for tomorrow.</div></div>
-      <button class="w-action-btn" style="margin:0;padding:10px 16px;font-size:18px;width:auto;line-height:1" onclick="go('habitCreate')">+</button>
+      <div style="display:flex;gap:8px">
+        ${!_habitEditMode ? `<button class="w-action-btn" style="margin:0;padding:10px 16px;font-size:13px;width:auto" onclick="_habitEditMode=true;renderHabits()">Edit</button>` : `<button class="w-action-btn" style="margin:0;padding:10px 16px;font-size:13px;width:auto;background:var(--accent)" onclick="_habitEditMode=false;renderHabits()">Done</button>`}
+        ${!_habitEditMode ? `<button class="w-action-btn" style="margin:0;padding:10px 16px;font-size:18px;width:auto;line-height:1" onclick="go('habitCreate')">+</button>` : ''}
+      </div>
     </div>
     <div class="ani">${groups}</div>`;
-  requestAnimationFrame(initSwipeGestures);
+  if (!_habitEditMode) requestAnimationFrame(initSwipeGestures);
 }
 
 function deleteHabit(id) {
