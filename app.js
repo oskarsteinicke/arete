@@ -219,7 +219,16 @@ async function submitAuth() {
   }
 
   const result = await authSignIn(email, password);
-  if (!result.ok) { errEl.textContent = result.error; btn.disabled = false; btn.textContent = 'SIGN IN'; return; }
+  if (!result.ok) {
+    const msg = result.error || '';
+    if (msg.toLowerCase().includes('email not confirmed') || msg.toLowerCase().includes('not confirmed')) {
+      errEl.style.color = '#6fd48e';
+      errEl.textContent = 'Account created! Check your inbox to confirm your email, then sign in.';
+    } else {
+      errEl.textContent = msg || 'Sign in failed.';
+    }
+    btn.disabled = false; btn.textContent = 'SIGN IN'; return;
+  }
 
   // Signed in — remove overlay and start app
   document.getElementById('auth-overlay')?.remove();
