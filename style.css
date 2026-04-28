@@ -510,6 +510,9 @@ nav {
 .book-title { font-family: var(--serif); font-size: 16px; color: var(--text); margin-bottom: 2px; }
 .book-author { font-size: 12px; color: var(--accent); margin-bottom: 6px; }
 .book-desc { font-size: 12px; color: var(--text-dim); line-height: 1.5; }
+.book-card-link { cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+.book-card-link:hover { border-color: rgba(154,130,86,0.35); background: var(--surface2); }
+.book-link-hint { font-size: 11px; color: var(--accent); margin-top: 8px; letter-spacing: .03em; }
 .book-pillar-dot {
   display: inline-block;
   width: 6px; height: 6px;

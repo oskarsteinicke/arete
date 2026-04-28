@@ -169,7 +169,7 @@ function injectAuthStyles() {
   s.id = 'auth-styles';
   s.textContent = `
     #auth-overlay{position:fixed;inset:0;background:var(--bg);z-index:3000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 28px}
-    .auth-logo{font-family:var(--serif);font-size:18px;letter-spacing:4px;text-transform:uppercase;color:var(--accent-b);margin-bottom:48px;text-align:center}
+    .auth-logo{margin-bottom:40px;text-align:center;display:flex;flex-direction:column;align-items:center}
     .auth-title{font-family:var(--serif);font-size:36px;color:var(--text);text-align:center;margin-bottom:8px;line-height:1.2}
     .auth-sub{font-size:13px;color:var(--text-dim);text-align:center;margin-bottom:36px;line-height:1.6}
     .auth-input{width:100%;padding:16px 18px;border:1px solid rgba(255,255,255,0.1);border-radius:12px;background:var(--surface);color:var(--text);font-size:15px;margin-bottom:12px;outline:none;transition:border .2s;box-sizing:border-box}
@@ -194,7 +194,14 @@ function renderAuth() {
 
   const isSignIn = _authMode === 'signin';
   overlay.innerHTML = `
-    <div class="auth-logo">NORTHSTAR</div>
+    <div class="auth-logo">
+      <svg viewBox="0 0 120 120" width="72" height="72" xmlns="http://www.w3.org/2000/svg">
+        <path d="M60 4 C62 30 90 58 116 60 C90 62 62 90 60 116 C58 90 30 62 4 60 C30 58 58 30 60 4 Z" fill="#9a8256"/>
+        <path d="M60 28 C61 44 76 59 92 60 C76 61 61 76 60 92 C59 76 44 61 28 60 C44 59 59 44 60 28 Z" fill="#b89d68" opacity="0.6"/>
+        <circle cx="60" cy="60" r="4" fill="#e4dace"/>
+      </svg>
+      <div style="font-size:13px;letter-spacing:.25em;color:var(--accent-b);margin-top:8px;font-weight:600">NORTHSTAR</div>
+    </div>
     <div class="auth-title">${isSignIn ? 'Welcome back.' : 'Start your journey.'}</div>
     <div class="auth-sub">${isSignIn ? 'Sign in to access your data on any device.' : 'Create your account to get started.'}</div>
     <div style="width:100%;max-width:360px">
@@ -1180,10 +1187,13 @@ function renderWorkout() {
       <div class="w-card-days" style="margin-top:12px;color:var(--accent)">${todayLog ? '\u2713 Workout logged today' : '\u2192 Start today\u2019s workout'}</div>
     </div>
     <div style="display:flex;gap:8px;padding:0 24px 16px">
-      <button class="w-action-btn" style="margin:0;flex:1" onclick="go('workoutPicker')">Change Program</button>
+      <button class="w-action-btn" style="margin:0;flex:1" onclick="go('workoutPicker')">Programs</button>
       <button class="w-action-btn" style="margin:0;flex:1" onclick="go('workoutHistory')">History</button>
     </div>
-    <button class="w-action-btn" onclick="browserContext=null;go('exerciseBrowser')">BROWSE EXERCISES</button>`;
+    <div style="display:flex;gap:8px;padding:0 24px 16px">
+      <button class="w-action-btn" style="margin:0;flex:1" onclick="initBuilder();go('workoutBuilder')">+ Create Program</button>
+      <button class="w-action-btn" style="margin:0;flex:1" onclick="browserContext=null;go('exerciseBrowser')">Browse Exercises</button>
+    </div>`;
 }
 
 function renderWorkoutPicker() {
@@ -2308,7 +2318,12 @@ function renderLibraryBooks(tabs) {
     const pBooks = BOOKS.filter(b => b.pillar === p.id);
     if (!pBooks.length) return '';
     return `<div class="sec-lbl" style="padding-top:16px">${p.name}</div>` +
-      pBooks.map(b => `<div class="book-card"><div class="book-title"><span class="book-pillar-dot"></span>${esc(b.title)}</div><div class="book-author">${esc(b.author)}</div><div class="book-desc">${esc(b.desc)}</div></div>`).join('');
+      pBooks.map(b => `<div class="book-card${b.url?' book-card-link':''}" ${b.url?`onclick="window.open('${b.url}','_blank')"`:''}>
+        <div class="book-title"><span class="book-pillar-dot"></span>${esc(b.title)}</div>
+        <div class="book-author">${esc(b.author)}</div>
+        <div class="book-desc">${esc(b.desc)}</div>
+        ${b.url ? '<div class="book-link-hint">View on Goodreads →</div>' : ''}
+      </div>`).join('');
   }).join('');
 
   document.getElementById('view').innerHTML = `
