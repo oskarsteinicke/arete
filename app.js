@@ -34,6 +34,17 @@ const SUPABASE_KEY = 'sb_publishable_J2qJ8iTfCESrML5Hm6NGbQ_mz9uPeug';
 const SYNC_KEYS = ['hvi_habits','hvi_log','hvi_journal3','hvi_meta','hvi_workout_log','hvi_workout_meta','hvi_meal_log','hvi_diet_meta','hvi_weight_log','hvi_prs','hvi_gamification','hvi_achievements','hvi_tdee_profile','hvi_custom_programs','hvi_onboarded','hvi_wger_cache'];
 
 // ── AUTH HELPERS ──────────────────────────────────────────────────────────
+async function authResetPassword(email) {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/recover`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY },
+      body: JSON.stringify({ email })
+    });
+    return r.ok ? { ok: true } : { ok: false };
+  } catch { return { ok: false }; }
+}
+
 function getSession() {
   try { return JSON.parse(localStorage.getItem('hvi_session')); } catch { return null; }
 }
@@ -196,6 +207,7 @@ function renderAuth() {
       <div class="auth-switch">
         ${isSignIn ? `Don't have an account? <span onclick="_authMode='signup';renderAuth()">Sign up</span>` : `Already have an account? <span onclick="_authMode='signin';renderAuth()">Sign in</span>`}
       </div>
+      ${isSignIn ? `<div class="auth-switch" style="margin-top:10px"><span onclick="handleForgotPassword()" style="color:var(--text-dim);font-weight:400">Forgot password?</span></div>` : ''}
     </div>`;
 }
 
@@ -238,6 +250,16 @@ async function submitAuth() {
   // Signed in — remove overlay and boot app normally
   document.getElementById('auth-overlay')?.remove();
   init();
+}
+
+async function handleForgotPassword() {
+  const email = document.getElementById('auth-email')?.value?.trim();
+  const errEl = document.getElementById('auth-error');
+  if (!email) { errEl.style.color = 'var(--fat)'; errEl.textContent = 'Enter your email above first.'; return; }
+  errEl.style.color = 'var(--text-dim)'; errEl.textContent = 'Sending…';
+  const res = await authResetPassword(email);
+  if (res.ok) { errEl.style.color = '#6fd48e'; errEl.textContent = 'Check your inbox for a reset link.'; }
+  else { errEl.style.color = 'var(--fat)'; errEl.textContent = 'Could not send reset email. Try again.'; }
 }
 
 // ── STORAGE ───────────────────────────────────────────────────────────────
@@ -914,7 +936,10 @@ function habitRowHTML(h, suffix = '', editMode = false) {
   if (editMode) {
     return `<div class="hi" id="hi${suffix}-${h.id}" style="opacity:0.85">
       <div class="hi-info"><div class="hi-name">${esc(h.name)}</div><div class="hi-streak" id="hs${suffix}-${h.id}">${streakTxt}</div></div>
-      <button class="habit-del-btn" onclick="event.stopPropagation();deleteHabit('${h.id}')">&times;</button></div>`;
+      <div style="display:flex;gap:8px;flex-shrink:0">
+        <button class="habit-edit-btn" onclick="event.stopPropagation();openEditHabit('${h.id}')">✎</button>
+        <button class="habit-del-btn" onclick="event.stopPropagation();deleteHabit('${h.id}')">&times;</button>
+      </div></div>`;
   }
   return `<div class="hi${e.completedToday?' done':''}" id="hi${suffix}-${h.id}" onclick="tapHabit('${h.id}','${suffix}')">
     <div class="hi-info"><div class="hi-name">${esc(h.name)}</div><div class="hi-streak${s>=3?' hot':''}" id="hs${suffix}-${h.id}">${streakTxt}</div></div>
@@ -1066,6 +1091,47 @@ function deleteHabit(id) {
   LS.set('hvi_habits', habits);
   LS.set('hvi_log', log);
   go('habits');
+}
+
+function openEditHabit(id) {
+  const h = habits.find(x => x.id === id);
+  if (!h) return;
+  const cats = ['mindset','discipline','fitness','health','learning','social','financial'];
+  const catBtns = cats.map(c => `<button class="d-type-btn${c===h.category?' active':''}" onclick="document.querySelectorAll('#edit-habit-modal .d-type-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');this.dataset.val='${c}'" data-val="${c}">${c}</button>`).join('');
+  let modal = document.getElementById('edit-habit-modal');
+  if (!modal) { modal = document.createElement('div'); modal.id = 'edit-habit-modal'; document.body.appendChild(modal); }
+  modal.innerHTML = `
+    <div class="edit-habit-backdrop" onclick="closeEditHabit()"></div>
+    <div class="edit-habit-sheet">
+      <div class="edit-habit-title">Edit Habit</div>
+      <input class="d-input" id="edit-habit-name" type="text" value="${esc(h.name)}" placeholder="Habit name" style="margin-bottom:16px">
+      <div class="sec-lbl" style="padding:0 0 8px">Category</div>
+      <div class="d-type-row" style="flex-wrap:wrap;gap:6px">${catBtns}</div>
+      <div style="display:flex;gap:10px;margin-top:20px">
+        <button class="w-action-btn" style="flex:1;margin:0" onclick="closeEditHabit()">Cancel</button>
+        <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:#fff" onclick="saveEditHabit('${id}')">Save</button>
+      </div>
+    </div>`;
+  modal.style.display = 'block';
+}
+
+function closeEditHabit() {
+  const m = document.getElementById('edit-habit-modal');
+  if (m) m.style.display = 'none';
+}
+
+function saveEditHabit(id) {
+  const name = document.getElementById('edit-habit-name')?.value?.trim();
+  const catBtn = document.querySelector('#edit-habit-modal .d-type-btn.active');
+  const category = catBtn?.dataset?.val || catBtn?.textContent;
+  if (!name) return;
+  const h = habits.find(x => x.id === id);
+  if (!h) return;
+  h.name = name;
+  if (category) h.category = category;
+  LS.set('hvi_habits', habits);
+  closeEditHabit();
+  renderHabits();
 }
 
 function renderHabitCreate() {
@@ -2350,7 +2416,14 @@ function renderStats() {
   })();
 
   document.getElementById('view').innerHTML = `
-    <div class="sh ani"><div class="sh-title">Profile</div><div class="sh-sub">Become your greatest self.</div></div>
+    <div class="sh ani" style="display:flex;align-items:flex-start;justify-content:space-between">
+      <div><div class="sh-title">Profile</div><div class="sh-sub">Become your greatest self.</div></div>
+      <button class="w-action-btn" style="margin:0;padding:10px 16px;font-size:13px;width:auto" onclick="openEditName()">Edit Name</button>
+    </div>
+    <div class="da-section ani" style="margin:0 24px 16px;padding:16px">
+      <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Name</div>
+      <div style="font-family:var(--serif);font-size:22px;color:var(--text)" id="profile-name-display">${userName() || '—'}</div>
+    </div>
     <div class="s-grid ani">
       <div class="s-card"><div class="s-val">${done}</div><div class="s-lbl">Today</div></div>
       <div class="s-card"><div class="s-val">${best}</div><div class="s-lbl">Best Streak</div></div>
@@ -2390,6 +2463,38 @@ function renderStats() {
     <button class="w-action-btn" style="margin:16px 24px 8px" onclick="shareRecap()">📤 Share Weekly Recap</button>
     <button class="w-action-btn" style="margin:0 24px 32px;color:var(--fat);border-color:var(--fat)" onclick="if(confirm('Sign out?'))authSignOut()">Sign Out</button>`;
   qTimer = setInterval(() => rotQ(1), 30000);
+}
+
+function openEditName() {
+  let modal = document.getElementById('edit-name-modal');
+  if (!modal) { modal = document.createElement('div'); modal.id = 'edit-name-modal'; document.body.appendChild(modal); }
+  const current = userName();
+  modal.innerHTML = `
+    <div class="edit-habit-backdrop" onclick="closeEditName()"></div>
+    <div class="edit-habit-sheet">
+      <div class="edit-habit-title">Your Name</div>
+      <input class="d-input" id="edit-name-input" type="text" value="${esc(current)}" placeholder="First name" style="margin-bottom:20px">
+      <div style="display:flex;gap:10px">
+        <button class="w-action-btn" style="flex:1;margin:0" onclick="closeEditName()">Cancel</button>
+        <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:#fff" onclick="saveEditName()">Save</button>
+      </div>
+    </div>`;
+  modal.style.display = 'block';
+  setTimeout(() => document.getElementById('edit-name-input')?.focus(), 100);
+}
+
+function closeEditName() {
+  const m = document.getElementById('edit-name-modal');
+  if (m) m.style.display = 'none';
+}
+
+function saveEditName() {
+  const name = document.getElementById('edit-name-input')?.value?.trim();
+  if (!name) return;
+  localStorage.setItem('hvi_user_name', name);
+  closeEditName();
+  const el = document.getElementById('profile-name-display');
+  if (el) el.textContent = name;
 }
 
 function rotQ(dir) {
