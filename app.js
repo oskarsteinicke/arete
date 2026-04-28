@@ -27,10 +27,70 @@ let builderSearchLoading = false;
 let gamification, achievements;
 const USDA_KEY = 'DEMO_KEY'; // replace with your free key from https://fdc.nal.usda.gov/api-guide.html
 
+// ── SUPABASE CLOUD SYNC ───────────────────────────────────────────────────
+const SUPABASE_URL = 'https://socflncohsenjptgkkax.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_J2qJ8iTfCESrML5Hm6NGbQ_mz9uPeug';
+const SYNC_KEYS = ['hvi_habits','hvi_log','hvi_journal3','hvi_meta','hvi_workout_log','hvi_workout_meta','hvi_meal_log','hvi_diet_meta','hvi_weight_log','hvi_prs','hvi_gamification','hvi_achievements','hvi_tdee_profile','hvi_custom_programs','hvi_onboarded','hvi_wger_cache'];
+
+function getUID() {
+  let uid = localStorage.getItem('hvi_uid');
+  if (!uid) { uid = crypto.randomUUID(); localStorage.setItem('hvi_uid', uid); }
+  return uid;
+}
+
+let _syncDebounce = null;
+let _syncPending = false;
+
+function setSyncStatus(state) {
+  let el = document.getElementById('sync-dot');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'sync-dot';
+    el.title = 'Cloud sync';
+    document.body.appendChild(el);
+  }
+  el.className = 'sync-' + state; // 'ok', 'pending', 'offline'
+}
+
+async function cloudPush() {
+  const uid = getUID();
+  const data = {};
+  SYNC_KEYS.forEach(k => { const v = localStorage.getItem(k); if (v !== null) { try { data[k] = JSON.parse(v); } catch {} } });
+  setSyncStatus('pending');
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/hvi_data`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify({ user_id: uid, data, updated_at: new Date().toISOString() })
+    });
+    setSyncStatus(res.ok ? 'ok' : 'offline');
+  } catch { setSyncStatus('offline'); }
+}
+
+async function cloudPull() {
+  const uid = getUID();
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/hvi_data?user_id=eq.${uid}&select=data`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
+    if (!res.ok) return false;
+    const rows = await res.json();
+    if (!rows.length) return false;
+    const cloud = rows[0].data || {};
+    SYNC_KEYS.forEach(k => { if (cloud[k] !== undefined) localStorage.setItem(k, JSON.stringify(cloud[k])); });
+    return true;
+  } catch { return false; }
+}
+
+function schedulePush() {
+  clearTimeout(_syncDebounce);
+  _syncDebounce = setTimeout(cloudPush, 2500);
+}
+
 // ── STORAGE ───────────────────────────────────────────────────────────────
 const LS = {
   get: (k, fb) => { try { const v = localStorage.getItem(k); return v !== null ? JSON.parse(v) : fb; } catch { return fb; } },
-  set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); schedulePush(); } catch {} },
 };
 
 // ── DATE ──────────────────────────────────────────────────────────────────
@@ -575,7 +635,9 @@ const NAV_PARENT = {
 };
 
 // ── INIT ──────────────────────────────────────────────────────────────────
-function init() {
+async function init() {
+  setSyncStatus('pending');
+  await cloudPull();
   const stored = LS.get('hvi_habits', null);
   habits = stored || DEFAULT_HABITS;
   if (!stored) LS.set('hvi_habits', habits);
@@ -602,6 +664,11 @@ function init() {
   injectGamificationStyles();
   injectOnboardingStyles();
   checkReset();
+  // Initial sync status
+  setSyncStatus('ok');
+  // Push once on load so new devices register themselves
+  cloudPush();
+
   if (!LS.get('hvi_onboarded', false)) {
     renderOnboarding(1);
   } else {
