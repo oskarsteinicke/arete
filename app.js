@@ -186,6 +186,7 @@ function renderAuth() {
     <div class="auth-title">${isSignIn ? 'Welcome back.' : 'Start your journey.'}</div>
     <div class="auth-sub">${isSignIn ? 'Sign in to access your data on any device.' : 'Create your account to get started.'}</div>
     <div style="width:100%;max-width:360px">
+      ${!isSignIn ? `<input class="auth-input" type="text" id="auth-name" placeholder="First name" autocomplete="given-name" onkeydown="if(event.key==='Enter')submitAuth()">` : ''}
       <input class="auth-input" type="email" id="auth-email" placeholder="Email address" autocomplete="email">
       <input class="auth-input" type="password" id="auth-password" placeholder="Password" autocomplete="${isSignIn ? 'current-password' : 'new-password'}" onkeydown="if(event.key==='Enter')submitAuth()">
       ${!isSignIn ? `<input class="auth-input" type="password" id="auth-confirm" placeholder="Confirm password" onkeydown="if(event.key==='Enter')submitAuth()">` : ''}
@@ -212,8 +213,11 @@ async function submitAuth() {
   errEl.textContent = '';
 
   if (_authMode === 'signup') {
+    const firstName = document.getElementById('auth-name')?.value?.trim();
+    if (!firstName) { errEl.textContent = 'Please enter your first name.'; btn.disabled = false; btn.textContent = 'CREATE ACCOUNT'; return; }
     const res = await authSignUp(email, password);
     if (res.error) { errEl.textContent = res.error.message || 'Sign up failed.'; btn.disabled = false; btn.textContent = 'CREATE ACCOUNT'; return; }
+    localStorage.setItem('hvi_user_name', firstName);
     // Auto sign in after signup
     _authMode = 'signin';
   }
@@ -245,6 +249,8 @@ const LS = {
 const today = () => new Date().toLocaleDateString('en-CA');
 const yesterday = () => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toLocaleDateString('en-CA'); };
 const dayName = () => new Date().toLocaleDateString('en-US', { weekday: 'long' });
+const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; };
+const userName = () => localStorage.getItem('hvi_user_name') || '';
 const fmtDate = s => { const [y,m,d] = s.split('-'); return new Date(+y,+m-1,+d).toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' }); };
 
 // ── UTILS ─────────────────────────────────────────────────────────────────
@@ -981,7 +987,7 @@ function renderHome() {
   document.getElementById('view').innerHTML = `
     <div class="h-head ani">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div><div class="h-eyebrow">Your Northstar</div><div class="h-day">${dayName()}.</div></div>
+        <div><div class="h-eyebrow">${greeting()}${userName() ? ', ' + userName() : ''}.</div><div class="h-day">${dayName()}.</div></div>
         <div class="g-score-ring" onclick="go('stats')">
           <div class="g-score-val" style="color:${scoreColor}">${score}</div>
           <div class="g-score-lbl">Score</div>
