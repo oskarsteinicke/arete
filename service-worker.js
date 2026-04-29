@@ -1,5 +1,5 @@
 const CACHE = 'hvi-v5';
-const ASSETS = ['/Northstar/', '/Northstar/index.html', '/Northstar/style.css', '/Northstar/data.js', '/Northstar/app.js', '/Northstar/manifest.json'];
+const ASSETS = ['/northstar/', '/northstar/index.html', '/northstar/style.css', '/northstar/data.js', '/northstar/app.js', '/northstar/manifest.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
