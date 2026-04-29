@@ -531,10 +531,103 @@ const ACHIEVEMENTS = [
   { id: 'pr_5',          icon: '💥', name: 'Getting Stronger', desc: 'Set 5 PRs' },
   { id: 'journal_7',     icon: '📖', name: 'Self Aware', desc: 'Journal for 7 days' },
   { id: 'nutrition_7',   icon: '🥗', name: 'Dialed In',  desc: 'Log meals 7 days' },
-  { id: 'level_5',       icon: '⬆️', name: 'Leveling Up', desc: 'Reach Level 5' },
-  { id: 'level_10',      icon: '👑', name: 'Elite',      desc: 'Reach Level 10' },
-  { id: 'all_pillars',   icon: '🏛', name: 'Five Pillars', desc: 'Complete a habit in every pillar' },
+  { id: 'level_5',       icon: '⬆️', name: 'Leveling Up',     desc: 'Reach Level 5' },
+  { id: 'level_10',      icon: '👑', name: 'Elite',           desc: 'Reach Level 10' },
+  { id: 'all_pillars',   icon: '🏛', name: 'Five Pillars',    desc: 'Complete a habit in every pillar' },
+  { id: 'streak_14',     icon: '🔥', name: 'Two Weeks',       desc: '14-day streak on any habit' },
+  { id: 'streak_100',    icon: '💎', name: 'Unbreakable',     desc: '100-day streak on any habit' },
+  { id: 'perfect_7',     icon: '🌟', name: 'Perfect Week',    desc: '7 perfect habit days in total' },
+  { id: 'workouts_25',   icon: '💪', name: 'Regular',         desc: 'Log 25 workouts' },
+  { id: 'first_quest',   icon: '⚡', name: 'On a Mission',    desc: 'Complete your first daily quest' },
+  { id: 'quests_7',      icon: '🎯', name: 'Quest Master',    desc: 'Complete 7 daily quests total' },
+  { id: 'pr_10',         icon: '💥', name: 'Record Breaker',  desc: 'Set 10 personal records' },
+  { id: 'nutrition_30',  icon: '🥗', name: 'Dialled In',      desc: 'Log meals on 30 different days' },
 ];
+
+// ── Level Titles ──────────────────────────────────────────────────────────
+const LEVEL_TITLES = [
+  { min: 1,  title: 'Seeker' },
+  { min: 3,  title: 'Apprentice' },
+  { min: 5,  title: 'Warrior' },
+  { min: 8,  title: 'Champion' },
+  { min: 12, title: 'Legend' },
+  { min: 20, title: 'Northstar' },
+];
+function getLevelTitle(lvl) {
+  let t = LEVEL_TITLES[0].title;
+  for (const lt of LEVEL_TITLES) { if (lvl >= lt.min) t = lt.title; }
+  return t;
+}
+
+// ── Daily Quests ───────────────────────────────────────────────────────────
+const QUEST_POOL = [
+  { id: 'q_all_habits',  icon: '✅', label: 'Complete all habits today',           xp: 60, check: () => habits.length > 0 && habits.every(h => log[h.id]?.completedToday) },
+  { id: 'q_any_3',       icon: '⚡', label: 'Complete 3 or more habits',           xp: 30, check: () => habits.filter(h => log[h.id]?.completedToday).length >= 3 },
+  { id: 'q_workout',     icon: '💪', label: 'Log a workout today',                 xp: 50, check: () => !!workoutLog[today()]?.exercises?.some(e => e.sets?.some(s => s.completed)) },
+  { id: 'q_5_exercises', icon: '🏋', label: 'Complete 5+ exercises in a session',  xp: 60, check: () => (workoutLog[today()]?.exercises || []).filter(e => e.sets?.some(s => s.completed)).length >= 5 },
+  { id: 'q_protein',     icon: '🥩', label: 'Hit your protein goal',               xp: 50, check: () => { const dm = getDayMacros(); return dietMeta.dailyGoals.protein > 0 && dm.p >= dietMeta.dailyGoals.protein; } },
+  { id: 'q_calories',    icon: '🔥', label: 'Stay within calorie goal',            xp: 40, check: () => { const dm = getDayMacros(); const g = dietMeta.dailyGoals.calories; return g > 0 && dm.cal > 0 && dm.cal <= g * 1.05; } },
+  { id: 'q_3_meals',     icon: '🍽', label: 'Log 3 or more meals today',           xp: 40, check: () => (mealLog[today()]?.meals || []).length >= 3 },
+  { id: 'q_journal',     icon: '📖', label: 'Write in your journal today',         xp: 40, check: () => { const je = journal[today()] || {}; return Object.values(je).some(Boolean); } },
+  { id: 'q_all_pillars', icon: '🏛', label: 'Complete a habit in every pillar',    xp: 75, check: () => PILLARS.every(p => pillarHabits(p.id).some(h => log[h.id]?.completedToday)) },
+  { id: 'q_3_sets',      icon: '💥', label: 'Log 3+ sets on any exercise',         xp: 35, check: () => (workoutLog[today()]?.exercises || []).some(e => e.sets?.filter(s => s.completed).length >= 3) },
+  { id: 'q_new_pr',      icon: '🏆', label: 'Set a personal record today',         xp: 80, check: () => Object.values(prs).some(p => p.date === today()) },
+  { id: 'q_finish',      icon: '🏁', label: 'Finish a workout session',            xp: 45, check: () => workoutMeta.lastWorkoutDate === today() },
+];
+
+function getDailyQuests() {
+  const t = today();
+  let seed = t.split('').reduce((s, c) => (s * 31 + c.charCodeAt(0)) & 0x7FFFFFFF, 0);
+  const pool = [...QUEST_POOL];
+  const picked = [];
+  while (picked.length < 3 && pool.length > 0) {
+    seed = (seed * 1664525 + 1013904223) & 0x7FFFFFFF;
+    const idx = seed % pool.length;
+    picked.push(pool.splice(idx, 1)[0]);
+  }
+  return picked;
+}
+
+function checkDailyQuests() {
+  const t = today();
+  if (!gamification.questsCompleted) gamification.questsCompleted = {};
+  const done = new Set(gamification.questsCompleted[t] || []);
+  const quests = getDailyQuests();
+  let newlyDone = [];
+  quests.forEach(q => {
+    if (!done.has(q.id) && q.check()) {
+      done.add(q.id);
+      newlyDone.push(q);
+    }
+  });
+  if (newlyDone.length) {
+    gamification.questsCompleted[t] = [...done];
+    newlyDone.forEach(q => {
+      gamification.xp = (gamification.xp || 0) + q.xp;
+    });
+    LS.set('hvi_gamification', gamification);
+    const first = newlyDone[0];
+    showXPToast(`+${first.xp} XP · Quest done!`);
+    checkAchievements();
+    // Refresh quest UI if on home
+    const qEl = document.getElementById('quest-section');
+    if (qEl) qEl.innerHTML = buildQuestHTML();
+  }
+}
+
+function buildQuestHTML() {
+  const t = today();
+  const done = new Set((gamification.questsCompleted || {})[t] || []);
+  const quests = getDailyQuests();
+  return quests.map(q => {
+    const isDone = done.has(q.id);
+    return `<div class="g-quest${isDone ? ' g-quest-done' : ''}">
+      <div class="g-quest-icon">${q.icon}</div>
+      <div class="g-quest-label">${q.label}</div>
+      <div class="g-quest-xp">${isDone ? '✓' : '+' + q.xp + ' XP'}</div>
+    </div>`;
+  }).join('');
+}
 
 function getWeekKey() {
   const d = new Date(), jan1 = new Date(d.getFullYear(), 0, 1);
@@ -601,23 +694,32 @@ function checkAchievements() {
   const mealDays = Object.keys(mealLog).filter(d => (mealLog[d]?.meals || []).length > 0).length;
   const lvl = getLevel(gamification.xp || 0);
 
+  const totalQuests = Object.values(gamification.questsCompleted || {}).reduce((s, arr) => s + arr.length, 0);
   const checks = {
     first_habit:   habits.some(h => log[h.id]?.completedToday || (log[h.id]?.streak || 0) > 0),
     streak_3:      maxStreak >= 3,
     streak_7:      maxStreak >= 7,
+    streak_14:     maxStreak >= 14,
     streak_30:     maxStreak >= 30,
+    streak_100:    maxStreak >= 100,
     perfect_day:   allHabitsDone || (meta.totalPerfectDays || 0) >= 1,
     perfect_3:     (meta.totalPerfectDays || 0) >= 3,
+    perfect_7:     (meta.totalPerfectDays || 0) >= 7,
     first_workout: totalWorkouts >= 1,
     workouts_10:   totalWorkouts >= 10,
+    workouts_25:   totalWorkouts >= 25,
     workouts_50:   totalWorkouts >= 50,
     first_pr:      totalPRs >= 1,
     pr_5:          totalPRs >= 5,
+    pr_10:         totalPRs >= 10,
     journal_7:     totalJournalDays >= 7,
     nutrition_7:   mealDays >= 7,
+    nutrition_30:  mealDays >= 30,
     level_5:       lvl >= 5,
     level_10:      lvl >= 10,
     all_pillars:   allPillarsHit,
+    first_quest:   totalQuests >= 1,
+    quests_7:      totalQuests >= 7,
   };
 
   ACHIEVEMENTS.forEach(ach => {
@@ -699,7 +801,7 @@ function injectGamificationStyles() {
     #ach-toast.ach-toast-show{animation:achSlide 3s ease forwards}
     .g-score-ring{text-align:center;cursor:pointer;padding:4px 8px}
     .g-score-val{font-family:var(--serif);font-size:32px;font-weight:700;line-height:1}
-    .g-score-lbl{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-top:2px}
+    .g-score-lbl{font-size:10px;letter-spacing:.04em;color:var(--accent);font-weight:600;margin-top:2px}
     .g-xp-bar-track{height:6px;background:rgba(255,255,255,0.07);border-radius:3px;overflow:hidden;margin:6px 0 2px}
     .g-xp-bar-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .5s ease}
     .g-challenge{background:var(--surface2);border-radius:10px;padding:12px 16px;margin-bottom:8px}
@@ -721,6 +823,14 @@ function injectGamificationStyles() {
     .g-pl-name{font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px}
     .g-pl-lv{font-size:15px;font-weight:800;font-family:var(--serif);color:var(--accent-b)}
     .g-weekly{padding:0 24px 8px}
+    .g-quests{padding:0 24px 16px}
+    .g-quest{display:flex;align-items:center;gap:12px;background:var(--surface2);border-radius:10px;padding:12px 14px;margin-bottom:8px;border:1px solid transparent;transition:all .25s}
+    .g-quest-done{border-color:var(--accent-b);opacity:0.7}
+    .g-quest-icon{font-size:18px;flex-shrink:0}
+    .g-quest-label{flex:1;font-size:13px;color:var(--text);line-height:1.3}
+    .g-quest-done .g-quest-label{text-decoration:line-through;color:var(--text-dim)}
+    .g-quest-xp{font-size:12px;font-weight:700;color:var(--accent-b);white-space:nowrap}
+    .g-quest-done .g-quest-xp{color:var(--accent-b)}
   `;
   document.head.appendChild(s);
 }
@@ -953,8 +1063,11 @@ function tapHabit(id, suffix) {
   const pillarId = habit ? PILLARS.find(p => p.cats.includes(habit.category))?.id : null;
   if (e.completedToday) {
     navigator.vibrate && navigator.vibrate(10);
-    awardXP(10, pillarId || undefined);
+    const s = e.streak || 0;
+    const bonus = s >= 30 ? 10 : s >= 14 ? 7 : s >= 7 ? 5 : 0;
+    awardXP(10 + bonus, pillarId || undefined);
     if (wasFirst) launchConfetti(0.5);
+    checkDailyQuests();
   } else {
     // Deduct XP when unchecking — prevents farming
     awardXP(-10, pillarId || undefined);
@@ -1021,7 +1134,7 @@ function renderHome() {
         <div><div class="h-eyebrow">${greeting()}${userName() ? ', ' + userName() : ''}.</div><div class="h-day">${dayName()}.</div></div>
         <div class="g-score-ring" onclick="go('stats')">
           <div class="g-score-val" style="color:${scoreColor}">${score}</div>
-          <div class="g-score-lbl">Score</div>
+          <div class="g-score-lbl">${getLevelTitle(getLevel(gamification.xp||0))}</div>
         </div>
       </div>
       <div class="h-prog"><div class="h-prog-track"><div class="h-prog-fill" style="width:${(pct*100).toFixed(0)}%"></div></div><div class="h-prog-ct">${done}/${total}</div></div>
@@ -1042,6 +1155,10 @@ function renderHome() {
     <div class="g-weekly ani">
       <div class="sec-lbl" style="padding:0 0 8px">Weekly Challenges</div>
       ${challengeHTML}
+    </div>
+    <div class="g-quests ani" id="quest-section">
+      <div class="sec-lbl" style="padding:0 0 8px">⚡ Daily Quests</div>
+      ${buildQuestHTML()}
     </div>`;
 }
 
@@ -1297,6 +1414,7 @@ function toggleSet(ei, si) {
   LS.set('hvi_workout_log', workoutLog);
   navigator.vibrate && navigator.vibrate(set.completed ? 12 : 6);
 
+  if (set.completed) checkDailyQuests();
   if (set.completed && set.weight > 0 && set.reps > 0) {
     const eid = wl.exercises[ei].exerciseId;
     const ex = lookupExercise(eid);
@@ -1336,6 +1454,7 @@ function finishWorkout() {
   LS.set('hvi_workout_meta', workoutMeta);
   awardXP(50, 'body');
   trackWeeklyWorkout();
+  checkDailyQuests();
   go('workout');
 }
 
@@ -2113,6 +2232,7 @@ function saveMeal() {
   awardXP(15, 'body');
   const _dm = getDayMacros();
   if (dietMeta.dailyGoals.protein > 0 && _dm.p >= dietMeta.dailyGoals.protein * 0.9) trackWeeklyProtein();
+  checkDailyQuests();
   curMealItems = [];
   selectedFood100g = null;
   go('diet');
@@ -2505,6 +2625,7 @@ function saveJournal() {
     LS.set('hvi_gamification', gamification);
     awardXP(20, 'mind');
     trackWeeklyJournal();
+    checkDailyQuests();
   }
   const s = document.getElementById('j-status');
   if (s) { s.textContent = 'Saved \u2713'; s.classList.add('saved'); setTimeout(() => { if (s) { s.textContent = 'Auto-saving'; s.classList.remove('saved'); } }, 2000); }
@@ -2582,7 +2703,7 @@ function renderStats() {
     </div>
     <div class="da-section ani" style="margin:0 24px 16px">
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
-        <div style="font-size:13px;color:var(--text-dim)">Level <span style="font-family:var(--serif);font-size:26px;color:var(--accent-b);font-weight:700">${lvl}</span></div>
+        <div style="font-size:13px;color:var(--text-dim)">Level <span style="font-family:var(--serif);font-size:26px;color:var(--accent-b);font-weight:700">${lvl}</span> <span style="font-size:12px;color:var(--accent);font-weight:600;letter-spacing:.04em">${getLevelTitle(lvl)}</span></div>
         <div style="font-size:11px;color:var(--text-dim)">${(gamification.xp||0).toLocaleString()} XP &middot; ${(needed-progress).toLocaleString()} to next</div>
       </div>
       <div class="g-xp-bar-track"><div class="g-xp-bar-fill" style="width:${(xpBarPct*100).toFixed(1)}%"></div></div>
