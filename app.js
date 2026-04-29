@@ -21,6 +21,7 @@ let browserContext = null;
 let pendingExercise = null;
 let browserState = { category: null, equipment: null, search: '', results: [], nextUrl: null, loading: false, expanded: null };
 let _habitEditMode = false;
+let _parsedMealItems = [];   // staging area for describe-meal results
 let browserSearchDebounce = null;
 let builderSearchDebounce = null;
 let builderSearchResults = [];
@@ -1845,6 +1846,143 @@ function deleteMeal(mi) {
   go('diet');
 }
 
+// ── NATURAL-LANGUAGE MEAL PARSER ──────────────────────────────────────────
+const WORD_NUMS = { a:1, an:1, one:1, half:0.5, two:2, three:3, four:4, five:5, six:6, seven:7, eight:8, nine:9, ten:10 };
+const UNIT_G = { g:1, gr:1, gram:1, grams:1, ml:1, mls:1, milliliter:1, millilitre:1 };
+const UNIT_CUP = { cup:240, cups:240 };
+const UNIT_TBSP = { tbsp:15, tablespoon:15, tablespoons:15 };
+const UNIT_TSP = { tsp:5, teaspoon:5, teaspoons:5 };
+const UNIT_OZ = { oz:28.35, ounce:28.35, ounces:28.35 };
+const UNIT_LB = { lb:453.6, lbs:453.6, pound:453.6, pounds:453.6 };
+const UNIT_EACH = { piece:1, pieces:1, slice:1, slices:1, scoop:1, scoops:1, whole:1, each:1, x:1 };
+
+function _toGrams(qty, unitRaw, food) {
+  const u = (unitRaw || '').toLowerCase().replace(/[^a-z]/g,'');
+  if (UNIT_G[u])    return qty * UNIT_G[u];
+  if (UNIT_CUP[u])  return qty * UNIT_CUP[u];
+  if (UNIT_TBSP[u]) return qty * UNIT_TBSP[u];
+  if (UNIT_TSP[u])  return qty * UNIT_TSP[u];
+  if (UNIT_OZ[u])   return qty * UNIT_OZ[u];
+  if (UNIT_LB[u])   return qty * UNIT_LB[u];
+  if (UNIT_EACH[u]) return qty * (food.each || 100);
+  // no unit → treat as count if food has "each", else grams
+  return qty * (food.each ? food.each : 100);
+}
+
+function _findFood(text) {
+  const t = text.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+  let best = null, bestScore = 0;
+  for (const f of FOOD_DB) {
+    for (const n of f.names) {
+      if (t === n) return f;
+      const tHasN = t.includes(n), nHasT = n.includes(t);
+      if (tHasN || nHasT) {
+        const score = n.length / Math.max(t.length, n.length);
+        if (score > bestScore) { bestScore = score; best = f; }
+      }
+    }
+  }
+  return bestScore >= 0.35 ? best : null;
+}
+
+function _parseChunk(chunk) {
+  let s = chunk.toLowerCase().trim();
+  // Remove leading "a", "an", filler words
+  s = s.replace(/^(some|about|approx\.?|approximately)\s+/i, '');
+
+  // Match: <qty> <unit> <food> OR <qty> <food>
+  const re = /^([0-9]+(?:[.,][0-9]+)?|[a-z]+)\s+([a-z]+)?\s*(?:of\s+)?(.+)$/;
+  const m = s.match(re);
+  let qty = 1, unit = '', foodText = s;
+
+  if (m) {
+    const rawQty = m[1];
+    const tok2   = (m[2] || '').toLowerCase();
+    const rest   = (m[3] || '').toLowerCase().trim();
+
+    // Is rawQty a number or word-number?
+    const numVal = parseFloat(rawQty.replace(',','.'));
+    const wordVal = WORD_NUMS[rawQty.toLowerCase()];
+    if (!isNaN(numVal)) {
+      qty = numVal;
+      // Is tok2 a unit?
+      const unitCheck = tok2.replace(/[^a-z]/g,'');
+      const allUnits = {...UNIT_G,...UNIT_CUP,...UNIT_TBSP,...UNIT_TSP,...UNIT_OZ,...UNIT_LB,...UNIT_EACH};
+      if (allUnits[unitCheck]) { unit = unitCheck; foodText = rest; }
+      else { foodText = (tok2 + ' ' + rest).trim(); }
+    } else if (wordVal !== undefined) {
+      qty = wordVal;
+      const unitCheck = tok2.replace(/[^a-z]/g,'');
+      const allUnits = {...UNIT_G,...UNIT_CUP,...UNIT_TBSP,...UNIT_TSP,...UNIT_OZ,...UNIT_LB,...UNIT_EACH};
+      if (allUnits[unitCheck]) { unit = unitCheck; foodText = rest; }
+      else { foodText = (tok2 + ' ' + rest).trim(); }
+    }
+  }
+
+  const food = _findFood(foodText);
+  if (!food) return null;
+
+  const grams = _toGrams(qty, unit, food);
+  const scale = grams / 100;
+  const label = chunk.trim().replace(/\s+/g,' ');
+  return {
+    name: label.charAt(0).toUpperCase() + label.slice(1),
+    calories: Math.round(food.cal * scale),
+    protein:  Math.round(food.pro * scale * 10) / 10,
+    carbs:    Math.round(food.carb * scale * 10) / 10,
+    fat:      Math.round(food.fat * scale * 10) / 10,
+  };
+}
+
+function parseMealDescription(text) {
+  const chunks = text.split(/[,\n]+/).map(s => s.trim()).filter(s => s.length > 1);
+  const matched = [], unmatched = [];
+  for (const c of chunks) {
+    const r = _parseChunk(c);
+    if (r) matched.push(r);
+    else unmatched.push(c);
+  }
+  return { matched, unmatched };
+}
+
+function calculateMealDescription() {
+  const ta = document.getElementById('describe-textarea');
+  const out = document.getElementById('describe-output');
+  if (!ta || !out) return;
+  const text = ta.value.trim();
+  if (!text) { out.innerHTML = '<p class="dm-hint">Type something above first.</p>'; return; }
+
+  const { matched, unmatched } = parseMealDescription(text);
+  _parsedMealItems = matched;
+
+  if (!matched.length) {
+    out.innerHTML = `<p class="dm-hint">Couldn't recognise any foods. Try being more specific, e.g. "200g chicken breast, 1 cup rice, 2 eggs".</p>`;
+    return;
+  }
+
+  const rows = matched.map((it, i) => `
+    <div class="dm-row">
+      <div class="dm-row-name">${esc(it.name)}</div>
+      <div class="dm-row-macros">${it.calories} cal &middot; ${it.protein}P &middot; ${it.carbs}C &middot; ${it.fat}F</div>
+      <button class="dm-remove" onclick="_parsedMealItems.splice(${i},1);calculateMealDescription();">&times;</button>
+    </div>`).join('');
+
+  const warn = unmatched.length
+    ? `<p class="dm-hint dm-warn">Not recognised: ${unmatched.map(esc).join(', ')}</p>` : '';
+
+  const totalCal = matched.reduce((s,i) => s + i.calories, 0);
+  out.innerHTML = `${rows}${warn}
+    <div class="dm-total">${totalCal} cal total</div>
+    <button class="w-action-btn" style="width:100%;margin-top:10px" onclick="addAllDescribed()">ADD ALL ITEMS</button>`;
+}
+
+function addAllDescribed() {
+  if (!_parsedMealItems.length) return;
+  curMealItems.push(..._parsedMealItems);
+  _parsedMealItems = [];
+  go('dietAddMeal');
+}
+
 function renderDietAddMeal() {
   const types = ['Breakfast','Lunch','Dinner','Snack'];
   const typeBtns = types.map(t => `<button class="d-type-btn${t===curMealType?' active':''}" onclick="setMealType('${t}')">${t}</button>`).join('');
@@ -1863,7 +2001,18 @@ function renderDietAddMeal() {
       <div class="sec-lbl" style="padding:0 0 8px">Items${curMealItems.length ? ` \u00B7 ${totalCal} cal total` : ''}</div>
       <div class="d-items-list">${itemsList}</div>
 
-      <div class="sec-lbl" style="padding:12px 0 8px">Search Foods</div>
+      <div class="dm-section">
+        <div class="dm-header">
+          <span class="dm-icon">✦</span>
+          <span class="dm-header-text">Describe your meal</span>
+          <span class="dm-header-sub">Instant macro calc</span>
+        </div>
+        <textarea class="dm-textarea" id="describe-textarea" rows="3" placeholder="e.g. 200g chicken breast, 1 cup rice, 2 eggs, 1 tbsp olive oil"></textarea>
+        <button class="w-action-btn" style="width:100%;margin:8px 0 0" onclick="calculateMealDescription()">CALCULATE MACROS</button>
+        <div id="describe-output" class="dm-output"></div>
+      </div>
+
+      <div class="sec-lbl" style="padding:12px 0 8px">Or Search Foods</div>
       <div class="fs-input-row">
         <input class="d-input" type="text" id="food-search-input" placeholder="Search foods... e.g. chicken breast" style="flex:1;margin:0" onkeydown="if(event.key==='Enter')doFoodSearch()">
         <button class="fs-search-btn" id="food-search-btn" onclick="doFoodSearch()">SEARCH</button>
