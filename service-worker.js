@@ -1,4 +1,4 @@
-const CACHE = 'hvi-v5';
+const CACHE = 'hvi-v6';
 const ASSETS = ['/northstar/', '/northstar/index.html', '/northstar/style.css', '/northstar/data.js', '/northstar/app.js', '/northstar/manifest.json'];
 
 self.addEventListener('install', e => {
