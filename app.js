@@ -825,6 +825,8 @@ function injectGamificationStyles() {
     .g-pl-name{font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px}
     .g-pl-lv{font-size:15px;font-weight:800;font-family:var(--serif);color:var(--accent-b)}
     .g-weekly{padding:0 24px 8px}
+    .w-set-del{background:none;border:none;color:var(--text-dim);font-size:14px;padding:4px 6px;cursor:pointer;flex-shrink:0;opacity:0.5}
+    .w-set-del:active{opacity:1;color:var(--fat)}
     .w-ex-tip{font-size:11.5px;padding:4px 16px 8px;line-height:1.4;border-radius:6px;margin:0 0 4px}
     .w-ex-tip-increase{color:var(--accent-b)}
     .w-ex-tip-maintain{color:var(--carb)}
@@ -1453,6 +1455,7 @@ function renderWorkoutActive() {
         <span class="w-input-label">\u00D7</span>
         <input class="w-input" type="number" inputmode="decimal" value="${s.reps||''}" placeholder="reps" onfocus="this.select()" oninput="updateSet(${ei},${si},'reps',this.value)">
         <div class="w-set-check${s.completed?' done':''}" onclick="toggleSet(${ei},${si})">\u2713</div>
+        <button class="w-set-del" onclick="removeSet(${ei},${si})">\u2715</button>
         ${showPR ? '<span class="pr-badge">\uD83C\uDFC6 New PR!</span>' : ''}
       </div>`;
     }).join('');
@@ -1515,7 +1518,19 @@ function addSet(ei) {
   if (!wl) return;
   const ex = lookupExercise(wl.exercises[ei].exerciseId);
   const dr = ex ? ex.dr : 10;
-  wl.exercises[ei].sets.push({ weight: 0, reps: dr, completed: false });
+  const sets = wl.exercises[ei].sets;
+  const last = sets[sets.length - 1];
+  sets.push({ weight: last?.weight || 0, reps: last?.reps || dr, completed: false });
+  LS.set('hvi_workout_log', workoutLog);
+  go('workoutActive');
+}
+
+function removeSet(ei, si) {
+  const t = today(), wl = workoutLog[t];
+  if (!wl) return;
+  const sets = wl.exercises[ei].sets;
+  if (sets.length <= 1) return; // keep at least 1 set
+  sets.splice(si, 1);
   LS.set('hvi_workout_log', workoutLog);
   go('workoutActive');
 }
