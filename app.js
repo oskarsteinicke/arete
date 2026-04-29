@@ -595,10 +595,12 @@ function checkDailyQuests() {
   const quests = getDailyQuests();
   let newlyDone = [];
   quests.forEach(q => {
-    if (!done.has(q.id) && q.check()) {
-      done.add(q.id);
-      newlyDone.push(q);
-    }
+    try {
+      if (!done.has(q.id) && q.check()) {
+        done.add(q.id);
+        newlyDone.push(q);
+      }
+    } catch(e) {}
   });
   if (newlyDone.length) {
     gamification.questsCompleted[t] = [...done];
@@ -1439,16 +1441,17 @@ function renderWorkoutActive() {
     const ex = lookupExercise(we.exerciseId);
     const name = ex ? ex.name : 'Exercise data loading\u2026';
     const muscle = ex ? ex.muscle : '';
-    const tip = getProgressionTip(we.exerciseId);
+    let tip = null;
+    try { tip = getProgressionTip(we.exerciseId); } catch(e) {}
     const tipHTML = tip ? `<div class="w-ex-tip w-ex-tip-${tip.type}">${tip.msg}</div>` : '';
     const setsHTML = we.sets.map((s, si) => {
       const showPR = window._prJustSet && window._prJustSet.ei === ei && window._prJustSet.si === si;
       return `
       <div class="w-set">
         <span class="w-set-num">${si+1}</span>
-        <input class="w-input" type="number" inputmode="decimal" value="${s.weight||''}" placeholder="kg" onchange="updateSet(${ei},${si},'weight',this.value)">
+        <input class="w-input" type="number" inputmode="decimal" value="${s.weight||''}" placeholder="kg" onfocus="this.select()" oninput="updateSet(${ei},${si},'weight',this.value)">
         <span class="w-input-label">\u00D7</span>
-        <input class="w-input" type="number" inputmode="decimal" value="${s.reps||''}" placeholder="reps" onchange="updateSet(${ei},${si},'reps',this.value)">
+        <input class="w-input" type="number" inputmode="decimal" value="${s.reps||''}" placeholder="reps" onfocus="this.select()" oninput="updateSet(${ei},${si},'reps',this.value)">
         <div class="w-set-check${s.completed?' done':''}" onclick="toggleSet(${ei},${si})">\u2713</div>
         ${showPR ? '<span class="pr-badge">\uD83C\uDFC6 New PR!</span>' : ''}
       </div>`;
