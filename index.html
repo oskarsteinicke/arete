@@ -19,7 +19,7 @@
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=5">
+  <link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
 <div id="app">
@@ -80,15 +80,15 @@
     </button>
   </nav>
 </div>
-<script src="data.js?v=5"></script>
-<script src="app.js?v=5"></script>
+<script src="data.js?v=7"></script>
+<script src="app.js?v=7"></script>
 <script>
   if ('serviceWorker' in navigator) {
     // Unregister all old service workers then register fresh
     navigator.serviceWorker.getRegistrations().then(regs => {
       regs.forEach(r => r.unregister());
     });
-    window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js?v=4'));
+    window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js?v=7'));
   }
 </script>
 </body>
