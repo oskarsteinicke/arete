@@ -451,22 +451,12 @@ async function wgerFetchExercise(id) {
   } catch { return null; }
 }
 
-async function wgerSearch(term) {
+function wgerSearch(term) {
   if (!term || term.length < 2) return [];
-  const key = term.toLowerCase();
-  if (wgerSearchCache[key]) return wgerSearchCache[key];
-  try {
-    const res = await fetch(`https://wger.de/api/v2/exercise/search/?term=${encodeURIComponent(term)}&language=english&format=json`);
-    if (!res.ok) return [];
-    const data = await res.json();
-    const seen = new Set();
-    const results = (data.suggestions || []).map(s => s.data).filter(d => {
-      if (!d || !d.base_id || seen.has(d.base_id)) return false;
-      seen.add(d.base_id); return true;
-    });
-    wgerSearchCache[key] = results;
-    return results;
-  } catch { return []; }
+  const q = term.toLowerCase();
+  return Object.entries(EXERCISES)
+    .filter(([, ex]) => ex.name.toLowerCase().includes(q) || ex.muscle.toLowerCase().includes(q))
+    .map(([id, ex]) => ({ base_id: id, name: ex.name, category: ex.muscle }));
 }
 
 async function wgerBrowse(catId, eqId, offset = 0) {
@@ -1391,8 +1381,8 @@ function renderWorkoutBuilder() {
   } else if (!builderSearchResults.length) {
     searchHTML = '<div class="ex-search-status">No results.</div>';
   } else {
-    searchHTML = builderSearchResults.slice(0, 12).map(r =>
-      `<div class="w-card" style="margin:0 0 6px;padding:12px 16px;cursor:pointer" onclick="addExerciseToDay(${r.base_id}, ${JSON.stringify(r.name).replace(/"/g,'&quot;')}, ${JSON.stringify(r.category||'').replace(/"/g,'&quot;')})">
+    searchHTML = builderSearchResults.slice(0, 15).map(r =>
+      `<div class="w-card" style="margin:0 0 6px;padding:12px 16px;cursor:pointer" onclick="addExerciseToDay('${r.base_id}', ${JSON.stringify(r.name).replace(/"/g,'&quot;')}, ${JSON.stringify(r.category||'').replace(/"/g,'&quot;')})">
         <div class="w-ex-name" style="font-size:13px">${esc(r.name)}</div><div class="w-ex-muscle">${esc(r.category || '')}</div></div>`
     ).join('');
   }
@@ -1414,7 +1404,7 @@ function renderWorkoutBuilder() {
       ${addedEx || '<p style="font-size:12px;color:var(--text-muted);padding:4px 0">No exercises added yet.</p>'}
 
       <div class="sec-lbl" style="padding:16px 0 8px">Add Exercises</div>
-      <input class="d-input" type="text" id="bp-search" placeholder="Search exercises..." value="${esc(builderSearch)}" oninput="builderSearch=this.value;debouncedBuilderSearch()">
+      <input class="d-input" type="text" id="bp-search" placeholder="Search by name or muscle..." value="${esc(builderSearch)}" oninput="builderSearch=this.value;debouncedBuilderSearch()">
       <div style="margin-top:8px" id="bp-exlist">${searchHTML}</div>
       <button class="w-action-btn" style="margin-top:12px;width:100%" onclick="browserContext={dayIndex:builderDayIdx};go('exerciseBrowser')">BROWSE FULL LIBRARY</button>
     </div>
@@ -1439,22 +1429,11 @@ function builderRemoveEx(i) {
 
 function debouncedBuilderSearch() {
   clearTimeout(builderSearchDebounce);
-  const q = builderSearch;
-  if (!q || q.length < 2) {
-    builderSearchResults = [];
+  builderSearchDebounce = setTimeout(() => {
+    builderSearchResults = wgerSearch(builderSearch);
     builderSearchLoading = false;
     refreshBuilderSearchUI();
-    return;
-  }
-  builderSearchLoading = true;
-  refreshBuilderSearchUI();
-  builderSearchDebounce = setTimeout(async () => {
-    const results = await wgerSearch(q);
-    if (q !== builderSearch) return; // user moved on
-    builderSearchResults = results;
-    builderSearchLoading = false;
-    refreshBuilderSearchUI();
-  }, 400);
+  }, 150);
 }
 
 function refreshBuilderSearchUI() {
@@ -1463,19 +1442,18 @@ function refreshBuilderSearchUI() {
   if (builderSearchLoading) { el.innerHTML = '<div class="ex-search-status">Searching\u2026</div>'; return; }
   if (!builderSearch || builderSearch.length < 2) { el.innerHTML = '<p style="font-size:12px;color:var(--text-muted);padding:4px 0">Type at least 2 characters to search.</p>'; return; }
   if (!builderSearchResults.length) { el.innerHTML = '<div class="ex-search-status">No results.</div>'; return; }
-  el.innerHTML = builderSearchResults.slice(0, 12).map(r =>
-    `<div class="w-card" style="margin:0 0 6px;padding:12px 16px;cursor:pointer" onclick="addExerciseToDay(${r.base_id}, ${JSON.stringify(r.name).replace(/"/g,'&quot;')}, ${JSON.stringify(r.category||'').replace(/"/g,'&quot;')})">
+  el.innerHTML = builderSearchResults.slice(0, 15).map(r =>
+    `<div class="w-card" style="margin:0 0 6px;padding:12px 16px;cursor:pointer" onclick="addExerciseToDay('${r.base_id}', ${JSON.stringify(r.name).replace(/"/g,'&quot;')}, ${JSON.stringify(r.category||'').replace(/"/g,'&quot;')})">
       <div class="w-ex-name" style="font-size:13px">${esc(r.name)}</div><div class="w-ex-muscle">${esc(r.category || '')}</div></div>`
   ).join('');
 }
 
 async function addExerciseToDay(baseId, name, category) {
-  // Ensure the exercise is cached so it appears by name rather than "Loading…"
-  if (!wgerCache[baseId]) {
-    // Seed a placeholder so the list re-render after state mutation has something
+  // String IDs are local exercises — no wger fetch needed
+  if (typeof baseId === 'number' && !wgerCache[baseId]) {
     wgerCache[baseId] = { id: baseId, name, muscle: category || 'Unknown', equipment: 'Bodyweight', muscles: [], description: '', image: null, ds: 3, dr: 10 };
     LS.set('hvi_wger_cache', wgerCache);
-    wgerFetchExercise(baseId); // fetch full details in background
+    wgerFetchExercise(baseId);
   }
   if (!builderProg) initBuilder();
   const dayIdx = browserContext && typeof browserContext.dayIndex === 'number' ? browserContext.dayIndex : builderDayIdx;
