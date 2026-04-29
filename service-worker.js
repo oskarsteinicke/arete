@@ -1,4 +1,4 @@
-const CACHE = 'hvi-v1';
+const CACHE = 'hvi-v3';
 const ASSETS = ['/', '/index.html', '/style.css', '/data.js', '/app.js', '/manifest.json'];
 
 self.addEventListener('install', e => {
