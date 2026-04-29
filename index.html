@@ -11,7 +11,7 @@
   <link rel="manifest" href="/manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 <div id="app">
@@ -72,11 +72,15 @@
     </button>
   </nav>
 </div>
-<script src="data.js"></script>
-<script src="app.js"></script>
+<script src="data.js?v=4"></script>
+<script src="app.js?v=4"></script>
 <script>
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js'));
+    // Unregister all old service workers then register fresh
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      regs.forEach(r => r.unregister());
+    });
+    window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js?v=4'));
   }
 </script>
 </body>
