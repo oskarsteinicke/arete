@@ -823,6 +823,10 @@ function injectGamificationStyles() {
     .g-pl-name{font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px}
     .g-pl-lv{font-size:15px;font-weight:800;font-family:var(--serif);color:var(--accent-b)}
     .g-weekly{padding:0 24px 8px}
+    .w-ex-tip{font-size:11.5px;padding:4px 16px 8px;line-height:1.4;border-radius:6px;margin:0 0 4px}
+    .w-ex-tip-increase{color:var(--accent-b)}
+    .w-ex-tip-maintain{color:var(--carb)}
+    .w-ex-tip-first{color:var(--text-dim);font-style:italic}
     .g-quests{padding:0 24px 16px}
     .g-quest{display:flex;align-items:center;gap:12px;background:var(--surface2);border-radius:10px;padding:12px 14px;margin-bottom:8px;border:1px solid transparent;transition:all .25s}
     .g-quest-done{border-color:var(--accent-b);opacity:0.7}
@@ -1340,6 +1344,62 @@ function selectProgram(id) {
   go('workout');
 }
 
+// ── Progression helpers ────────────────────────────────────────────────────
+function getLastExerciseSession(exerciseId) {
+  const t = today();
+  const eid = String(exerciseId);
+  const dates = Object.keys(workoutLog).filter(d => d !== t).sort().reverse();
+  for (const d of dates) {
+    const ex = (workoutLog[d].exercises || []).find(e => String(e.exerciseId) === eid);
+    if (ex && ex.sets?.some(s => s.completed)) return { date: d, ex };
+  }
+  return null;
+}
+
+function getProgressionTip(exerciseId) {
+  const last = getLastExerciseSession(exerciseId);
+  if (!last) return { type: 'first', msg: '🆕 First time — focus on form, pick a manageable weight' };
+
+  const { date, ex } = last;
+  const allSets = ex.sets || [];
+  const completedSets = allSets.filter(s => s.completed);
+  const weightedSets = completedSets.filter(s => s.weight > 0 && s.reps > 0);
+  const bwSets = completedSets.filter(s => s.weight === 0 && s.reps > 0);
+
+  // Days ago label
+  const t = today();
+  const msAgo = new Date(t) - new Date(date);
+  const daysAgo = Math.max(1, Math.round(msAgo / 86400000));
+  const dLabel = daysAgo === 1 ? 'yesterday' : daysAgo <= 6 ? `${daysAgo}d ago` : `${Math.floor(daysAgo / 7)}w ago`;
+
+  // Bodyweight exercise
+  if (!weightedSets.length && bwSets.length) {
+    const maxReps = Math.max(...bwSets.map(s => s.reps));
+    const allDone = completedSets.length >= allSets.length;
+    if (allDone) return { type: 'increase', msg: `📈 Last: ${maxReps} reps/set ${dLabel} — try +1 rep per set today` };
+    return { type: 'maintain', msg: `🎯 ${completedSets.length}/${allSets.length} sets ${dLabel} — hit all sets before adding reps` };
+  }
+
+  if (!weightedSets.length) return null;
+
+  const maxW = Math.max(...weightedSets.map(s => s.weight));
+  const topSets = weightedSets.filter(s => s.weight === maxW);
+  const avgReps = Math.round(topSets.reduce((s, x) => s + x.reps, 0) / topSets.length);
+  const targetReps = allSets[0]?.reps || 8;
+  const allSetsComplete = completedSets.length >= allSets.length;
+  const allRepsHit = topSets.every(s => s.reps >= targetReps);
+
+  if (allSetsComplete && allRepsHit) {
+    const inc = maxW >= 80 ? 2.5 : maxW >= 40 ? 2.5 : 1.25;
+    const next = +(maxW + inc).toFixed(2).replace(/\.?0+$/, '');
+    return { type: 'increase', msg: `📈 All sets hit (${maxW} × ${avgReps}) ${dLabel} — try ${next} today` };
+  }
+  if (allSetsComplete && !allRepsHit) {
+    return { type: 'maintain', msg: `🎯 Last: ${maxW} × avg ${avgReps} reps ${dLabel} — hit ${targetReps} reps before going heavier` };
+  }
+  return { type: 'maintain', msg: `🎯 ${completedSets.length}/${allSets.length} sets at ${maxW} ${dLabel} — complete all sets first` };
+}
+
 function renderWorkoutActive() {
   const prog = findProgram(workoutMeta.activeProgram) || WORKOUT_PROGRAMS[0];
   const day = prog.days[workoutMeta.currentDayIndex % prog.days.length];
@@ -1354,7 +1414,12 @@ function renderWorkoutActive() {
       const ex = lookupExercise(eid);
       const ds = ex ? ex.ds : 3;
       const dr = ex ? ex.dr : 10;
-      return { exerciseId: eid, sets: Array.from({length: ds}, () => ({weight: 0, reps: dr, completed: false})) };
+      // Auto-fill weight/reps from last session
+      const last = getLastExerciseSession(eid);
+      const lastSets = (last?.ex.sets || []).filter(s => s.completed);
+      const lastW = lastSets.length ? Math.max(...lastSets.map(s => s.weight)) : 0;
+      const lastR = lastSets.length ? (lastSets[lastSets.length - 1]?.reps || dr) : dr;
+      return { exerciseId: eid, sets: Array.from({length: ds}, () => ({weight: lastW, reps: lastR, completed: false})) };
     })};
     LS.set('hvi_workout_log', workoutLog);
   }
@@ -1374,12 +1439,14 @@ function renderWorkoutActive() {
     const ex = lookupExercise(we.exerciseId);
     const name = ex ? ex.name : 'Exercise data loading\u2026';
     const muscle = ex ? ex.muscle : '';
+    const tip = getProgressionTip(we.exerciseId);
+    const tipHTML = tip ? `<div class="w-ex-tip w-ex-tip-${tip.type}">${tip.msg}</div>` : '';
     const setsHTML = we.sets.map((s, si) => {
       const showPR = window._prJustSet && window._prJustSet.ei === ei && window._prJustSet.si === si;
       return `
       <div class="w-set">
         <span class="w-set-num">${si+1}</span>
-        <input class="w-input" type="number" inputmode="decimal" value="${s.weight||''}" placeholder="lbs" onchange="updateSet(${ei},${si},'weight',this.value)">
+        <input class="w-input" type="number" inputmode="decimal" value="${s.weight||''}" placeholder="kg" onchange="updateSet(${ei},${si},'weight',this.value)">
         <span class="w-input-label">\u00D7</span>
         <input class="w-input" type="number" inputmode="decimal" value="${s.reps||''}" placeholder="reps" onchange="updateSet(${ei},${si},'reps',this.value)">
         <div class="w-set-check${s.completed?' done':''}" onclick="toggleSet(${ei},${si})">\u2713</div>
@@ -1388,6 +1455,7 @@ function renderWorkoutActive() {
     }).join('');
     return `<div class="w-ex ani">
       <div class="w-ex-head"><div><div class="w-ex-name">${esc(name)}</div><div class="w-ex-muscle">${esc(muscle)}</div></div></div>
+      ${tipHTML}
       ${setsHTML}
       <button class="w-add-set" onclick="addSet(${ei})">+ Add Set</button></div>`;
   }).join('');
