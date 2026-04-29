@@ -855,10 +855,9 @@ async function init() {
   } else {
     (() => {
       const validViews = ['home','pillar','habits','habitCreate','stats','workout','workoutPicker','workoutActive','workoutHistory','workoutBuilder','exerciseBrowser','diet','dietAddMeal','dietRecipes','dietRecipeDetail','dietGoals','dietTrend','dietTDEE','library'];
-      const path = location.pathname.replace(/^\//, '');
-      const params = Object.fromEntries(new URLSearchParams(location.search));
-      const view = validViews.includes(path) ? path : 'home';
-      go(view, params, false);
+      const hash = location.hash.replace(/^#/, '');
+      const view = validViews.includes(hash) ? hash : 'home';
+      go(view, {}, false);
     })();
   }
 }
@@ -899,7 +898,7 @@ function go(view, params = {}, pushState = true) {
 
   if (pushState) {
     const qs = Object.keys(params).length ? '?' + new URLSearchParams(params).toString() : '';
-    history.pushState({ view, params }, '', '/' + (view === 'home' ? '' : view) + qs);
+    history.pushState({ view, params }, '', '#' + (view === 'home' ? '' : view));
   }
 
   const navKey = NAV_PARENT[view] || view;

@@ -1,5 +1,5 @@
-const CACHE = 'hvi-v3';
-const ASSETS = ['/', '/index.html', '/style.css', '/data.js', '/app.js', '/manifest.json'];
+const CACHE = 'hvi-v5';
+const ASSETS = ['/STEINICKE/', '/STEINICKE/index.html', '/STEINICKE/style.css', '/STEINICKE/data.js', '/STEINICKE/app.js', '/STEINICKE/manifest.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
