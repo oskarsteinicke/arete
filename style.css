@@ -307,7 +307,7 @@ nav {
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s;
-  margin-left: auto;
+  flex-shrink: 0;
 }
 .w-set-check.done { background: rgba(154,130,86,0.18); border-color: var(--accent); color: var(--accent-b); }
 
