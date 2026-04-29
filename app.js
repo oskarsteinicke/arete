@@ -2998,7 +2998,7 @@ function buildCoachSystemPrompt() {
 
   // Workout
   const progName = (workoutMeta?.activeProgram
-    ? (PROGRAMS.find(p => p.id === workoutMeta.activeProgram)?.name || workoutMeta.activeProgram)
+    ? (allPrograms().find(p => p.id === workoutMeta.activeProgram)?.name || workoutMeta.activeProgram)
     : null) || 'None';
   const todayWorkout = workoutLog?.[d] ? 'Logged' : 'Not logged yet';
 
@@ -3156,7 +3156,7 @@ async function sendCoachMsg() {
     _renderCoachMsgs();
   } catch (err) {
     typing.remove();
-    _coachHistory.push({ role: 'assistant', content: `Connection error: ${err.message}. Make sure the app is deployed on Netlify.` });
+    _coachHistory.push({ role: 'assistant', content: `Connection error: ${err.message}. Please try again.` });
     _renderCoachMsgs();
   } finally {
     _coachBusy = false;
