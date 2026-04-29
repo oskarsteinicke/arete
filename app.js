@@ -1454,16 +1454,19 @@ function renderWorkoutActive() {
         <input class="w-input" type="number" inputmode="decimal" value="${s.weight||''}" placeholder="kg" onfocus="this.select()" oninput="updateSet(${ei},${si},'weight',this.value)">
         <span class="w-input-label">\u00D7</span>
         <input class="w-input" type="number" inputmode="decimal" value="${s.reps||''}" placeholder="reps" onfocus="this.select()" oninput="updateSet(${ei},${si},'reps',this.value)">
-        <button class="w-set-del" onclick="removeSet(${ei},${si})">\u2715</button>
         <div class="w-set-check${s.completed?' done':''}" onclick="toggleSet(${ei},${si})">\u2713</div>
         ${showPR ? '<span class="pr-badge">\uD83C\uDFC6 New PR!</span>' : ''}
       </div>`;
     }).join('');
+    const canRemove = we.sets.length > 1;
     return `<div class="w-ex ani">
       <div class="w-ex-head"><div><div class="w-ex-name">${esc(name)}</div><div class="w-ex-muscle">${esc(muscle)}</div></div></div>
       ${tipHTML}
       ${setsHTML}
-      <button class="w-add-set" onclick="addSet(${ei})">+ Add Set</button></div>`;
+      <div class="w-set-actions">
+        <button class="w-add-set" onclick="addSet(${ei})">+ Add Set</button>
+        ${canRemove ? `<button class="w-add-set" style="color:var(--fat);opacity:0.7" onclick="removeSet(${ei},${we.sets.length-1})">\u2212 Remove Set</button>` : ''}
+      </div></div>`;
   }).join('');
 
   document.getElementById('view').innerHTML = `

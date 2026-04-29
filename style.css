@@ -321,6 +321,7 @@ nav {
   letter-spacing: 0.5px;
 }
 .w-add-set:hover { color: var(--accent-b); }
+.w-set-actions { display: flex; gap: 4px; }
 
 .w-finish, .w-action-btn {
   display: block;
