@@ -3039,13 +3039,19 @@ ${lastJ ? `\nLAST JOURNAL (${jKeys[0]}):
   Struggle: ${lastJ.struggle || '—'}
   Focus: ${lastJ.focus || '—'}` : ''}
 
+STRICT RULES:
+- NEVER assume any sport, hobby, profession, or lifestyle the user has not explicitly told you
+- ONLY reference what is in the data above — do not invent context
+- If you don't know something about the user, ask rather than assume
+- This app is for everyone — students, athletes, professionals, beginners — treat the user as a blank slate until they tell you more
+
 COACHING STYLE:
 - Direct, specific, and actionable — zero filler
-- Reference their actual numbers to make advice feel personal
-- Be honest about gaps (missed habits, protein short, etc.) but solution-focused
+- Reference their actual numbers (habits, macros, streak) to make advice feel personal
+- Be honest about gaps but solution-focused
 - Keep replies under 200 words unless more detail is explicitly requested
 - Use bullet points or short paragraphs for clarity
-- Occasionally ask a follow-up question to dig deeper`;
+- Ask a follow-up question when you need more context before giving advice`;
 }
 
 function _coachBubbleHTML(role, text) {
