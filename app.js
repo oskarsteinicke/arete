@@ -3130,23 +3130,26 @@ async function sendCoachMsg() {
   msgsEl.scrollTop = msgsEl.scrollHeight;
 
   try {
-    const res = await fetch('/.netlify/functions/coach', {
+    const res = await fetch('https://text.pollinations.ai/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        system: buildCoachSystemPrompt(),
-        messages: _coachHistory,
+        messages: [
+          { role: 'system', content: buildCoachSystemPrompt() },
+          ..._coachHistory,
+        ],
+        model: 'openai',
+        private: true,
       }),
     });
 
-    const data = await res.json();
     typing.remove();
 
-    if (!res.ok || data.error) {
-      const errText = `Something went wrong: ${data.error || 'Unknown error. Please try again.'}`;
-      _coachHistory.push({ role: 'assistant', content: errText });
+    if (!res.ok) {
+      _coachHistory.push({ role: 'assistant', content: 'Something went wrong. Please try again in a moment.' });
     } else {
-      _coachHistory.push({ role: 'assistant', content: data.text });
+      const text = await res.text();
+      _coachHistory.push({ role: 'assistant', content: text });
     }
 
     _saveCoachHistory();
