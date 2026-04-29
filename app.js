@@ -2963,5 +2963,207 @@ function shareRecap() {
   }, 'image/png');
 }
 
+// ══════════════════════════════════════════════════════════════════════════
+// AI COACH
+// ══════════════════════════════════════════════════════════════════════════
+
+let _coachHistory = [];   // [{role:'user'|'assistant', content:'...'}]
+let _coachBusy = false;
+
+function _loadCoachHistory() {
+  try { _coachHistory = JSON.parse(localStorage.getItem('hvi_coach_history') || '[]'); } catch { _coachHistory = []; }
+}
+function _saveCoachHistory() {
+  // Keep last 40 messages (20 exchanges)
+  if (_coachHistory.length > 40) _coachHistory = _coachHistory.slice(-40);
+  localStorage.setItem('hvi_coach_history', JSON.stringify(_coachHistory));
+}
+
+function buildCoachSystemPrompt() {
+  const name = userName() || 'there';
+  const d = today();
+
+  // Habits
+  const todayDone = (log[d] || []).length;
+  const totalH = habits.length;
+  const pct = totalH ? Math.round(todayDone / totalH * 100) : 0;
+
+  // Weekly average
+  const weekDays = [...Array(7)].map((_, i) => {
+    const dt = new Date(); dt.setDate(dt.getDate() - i);
+    return dt.toISOString().slice(0, 10);
+  });
+  const weekAvg = totalH
+    ? Math.round(weekDays.reduce((s, dd) => s + (log[dd] || []).length, 0) / 7 / totalH * 100) : 0;
+
+  // Workout
+  const progName = (workoutMeta?.activeProgram
+    ? (PROGRAMS.find(p => p.id === workoutMeta.activeProgram)?.name || workoutMeta.activeProgram)
+    : null) || 'None';
+  const todayWorkout = workoutLog?.[d] ? 'Logged' : 'Not logged yet';
+
+  // Diet
+  const dm = getDayMacros();
+  const goals = dietMeta?.dailyGoals || {};
+
+  // Weight
+  const wt = weightLog?.length ? weightLog[weightLog.length - 1] : null;
+
+  // Gamification
+  const g = gamification || {};
+  const streak = meta?.streak || 0;
+
+  // Last journal
+  const jKeys = Object.keys(journal || {}).sort().reverse();
+  const lastJ = jKeys[0] ? journal[jKeys[0]] : null;
+
+  return `You are Northstar Coach — a sharp, warm, and deeply personalised life coach inside the Northstar lifestyle app. Your job is to help ${name} build elite habits, perform at their peak, eat well, and grow continuously.
+
+TODAY: ${d}
+
+USER PROFILE:
+Name: ${name}
+Level ${g.level || 1} | ${g.xp || 0} XP | ${streak}-day streak
+
+HABITS TODAY: ${todayDone}/${totalH} completed (${pct}%) | 7-day avg: ${weekAvg}%
+
+WORKOUT: Program — ${progName} | Today — ${todayWorkout}
+
+NUTRITION TODAY:
+  Calories  ${dm.cal} / ${goals.calories || '—'} target
+  Protein   ${dm.p}g / ${goals.protein || '—'}g target
+  Carbs     ${dm.c}g / ${goals.carbs || '—'}g target
+  Fat       ${dm.f}g / ${goals.fat || '—'}g target
+${wt ? `  Weight: ${wt.kg} kg (${wt.date})` : '  Weight: not logged'}
+${lastJ ? `\nLAST JOURNAL (${jKeys[0]}):
+  Win: ${lastJ.win || '—'}
+  Struggle: ${lastJ.struggle || '—'}
+  Focus: ${lastJ.focus || '—'}` : ''}
+
+COACHING STYLE:
+- Direct, specific, and actionable — zero filler
+- Reference their actual numbers to make advice feel personal
+- Be honest about gaps (missed habits, protein short, etc.) but solution-focused
+- Keep replies under 200 words unless more detail is explicitly requested
+- Use bullet points or short paragraphs for clarity
+- Occasionally ask a follow-up question to dig deeper`;
+}
+
+function _coachBubbleHTML(role, text) {
+  // Simple markdown-lite: **bold**, *italic*, bullet lines
+  const safe = esc(text)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^[-•]\s+/gm, '• ')
+    .replace(/\n/g, '<br>');
+  return `<div class="coach-bubble ${role}">${safe}</div>`;
+}
+
+function _renderCoachMsgs() {
+  const el = document.getElementById('coach-msgs');
+  if (!el) return;
+
+  if (!_coachHistory.length) {
+    const name = userName();
+    el.innerHTML = `
+      <div class="coach-welcome">
+        <div class="coach-welcome-star">✦</div>
+        <h3>Hey${name ? ', ' + name : ''}.</h3>
+        <p>I'm your Northstar Coach. Ask me anything about your habits, workouts, nutrition, or mindset — I can see your real data.</p>
+      </div>`;
+    return;
+  }
+
+  el.innerHTML = _coachHistory.map(m => _coachBubbleHTML(m.role === 'user' ? 'user' : 'coach', m.content)).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function openCoach() {
+  _loadCoachHistory();
+  const overlay = document.getElementById('coach-overlay');
+  const fab = document.getElementById('coach-fab');
+  if (overlay) overlay.classList.remove('coach-hidden');
+  if (fab) fab.classList.add('coach-hidden');
+  _renderCoachMsgs();
+  setTimeout(() => {
+    const input = document.getElementById('coach-input');
+    if (input) input.focus();
+  }, 200);
+}
+
+function closeCoach() {
+  const overlay = document.getElementById('coach-overlay');
+  const fab = document.getElementById('coach-fab');
+  if (overlay) overlay.classList.add('coach-hidden');
+  if (fab) fab.classList.remove('coach-hidden');
+}
+
+function clearCoachHistory() {
+  _coachHistory = [];
+  localStorage.removeItem('hvi_coach_history');
+  _renderCoachMsgs();
+}
+
+async function sendCoachMsg() {
+  if (_coachBusy) return;
+  const input = document.getElementById('coach-input');
+  const sendBtn = document.getElementById('coach-send-btn');
+  const msgsEl = document.getElementById('coach-msgs');
+  if (!input || !msgsEl) return;
+
+  const text = input.value.trim();
+  if (!text) return;
+
+  // Add user message
+  _coachHistory.push({ role: 'user', content: text });
+  input.value = '';
+  input.style.height = 'auto';
+  _renderCoachMsgs();
+
+  // Typing indicator
+  _coachBusy = true;
+  if (sendBtn) sendBtn.disabled = true;
+  const typing = document.createElement('div');
+  typing.className = 'coach-typing';
+  typing.innerHTML = '<span></span><span></span><span></span>';
+  msgsEl.appendChild(typing);
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+
+  try {
+    const res = await fetch('/.netlify/functions/coach', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system: buildCoachSystemPrompt(),
+        messages: _coachHistory,
+      }),
+    });
+
+    const data = await res.json();
+    typing.remove();
+
+    if (!res.ok || data.error) {
+      const errText = data.error === 'setup_required'
+        ? '⚠️ Coach not set up yet. Add your ANTHROPIC_API_KEY in Netlify → Site configuration → Environment variables, then redeploy.'
+        : `Error: ${data.error || 'Something went wrong.'}`;
+      _coachHistory.push({ role: 'assistant', content: errText });
+    } else {
+      _coachHistory.push({ role: 'assistant', content: data.text });
+    }
+
+    _saveCoachHistory();
+    _renderCoachMsgs();
+  } catch (err) {
+    typing.remove();
+    _coachHistory.push({ role: 'assistant', content: `Connection error: ${err.message}. Make sure the app is deployed on Netlify.` });
+    _renderCoachMsgs();
+  } finally {
+    _coachBusy = false;
+    if (sendBtn) sendBtn.disabled = false;
+    const inp = document.getElementById('coach-input');
+    if (inp) inp.focus();
+  }
+}
+
 // ── START ─────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', init);
