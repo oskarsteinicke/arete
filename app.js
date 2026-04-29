@@ -27,7 +27,16 @@ let builderSearchDebounce = null;
 let builderSearchResults = [];
 let builderSearchLoading = false;
 let gamification, achievements;
-const USDA_KEY = 'DEMO_KEY'; // replace with your free key from https://fdc.nal.usda.gov/api-guide.html
+let settings;
+const USDA_KEY = 'DEMO_KEY';
+
+// ── Unit helpers ──────────────────────────────────────────────────────────
+function isImperial() { return (settings || {}).units === 'imperial'; }
+function wtUnit() { return isImperial() ? 'lbs' : 'kg'; }
+function setUnits(u) {
+  settings.units = u;
+  LS.set('hvi_settings', settings);
+} // replace with your free key from https://fdc.nal.usda.gov/api-guide.html
 
 // ── SUPABASE AUTH + CLOUD SYNC ────────────────────────────────────────────
 const SUPABASE_URL = 'https://socflncohsenjptgkkax.supabase.co';
@@ -831,6 +840,9 @@ function injectGamificationStyles() {
     .w-ex-tip-increase{color:var(--accent-b)}
     .w-ex-tip-maintain{color:var(--carb)}
     .w-ex-tip-first{color:var(--text-dim);font-style:italic}
+    .unit-toggle{display:flex;background:var(--surface2);border-radius:8px;padding:2px;gap:2px}
+    .unit-btn{background:none;border:none;color:var(--text-dim);font-size:13px;font-weight:600;padding:6px 16px;border-radius:6px;cursor:pointer;transition:all .2s}
+    .unit-btn-active{background:var(--accent);color:#fff}
     .g-quests{padding:0 24px 16px}
     .g-quest{display:flex;align-items:center;gap:12px;background:var(--surface2);border-radius:10px;padding:12px 14px;margin-bottom:8px;border:1px solid transparent;transition:all .25s}
     .g-quest-done{border-color:var(--accent-b);opacity:0.7}
@@ -957,6 +969,7 @@ async function init() {
   wgerCache = LS.get('hvi_wger_cache', {});
   gamification = LS.get('hvi_gamification', { xp: 0, pillarXP: {}, journalXPDate: '', weeklyStats: { weekKey: '', workoutDays: [], journalDays: [], proteinDays: [] } });
   achievements = LS.get('hvi_achievements', []);
+  settings = LS.get('hvi_settings', { units: 'metric' });
 
   injectAdaptiveStyles();
   injectExerciseBrowserStyles();
@@ -1451,7 +1464,7 @@ function renderWorkoutActive() {
       return `
       <div class="w-set">
         <span class="w-set-num">${si+1}</span>
-        <input class="w-input" type="number" inputmode="decimal" value="${s.weight||''}" placeholder="kg" onfocus="this.select()" oninput="updateSet(${ei},${si},'weight',this.value)">
+        <input class="w-input" type="number" inputmode="decimal" value="${s.weight||''}" placeholder="${wtUnit()}" onfocus="this.select()" oninput="updateSet(${ei},${si},'weight',this.value)">
         <span class="w-input-label">\u00D7</span>
         <input class="w-input" type="number" inputmode="decimal" value="${s.reps||''}" placeholder="reps" onfocus="this.select()" oninput="updateSet(${ei},${si},'reps',this.value)">
         <div class="w-set-check${s.completed?' done':''}" onclick="toggleSet(${ei},${si})">\u2713</div>
@@ -1696,7 +1709,7 @@ function renderWorkoutHistory() {
     const totalSets = wl.exercises.reduce((sum, we) => sum + we.sets.filter(s => s.completed).length, 0);
     return `<div class="w-hist-item"><div class="w-hist-date">${fmtDate(d)}</div>
       <div class="w-hist-prog">${dayInfo ? dayInfo.name : 'Workout'} ${prog ? '\u00B7 ' + prog.name : ''}</div>
-      <div class="w-hist-vol">${totalSets} sets \u00B7 ${totalVol.toLocaleString()} lbs volume</div></div>`;
+      <div class="w-hist-vol">${totalSets} sets \u00B7 ${totalVol.toLocaleString()} ${wtUnit()} volume</div></div>`;
   }).join('') : '<p style="padding:24px;font-size:13px;color:var(--text-muted)">No workouts logged yet.</p>';
 
   // Volume chart — last 7 days
@@ -1719,7 +1732,7 @@ function renderWorkoutHistory() {
       ${d.vol > 0 ? `<text x="${x + barW/2}" y="${y - 3}" fill="var(--text-dim)" font-size="8" text-anchor="middle">${d.vol >= 1000 ? (d.vol/1000).toFixed(1)+'k' : d.vol}</text>` : ''}`;
   }).join('');
   const chartHTML = `<div style="margin:0 24px 16px;background:var(--surface2);border-radius:14px;padding:16px" class="ani">
-    <div class="sec-lbl" style="padding:0 0 10px">WEEKLY VOLUME (lbs)</div>
+    <div class="sec-lbl" style="padding:0 0 10px">WEEKLY VOLUME (${wtUnit().toUpperCase()})</div>
     <svg viewBox="0 0 ${chartW} ${chartH}" style="width:100%;display:block">${bars}</svg>
   </div>`;
 
@@ -1742,7 +1755,7 @@ function renderPRHistory() {
     return `<div class="w-hist-item">
       <div class="w-hist-date">${fmtDate(pr.date)}</div>
       <div class="w-hist-prog">${esc(name)}</div>
-      <div class="w-hist-vol" style="color:var(--accent-b)">🏆 ${pr.weight} lbs × ${pr.reps} reps</div>
+      <div class="w-hist-vol" style="color:var(--accent-b)">🏆 ${pr.weight} ${wtUnit()} × ${pr.reps} reps</div>
     </div>`;
   }).join('') : '<p style="padding:24px;font-size:13px;color:var(--text-muted)">No PRs yet. Start lifting heavy!</p>';
 
@@ -1835,7 +1848,7 @@ function renderBrowserCard(ex) {
   if (isExpanded) {
     const img = ex.image ? `<img loading="lazy" src="${ex.image.startsWith('http') ? ex.image : 'https://wger.de' + ex.image}" alt="">` : '';
     const musclesFull = ex.muscles && ex.muscles.length ? `<div><strong>Muscles:</strong> ${esc(ex.muscles.join(', '))}</div>` : '';
-    const prLine = pr ? `<div class="ex-detail-pr">Your PR: ${pr.weight}kg \u00D7 ${pr.reps} reps (${pr.date})</div>` : '';
+    const prLine = pr ? `<div class="ex-detail-pr">Your PR: ${pr.weight} ${wtUnit()} \u00D7 ${pr.reps} reps (${pr.date})</div>` : '';
     const desc = ex.description ? `<div style="margin:6px 0">${esc(ex.description)}</div>` : '';
     const addToProgBtn = browserContext ? `<button class="ex-add-btn" style="margin-top:8px" onclick="addExerciseToDay(${ex.id}, ${JSON.stringify(name).replace(/"/g,'&quot;')}, ${JSON.stringify(cat).replace(/"/g,'&quot;')})">+ ADD TO PROGRAM</button>` : '';
     detailHTML = `<div class="ex-detail">${prLine}${desc}${musclesFull}${img}${addToProgBtn}</div>`;
@@ -2009,14 +2022,14 @@ function renderDiet() {
   const todayWeight = weightLog[t];
   const recentWeights = Object.entries(weightLog).sort((a,b) => b[0].localeCompare(a[0])).slice(0, 7);
   const recentHTML = recentWeights.length ? recentWeights.map(([d, w]) =>
-    `<div class="dw-history-item"><span>${fmtDate(d)}</span><span>${w} kg</span></div>`
+    `<div class="dw-history-item"><span>${fmtDate(d)}</span><span>${w} ${wtUnit()}</span></div>`
   ).join('') : '<div style="font-size:12px;color:var(--text-dim)">No weights logged yet.</div>';
 
   const weightHTML = `<div class="dw-section ani">
     <div class="sec-lbl" style="padding:0 0 10px">Weight</div>
-    ${todayWeight ? `<div class="dw-logged">Today: <strong>${todayWeight} kg</strong></div>` : ''}
+    ${todayWeight ? `<div class="dw-logged">Today: <strong>${todayWeight} ${wtUnit()}</strong></div>` : ''}
     <div class="dw-input-row">
-      <input class="dw-input" type="number" step="0.1" min="20" max="300" id="wt-input" placeholder="Weight (kg)" ${todayWeight ? `value="${todayWeight}"` : ''}>
+      <input class="dw-input" type="number" step="0.1" min="20" max="600" id="wt-input" placeholder="Weight (${wtUnit()})" ${todayWeight ? `value="${todayWeight}"` : ''}>
       <button class="dw-log-btn" onclick="logWeight()">LOG WEIGHT</button>
     </div>
     <div class="dw-history">${recentHTML}</div>
@@ -2812,6 +2825,16 @@ function renderStats() {
       <div class="q-nav"><button class="q-btn" onclick="rotQ(-1)">\u2190</button><button class="q-btn" onclick="rotQ(1)">\u2192</button></div>
     </div>
     <button class="w-action-btn" style="margin:16px 24px 8px" onclick="shareRecap()">📤 Share Weekly Recap</button>
+    <div class="da-section ani" style="margin:8px 24px 16px;padding:16px">
+      <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Settings</div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:14px;color:var(--text)">Units</div>
+        <div class="unit-toggle">
+          <button class="unit-btn${!isImperial()?' unit-btn-active':''}" onclick="setUnits('metric');renderStats()">kg</button>
+          <button class="unit-btn${isImperial()?' unit-btn-active':''}" onclick="setUnits('imperial');renderStats()">lbs</button>
+        </div>
+      </div>
+    </div>
     <button class="w-action-btn" style="margin:0 24px 32px;color:var(--fat);border-color:var(--fat)" onclick="if(confirm('Sign out?'))authSignOut()">Sign Out</button>`;
   qTimer = setInterval(() => rotQ(1), 30000);
 }
