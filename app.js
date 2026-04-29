@@ -3144,7 +3144,7 @@ async function sendCoachMsg() {
 
     if (!res.ok || data.error) {
       const errText = data.error === 'setup_required'
-        ? '⚠️ Coach not set up yet. Add your ANTHROPIC_API_KEY in Netlify → Site configuration → Environment variables, then redeploy.'
+        ? '⚠️ Coach not set up yet. Get a free key at console.groq.com, then add it as GROQ_API_KEY in Netlify → Site configuration → Environment variables and redeploy.'
         : `Error: ${data.error || 'Something went wrong.'}`;
       _coachHistory.push({ role: 'assistant', content: errText });
     } else {

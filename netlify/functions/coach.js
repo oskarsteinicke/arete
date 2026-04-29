@@ -1,6 +1,7 @@
 // Northstar Coach — Netlify serverless function
-// Proxies requests to Anthropic so the API key never touches the browser.
-// Set ANTHROPIC_API_KEY in Netlify → Site → Environment variables.
+// Uses Groq (free tier) — 14,400 requests/day, no credit card needed.
+// Get a free key at console.groq.com, then add GROQ_API_KEY in
+// Netlify → Site configuration → Environment variables.
 
 exports.handler = async (event) => {
   const headers = {
@@ -17,14 +18,14 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
     return {
       statusCode: 503,
       headers,
       body: JSON.stringify({
         error: 'setup_required',
-        message: 'Add your ANTHROPIC_API_KEY in Netlify → Site configuration → Environment variables, then redeploy.',
+        message: 'Add your GROQ_API_KEY in Netlify → Site configuration → Environment variables, then redeploy.',
       }),
     };
   }
@@ -38,19 +39,24 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'messages array required' }) };
   }
 
+  // Groq uses the OpenAI-compatible chat completions format
+  const groqMessages = [
+    { role: 'system', content: system || 'You are Northstar Coach, a helpful lifestyle coach.' },
+    ...messages,
+  ];
+
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-haiku-20241022',
+        model: 'llama-3.3-70b-versatile',
+        messages: groqMessages,
         max_tokens: 500,
-        system: system || 'You are Northstar Coach, a helpful lifestyle coach.',
-        messages,
+        temperature: 0.7,
       }),
     });
 
@@ -60,14 +66,14 @@ exports.handler = async (event) => {
       return {
         statusCode: res.status,
         headers,
-        body: JSON.stringify({ error: data.error?.message || 'Anthropic API error' }),
+        body: JSON.stringify({ error: data.error?.message || 'Groq API error' }),
       };
     }
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ text: data.content?.[0]?.text || '' }),
+      body: JSON.stringify({ text: data.choices?.[0]?.message?.content || '' }),
     };
   } catch (err) {
     return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
