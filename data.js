@@ -111,6 +111,108 @@ const EXERCISES = {
   hanging_raise:  { name: 'Hanging Leg Raise',     muscle: 'Abs',           ds: 3, dr: 12 },
   ab_wheel:       { name: 'Ab Wheel Rollout',      muscle: 'Abs',           ds: 3, dr: 10 },
   pallof_press:   { name: 'Pallof Press',          muscle: 'Core',          ds: 3, dr: 12 },
+
+  // ── Chest (extra) ──────────────────────────────────────────────────────
+  decline_bench:  { name: 'Decline Bench Press',   muscle: 'Lower Chest',   ds: 3, dr: 10 },
+  db_flat_press:  { name: 'DB Flat Press',         muscle: 'Chest',         ds: 3, dr: 10 },
+  db_fly:         { name: 'DB Chest Fly',          muscle: 'Chest',         ds: 3, dr: 12 },
+  pushup:         { name: 'Push-Up',               muscle: 'Chest',         ds: 3, dr: 20 },
+  diamond_pu:     { name: 'Diamond Push-Up',       muscle: 'Chest/Tri',     ds: 3, dr: 15 },
+  cable_cross:    { name: 'Cable Crossover',       muscle: 'Chest',         ds: 3, dr: 15 },
+  chest_press_m:  { name: 'Chest Press Machine',   muscle: 'Chest',         ds: 3, dr: 12 },
+  svend_press:    { name: 'Svend Press',           muscle: 'Inner Chest',   ds: 3, dr: 15 },
+
+  // ── Back (extra) ───────────────────────────────────────────────────────
+  tbar_row:       { name: 'T-Bar Row',             muscle: 'Back',          ds: 4, dr: 8  },
+  db_row:         { name: 'Single Arm DB Row',     muscle: 'Lats',          ds: 3, dr: 10 },
+  straight_pull:  { name: 'Straight Arm Pulldown', muscle: 'Lats',          ds: 3, dr: 12 },
+  good_morning:   { name: 'Good Morning',          muscle: 'Lower Back',    ds: 3, dr: 10 },
+  hyperext:       { name: 'Back Extension',        muscle: 'Lower Back',    ds: 3, dr: 15 },
+  chinup:         { name: 'Chin-Up',               muscle: 'Biceps/Lats',   ds: 3, dr: 8  },
+  inverted_row:   { name: 'Inverted Row',          muscle: 'Upper Back',    ds: 3, dr: 12 },
+  rack_pull:      { name: 'Rack Pull',             muscle: 'Upper Back',    ds: 3, dr: 6  },
+  pendlay_row:    { name: 'Pendlay Row',           muscle: 'Back',          ds: 4, dr: 6  },
+
+  // ── Shoulders (extra) ──────────────────────────────────────────────────
+  db_ohp:         { name: 'DB Shoulder Press',     muscle: 'Shoulders',     ds: 4, dr: 10 },
+  front_raise:    { name: 'Front Raise',           muscle: 'Front Delts',   ds: 3, dr: 12 },
+  upright_row:    { name: 'Upright Row',           muscle: 'Traps/Delts',   ds: 3, dr: 12 },
+  landmine_press: { name: 'Landmine Press',        muscle: 'Shoulders',     ds: 3, dr: 10 },
+  shrug:          { name: 'Barbell Shrug',         muscle: 'Traps',         ds: 3, dr: 12 },
+  db_shrug:       { name: 'DB Shrug',              muscle: 'Traps',         ds: 3, dr: 15 },
+  machine_fly:    { name: 'Reverse Pec Deck',      muscle: 'Rear Delts',    ds: 3, dr: 15 },
+
+  // ── Biceps (extra) ─────────────────────────────────────────────────────
+  spider_curl:    { name: 'Spider Curl',           muscle: 'Biceps',        ds: 3, dr: 12 },
+  conc_curl:      { name: 'Concentration Curl',    muscle: 'Biceps',        ds: 3, dr: 12 },
+  reverse_curl:   { name: 'Reverse Curl',          muscle: 'Brachialis',    ds: 3, dr: 12 },
+  zottman:        { name: 'Zottman Curl',          muscle: 'Biceps/Forearm',ds: 3, dr: 10 },
+  db_curl:        { name: 'DB Curl',               muscle: 'Biceps',        ds: 3, dr: 10 },
+  cross_curl:     { name: 'Cross-Body Curl',       muscle: 'Biceps',        ds: 3, dr: 12 },
+
+  // ── Triceps (extra) ────────────────────────────────────────────────────
+  skull_crusher:  { name: 'Skull Crusher',         muscle: 'Triceps',       ds: 3, dr: 10 },
+  tricep_kick:    { name: 'Tricep Kickback',       muscle: 'Triceps',       ds: 3, dr: 12 },
+  rope_pushdown:  { name: 'Rope Pushdown',         muscle: 'Triceps',       ds: 3, dr: 12 },
+  jm_press:       { name: 'JM Press',              muscle: 'Triceps',       ds: 3, dr: 10 },
+  db_tri_ext:     { name: 'DB Tricep Extension',   muscle: 'Triceps',       ds: 3, dr: 12 },
+
+  // ── Legs (extra) ───────────────────────────────────────────────────────
+  hack_squat:     { name: 'Hack Squat',            muscle: 'Quads',         ds: 4, dr: 10 },
+  sumo_dl:        { name: 'Sumo Deadlift',         muscle: 'Glutes/Hams',   ds: 4, dr: 6  },
+  goblet_squat:   { name: 'Goblet Squat',          muscle: 'Quads',         ds: 3, dr: 12 },
+  smith_squat:    { name: 'Smith Machine Squat',   muscle: 'Quads',         ds: 3, dr: 10 },
+  seated_calf:    { name: 'Seated Calf Raise',     muscle: 'Calves',        ds: 4, dr: 15 },
+  leg_adduct:     { name: 'Hip Adduction Machine', muscle: 'Adductors',     ds: 3, dr: 15 },
+  leg_abduct:     { name: 'Hip Abduction Machine', muscle: 'Abductors',     ds: 3, dr: 15 },
+  cable_kickback: { name: 'Cable Glute Kickback',  muscle: 'Glutes',        ds: 3, dr: 15 },
+  sissy_squat:    { name: 'Sissy Squat',           muscle: 'Quads',         ds: 3, dr: 12 },
+  pistol_squat:   { name: 'Pistol Squat',          muscle: 'Quads/Balance', ds: 3, dr: 8  },
+  sldl:           { name: 'Stiff-Leg Deadlift',    muscle: 'Hamstrings',    ds: 3, dr: 10 },
+  db_lunge:       { name: 'DB Lunge',              muscle: 'Quads/Glutes',  ds: 3, dr: 10 },
+
+  // ── Core (extra) ───────────────────────────────────────────────────────
+  plank:          { name: 'Plank',                 muscle: 'Core',          ds: 3, dr: 60 },
+  side_plank:     { name: 'Side Plank',            muscle: 'Obliques',      ds: 3, dr: 45 },
+  russian_twist:  { name: 'Russian Twist',         muscle: 'Obliques',      ds: 3, dr: 20 },
+  dragon_flag:    { name: 'Dragon Flag',           muscle: 'Abs',           ds: 3, dr: 8  },
+  decline_crunch: { name: 'Decline Crunch',        muscle: 'Abs',           ds: 3, dr: 15 },
+  v_up:           { name: 'V-Up',                  muscle: 'Abs',           ds: 3, dr: 15 },
+  toe_touch:      { name: 'Toe Touch Crunch',      muscle: 'Abs',           ds: 3, dr: 15 },
+  bicycle:        { name: 'Bicycle Crunch',        muscle: 'Abs/Obliques',  ds: 3, dr: 20 },
+  lsit:           { name: 'L-Sit Hold',            muscle: 'Core',          ds: 3, dr: 20 },
+  dead_bug:       { name: 'Dead Bug',              muscle: 'Core',          ds: 3, dr: 10 },
+
+  // ── Full Body / Compound ───────────────────────────────────────────────
+  power_clean:    { name: 'Power Clean',           muscle: 'Full Body',     ds: 4, dr: 3  },
+  clean_press:    { name: 'Clean & Press',         muscle: 'Full Body',     ds: 3, dr: 5  },
+  thruster:       { name: 'Thruster',              muscle: 'Full Body',     ds: 3, dr: 8  },
+  kb_swing:       { name: 'Kettlebell Swing',      muscle: 'Posterior Chain',ds: 4, dr: 15},
+  tgu:            { name: 'Turkish Get-Up',        muscle: 'Full Body',     ds: 3, dr: 5  },
+  farmers_walk:   { name: 'Farmer\'s Carry',       muscle: 'Full Body',     ds: 3, dr: 40 },
+  sandbag_squat:  { name: 'Sandbag Squat',         muscle: 'Quads/Glutes',  ds: 3, dr: 10 },
+  kb_goblet:      { name: 'KB Goblet Squat',       muscle: 'Quads',         ds: 3, dr: 12 },
+  suitcase_carry: { name: 'Suitcase Carry',        muscle: 'Core/Traps',    ds: 3, dr: 40 },
+
+  // ── Bodyweight ─────────────────────────────────────────────────────────
+  muscle_up:      { name: 'Muscle-Up',             muscle: 'Back/Chest',    ds: 3, dr: 5  },
+  ring_dip:       { name: 'Ring Dip',              muscle: 'Chest/Tri',     ds: 3, dr: 8  },
+  hspu:           { name: 'Handstand Push-Up',     muscle: 'Shoulders',     ds: 3, dr: 8  },
+  archer_pu:      { name: 'Archer Push-Up',        muscle: 'Chest',         ds: 3, dr: 8  },
+  pike_pu:        { name: 'Pike Push-Up',          muscle: 'Shoulders',     ds: 3, dr: 12 },
+  hollow_hold:    { name: 'Hollow Body Hold',      muscle: 'Core',          ds: 3, dr: 30 },
+
+  // ── Cardio / Conditioning ──────────────────────────────────────────────
+  treadmill:      { name: 'Treadmill Run',         muscle: 'Cardio',        ds: 1, dr: 20 },
+  rowing:         { name: 'Rowing Machine',        muscle: 'Cardio/Back',   ds: 1, dr: 10 },
+  cycling:        { name: 'Stationary Bike',       muscle: 'Cardio',        ds: 1, dr: 20 },
+  jump_rope:      { name: 'Jump Rope',             muscle: 'Cardio',        ds: 5, dr: 60 },
+  battle_ropes:   { name: 'Battle Ropes',          muscle: 'Cardio/Arms',   ds: 5, dr: 30 },
+  sled_push:      { name: 'Sled Push',             muscle: 'Legs/Cardio',   ds: 4, dr: 20 },
+  box_step:       { name: 'Step-Up Cardio',        muscle: 'Cardio/Legs',   ds: 3, dr: 20 },
+  burpee:         { name: 'Burpee',                muscle: 'Full Body',     ds: 4, dr: 10 },
+  mountain_climb: { name: 'Mountain Climbers',     muscle: 'Core/Cardio',   ds: 3, dr: 30 },
+  sprint:         { name: 'Sprint Intervals',      muscle: 'Cardio',        ds: 6, dr: 15 },
 };
 
 // ── WORKOUT PROGRAMS ──────────────────────────────────────────────────────
