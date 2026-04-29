@@ -851,7 +851,7 @@ async function init() {
   cloudPush();
 
   if (!LS.get('hvi_onboarded', false)) {
-    renderOnboarding(1);
+    renderOnboarding(0);
   } else {
     (() => {
       const validViews = ['home','pillar','habits','habitCreate','stats','workout','workoutPicker','workoutActive','workoutHistory','workoutBuilder','exerciseBrowser','diet','dietAddMeal','dietRecipes','dietRecipeDetail','dietGoals','dietTrend','dietTDEE','library'];
@@ -2652,10 +2652,10 @@ function rotQ(dir) {
 // ══════════════════════════════════════════════════════════════════════════
 // ONBOARDING
 // ══════════════════════════════════════════════════════════════════════════
-let _obProgram = 'ppl';
 let _obGoalType = 'maintain';
 let _obCalories = 2500;
 let _obProtein = 180;
+let _obName = '';
 
 function injectOnboardingStyles() {
   if (document.getElementById('ob-styles')) return;
@@ -2663,38 +2663,40 @@ function injectOnboardingStyles() {
   s.id = 'ob-styles';
   s.textContent = `
     #ob-overlay{position:fixed;inset:0;background:var(--bg);z-index:2000;overflow-y:auto;display:flex;flex-direction:column}
-    .ob-wrap{flex:1;display:flex;flex-direction:column;padding:0 28px 40px;max-width:480px;margin:0 auto;width:100%}
-    .ob-step-dots{display:flex;gap:6px;justify-content:center;padding:24px 0 8px}
+    .ob-wrap{flex:1;display:flex;flex-direction:column;padding:0 28px 48px;max-width:480px;margin:0 auto;width:100%}
+    .ob-step-dots{display:flex;gap:6px;justify-content:center;padding:20px 0 4px}
     .ob-dot{width:6px;height:6px;border-radius:3px;background:rgba(255,255,255,0.15);transition:all .3s}
     .ob-dot.active{width:20px;background:var(--accent)}
-    .ob-eyebrow{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;margin-top:40px}
-    .ob-title{font-family:var(--serif);font-size:36px;color:var(--text);line-height:1.15;margin-bottom:8px}
-    .ob-sub{font-size:14px;color:var(--text-dim);line-height:1.6;margin-bottom:32px}
-    .ob-prog-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:24px}
-    .ob-prog-card{background:var(--surface);border:1.5px solid var(--border2);border-radius:14px;padding:16px 18px;cursor:pointer;transition:all .2s}
-    .ob-prog-card.active{border-color:var(--accent);background:rgba(154,130,86,0.08)}
-    .ob-prog-name{font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px}
-    .ob-prog-meta{font-size:12px;color:var(--text-dim)}
-    .ob-goal-btns{display:flex;gap:8px;margin-bottom:20px}
-    .ob-goal-btn{flex:1;padding:14px 8px;border:1.5px solid var(--border2);border-radius:12px;background:transparent;color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s;text-align:center}
-    .ob-goal-btn.active{border-color:var(--accent);color:var(--accent-b);background:rgba(154,130,86,0.08)}
+    .ob-eyebrow{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;margin-top:32px}
+    .ob-title{font-family:var(--serif);font-size:34px;color:var(--text);line-height:1.2;margin-bottom:8px}
+    .ob-sub{font-size:14px;color:var(--text-dim);line-height:1.6;margin-bottom:28px}
+    .ob-input{width:100%;background:var(--surface);border:1.5px solid var(--border2);border-radius:14px;color:var(--text);font-size:18px;padding:18px 20px;outline:none;font-family:var(--serif);margin-bottom:24px;box-sizing:border-box}
+    .ob-input:focus{border-color:var(--accent)}
+    .ob-input::placeholder{color:var(--text-muted)}
+    .ob-goal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:28px}
+    .ob-goal-card{background:var(--surface);border:1.5px solid var(--border2);border-radius:14px;padding:18px 14px;cursor:pointer;transition:all .2s;text-align:center}
+    .ob-goal-card.active{border-color:var(--accent);background:rgba(154,130,86,0.1)}
+    .ob-goal-card.full{grid-column:1/-1}
+    .ob-goal-emoji{font-size:26px;margin-bottom:8px}
+    .ob-goal-name{font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px}
+    .ob-goal-desc{font-size:11px;color:var(--text-dim)}
+    .ob-nut-btns{display:flex;gap:8px;margin-bottom:20px}
+    .ob-nut-btn{flex:1;padding:14px 8px;border:1.5px solid var(--border2);border-radius:12px;background:transparent;color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s;text-align:center}
+    .ob-nut-btn.active{border-color:var(--accent);color:var(--accent-b);background:rgba(154,130,86,0.08)}
     .ob-macro-row{display:flex;gap:10px;margin-bottom:20px}
     .ob-macro-card{flex:1;background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:14px 10px;text-align:center}
     .ob-macro-label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
     .ob-macro-input{width:100%;background:transparent;border:none;color:var(--accent-b);font-family:var(--serif);font-size:22px;font-weight:700;text-align:center;outline:none}
-    .ob-pillar-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:24px}
-    .ob-pillar-card{background:var(--surface);border:1.5px solid var(--border2);border-radius:12px;padding:14px 12px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:10px}
-    .ob-pillar-card.active{border-color:var(--accent);background:rgba(154,130,86,0.08)}
-    .ob-pillar-icon{font-size:20px}
-    .ob-pillar-name{font-size:13px;font-weight:600;color:var(--text)}
-    .ob-btn{display:block;width:100%;padding:18px;border:none;border-radius:14px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:auto;transition:transform .15s}
+    .ob-btn{display:block;width:100%;padding:18px;border:none;border-radius:14px;background:var(--accent);color:#0a0908;font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:auto;transition:transform .15s}
     .ob-btn:active{transform:scale(0.98)}
-    .ob-skip{display:block;text-align:center;margin-top:16px;font-size:12px;color:var(--text-muted);cursor:pointer;text-decoration:underline}
+    .ob-welcome{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 32px 60px}
+    .ob-welcome-star{font-size:48px;color:var(--accent);margin-bottom:20px;line-height:1}
+    .ob-welcome-title{font-family:var(--serif);font-size:44px;color:var(--text);margin-bottom:14px;letter-spacing:-0.5px}
+    .ob-welcome-sub{font-size:15px;color:var(--text-dim);line-height:1.7;margin-bottom:48px;max-width:300px}
+    .ob-welcome-btn{padding:18px 48px;border:none;border-radius:14px;background:var(--accent);color:#0a0908;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer}
   `;
   document.head.appendChild(s);
 }
-
-const _obFocusPillars = new Set(['mind','body','mastery','social','wealth']);
 
 function renderOnboarding(step) {
   let overlay = document.getElementById('ob-overlay');
@@ -2703,47 +2705,62 @@ function renderOnboarding(step) {
     overlay.id = 'ob-overlay';
     document.body.appendChild(overlay);
   }
-  const dots = [1,2,3].map(i => `<div class="ob-dot${i===step?' active':''}"></div>`).join('');
 
+  // Step 0: welcome splash
+  if (step === 0) {
+    overlay.innerHTML = `
+      <div class="ob-welcome">
+        <div class="ob-welcome-star">\u2726</div>
+        <div class="ob-welcome-title">Northstar</div>
+        <div class="ob-welcome-sub">Your guiding star for habits, fitness, nutrition, and growth.</div>
+        <button class="ob-welcome-btn" onclick="renderOnboarding(1)">GET STARTED \u2192</button>
+      </div>`;
+    return;
+  }
+
+  const dots = [1,2,3].map(i => `<div class="ob-dot${i===step?' active':''}" ></div>`).join('');
   let content = '';
 
   if (step === 1) {
-    const progCards = WORKOUT_PROGRAMS.slice(0,5).map(p => `
-      <div class="ob-prog-card${_obProgram===p.id?' active':''}" onclick="_obProgram='${p.id}';renderOnboarding(1)">
-        <div class="ob-prog-name">${p.name}</div>
-        <div class="ob-prog-meta">${p.days.length}-day · ${p.desc}</div>
-      </div>`).join('');
     content = `
       <div class="ob-eyebrow">Step 1 of 3</div>
-      <div class="ob-title">Choose your training split.</div>
-      <div class="ob-sub">Pick the program that fits your schedule. You can switch anytime.</div>
-      <div class="ob-prog-grid">${progCards}</div>`;
+      <div class="ob-title">What\'s your name?</div>
+      <div class="ob-sub">We\'ll personalise your experience and your AI coach will know what to call you.</div>
+      <input class="ob-input" type="text" id="ob-name-input" placeholder="Your first name" maxlength="30" value="${esc(_obName)}" oninput="_obName=this.value.trim()">`;
 
   } else if (step === 2) {
-    const goals = [['cut','Cut','Lose fat'],['maintain','Maintain','Stay lean'],['bulk','Bulk','Build muscle']];
-    const goalBtns = goals.map(([k,l,s]) =>
-      `<button class="ob-goal-btn${_obGoalType===k?' active':''}" onclick="_obGoalType='${k}';_obCalories=${k==='cut'?2000:k==='bulk'?3000:2500};_obProtein=${k==='cut'?160:k==='bulk'?200:180};renderOnboarding(2)">${l}<br><span style="font-weight:400;font-size:10px;text-transform:none">${s}</span></button>`
-    ).join('');
+    const goals = [
+      {k:'habits', emoji:'\u{1F525}', name:'Build habits', desc:'Daily routines & discipline'},
+      {k:'fitness', emoji:'\u{1F4AA}', name:'Get stronger', desc:'Workouts & performance'},
+      {k:'nutrition', emoji:'\u{1F957}', name:'Eat better', desc:'Macros & meal tracking'},
+      {k:'all', emoji:'\u2726', name:'All of the above', desc:'The full Northstar system', full:true},
+    ];
+    const cards = goals.map(g => `
+      <div class="ob-goal-card${_obGoalType===g.k?' active':''} ${g.full?'full':''}" onclick="_obGoalType='${g.k}';renderOnboarding(2)">
+        <div class="ob-goal-emoji">${g.emoji}</div>
+        <div class="ob-goal-name">${g.name}</div>
+        <div class="ob-goal-desc">${g.desc}</div>
+      </div>`).join('');
     content = `
       <div class="ob-eyebrow">Step 2 of 3</div>
-      <div class="ob-title">Set your nutrition goal.</div>
-      <div class="ob-sub">Adjust your daily targets. These feed directly into your macro rings.</div>
-      <div class="ob-goal-btns">${goalBtns}</div>
+      <div class="ob-title">What brings you here?</div>
+      <div class="ob-sub">Pick your main focus. You can use everything, but this helps us highlight what matters most.</div>
+      <div class="ob-goal-grid">${cards}</div>`;
+
+  } else if (step === 3) {
+    const nuts = [['cut','Cut','Lose fat'],['maintain','Maintain','Stay lean'],['bulk','Bulk','Build muscle']];
+    const nutBtns = nuts.map(([k,l,s]) =>
+      `<button class="ob-nut-btn${_obGoalType===k?' active':''}" onclick="_obGoalType='${k}';_obCalories=${k==='cut'?2000:k==='bulk'?3000:2500};_obProtein=${k==='cut'?160:k==='bulk'?200:180};renderOnboarding(3)">${l}<br><span style="font-weight:400;font-size:10px;text-transform:none">${s}</span></button>`
+    ).join('');
+    content = `
+      <div class="ob-eyebrow">Step 3 of 3</div>
+      <div class="ob-title">Set your daily targets.</div>
+      <div class="ob-sub">These feed into your macro rings. You can update them anytime in Diet \u2192 Goals.</div>
+      <div class="ob-nut-btns">${nutBtns}</div>
       <div class="ob-macro-row">
         <div class="ob-macro-card"><div class="ob-macro-label">Calories</div><input class="ob-macro-input" type="number" id="ob-cal" value="${_obCalories}" onchange="_obCalories=+this.value"></div>
         <div class="ob-macro-card"><div class="ob-macro-label">Protein (g)</div><input class="ob-macro-input" type="number" id="ob-pro" value="${_obProtein}" onchange="_obProtein=+this.value"></div>
       </div>`;
-
-  } else if (step === 3) {
-    const pillarCards = PILLARS.map(p => `
-      <div class="ob-pillar-card${_obFocusPillars.has(p.id)?' active':''}" onclick="(()=>{if(_obFocusPillars.has('${p.id}'))_obFocusPillars.delete('${p.id}');else _obFocusPillars.add('${p.id}');renderOnboarding(3)})()">
-        <span class="ob-pillar-icon">${p.icon}</span><span class="ob-pillar-name">${p.name}</span>
-      </div>`).join('');
-    content = `
-      <div class="ob-eyebrow">Step 3 of 3</div>
-      <div class="ob-title">Pick your pillars.</div>
-      <div class="ob-sub">All 5 are selected by default. Tap to deselect pillars you want to skip for now.</div>
-      <div class="ob-pillar-grid">${pillarCards}</div>`;
   }
 
   const isLast = step === 3;
@@ -2751,26 +2768,31 @@ function renderOnboarding(step) {
     <div class="ob-wrap">
       <div class="ob-step-dots">${dots}</div>
       ${content}
-      <button class="ob-btn" onclick="obNext(${step})">${isLast ? 'START MY JOURNEY' : 'NEXT →'}</button>
-      <span class="ob-skip" onclick="obSkip()">Skip setup</span>
+      <button class="ob-btn" onclick="obNext(${step})">${isLast ? 'START MY JOURNEY \u2192' : 'CONTINUE \u2192'}</button>
     </div>`;
 }
 
 function obNext(step) {
+  if (step === 1) {
+    // Save name
+    const n = _obName || (document.getElementById('ob-name-input')?.value?.trim() || '');
+    if (n) { _obName = n; localStorage.setItem('hvi_user_name', n); }
+  }
   if (step < 3) { renderOnboarding(step + 1); return; }
   obFinish();
 }
 
 function obFinish() {
-  // Save program
-  workoutMeta.activeProgram = _obProgram;
-  workoutMeta.currentDayIndex = 0;
-  LS.set('hvi_workout_meta', workoutMeta);
+  // Save name
+  if (_obName) localStorage.setItem('hvi_user_name', _obName);
 
-  // Save nutrition goals
-  const carbs = Math.round((_obCalories - _obProtein * 4 - 70 * 9) / 4);
-  dietMeta.dailyGoals = { calories: _obCalories, protein: _obProtein, carbs: Math.max(50, carbs), fat: 70 };
-  dietMeta.goalType = _obGoalType;
+  // Save nutrition goals (only for cut/maintain/bulk selections)
+  const nutritionGoalType = ['cut','maintain','bulk'].includes(_obGoalType) ? _obGoalType : 'maintain';
+  const cal = _obCalories;
+  const pro = _obProtein;
+  const carbs = Math.round((cal - pro * 4 - 70 * 9) / 4);
+  dietMeta.dailyGoals = { calories: cal, protein: pro, carbs: Math.max(50, carbs), fat: 70 };
+  dietMeta.goalType = nutritionGoalType;
   LS.set('hvi_diet_meta', dietMeta);
 
   // Mark onboarded
@@ -2795,7 +2817,6 @@ function obSkip() {
   go('home', {}, false);
 }
 
-// ══════════════════════════════════════════════════════════════════════════
 // WEEKLY RECAP CARD
 // ══════════════════════════════════════════════════════════════════════════
 function generateRecapCard() {
