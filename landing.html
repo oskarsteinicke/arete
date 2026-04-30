@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0a0908">
+  <title>Northstar — Your Guiding Star</title>
+  <meta name="description" content="Habits, workouts, nutrition, and growth — all in one place. Northstar helps you build the life you want, one day at a time.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0a0908;
+      --bg2:      #0f0d0b;
+      --surface:  #141210;
+      --surface2: #1a1714;
+      --border:   rgba(255,255,255,0.07);
+      --border2:  rgba(255,255,255,0.04);
+      --accent:   #9a8256;
+      --accent-b: #c8a96e;
+      --accent-c: #e8c97e;
+      --text:     #f0ece4;
+      --text-dim: #a09880;
+      --text-muted: #5c5648;
+      --serif:    'Playfair Display', Georgia, serif;
+      --sans:     'Inter', system-ui, sans-serif;
+      --glow:     rgba(154,130,86,0.12);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 16px;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ─────────────────────────────────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 40px;
+      background: rgba(10,9,8,0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border2);
+    }
+    .nav-logo {
+      font-family: var(--serif);
+      font-size: 22px;
+      color: var(--accent-b);
+      letter-spacing: 0.04em;
+    }
+    .nav-logo span { color: var(--text-muted); font-style: italic; font-weight: 400; }
+    .nav-cta {
+      background: var(--accent);
+      color: #0a0908;
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 10px 22px;
+      border-radius: 100px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.15s;
+    }
+    .nav-cta:hover { background: var(--accent-c); transform: translateY(-1px); }
+
+    /* ── HERO ────────────────────────────────────────────────────────────── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 120px 24px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -200px; left: 50%;
+      transform: translateX(-50%);
+      width: 800px; height: 800px;
+      background: radial-gradient(ellipse, rgba(154,130,86,0.10) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .hero-star {
+      font-size: 36px;
+      margin-bottom: 28px;
+      display: block;
+      animation: pulse-star 3s ease-in-out infinite;
+    }
+    @keyframes pulse-star {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.7; transform: scale(0.92); }
+    }
+    .hero-eyebrow {
+      font-size: 10px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+    .hero-title {
+      font-family: var(--serif);
+      font-size: clamp(44px, 8vw, 86px);
+      line-height: 1.05;
+      color: var(--text);
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+    .hero-title em {
+      font-style: italic;
+      color: var(--accent-b);
+    }
+    .hero-subtitle {
+      font-family: var(--serif);
+      font-size: clamp(18px, 3vw, 26px);
+      color: var(--text-dim);
+      font-style: italic;
+      font-weight: 400;
+      margin-bottom: 28px;
+    }
+    .hero-desc {
+      font-size: 16px;
+      color: var(--text-dim);
+      max-width: 520px;
+      line-height: 1.75;
+      margin: 0 auto 48px;
+    }
+    .hero-actions {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #0a0908;
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 16px 36px;
+      border-radius: 100px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 0 40px rgba(154,130,86,0.25);
+    }
+    .btn-primary:hover {
+      background: var(--accent-c);
+      transform: translateY(-2px);
+      box-shadow: 0 0 60px rgba(154,130,86,0.35);
+    }
+    .btn-secondary {
+      font-size: 13px;
+      color: var(--text-dim);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: color 0.2s;
+    }
+    .btn-secondary:hover { color: var(--accent-b); }
+    .btn-secondary svg { transition: transform 0.2s; }
+    .btn-secondary:hover svg { transform: translateX(3px); }
+
+    .hero-note {
+      margin-top: 28px;
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+    }
+
+    /* ── DIVIDER ─────────────────────────────────────────────────────────── */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 0 40px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .divider-line { flex: 1; height: 1px; background: var(--border); }
+    .divider-star { color: var(--accent); font-size: 14px; }
+
+    /* ── PILLARS ─────────────────────────────────────────────────────────── */
+    .pillars-strip {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      padding: 60px 24px 0;
+      flex-wrap: wrap;
+    }
+    .pillar-chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 8px 18px;
+      font-size: 12px;
+      color: var(--text-dim);
+      letter-spacing: 0.04em;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .pillar-chip span { font-size: 15px; }
+
+    /* ── FEATURES ────────────────────────────────────────────────────────── */
+    .section {
+      padding: 100px 24px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .section-eyebrow {
+      font-size: 10px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-family: var(--serif);
+      font-size: clamp(32px, 5vw, 52px);
+      text-align: center;
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+    .section-title em { font-style: italic; color: var(--accent-b); }
+    .section-sub {
+      font-size: 16px;
+      color: var(--text-dim);
+      text-align: center;
+      max-width: 520px;
+      margin: 0 auto 64px;
+      line-height: 1.75;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+    }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 32px 28px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .feature-card:hover {
+      border-color: rgba(154,130,86,0.3);
+      transform: translateY(-3px);
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 160px; height: 160px;
+      border-radius: 50%;
+      background: var(--glow);
+      pointer-events: none;
+    }
+    .feature-icon {
+      font-size: 28px;
+      margin-bottom: 18px;
+      display: block;
+    }
+    .feature-title {
+      font-family: var(--serif);
+      font-size: 22px;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+    .feature-desc {
+      font-size: 14px;
+      color: var(--text-dim);
+      line-height: 1.7;
+    }
+    .feature-tag {
+      display: inline-block;
+      margin-top: 18px;
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 600;
+      background: rgba(154,130,86,0.08);
+      border: 1px solid rgba(154,130,86,0.15);
+      padding: 4px 10px;
+      border-radius: 100px;
+    }
+
+    /* ── BIG FEATURE ROWS ────────────────────────────────────────────────── */
+    .big-features { padding: 0 24px 80px; max-width: 1100px; margin: 0 auto; }
+    .big-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      align-items: center;
+      padding: 60px 0;
+      border-top: 1px solid var(--border);
+    }
+    .big-row:first-child { border-top: none; }
+    .big-row.reverse .big-visual { order: -1; }
+    .big-text {}
+    .big-eyebrow {
+      font-size: 10px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 14px;
+    }
+    .big-title {
+      font-family: var(--serif);
+      font-size: clamp(28px, 4vw, 42px);
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+    .big-title em { font-style: italic; color: var(--accent-b); }
+    .big-desc {
+      font-size: 15px;
+      color: var(--text-dim);
+      line-height: 1.8;
+      margin-bottom: 24px;
+    }
+    .big-bullets { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .big-bullets li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 14px;
+      color: var(--text-dim);
+    }
+    .big-bullets li::before {
+      content: '✦';
+      color: var(--accent);
+      font-size: 10px;
+      margin-top: 4px;
+      flex-shrink: 0;
+    }
+    .big-visual {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 32px;
+      padding: 32px 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .big-visual::after {
+      content: '';
+      position: absolute;
+      bottom: -80px; left: 50%;
+      transform: translateX(-50%);
+      width: 300px; height: 300px;
+      border-radius: 50%;
+      background: var(--glow);
+      pointer-events: none;
+    }
+
+    /* Mock UI elements */
+    .mock-head {
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+    .mock-title {
+      font-family: var(--serif);
+      font-size: 22px;
+      color: var(--text);
+      margin-bottom: 20px;
+    }
+    .mock-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .mock-bar-label { font-size: 12px; color: var(--text-dim); width: 70px; flex-shrink: 0; }
+    .mock-bar-track {
+      flex: 1;
+      height: 6px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .mock-bar-fill { height: 100%; border-radius: 4px; }
+    .mock-bar-val { font-size: 11px; color: var(--text-muted); width: 36px; text-align: right; flex-shrink: 0; }
+    .mock-ring-row {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin: 8px 0 16px;
+    }
+    .mock-ring {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .mock-ring svg { opacity: 0.9; }
+    .mock-ring-lbl { font-size: 10px; color: var(--text-muted); letter-spacing: 0.5px; }
+    .mock-exercise-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border2);
+    }
+    .mock-exercise-row:last-child { border-bottom: none; }
+    .mock-ex-name { font-size: 14px; color: var(--text); }
+    .mock-ex-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .mock-ex-badge {
+      font-size: 10px;
+      padding: 4px 10px;
+      border-radius: 100px;
+      background: rgba(154,130,86,0.1);
+      color: var(--accent-b);
+      border: 1px solid rgba(154,130,86,0.2);
+    }
+    .mock-habit-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border2);
+    }
+    .mock-habit-row:last-child { border-bottom: none; }
+    .mock-habit-check {
+      width: 22px; height: 22px;
+      border-radius: 8px;
+      border: 1.5px solid rgba(154,130,86,0.4);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+    .mock-habit-check.done {
+      background: rgba(154,130,86,0.15);
+      border-color: var(--accent);
+      color: var(--accent-b);
+    }
+    .mock-habit-name { font-size: 14px; color: var(--text); }
+    .mock-habit-streak { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+    .mock-chat-msg {
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-size: 13px;
+      line-height: 1.5;
+      margin-bottom: 10px;
+      max-width: 85%;
+    }
+    .mock-chat-ai {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      border-radius: 16px 16px 16px 4px;
+    }
+    .mock-chat-user {
+      background: rgba(154,130,86,0.12);
+      border: 1px solid rgba(154,130,86,0.2);
+      color: var(--text);
+      margin-left: auto;
+      border-radius: 16px 16px 4px 16px;
+    }
+    .mock-xp-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .mock-xp-label { font-size: 12px; color: var(--accent-b); font-weight: 600; }
+    .mock-xp-track {
+      flex: 1;
+      height: 5px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .mock-xp-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-c));
+    }
+    .mock-quest {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border2);
+    }
+    .mock-quest:last-child { border-bottom: none; }
+    .mock-quest-ico {
+      width: 34px; height: 34px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .mock-quest-lbl { font-size: 13px; color: var(--text); }
+    .mock-quest-xp { font-size: 11px; color: var(--accent); margin-top: 2px; }
+
+    /* ── STATS BAR ───────────────────────────────────────────────────────── */
+    .stats-bar {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 60px 24px;
+    }
+    .stats-inner {
+      display: flex;
+      justify-content: center;
+      gap: 0;
+      max-width: 800px;
+      margin: 0 auto;
+      flex-wrap: wrap;
+    }
+    .stat-item {
+      flex: 1;
+      min-width: 160px;
+      text-align: center;
+      padding: 24px 32px;
+      border-right: 1px solid var(--border);
+    }
+    .stat-item:last-child { border-right: none; }
+    .stat-num {
+      font-family: var(--serif);
+      font-size: 48px;
+      color: var(--accent-b);
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+    .stat-label {
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    /* ── TESTIMONIALS ────────────────────────────────────────────────────── */
+    .testimonials {
+      padding: 100px 24px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .testimonial-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 28px;
+    }
+    .testimonial-stars { font-size: 13px; color: var(--accent-b); margin-bottom: 14px; }
+    .testimonial-text {
+      font-family: var(--serif);
+      font-size: 16px;
+      font-style: italic;
+      color: var(--text);
+      line-height: 1.65;
+      margin-bottom: 20px;
+    }
+    .testimonial-author { font-size: 12px; color: var(--text-muted); letter-spacing: 0.5px; }
+    .testimonial-author strong { color: var(--text-dim); display: block; font-style: normal; font-size: 13px; margin-bottom: 2px; }
+
+    /* ── CTA ─────────────────────────────────────────────────────────────── */
+    .cta-section {
+      padding: 100px 24px 120px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-section::before {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 700px; height: 400px;
+      background: radial-gradient(ellipse, rgba(154,130,86,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .cta-section .section-title { margin-bottom: 16px; }
+    .cta-section .section-sub { margin-bottom: 44px; }
+
+    /* ── FOOTER ──────────────────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: gap;
+    }
+    .footer-logo {
+      font-family: var(--serif);
+      font-size: 18px;
+      color: var(--accent-b);
+    }
+    .footer-note {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .footer-link {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .footer-link:hover { color: var(--accent-b); }
+
+    /* ── MOBILE ──────────────────────────────────────────────────────────── */
+    @media (max-width: 700px) {
+      nav { padding: 16px 20px; }
+      .nav-logo { font-size: 18px; }
+      .big-row { grid-template-columns: 1fr; gap: 32px; }
+      .big-row.reverse .big-visual { order: 0; }
+      .stat-item { border-right: none; border-bottom: 1px solid var(--border); }
+      .stat-item:last-child { border-bottom: none; }
+      footer { flex-direction: column; gap: 12px; text-align: center; padding: 32px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── NAV ───────────────────────────────────────────────────────────────── -->
+<nav>
+  <div class="nav-logo">✦ Northstar</div>
+  <a class="nav-cta" href="/northstar/">Open App</a>
+</nav>
+
+<!-- ── HERO ──────────────────────────────────────────────────────────────── -->
+<section class="hero">
+  <span class="hero-star">✦</span>
+  <p class="hero-eyebrow">Your daily operating system</p>
+  <h1 class="hero-title">Build the life<br>you <em>actually want.</em></h1>
+  <p class="hero-subtitle">Habits. Workouts. Nutrition. Growth.</p>
+  <p class="hero-desc">
+    Northstar brings every pillar of self-improvement into one focused, distraction-free app. No fluff, no subscriptions — just a system that works.
+  </p>
+  <div class="hero-actions">
+    <a class="btn-primary" href="/northstar/">Start for free →</a>
+    <a class="btn-secondary" href="#features">
+      See what's inside
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+    </a>
+  </div>
+  <p class="hero-note">Free · No account required · Works offline</p>
+</section>
+
+<!-- ── PILLAR STRIP ───────────────────────────────────────────────────────── -->
+<div class="pillars-strip">
+  <div class="pillar-chip"><span>🧠</span> Mindset</div>
+  <div class="pillar-chip"><span>💪</span> Body</div>
+  <div class="pillar-chip"><span>🎯</span> Mastery</div>
+  <div class="pillar-chip"><span>🤝</span> Social</div>
+  <div class="pillar-chip"><span>💰</span> Wealth</div>
+</div>
+
+<!-- ── FEATURES GRID ─────────────────────────────────────────────────────── -->
+<section class="section" id="features">
+  <p class="section-eyebrow">Everything in one place</p>
+  <h2 class="section-title">Every tool you need.<br><em>Nothing you don't.</em></h2>
+  <p class="section-sub">Northstar is built around the five pillars of a high-performance life — and tracks every one of them daily.</p>
+
+  <div class="features-grid">
+    <div class="feature-card">
+      <span class="feature-icon">✅</span>
+      <div class="feature-title">Habit Tracking</div>
+      <p class="feature-desc">Build unshakeable routines across every pillar of your life. Streaks, completions, and pillar progress — visualised daily.</p>
+      <span class="feature-tag">Mindset · Discipline</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🏋️</span>
+      <div class="feature-title">Workout Logging</div>
+      <p class="feature-desc">Follow structured programs or build your own. Log sets, track personal records, and let the app advance your days automatically.</p>
+      <span class="feature-tag">PPL · Upper/Lower · Full Body</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🥗</span>
+      <div class="feature-title">Nutrition Tracking</div>
+      <p class="feature-desc">Log meals, scan food, or describe what you ate in plain English — the AI handles the rest. Calories, protein, carbs, fat — all tracked.</p>
+      <span class="feature-tag">AI-powered · USDA database</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">✦</span>
+      <div class="feature-title">AI Coach</div>
+      <p class="feature-desc">Ask your coach anything — training advice, nutrition questions, how to break a bad habit. Personalized to your data and goals.</p>
+      <span class="feature-tag">Always available</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">⚔️</span>
+      <div class="feature-title">XP & Levelling</div>
+      <p class="feature-desc">Earn XP for every habit logged, workout completed, and quest finished. Watch your character evolve as you grow in real life.</p>
+      <span class="feature-tag">Quests · Challenges · Ranks</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">📚</span>
+      <div class="feature-title">Book Library & Journal</div>
+      <p class="feature-desc">Curated reading recommendations across every pillar, plus a daily journal to capture reflections and intentions.</p>
+      <span class="feature-tag">Mind · Body · Mastery</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── BIG FEATURE ROWS ───────────────────────────────────────────────────── -->
+<div class="big-features">
+
+  <!-- Habits -->
+  <div class="big-row">
+    <div class="big-text">
+      <p class="big-eyebrow">Daily Habits</p>
+      <h3 class="big-title">Small actions.<br><em>Compounding results.</em></h3>
+      <p class="big-desc">Every great outcome starts with what you do before 9am. Northstar gives your habits structure — grouped by life pillar, tracked with streaks, and reviewed at a glance.</p>
+      <ul class="big-bullets">
+        <li>Five life pillars: Mind, Body, Mastery, Social, Wealth</li>
+        <li>Custom habits with your own names and categories</li>
+        <li>Streak tracking that actually motivates</li>
+        <li>Pillar progress rings updated in real time</li>
+      </ul>
+    </div>
+    <div class="big-visual">
+      <div class="mock-head">Today · Habits</div>
+      <div class="mock-habit-row">
+        <div class="mock-habit-check done">✓</div>
+        <div><div class="mock-habit-name">Morning meditation</div><div class="mock-habit-streak">🔥 14 day streak</div></div>
+      </div>
+      <div class="mock-habit-row">
+        <div class="mock-habit-check done">✓</div>
+        <div><div class="mock-habit-name">Cold shower</div><div class="mock-habit-streak">🔥 8 day streak</div></div>
+      </div>
+      <div class="mock-habit-row">
+        <div class="mock-habit-check done">✓</div>
+        <div><div class="mock-habit-name">Read 30 minutes</div><div class="mock-habit-streak">🔥 21 day streak</div></div>
+      </div>
+      <div class="mock-habit-row">
+        <div class="mock-habit-check"></div>
+        <div><div class="mock-habit-name">No social media before noon</div><div class="mock-habit-streak">6 day streak</div></div>
+      </div>
+      <div class="mock-habit-row">
+        <div class="mock-habit-check"></div>
+        <div><div class="mock-habit-name">Journal entry</div><div class="mock-habit-streak">3 day streak</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Workout -->
+  <div class="big-row reverse">
+    <div class="big-text">
+      <p class="big-eyebrow">Workout Tracking</p>
+      <h3 class="big-title">Train harder.<br><em>Recover smarter.</em></h3>
+      <p class="big-desc">Choose from built-in programs or build your own split. The app auto-advances your workout day after each session, pre-fills your last weights, and flags when you hit a personal record.</p>
+      <ul class="big-bullets">
+        <li>PPL, Upper/Lower, and Full Body programs built in</li>
+        <li>Create fully custom programs with any exercises</li>
+        <li>Auto-advances to the next day after you finish</li>
+        <li>Personal record detection with progression tips</li>
+        <li>Full exercise library — 100+ movements</li>
+      </ul>
+    </div>
+    <div class="big-visual">
+      <div class="mock-head">Push Day · PPL Program</div>
+      <div class="mock-exercise-row">
+        <div><div class="mock-ex-name">Bench Press</div><div class="mock-ex-meta">4 sets · 8 reps · 185 lbs</div></div>
+        <span class="mock-ex-badge">PR 🏆</span>
+      </div>
+      <div class="mock-exercise-row">
+        <div><div class="mock-ex-name">Overhead Press</div><div class="mock-ex-meta">3 sets · 8 reps · 115 lbs</div></div>
+        <span class="mock-ex-badge">Done ✓</span>
+      </div>
+      <div class="mock-exercise-row">
+        <div><div class="mock-ex-name">Incline DB Press</div><div class="mock-ex-meta">3 sets · 10 reps · 70 lbs</div></div>
+        <span class="mock-ex-badge" style="opacity:0.4">–</span>
+      </div>
+      <div class="mock-exercise-row">
+        <div><div class="mock-ex-name">Lateral Raises</div><div class="mock-ex-meta">3 sets · 15 reps · 25 lbs</div></div>
+        <span class="mock-ex-badge" style="opacity:0.4">–</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nutrition -->
+  <div class="big-row">
+    <div class="big-text">
+      <p class="big-eyebrow">Nutrition</p>
+      <h3 class="big-title">Fuel your body<br><em>with intention.</em></h3>
+      <p class="big-desc">Describe a meal in plain English and the AI calculates your macros instantly. Or search from a database of hundreds of foods. Stay on target with daily calorie and macro goals you set yourself.</p>
+      <ul class="big-bullets">
+        <li>AI macro calculator — describe anything, get numbers</li>
+        <li>USDA food database with barcode-style search</li>
+        <li>Daily calorie, protein, carb, and fat targets</li>
+        <li>TDEE calculator to set your goals intelligently</li>
+        <li>Weight tracking with trend graph</li>
+      </ul>
+    </div>
+    <div class="big-visual">
+      <div class="mock-head">Today · Nutrition</div>
+      <div class="mock-ring-row">
+        <div class="mock-ring">
+          <svg viewBox="0 0 60 60" width="60" height="60">
+            <circle cx="30" cy="30" r="24" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="5"/>
+            <circle cx="30" cy="30" r="24" fill="none" stroke="#e8a030" stroke-width="5" stroke-dasharray="108 43" stroke-linecap="round" transform="rotate(-90 30 30)"/>
+            <text x="30" y="35" text-anchor="middle" fill="#f0ece4" font-size="11" font-family="Inter">71%</text>
+          </svg>
+          <span class="mock-ring-lbl">Calories</span>
+        </div>
+        <div class="mock-ring">
+          <svg viewBox="0 0 60 60" width="60" height="60">
+            <circle cx="30" cy="30" r="24" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="5"/>
+            <circle cx="30" cy="30" r="24" fill="none" stroke="#4ade80" stroke-width="5" stroke-dasharray="120 31" stroke-linecap="round" transform="rotate(-90 30 30)"/>
+            <text x="30" y="35" text-anchor="middle" fill="#f0ece4" font-size="11" font-family="Inter">80%</text>
+          </svg>
+          <span class="mock-ring-lbl">Protein</span>
+        </div>
+        <div class="mock-ring">
+          <svg viewBox="0 0 60 60" width="60" height="60">
+            <circle cx="30" cy="30" r="24" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="5"/>
+            <circle cx="30" cy="30" r="24" fill="none" stroke="#60a5fa" stroke-width="5" stroke-dasharray="90 61" stroke-linecap="round" transform="rotate(-90 30 30)"/>
+            <text x="30" y="35" text-anchor="middle" fill="#f0ece4" font-size="11" font-family="Inter">60%</text>
+          </svg>
+          <span class="mock-ring-lbl">Carbs</span>
+        </div>
+        <div class="mock-ring">
+          <svg viewBox="0 0 60 60" width="60" height="60">
+            <circle cx="30" cy="30" r="24" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="5"/>
+            <circle cx="30" cy="30" r="24" fill="none" stroke="#f87171" stroke-width="5" stroke-dasharray="70 81" stroke-linecap="round" transform="rotate(-90 30 30)"/>
+            <text x="30" y="35" text-anchor="middle" fill="#f0ece4" font-size="11" font-family="Inter">47%</text>
+          </svg>
+          <span class="mock-ring-lbl">Fat</span>
+        </div>
+      </div>
+      <div class="mock-bar-row">
+        <span class="mock-bar-label">Breakfast</span>
+        <div class="mock-bar-track"><div class="mock-bar-fill" style="width:35%;background:#9a8256"></div></div>
+        <span class="mock-bar-val">620</span>
+      </div>
+      <div class="mock-bar-row">
+        <span class="mock-bar-label">Lunch</span>
+        <div class="mock-bar-track"><div class="mock-bar-fill" style="width:50%;background:#9a8256"></div></div>
+        <span class="mock-bar-val">880</span>
+      </div>
+      <div class="mock-bar-row">
+        <span class="mock-bar-label">Dinner</span>
+        <div class="mock-bar-track"><div class="mock-bar-fill" style="width:27%;background:rgba(154,130,86,0.4)"></div></div>
+        <span class="mock-bar-val">270</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Coach -->
+  <div class="big-row reverse">
+    <div class="big-text">
+      <p class="big-eyebrow">AI Coach</p>
+      <h3 class="big-title">A coach that<br><em>knows your data.</em></h3>
+      <p class="big-desc">Ask about your training, your diet, your habits, or your goals. The AI coach has context on your progress and can give advice that actually applies to you.</p>
+      <ul class="big-bullets">
+        <li>Powered by cutting-edge AI language models</li>
+        <li>Aware of your current program, macros, and habits</li>
+        <li>Available any time — no appointments needed</li>
+        <li>Ask anything from form tips to meal ideas</li>
+      </ul>
+    </div>
+    <div class="big-visual">
+      <div class="mock-head">✦ Northstar Coach</div>
+      <div class="mock-chat-msg mock-chat-user">I've been stuck on bench press for 3 weeks at 185 lbs. What should I do?</div>
+      <div class="mock-chat-msg mock-chat-ai">Plateaus at your stage usually come down to one of three things: volume, frequency, or recovery. Since you're on PPL you're benching 2–3x a week which is solid — I'd try adding a pause rep variation or a top set with 2–3 back-off sets to break the adaptation...</div>
+      <div class="mock-chat-msg mock-chat-user" style="margin-top:6px">What should I eat before my push day?</div>
+      <div class="mock-chat-msg mock-chat-ai">With a 2,500 cal goal, aim for 500–700 cal about 90 minutes out. A good combo: oats + banana + protein shake — fast carbs for energy, protein to limit muscle breakdown...</div>
+    </div>
+  </div>
+
+  <!-- Gamification -->
+  <div class="big-row">
+    <div class="big-text">
+      <p class="big-eyebrow">XP & Growth</p>
+      <h3 class="big-title">Level up in the<br><em>game of life.</em></h3>
+      <p class="big-desc">Every habit you log, every workout you finish, every quest you complete — earns XP. Watch your character evolve from a beginner into a champion, mirroring your real-life growth.</p>
+      <ul class="big-bullets">
+        <li>Earn XP for habits, workouts, meals, and quests</li>
+        <li>20+ levels with unique titles and character stages</li>
+        <li>Daily quests and weekly challenges to push you further</li>
+        <li>Animated anime-style avatar that evolves with your rank</li>
+      </ul>
+    </div>
+    <div class="big-visual">
+      <div class="mock-head">Level 7 · The Focused</div>
+      <div class="mock-xp-row">
+        <span class="mock-xp-label">Lv.7</span>
+        <div class="mock-xp-track"><div class="mock-xp-fill" style="width:62%"></div></div>
+        <span style="font-size:11px;color:var(--text-muted)">620/900 XP</span>
+      </div>
+      <div style="margin: 16px 0 12px; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-muted)">Daily Quests</div>
+      <div class="mock-quest">
+        <div class="mock-quest-ico">💧</div>
+        <div><div class="mock-quest-lbl">Log 3 habits today</div><div class="mock-quest-xp">+30 XP · Done ✓</div></div>
+      </div>
+      <div class="mock-quest">
+        <div class="mock-quest-ico">🏋️</div>
+        <div><div class="mock-quest-lbl">Finish a workout session</div><div class="mock-quest-xp">+45 XP · Done ✓</div></div>
+      </div>
+      <div class="mock-quest">
+        <div class="mock-quest-ico">📖</div>
+        <div><div class="mock-quest-lbl">Hit your protein goal</div><div class="mock-quest-xp">+25 XP</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── STATS BAR ──────────────────────────────────────────────────────────── -->
+<div class="stats-bar">
+  <div class="stats-inner">
+    <div class="stat-item">
+      <div class="stat-num">6</div>
+      <div class="stat-label">Core modules</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">100+</div>
+      <div class="stat-label">Exercises</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">20+</div>
+      <div class="stat-label">Levels to earn</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">0</div>
+      <div class="stat-label">Subscriptions</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TESTIMONIALS ───────────────────────────────────────────────────────── -->
+<section class="testimonials">
+  <p class="section-eyebrow">Real results</p>
+  <h2 class="section-title">Built by someone<br><em>who uses it every day.</em></h2>
+  <p class="section-sub" style="margin-bottom:48px">Northstar is a personal project built out of a genuine obsession with self-improvement. Every feature exists because it was needed.</p>
+
+  <div class="testimonials-grid">
+    <div class="testimonial-card">
+      <div class="testimonial-stars">★★★★★</div>
+      <p class="testimonial-text">"Having habits, workouts, and nutrition all in one dark, clean app is exactly what I needed. No more switching between five different apps."</p>
+      <div class="testimonial-author"><strong>Marcus T.</strong> Early user</div>
+    </div>
+    <div class="testimonial-card">
+      <div class="testimonial-stars">★★★★★</div>
+      <p class="testimonial-text">"The AI macro calculator is insane. I typed 'Big Mac meal and a coffee' and it gave me a perfect breakdown in seconds."</p>
+      <div class="testimonial-author"><strong>Sofia R.</strong> Early user</div>
+    </div>
+    <div class="testimonial-card">
+      <div class="testimonial-stars">★★★★★</div>
+      <p class="testimonial-text">"I love that my avatar actually evolves. It sounds silly but seeing it change as I level up keeps me way more consistent."</p>
+      <div class="testimonial-author"><strong>Jake M.</strong> Early user</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ────────────────────────────────────────────────────────────────── -->
+<section class="cta-section">
+  <p class="section-eyebrow">Begin today</p>
+  <h2 class="section-title">Your guiding <em>star</em><br>is waiting.</h2>
+  <p class="section-sub">Free. No account. No subscriptions. Just open it and start — your data stays on your device.</p>
+  <a class="btn-primary" href="/northstar/">Launch Northstar →</a>
+  <p class="hero-note" style="margin-top:24px">Works on iPhone, Android, and desktop &nbsp;·&nbsp; Installable as an app</p>
+</section>
+
+<!-- ── FOOTER ─────────────────────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-logo">✦ Northstar</div>
+  <span class="footer-note">Your daily operating system.</span>
+  <a class="footer-link" href="/northstar/">Open App →</a>
+</footer>
+
+</body>
+</html>
