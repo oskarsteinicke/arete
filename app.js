@@ -2197,30 +2197,19 @@ async function calculateMealDescription() {
   if (btn) { btn.disabled = true; btn.textContent = 'Calculating…'; }
 
   try {
-    const sysPrompt = `You are a nutrition database. Given a meal description, respond with ONLY a JSON array. No explanation, no markdown, no code fences. Each object has: name (string), calories (number), protein (number), carbs (number), fat (number). All macros in grams. Use accurate nutritional data and realistic serving sizes. Example output: [{"name":"Greek yoghurt 200g","calories":120,"protein":10,"carbs":8,"fat":5}]`;
+    const sys = `You are a nutrition database. Return ONLY a JSON array, nothing else. No markdown, no explanation. Each item: {"name":"...","calories":0,"protein":0,"carbs":0,"fat":0}. Macros in grams. Use accurate data and realistic serving sizes.`;
+    const prompt = `Calculate macros for: ${text}`;
+    const url = `https://text.pollinations.ai/${encodeURIComponent(prompt)}?model=openai&system=${encodeURIComponent(sys)}&private=true`;
 
-    const res = await fetch('https://text.pollinations.ai/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messages: [
-          { role: 'system', content: sysPrompt },
-          { role: 'user', content: `Meal: ${text}` }
-        ],
-        model: 'openai',
-        private: true
-      })
-    });
-
-    if (!res.ok) throw new Error('API error');
+    const res = await fetch(url);
     const raw = await res.text();
 
-    // Extract JSON array — handle markdown code blocks too
-    const cleaned = raw.replace(/```json|```/g, '').trim();
+    // Strip markdown fences if present, then extract JSON array
+    const cleaned = raw.replace(/```[\w]*\n?/g, '').trim();
     const match = cleaned.match(/\[[\s\S]*\]/);
-    if (!match) throw new Error('No JSON array in response');
+    if (!match) throw new Error('No JSON');
     const items = JSON.parse(match[0]);
-    if (!Array.isArray(items) || !items.length) throw new Error('Empty result');
+    if (!Array.isArray(items) || !items.length) throw new Error('Empty');
 
     _parsedMealItems = items.map(it => ({
       name: String(it.name || 'Food'),
