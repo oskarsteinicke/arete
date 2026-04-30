@@ -31,6 +31,8 @@ let settings;
 let calYear = new Date().getFullYear();
 let calMonth = new Date().getMonth();
 let calSelectedDate = '';
+let calView = 'monthly'; // 'monthly' | 'weekly' | 'daily'
+let calTasks = {};
 const USDA_KEY = 'DEMO_KEY';
 
 // ── Unit helpers ──────────────────────────────────────────────────────────
@@ -845,9 +847,12 @@ function injectGamificationStyles() {
     .w-ex-tip-first{color:var(--text-dim);font-style:italic}
     /* Calendar */
     .cal-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 8px}
-    .cal-month-label{font-family:var(--serif);font-size:20px;color:var(--text)}
-    .cal-nav-btn{background:none;border:none;color:var(--text);font-size:28px;padding:4px 10px;cursor:pointer;line-height:1}
+    .cal-month-label{font-family:var(--serif);font-size:18px;color:var(--text);text-align:center;flex:1}
+    .cal-nav-btn{background:none;border:none;color:var(--text);font-size:28px;padding:4px 10px;cursor:pointer;line-height:1;flex-shrink:0}
     .cal-nav-disabled{opacity:0.25;pointer-events:none}
+    .cal-view-seg{display:flex;background:var(--surface2);border-radius:20px;padding:3px;gap:2px;margin:0 20px 10px}
+    .cal-vbtn{flex:1;border:none;background:none;color:var(--text-dim);font-size:12px;padding:6px 4px;border-radius:16px;cursor:pointer;transition:all .2s;font-weight:600;letter-spacing:.02em}
+    .cal-vbtn-active{background:var(--accent);color:#1a1208}
     .cal-legend{display:flex;flex-wrap:wrap;gap:10px;padding:0 20px 10px}
     .cal-leg{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-dim)}
     .cal-dow-row{display:grid;grid-template-columns:repeat(7,1fr);padding:0 8px}
@@ -856,7 +861,7 @@ function injectGamificationStyles() {
     .cal-cell{min-height:54px;padding:5px 2px 3px;border-radius:8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;transition:background .15s}
     .cal-cell:active{background:rgba(255,255,255,0.06)}
     .cal-empty{pointer-events:none}
-    .cal-future{opacity:0.25;pointer-events:none}
+    .cal-future{opacity:0.45}
     .cal-today .cal-num{color:var(--accent-b);font-weight:800}
     .cal-selected{background:var(--surface2)!important;outline:1px solid rgba(154,130,86,.3)}
     .cal-num{font-size:13px;color:var(--text);line-height:1.3}
@@ -868,6 +873,32 @@ function injectGamificationStyles() {
     .cal-di span{flex:1;line-height:1.4}
     .cal-di-sub{font-size:11px;color:var(--text-dim);padding:2px 0 4px 22px;line-height:1.4}
     .cal-di-empty{font-size:12px;color:var(--text-dim);font-style:italic;padding:16px 0}
+    /* Weekly strips */
+    .cal-week-cols{display:grid;grid-template-columns:repeat(7,1fr);padding:0 8px;gap:2px}
+    .cal-wcol{padding:8px 2px 6px;border-radius:8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;transition:background .15s}
+    .cal-wcol:active{background:rgba(255,255,255,0.06)}
+    .cal-wcol-sel{background:var(--surface2)!important;outline:1px solid rgba(154,130,86,.3)}
+    .cal-wday{font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em}
+    .cal-wnum{font-size:16px;color:var(--text);font-weight:600;line-height:1.2}
+    .cal-wnum-today{color:var(--accent-b);font-weight:800}
+    .cal-wfuture{opacity:0.45}
+    /* Daily view */
+    .cal-daily-wrap{padding:0 20px 80px}
+    .cal-daily-sec{margin-bottom:4px}
+    .cal-daily-sec-hdr{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);padding:16px 0 6px;display:flex;align-items:center;justify-content:space-between}
+    /* Tasks */
+    .cal-task-list{margin-bottom:4px}
+    .cal-task-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+    .cal-task-cb{width:20px;height:20px;border-radius:50%;border:2px solid var(--accent);background:none;cursor:pointer;flex-shrink:0;padding:0;display:flex;align-items:center;justify-content:center;transition:all .2s;font-size:12px;color:transparent}
+    .cal-task-cb-done{background:var(--accent);color:#1a1208}
+    .cal-task-text{flex:1;font-size:13px;color:var(--text);line-height:1.4;background:none;border:none;outline:none;padding:0}
+    .cal-task-text-done{text-decoration:line-through;color:var(--text-dim)}
+    .cal-task-del{background:none;border:none;color:var(--text-dim);font-size:18px;cursor:pointer;padding:0 2px;line-height:1;opacity:0.5}
+    .cal-task-del:active{opacity:1;color:var(--fat)}
+    .cal-task-add{display:flex;gap:8px;align-items:center;margin-top:8px}
+    .cal-task-input{flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;font-family:inherit}
+    .cal-task-input:focus{border-color:var(--accent)}
+    .cal-task-add-btn{background:var(--accent);border:none;color:#1a1208;border-radius:10px;width:36px;height:36px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700}
     /* Unit toggle */
     .unit-toggle{display:flex;background:var(--surface2);border-radius:8px;padding:2px;gap:2px}
     .unit-btn{background:none;border:none;color:var(--text-dim);font-size:13px;font-weight:600;padding:6px 16px;border-radius:6px;cursor:pointer;transition:all .2s}
@@ -999,6 +1030,7 @@ async function init() {
   gamification = LS.get('hvi_gamification', { xp: 0, pillarXP: {}, journalXPDate: '', weeklyStats: { weekKey: '', workoutDays: [], journalDays: [], proteinDays: [] } });
   achievements = LS.get('hvi_achievements', []);
   settings = LS.get('hvi_settings', { units: 'metric' });
+  calTasks = LS.get('hvi_cal_tasks', {});
 
   injectAdaptiveStyles();
   injectExerciseBrowserStyles();
@@ -2740,24 +2772,122 @@ function renderDietTrend() {
 // ══════════════════════════════════════════════════════════════════════════
 // RENDER: CALENDAR
 // ══════════════════════════════════════════════════════════════════════════
-function calPrevMonth() {
-  if (calMonth === 0) { calMonth = 11; calYear--; } else calMonth--;
+// ── Calendar task helpers ─────────────────────────────────────────────────
+function addCalTask(date, text) {
+  text = (text || '').trim();
+  if (!text) return;
+  if (!calTasks[date]) calTasks[date] = [];
+  calTasks[date].push({ id: 't_' + Date.now(), text, done: false });
+  LS.set('hvi_cal_tasks', calTasks);
+}
+function toggleCalTask(date, id) {
+  const t = (calTasks[date] || []).find(t => t.id === id);
+  if (t) { t.done = !t.done; LS.set('hvi_cal_tasks', calTasks); }
+}
+function deleteCalTask(date, id) {
+  if (!calTasks[date]) return;
+  calTasks[date] = calTasks[date].filter(t => t.id !== id);
+  LS.set('hvi_cal_tasks', calTasks);
+}
+function submitCalTask(date) {
+  const inp = document.getElementById('cal-task-inp-' + date);
+  if (!inp) return;
+  addCalTask(date, inp.value);
+  inp.value = '';
+  _refreshCalTasks(date);
+}
+function _onCalTaskKey(e, date) {
+  if (e.key === 'Enter') { e.preventDefault(); submitCalTask(date); }
+}
+function _refreshCalTasks(date) {
+  const el = document.getElementById('cal-tasks-' + date);
+  if (el) el.innerHTML = _buildTaskListHTML(date);
+}
+function _toggleCalTaskUI(date, id) {
+  toggleCalTask(date, id);
+  _refreshCalTasks(date);
+  // also refresh dots in monthly/weekly
+  const dot = document.getElementById('cal-task-dot-' + date);
+  if (dot) { const tasks = calTasks[date] || []; dot.style.display = tasks.length ? '' : 'none'; }
+}
+function _deleteCalTaskUI(date, id) {
+  deleteCalTask(date, id);
+  _refreshCalTasks(date);
+}
+
+function _buildTaskListHTML(date) {
+  const tasks = calTasks[date] || [];
+  const rows = tasks.map(t => `
+    <div class="cal-task-item">
+      <button class="cal-task-cb${t.done ? ' cal-task-cb-done' : ''}"
+        onclick="_toggleCalTaskUI('${date}','${t.id}')">✓</button>
+      <span class="cal-task-text${t.done ? ' cal-task-text-done' : ''}">${esc(t.text)}</span>
+      <button class="cal-task-del" onclick="_deleteCalTaskUI('${date}','${t.id}')">×</button>
+    </div>`).join('');
+  return rows;
+}
+
+function _buildTasksSection(date) {
+  return `
+    <div class="cal-daily-sec">
+      <div class="cal-daily-sec-hdr">📋 Tasks</div>
+      <div class="cal-task-list" id="cal-tasks-${date}">${_buildTaskListHTML(date)}</div>
+      <div class="cal-task-add">
+        <input class="cal-task-input" id="cal-task-inp-${date}" placeholder="Add a task…"
+          onkeydown="_onCalTaskKey(event,'${date}')">
+        <button class="cal-task-add-btn" onclick="submitCalTask('${date}')">+</button>
+      </div>
+    </div>`;
+}
+
+// ── Calendar navigation ───────────────────────────────────────────────────
+function setCalView(v) { calView = v; renderCalendar(); }
+
+function calPrev() {
+  const d = new Date(calSelectedDate + 'T00:00:00');
+  if (calView === 'daily')        { d.setDate(d.getDate() - 1); }
+  else if (calView === 'weekly')  { d.setDate(d.getDate() - 7); }
+  else { if (calMonth === 0) { calMonth = 11; calYear--; } else calMonth--; renderCalendar(); return; }
+  calSelectedDate = d.toLocaleDateString('en-CA');
+  calYear = d.getFullYear(); calMonth = d.getMonth();
   renderCalendar();
 }
-function calNextMonth() {
-  const now = new Date();
-  if (calYear > now.getFullYear() || (calYear === now.getFullYear() && calMonth >= now.getMonth())) return;
-  if (calMonth === 11) { calMonth = 0; calYear++; } else calMonth++;
+function calNext() {
+  const d = new Date(calSelectedDate + 'T00:00:00');
+  if (calView === 'daily')        { d.setDate(d.getDate() + 1); }
+  else if (calView === 'weekly')  { d.setDate(d.getDate() + 7); }
+  else {
+    const now = new Date();
+    if (calYear > now.getFullYear() || (calYear === now.getFullYear() && calMonth >= now.getMonth())) return;
+    if (calMonth === 11) { calMonth = 0; calYear++; } else calMonth++;
+    renderCalendar(); return;
+  }
+  calSelectedDate = d.toLocaleDateString('en-CA');
+  calYear = d.getFullYear(); calMonth = d.getMonth();
   renderCalendar();
 }
+// Legacy aliases kept for any inline calls
+function calPrevMonth() { calPrev(); }
+function calNextMonth() { calNext(); }
+
 function calSelectDate(date) {
   calSelectedDate = date;
-  const el = document.getElementById('cal-detail');
-  if (el) {
-    el.innerHTML = buildCalDayDetail(date);
-    document.querySelectorAll('.cal-cell').forEach(c => c.classList.remove('cal-selected'));
-    const sel = document.querySelector(`.cal-cell[data-date="${date}"]`);
-    if (sel) sel.classList.add('cal-selected');
+  if (calView === 'monthly') {
+    const el = document.getElementById('cal-detail');
+    if (el) {
+      el.innerHTML = buildCalDayDetail(date);
+      document.querySelectorAll('.cal-cell').forEach(c => c.classList.remove('cal-selected'));
+      const sel = document.querySelector(`.cal-cell[data-date="${date}"]`);
+      if (sel) sel.classList.add('cal-selected');
+    }
+  } else if (calView === 'weekly') {
+    const el = document.getElementById('cal-detail');
+    if (el) {
+      el.innerHTML = buildCalDayDetail(date);
+      document.querySelectorAll('.cal-wcol').forEach(c => c.classList.remove('cal-wcol-sel'));
+      const sel = document.querySelector(`.cal-wcol[data-date="${date}"]`);
+      if (sel) sel.classList.add('cal-wcol-sel');
+    }
   }
 }
 
@@ -2766,16 +2896,30 @@ function buildCalDayDetail(date) {
   const d = new Date(date + 'T00:00:00');
   const label = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
   const isToday = date === today();
+  const isFuture = date > today();
 
-  // Habits
+  // ── Tasks ──
+  const tasksHTML = _buildTasksSection(date);
+
+  if (isFuture) {
+    return `<div class="cal-detail-hdr">${label}</div>${tasksHTML}`;
+  }
+
+  // ── Habits ──
   const doneHabits = isToday
     ? habits.filter(h => log[h.id]?.completedToday)
     : habits.filter(h => log[h.id]?.lastCompletedDate === date);
-  const habitHTML = doneHabits.length
-    ? doneHabits.map(h => `<div class="cal-di">✓ <span>${esc(h.name)}</span></div>`).join('')
-    : '';
+  const totalHabits = habits.length;
+  let habitHTML = '';
+  if (totalHabits) {
+    const pct = Math.round(doneHabits.length / totalHabits * 100);
+    const rows = doneHabits.map(h => `<div class="cal-di">✓ <span>${esc(h.name)}</span></div>`).join('');
+    const missed = habits.filter(h => !doneHabits.includes(h));
+    const missedRows = missed.map(h => `<div class="cal-di" style="opacity:.4">○ <span>${esc(h.name)}</span></div>`).join('');
+    habitHTML = `<div class="cal-daily-sec-hdr">✅ Habits <span style="font-size:11px;font-weight:400;color:var(--accent-b)">${doneHabits.length}/${totalHabits} · ${pct}%</span></div>${rows}${missedRows}`;
+  }
 
-  // Workout
+  // ── Workout ──
   const wl = workoutLog[date];
   const workoutDone = wl?.exercises?.some(e => e.sets?.some(s => s.completed));
   let workoutHTML = '';
@@ -2783,45 +2927,97 @@ function buildCalDayDetail(date) {
     const prog = findProgram(wl.programId);
     const day = prog?.days[wl.dayIndex % prog.days.length];
     const exDone = wl.exercises.filter(e => e.sets.some(s => s.completed));
-    workoutHTML = `<div class="cal-di cal-di-workout">💪 <span>${day ? day.name + ' · ' + prog.name : 'Workout'}</span></div>`
-      + exDone.map(e => {
-          const ex = lookupExercise(e.exerciseId);
-          const sets = e.sets.filter(s => s.completed);
-          const best = sets.length ? Math.max(...sets.map(s => s.weight)) : 0;
-          return `<div class="cal-di-sub">${esc(ex?.name || 'Exercise')} — ${sets.length} sets${best ? ' · ' + best + ' ' + wtUnit() : ''}</div>`;
-        }).join('');
+    const exRows = exDone.map(e => {
+      const ex = lookupExercise(e.exerciseId);
+      const sets = e.sets.filter(s => s.completed);
+      const best = sets.length ? Math.max(...sets.map(s => s.weight)) : 0;
+      return `<div class="cal-di-sub">${esc(ex?.name || 'Exercise')} — ${sets.length} sets${best ? ' · best ' + best + wtUnit() : ''}</div>`;
+    }).join('');
+    workoutHTML = `<div class="cal-daily-sec-hdr">💪 Workout</div>
+      <div class="cal-di">🏋️ <span>${day ? day.name + ' · ' + prog.name : 'Workout logged'}</span></div>${exRows}`;
   }
 
-  // Meals
+  // ── Meals ──
   const meals = mealLog[date]?.meals || [];
-  const mealsHTML = meals.map(m => {
-    const cal = m.items.reduce((s, i) => s + (i.calories || 0), 0);
-    const p   = m.items.reduce((s, i) => s + (i.protein  || 0), 0);
-    return `<div class="cal-di cal-di-meal">🍽 <span>${esc(m.name)} — ${cal} cal · ${p}g P</span></div>`;
-  }).join('');
+  let mealsHTML = '';
+  if (meals.length) {
+    const totalCal = meals.reduce((s, m) => s + m.items.reduce((a, i) => a + (i.calories || 0), 0), 0);
+    const totalP   = meals.reduce((s, m) => s + m.items.reduce((a, i) => a + (i.protein  || 0), 0), 0);
+    const rows = meals.map(m => {
+      const cal = m.items.reduce((s, i) => s + (i.calories || 0), 0);
+      const p   = m.items.reduce((s, i) => s + (i.protein  || 0), 0);
+      return `<div class="cal-di">🍽 <span>${esc(m.name)} — ${cal} cal · ${p}g P</span></div>`;
+    }).join('');
+    mealsHTML = `<div class="cal-daily-sec-hdr">🍽 Meals <span style="font-size:11px;font-weight:400;color:var(--accent-b)">${totalCal} cal · ${totalP}g P</span></div>${rows}`;
+  }
 
-  // Weight
+  // ── Weight ──
   const w = weightLog[date];
-  const weightHTML = w ? `<div class="cal-di">⚖️ <span>${w} ${wtUnit()}</span></div>` : '';
+  const weightHTML = w ? `<div class="cal-daily-sec-hdr">⚖️ Weight</div><div class="cal-di">⚖️ <span>${w} ${wtUnit()}</span></div>` : '';
 
-  // Journal
+  // ── Journal ──
   const je = journal[date] || {};
   const hasJournal = Object.values(je).some(Boolean);
   let journalHTML = '';
   if (hasJournal) {
-    const parts = [je.wins && `<div class="cal-di-sub">Wins: ${esc(je.wins.slice(0,80))}${je.wins.length>80?'…':''}</div>`,
-                   je.lessons && `<div class="cal-di-sub">Lessons: ${esc(je.lessons.slice(0,80))}${je.lessons.length>80?'…':''}</div>`].filter(Boolean).join('');
-    journalHTML = `<div class="cal-di">📖 <span>Journal</span></div>${parts}`;
+    const parts = [
+      je.wins    && `<div class="cal-di-sub">Wins: ${esc(je.wins.slice(0,100))}${je.wins.length>100?'…':''}</div>`,
+      je.lessons && `<div class="cal-di-sub">Lessons: ${esc(je.lessons.slice(0,100))}${je.lessons.length>100?'…':''}</div>`
+    ].filter(Boolean).join('');
+    journalHTML = `<div class="cal-daily-sec-hdr">📖 Journal</div><div class="cal-di">📖 <span>Entry</span></div>${parts}`;
   }
 
-  const nothing = !doneHabits.length && !workoutDone && !meals.length && !w && !hasJournal;
+  const nothingLogged = !doneHabits.length && !workoutDone && !meals.length && !w && !hasJournal;
+  const nothingMsg = nothingLogged ? '<div class="cal-di-empty">Nothing logged this day.</div>' : '';
 
   return `<div class="cal-detail-hdr">${label}</div>
-    ${nothing ? '<div class="cal-di-empty">Nothing logged this day.</div>' : ''}
-    ${habitHTML}${workoutHTML}${mealsHTML}${weightHTML}${journalHTML}`;
+    ${tasksHTML}${nothingMsg}${habitHTML}${workoutHTML}${mealsHTML}${weightHTML}${journalHTML}`;
 }
 
-function renderCalendar() {
+// ── Dot builder (shared) ─────────────────────────────────────────────────
+function _calDots(date) {
+  const t = today();
+  const isFuture = date > t;
+  const isToday = date === t;
+  const hasTasks = (calTasks[date] || []).length > 0;
+  if (isFuture) return hasTasks ? `<span class="cal-dot" style="background:#f472b6"></span>` : '';
+  const hasWorkout = workoutLog[date]?.exercises?.some(e => e.sets?.some(s => s.completed));
+  const hasMeal    = (mealLog[date]?.meals || []).length > 0;
+  const hasJournal = Object.values(journal[date] || {}).some(Boolean);
+  const hasWeight  = !!weightLog[date];
+  const habitsDone = isToday
+    ? habits.filter(h => log[h.id]?.completedToday).length
+    : habits.filter(h => log[h.id]?.lastCompletedDate === date).length;
+  const habitPct = habits.length ? habitsDone / habits.length : 0;
+  return [
+    hasTasks    ? `<span class="cal-dot" style="background:#f472b6"></span>` : '',
+    habitsDone > 0 ? `<span class="cal-dot" style="background:${habitPct >= 1 ? 'var(--accent-b)' : 'var(--accent)'}"></span>` : '',
+    hasWorkout  ? `<span class="cal-dot" style="background:#5b9cf6"></span>` : '',
+    hasMeal     ? `<span class="cal-dot" style="background:#4ade80"></span>` : '',
+    hasJournal  ? `<span class="cal-dot" style="background:#a78bfa"></span>` : '',
+    hasWeight   ? `<span class="cal-dot" style="background:#fb923c"></span>` : '',
+  ].filter(Boolean).join('');
+}
+
+function _calViewToggle() {
+  return `<div class="cal-view-seg ani">
+    <button class="cal-vbtn${calView==='monthly'?' cal-vbtn-active':''}" onclick="setCalView('monthly')">Month</button>
+    <button class="cal-vbtn${calView==='weekly'?' cal-vbtn-active':''}" onclick="setCalView('weekly')">Week</button>
+    <button class="cal-vbtn${calView==='daily'?' cal-vbtn-active':''}" onclick="setCalView('daily')">Day</button>
+  </div>`;
+}
+
+function _calLegend() {
+  return `<div class="cal-legend ani">
+    <span class="cal-leg"><span class="cal-dot" style="background:#f472b6"></span> Tasks</span>
+    <span class="cal-leg"><span class="cal-dot" style="background:var(--accent)"></span> Habits</span>
+    <span class="cal-leg"><span class="cal-dot" style="background:#5b9cf6"></span> Workout</span>
+    <span class="cal-leg"><span class="cal-dot" style="background:#4ade80"></span> Meals</span>
+    <span class="cal-leg"><span class="cal-dot" style="background:#a78bfa"></span> Journal</span>
+  </div>`;
+}
+
+function renderCalMonthly() {
   if (!calSelectedDate) calSelectedDate = today();
   const firstDay = new Date(calYear, calMonth, 1);
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
@@ -2835,48 +3031,197 @@ function renderCalendar() {
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(calYear, calMonth, day).toLocaleDateString('en-CA');
     const isFuture = date > t;
-    const isToday = date === t;
-    const isSel = date === calSelectedDate;
-
-    const hasWorkout = !isFuture && workoutLog[date]?.exercises?.some(e => e.sets?.some(s => s.completed));
-    const hasMeal    = !isFuture && (mealLog[date]?.meals || []).length > 0;
-    const hasJournal = !isFuture && Object.values(journal[date] || {}).some(Boolean);
-    const hasWeight  = !isFuture && !!weightLog[date];
-    const habitsDone = isFuture ? 0 : isToday
-      ? habits.filter(h => log[h.id]?.completedToday).length
-      : habits.filter(h => log[h.id]?.lastCompletedDate === date).length;
-    const habitPct = habits.length ? habitsDone / habits.length : 0;
-
-    const dots = [
-      habitsDone > 0 ? `<span class="cal-dot" style="background:${habitPct >= 1 ? 'var(--accent-b)' : 'var(--accent)'}"></span>` : '',
-      hasWorkout ? `<span class="cal-dot" style="background:#5b9cf6"></span>` : '',
-      hasMeal    ? `<span class="cal-dot" style="background:#4ade80"></span>` : '',
-      hasJournal ? `<span class="cal-dot" style="background:#a78bfa"></span>` : '',
-      hasWeight  ? `<span class="cal-dot" style="background:#fb923c"></span>` : '',
-    ].filter(Boolean).join('');
-
+    const isToday  = date === t;
+    const isSel    = date === calSelectedDate;
     cells += `<div class="cal-cell${isToday?' cal-today':''}${isSel?' cal-selected':''}${isFuture?' cal-future':''}" data-date="${date}" onclick="calSelectDate('${date}')">
       <div class="cal-num">${day}</div>
-      <div class="cal-dots">${dots}</div>
+      <div class="cal-dots">${_calDots(date)}</div>
     </div>`;
   }
 
   document.getElementById('view').innerHTML = `
     <div class="cal-hdr ani">
-      <button class="cal-nav-btn" onclick="calPrevMonth()">‹</button>
+      <button class="cal-nav-btn" onclick="calPrev()">‹</button>
       <div class="cal-month-label">${monthLabel}</div>
-      <button class="cal-nav-btn${isCurrentMonth?' cal-nav-disabled':''}" onclick="calNextMonth()">›</button>
+      <button class="cal-nav-btn${isCurrentMonth?' cal-nav-disabled':''}" onclick="calNext()">›</button>
     </div>
-    <div class="cal-legend ani">
-      <span class="cal-leg"><span class="cal-dot" style="background:var(--accent)"></span> Habits</span>
-      <span class="cal-leg"><span class="cal-dot" style="background:#5b9cf6"></span> Workout</span>
-      <span class="cal-leg"><span class="cal-dot" style="background:#4ade80"></span> Meals</span>
-      <span class="cal-leg"><span class="cal-dot" style="background:#a78bfa"></span> Journal</span>
-      <span class="cal-leg"><span class="cal-dot" style="background:#fb923c"></span> Weight</span>
-    </div>
+    ${_calViewToggle()}
+    ${_calLegend()}
     <div class="cal-dow-row">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="cal-dow">${d}</div>`).join('')}</div>
     <div class="cal-grid ani">${cells}</div>
     <div class="cal-detail ani" id="cal-detail">${buildCalDayDetail(calSelectedDate)}</div>`;
+}
+
+function renderCalWeekly() {
+  if (!calSelectedDate) calSelectedDate = today();
+  const sel = new Date(calSelectedDate + 'T00:00:00');
+  // find Monday of this week
+  const dow = sel.getDay(); // 0=Sun
+  const monday = new Date(sel);
+  monday.setDate(sel.getDate() - (dow === 0 ? 6 : dow - 1));
+  const t = today();
+  const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  let cols = '';
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday); d.setDate(monday.getDate() + i);
+    const date = d.toLocaleDateString('en-CA');
+    days.push(date);
+    const isFuture = date > t;
+    const isToday  = date === t;
+    const isSel    = date === calSelectedDate;
+    cols += `<div class="cal-wcol${isSel?' cal-wcol-sel':''}${isFuture?' cal-wfuture':''}" data-date="${date}" onclick="calSelectDate('${date}')">
+      <div class="cal-wday">${dayNames[i]}</div>
+      <div class="cal-wnum${isToday?' cal-wnum-today':''}">${d.getDate()}</div>
+      <div class="cal-dots" style="margin-top:4px">${_calDots(date)}</div>
+    </div>`;
+  }
+  // week label
+  const startLabel = new Date(monday).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const endDay = new Date(monday); endDay.setDate(monday.getDate() + 6);
+  const endLabel = endDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  document.getElementById('view').innerHTML = `
+    <div class="cal-hdr ani">
+      <button class="cal-nav-btn" onclick="calPrev()">‹</button>
+      <div class="cal-month-label">${startLabel} – ${endLabel}</div>
+      <button class="cal-nav-btn" onclick="calNext()">›</button>
+    </div>
+    ${_calViewToggle()}
+    ${_calLegend()}
+    <div class="cal-week-cols ani">${cols}</div>
+    <div class="cal-detail ani" id="cal-detail">${buildCalDayDetail(calSelectedDate)}</div>`;
+}
+
+function renderCalDaily() {
+  if (!calSelectedDate) calSelectedDate = today();
+  const d = new Date(calSelectedDate + 'T00:00:00');
+  const label = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+  document.getElementById('view').innerHTML = `
+    <div class="cal-hdr ani">
+      <button class="cal-nav-btn" onclick="calPrev()">‹</button>
+      <div class="cal-month-label" style="font-size:15px">${label}</div>
+      <button class="cal-nav-btn" onclick="calNext()">›</button>
+    </div>
+    ${_calViewToggle()}
+    <div class="cal-daily-wrap ani">${_buildDailyBody(calSelectedDate)}</div>`;
+}
+
+function _buildDailyBody(date) {
+  const t = today();
+  const isToday  = date === t;
+  const isFuture = date > t;
+
+  // ── Tasks ──
+  const tasksHTML = _buildTasksSection(date);
+
+  if (isFuture) {
+    // Future: show planned workout + tasks only
+    const prog = findProgram(workoutMeta.activeProgram);
+    let plannedHTML = '';
+    if (prog) {
+      // figure out which day index this date would be
+      const dayIndex = workoutMeta.currentDayIndex % prog.days.length;
+      const day = prog.days[dayIndex];
+      plannedHTML = `<div class="cal-daily-sec-hdr">💪 Planned Workout</div>
+        <div class="cal-di">📅 <span>${day.name} · ${prog.name}</span></div>
+        ${(day.exercises || []).map(eid => {
+          const ex = lookupExercise(eid);
+          return ex ? `<div class="cal-di-sub">• ${esc(ex.name)}</div>` : '';
+        }).join('')}`;
+    }
+    return `<div class="cal-daily-sec">${tasksHTML}</div>${plannedHTML ? `<div class="cal-daily-sec">${plannedHTML}</div>` : ''}`;
+  }
+
+  // ── Habits ──
+  const doneHabits = isToday
+    ? habits.filter(h => log[h.id]?.completedToday)
+    : habits.filter(h => log[h.id]?.lastCompletedDate === date);
+  const totalHabits = habits.length;
+  let habitHTML = '';
+  if (totalHabits) {
+    const pct = Math.round(doneHabits.length / totalHabits * 100);
+    const doneRows  = doneHabits.map(h => `<div class="cal-di">✓ <span>${esc(h.name)}</span></div>`).join('');
+    const missedRows = habits.filter(h => !doneHabits.includes(h))
+      .map(h => `<div class="cal-di" style="opacity:.4">○ <span>${esc(h.name)}</span></div>`).join('');
+    habitHTML = `<div class="cal-daily-sec">
+      <div class="cal-daily-sec-hdr">✅ Habits <span style="font-size:11px;font-weight:400;color:var(--accent-b)">${doneHabits.length}/${totalHabits} · ${pct}%</span></div>
+      ${doneRows}${missedRows}
+    </div>`;
+  }
+
+  // ── Workout ──
+  const wl = workoutLog[date];
+  const workoutDone = wl?.exercises?.some(e => e.sets?.some(s => s.completed));
+  let workoutHTML = '';
+  if (workoutDone) {
+    const prog = findProgram(wl.programId);
+    const day  = prog?.days[wl.dayIndex % prog.days.length];
+    const exDone = wl.exercises.filter(e => e.sets.some(s => s.completed));
+    const exRows = exDone.map(e => {
+      const ex = lookupExercise(e.exerciseId);
+      const sets = e.sets.filter(s => s.completed);
+      const best = sets.length ? Math.max(...sets.map(s => s.weight)) : 0;
+      return `<div class="cal-di-sub">• ${esc(ex?.name || 'Exercise')} — ${sets.length} sets${best ? ' · best ' + best + wtUnit() : ''}</div>`;
+    }).join('');
+    workoutHTML = `<div class="cal-daily-sec">
+      <div class="cal-daily-sec-hdr">💪 Workout</div>
+      <div class="cal-di">🏋️ <span>${day ? day.name + ' · ' + prog.name : 'Workout logged'}</span></div>${exRows}
+    </div>`;
+  }
+
+  // ── Meals ──
+  const meals = mealLog[date]?.meals || [];
+  let mealsHTML = '';
+  if (meals.length) {
+    const totalCal = meals.reduce((s, m) => s + m.items.reduce((a, i) => a + (i.calories || 0), 0), 0);
+    const totalP   = meals.reduce((s, m) => s + m.items.reduce((a, i) => a + (i.protein  || 0), 0), 0);
+    const rows = meals.map(m => {
+      const cal = m.items.reduce((s, i) => s + (i.calories || 0), 0);
+      const p   = m.items.reduce((s, i) => s + (i.protein  || 0), 0);
+      return `<div class="cal-di">🍽 <span>${esc(m.name)} — ${cal} cal · ${p}g P</span></div>`;
+    }).join('');
+    mealsHTML = `<div class="cal-daily-sec">
+      <div class="cal-daily-sec-hdr">🍽 Meals <span style="font-size:11px;font-weight:400;color:var(--accent-b)">${totalCal} cal · ${totalP}g P</span></div>
+      ${rows}
+    </div>`;
+  }
+
+  // ── Weight ──
+  const w = weightLog[date];
+  const weightHTML = w ? `<div class="cal-daily-sec">
+    <div class="cal-daily-sec-hdr">⚖️ Weight</div>
+    <div class="cal-di">⚖️ <span>${w} ${wtUnit()}</span></div>
+  </div>` : '';
+
+  // ── Journal ──
+  const je = journal[date] || {};
+  const hasJournal = Object.values(je).some(Boolean);
+  let journalHTML = '';
+  if (hasJournal) {
+    const parts = [
+      je.wins    && `<div class="cal-di-sub">Wins: ${esc(je.wins.slice(0,120))}${je.wins.length>120?'…':''}</div>`,
+      je.lessons && `<div class="cal-di-sub">Lessons: ${esc(je.lessons.slice(0,120))}${je.lessons.length>120?'…':''}</div>`
+    ].filter(Boolean).join('');
+    journalHTML = `<div class="cal-daily-sec">
+      <div class="cal-daily-sec-hdr">📖 Journal</div>
+      <div class="cal-di">📖 <span>Entry</span></div>${parts}
+    </div>`;
+  }
+
+  const nothingLogged = !totalHabits && !workoutDone && !meals.length && !w && !hasJournal;
+
+  return `<div class="cal-daily-sec">${tasksHTML}</div>
+    ${nothingLogged ? '<div class="cal-di-empty" style="padding:20px 0">Nothing logged this day.</div>' : ''}
+    ${habitHTML}${workoutHTML}${mealsHTML}${weightHTML}${journalHTML}`;
+}
+
+function renderCalendar() {
+  if (!calSelectedDate) calSelectedDate = today();
+  if (calView === 'weekly') renderCalWeekly();
+  else if (calView === 'daily') renderCalDaily();
+  else renderCalMonthly();
 }
 
 // ══════════════════════════════════════════════════════════════════════════
