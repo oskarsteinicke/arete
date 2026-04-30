@@ -1090,8 +1090,8 @@ function checkReset() {
     }
   });
 
-  // Advance workout day if last workout was completed
-  if (workoutMeta.lastWorkoutDate && workoutMeta.lastWorkoutDate !== t) {
+  // Advance workout day only if a workout was completed yesterday
+  if (workoutMeta.lastWorkoutDate === yesterday()) {
     const prog = findProgram(workoutMeta.activeProgram);
     if (prog) workoutMeta.currentDayIndex = (workoutMeta.currentDayIndex + 1) % prog.days.length;
     LS.set('hvi_workout_meta', workoutMeta);
@@ -1445,11 +1445,18 @@ function saveHabit() {
 // ══════════════════════════════════════════════════════════════════════════
 function renderWorkout() {
   const prog = findProgram(workoutMeta.activeProgram) || WORKOUT_PROGRAMS[0];
-  const day = prog.days[workoutMeta.currentDayIndex % prog.days.length];
+  const dayCount = prog.days.length;
+  const dayIdx = workoutMeta.currentDayIndex % dayCount;
+  const day = prog.days[dayIdx];
   const todayLog = workoutLog[today()];
 
   document.getElementById('view').innerHTML = `
     <div class="page-head ani"><div class="page-title">Workout</div><div class="page-sub">Train with purpose. Build discipline.</div></div>
+    <div class="w-day-nav ani">
+      <button class="w-day-arrow" onclick="shiftWorkoutDay(-1)">&#8249;</button>
+      <div class="w-day-label">Day ${dayIdx + 1} of ${dayCount}</div>
+      <button class="w-day-arrow" onclick="shiftWorkoutDay(1)">&#8250;</button>
+    </div>
     <div class="w-card ani" onclick="go('workoutActive')">
       <div class="w-day-badge">${day.name}</div>
       <div class="w-card-name">${prog.name}</div>
@@ -1700,6 +1707,17 @@ function finishWorkout() {
   trackWeeklyWorkout();
   checkDailyQuests();
   go('workout');
+}
+
+function shiftWorkoutDay(delta) {
+  const prog = findProgram(workoutMeta.activeProgram) || WORKOUT_PROGRAMS[0];
+  const len = prog.days.length;
+  workoutMeta.currentDayIndex = ((workoutMeta.currentDayIndex + delta) % len + len) % len;
+  // Clear today's log so the new day initializes fresh when entering active workout
+  delete workoutLog[today()];
+  LS.set('hvi_workout_meta', workoutMeta);
+  LS.set('hvi_workout_log', workoutLog);
+  renderWorkout();
 }
 
 function deleteCustomProgram(id) {

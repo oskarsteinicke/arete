@@ -243,6 +243,35 @@ nav {
 .w-card-days { font-size: 11px; color: var(--text-muted); margin-top: 8px; }
 .w-card.active { border-color: var(--accent); }
 
+.w-day-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px 12px;
+}
+.w-day-label {
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.w-day-arrow {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 22px;
+  color: var(--accent);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: background .15s, border-color .15s;
+}
+.w-day-arrow:active { background: var(--surface2); border-color: var(--accent); }
 .w-day-badge {
   display: inline-block;
   background: rgba(154,130,86,0.15);
