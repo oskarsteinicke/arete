@@ -73,13 +73,13 @@ nav {
   border: none;
   cursor: pointer;
   color: var(--text-muted);
-  font-size: 8px;
-  letter-spacing: 0.8px;
+  font-size: 7px;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
   transition: color 0.2s;
   padding: 0;
 }
-.ni svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.ni svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .ni.active { color: var(--accent-b); }
 
 /* BACK */
