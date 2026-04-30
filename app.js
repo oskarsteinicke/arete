@@ -1222,13 +1222,14 @@ function renderHome() {
     </div>`;
   }).join('');
 
+  const homeLvl = getLevel(gamification.xp || 0);
   document.getElementById('view').innerHTML = `
     <div class="h-head ani">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div style="display:flex;justify-content:space-between;align-items:center">
         <div><div class="h-eyebrow">${greeting()}${userName() ? ', ' + userName() : ''}.</div><div class="h-day">${dayName()}.</div></div>
-        <div class="g-score-ring" onclick="go('stats')">
-          <div class="g-score-val" style="color:${scoreColor}">${score}</div>
-          <div class="g-score-lbl">${getLevelTitle(getLevel(gamification.xp||0))}</div>
+        <div style="cursor:pointer;flex-shrink:0" onclick="go('stats')" title="Profile">
+          <div style="width:72px;height:72px">${buildAvatarSVG(homeLvl)}</div>
+          <div style="text-align:center;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-top:2px">${getLevelTitle(homeLvl)}</div>
         </div>
       </div>
       <div class="h-prog"><div class="h-prog-track"><div class="h-prog-fill" style="width:${(pct*100).toFixed(0)}%"></div></div><div class="h-prog-ct">${done}/${total}</div></div>
@@ -3476,19 +3477,22 @@ function renderStats() {
     return daysWithAny;
   })();
 
-  const titleText = getLevelTitle(lvl);
-
   document.getElementById('view').innerHTML = `
-    <div class="av-wrap ani">
-      <button class="av-edit-btn" onclick="openEditName()">Edit</button>
-      <div class="av-orb">${buildAvatarSVG(lvl)}</div>
-      <div class="av-stage-label">${titleText}</div>
-      <div class="av-name" id="profile-name-display">${userName() || 'Northstar'}</div>
-      <div class="av-level">Level ${lvl} &nbsp;·&nbsp; ${(gamification.xp||0).toLocaleString()} XP</div>
-      <div class="av-xp-outer">
-        <div class="av-xp-track"><div class="av-xp-fill" style="width:${(xpBarPct*100).toFixed(1)}%"></div></div>
-        <div class="av-xp-lbl">${progress.toLocaleString()} / ${needed.toLocaleString()} XP &nbsp;·&nbsp; ${(needed-progress).toLocaleString()} to Level ${lvl+1}</div>
+    <div class="sh ani" style="display:flex;align-items:flex-start;justify-content:space-between">
+      <div><div class="sh-title">Profile</div><div class="sh-sub">Become your greatest self.</div></div>
+      <button class="w-action-btn" style="margin:0;padding:10px 16px;font-size:13px;width:auto" onclick="openEditName()">Edit Name</button>
+    </div>
+    <div class="da-section ani" style="margin:0 24px 16px;padding:16px">
+      <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Name</div>
+      <div style="font-family:var(--serif);font-size:22px;color:var(--text)" id="profile-name-display">${userName() || '—'}</div>
+    </div>
+    <div class="da-section ani" style="margin:0 24px 16px;padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+        <div style="font-size:13px;color:var(--text-dim)">Level <span style="font-family:var(--serif);font-size:26px;color:var(--accent-b);font-weight:700">${lvl}</span> <span style="font-size:12px;color:var(--accent);font-weight:600;letter-spacing:.04em">${getLevelTitle(lvl)}</span></div>
+        <div style="font-size:11px;color:var(--text-dim)">${(gamification.xp||0).toLocaleString()} XP</div>
       </div>
+      <div class="g-xp-bar-track"><div class="g-xp-bar-fill" style="width:${(xpBarPct*100).toFixed(1)}%"></div></div>
+      <div style="font-size:10px;color:var(--text-dim);text-align:right;margin-top:2px">${(needed-progress).toLocaleString()} XP to Level ${lvl+1}</div>
     </div>
     <div class="da-section ani" style="margin:0 24px 16px;padding:16px">
       <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Settings</div>
