@@ -2197,7 +2197,7 @@ async function calculateMealDescription() {
   if (btn) { btn.disabled = true; btn.textContent = 'Calculating…'; }
 
   try {
-    const sysPrompt = `You are a precise nutrition database. The user will describe what they ate. Return ONLY a valid JSON array — no markdown, no explanation, no code block. Each element must have exactly these keys: "name" (string, short food name), "calories" (integer), "protein" (integer, grams), "carbs" (integer, grams), "fat" (integer, grams). Use real nutritional data. If the user gives a quantity (e.g. "200g", "2 eggs", "large") apply it. If no quantity is given use one standard serving. Be accurate for fast food, restaurant dishes, homemade food, snacks, drinks, and any cuisine. Example: [{"name":"Big Mac","calories":550,"protein":25,"carbs":46,"fat":30}]`;
+    const sysPrompt = `You are a nutrition database. Given a meal description, respond with ONLY a JSON array. No explanation, no markdown, no code fences. Each object has: name (string), calories (number), protein (number), carbs (number), fat (number). All macros in grams. Use accurate nutritional data and realistic serving sizes. Example output: [{"name":"Greek yoghurt 200g","calories":120,"protein":10,"carbs":8,"fat":5}]`;
 
     const res = await fetch('https://text.pollinations.ai/', {
       method: 'POST',
@@ -2205,17 +2205,19 @@ async function calculateMealDescription() {
       body: JSON.stringify({
         messages: [
           { role: 'system', content: sysPrompt },
-          { role: 'user', content: text }
+          { role: 'user', content: `Meal: ${text}` }
         ],
         model: 'openai',
-        private: true,
-        jsonMode: true
+        private: true
       })
     });
 
+    if (!res.ok) throw new Error('API error');
     const raw = await res.text();
-    // Extract JSON array from response
-    const match = raw.match(/\[[\s\S]*\]/);
+
+    // Extract JSON array — handle markdown code blocks too
+    const cleaned = raw.replace(/```json|```/g, '').trim();
+    const match = cleaned.match(/\[[\s\S]*\]/);
     if (!match) throw new Error('No JSON array in response');
     const items = JSON.parse(match[0]);
     if (!Array.isArray(items) || !items.length) throw new Error('Empty result');
