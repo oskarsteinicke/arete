@@ -193,6 +193,8 @@ const EXERCISES = {
   sandbag_squat:  { name: 'Sandbag Squat',         muscle: 'Quads/Glutes',  ds: 3, dr: 10 },
   kb_goblet:      { name: 'KB Goblet Squat',       muscle: 'Quads',         ds: 3, dr: 12 },
   suitcase_carry: { name: 'Suitcase Carry',        muscle: 'Core/Traps',    ds: 3, dr: 40 },
+  hang_clean:     { name: 'Hang Clean',            muscle: 'Full Body',     ds: 4, dr: 4  },
+  high_pull:      { name: 'High Pull',             muscle: 'Traps/Shoulders',ds: 4, dr: 5  },
 
   // ── Bodyweight ─────────────────────────────────────────────────────────
   muscle_up:      { name: 'Muscle-Up',             muscle: 'Back/Chest',    ds: 3, dr: 5  },
