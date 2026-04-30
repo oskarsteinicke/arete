@@ -627,7 +627,17 @@ function checkDailyQuests() {
     checkAchievements();
     // Refresh quest UI if on home
     const qEl = document.getElementById('quest-section');
-    if (qEl) qEl.innerHTML = buildQuestHTML();
+    if (qEl) {
+      const _qd2 = new Set((gamification.questsCompleted || {})[today()] || []);
+      qEl.innerHTML = getDailyQuests().map(q => {
+        const qd = _qd2.has(q.id);
+        return `<div class="hm-quest${qd?' hm-quest-done':''}">
+          <div class="hm-quest-ico">${q.icon}</div>
+          <div class="hm-quest-body"><div class="hm-quest-lbl">${q.label}</div><div class="hm-quest-xp">+${q.xp} XP</div></div>
+          <div class="hm-quest-done-row"><div class="hm-quest-cb${qd?' hm-quest-cb-done':''}">${qd?'✓':''}</div></div>
+        </div>`;
+      }).join('');
+    }
   }
 }
 
@@ -1187,75 +1197,133 @@ function refreshPillarRing() {
 // RENDER: HOME
 // ══════════════════════════════════════════════════════════════════════════
 function renderHome() {
-  const {done,total,pct} = totalPct();
-  const cards = PILLARS.map(p => {
+  const {done, total, pct} = totalPct();
+  const homeLvl = getLevel(gamification.xp || 0);
+  const { lvl, progress, needed } = xpToNextLevel(gamification.xp || 0);
+  const xpPct = needed > 0 ? (progress / needed * 100).toFixed(1) : 100;
+  const score = computeDailyScore();
+  const scoreColor = score >= 80 ? 'var(--accent-b)' : score >= 50 ? 'var(--carb)' : 'var(--fat)';
+  const dateStr = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+
+  // Pillar strip
+  const pillarStrip = PILLARS.map(p => {
     const pr = pillarPct(p.id);
     const ms = Math.max(0, ...pillarHabits(p.id).map(h => log[h.id]?.streak || 0));
-    return `<div class="pc ani" onclick="go('pillar',{pillar:'${p.id}'})">
-      <div class="pc-ring">${ring(30,pr.pct,3)}<div class="pc-icon">${p.icon}</div></div>
-      <div class="pc-name">${p.name}</div>
-      <div class="pc-meta">${pr.done}/${pr.total} today${ms>0?` \u00B7 ${ms}d streak`:''}</div></div>`;
+    const active = pr.done > 0 ? ' hm-pc-active' : '';
+    return `<div class="hm-pc${active}" onclick="go('pillar',{pillar:'${p.id}'})">
+      <div class="hm-pc-ring">${ring(23, pr.pct, 2.5)}<div class="hm-pc-icon">${p.icon}</div></div>
+      <div class="hm-pc-name">${p.name}</div>
+      ${ms > 0 ? `<div class="hm-pc-streak">${ms}d</div>` : ''}
+    </div>`;
   }).join('');
 
-  // Workout summary
+  // Workout card
   const wProg = findProgram(workoutMeta.activeProgram) || WORKOUT_PROGRAMS[0];
   const wDay = wProg.days[workoutMeta.currentDayIndex % wProg.days.length];
   const wLogged = !!workoutLog[today()];
 
-  // Diet summary
+  // Nutrition card
   const dm = getDayMacros();
   const dGoal = dietMeta.dailyGoals.calories;
   const dPct = dGoal ? Math.min(dm.cal / dGoal, 1) : 0;
 
-  const score = computeDailyScore();
-  const scoreColor = score >= 80 ? 'var(--accent-b)' : score >= 50 ? 'var(--carb)' : 'var(--fat)';
-  const challenges = getWeeklyChallenges();
-  const challengeHTML = challenges.map(c => {
-    const cDone = c.current >= c.goal;
-    const cPct = Math.min(1, c.current / c.goal);
-    return `<div class="g-challenge">
-      <div class="g-challenge-head">
-        <span class="g-challenge-label">${c.icon} ${c.label}</span>
-        <span class="g-challenge-ct" style="${cDone ? 'color:var(--accent-b)' : ''}">${c.current}/${c.goal}${cDone ? ' ✓' : ''}</span>
+  // Quests
+  const _questDone = new Set((gamification.questsCompleted || {})[today()] || []);
+  const quests = getDailyQuests();
+  const questHTML = quests.map(q => {
+    const qDone = _questDone.has(q.id);
+    return `<div class="hm-quest${qDone ? ' hm-quest-done' : ''}">
+      <div class="hm-quest-ico">${q.icon}</div>
+      <div class="hm-quest-body">
+        <div class="hm-quest-lbl">${q.label}</div>
+        <div class="hm-quest-xp">+${q.xp} XP</div>
       </div>
-      <div class="g-challenge-track"><div class="g-challenge-fill" style="width:${(cPct*100).toFixed(0)}%;${cDone ? 'background:var(--accent-b)' : ''}"></div></div>
+      <div class="hm-quest-done-row">
+        <div class="hm-quest-cb${qDone ? ' hm-quest-cb-done' : ''}">${qDone ? '✓' : ''}</div>
+      </div>
     </div>`;
   }).join('');
 
-  const homeLvl = getLevel(gamification.xp || 0);
+  // Challenges
+  const challenges = getWeeklyChallenges();
+  const chalHTML = challenges.map(c => {
+    const cDone = c.current >= c.goal;
+    const cPct = Math.min(1, c.current / c.goal);
+    return `<div class="hm-chal">
+      <div class="hm-chal-head">
+        <span class="hm-chal-lbl">${c.icon} ${c.label}</span>
+        <span class="hm-chal-ct" style="${cDone ? 'color:var(--accent-b)' : ''}">${c.current}/${c.goal}${cDone ? ' ✓' : ''}</span>
+      </div>
+      <div class="hm-chal-track"><div class="hm-chal-fill" style="width:${(cPct*100).toFixed(0)}%;${cDone ? 'background:var(--accent-b)' : ''}"></div></div>
+    </div>`;
+  }).join('');
+
   document.getElementById('view').innerHTML = `
-    <div class="h-head ani">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div><div class="h-eyebrow">${greeting()}${userName() ? ', ' + userName() : ''}.</div><div class="h-day">${dayName()}.</div></div>
-        <div style="cursor:pointer;flex-shrink:0;display:flex;flex-direction:column;align-items:center" onclick="go('stats')" title="Profile">
-          <div style="width:58px;height:90px">${buildAvatarSVG(homeLvl)}</div>
-          <div style="text-align:center;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-top:1px">${getLevelTitle(homeLvl)}</div>
+    <div class="hm-hero ani">
+      <div class="hm-hero-card" onclick="go('stats')">
+        <div class="hm-hero-glow"></div>
+        <div class="hm-hero-row">
+          <div style="width:64px;height:100px;flex-shrink:0">${buildAvatarSVG(homeLvl)}</div>
+          <div class="hm-hero-info">
+            <div class="hm-hero-date">${dateStr}</div>
+            <div class="hm-hero-name">${greeting()}${userName() ? ', ' + userName() : ''}.</div>
+            <div class="hm-hero-greet">${dayName()}</div>
+            <div class="hm-hero-lvl">Lv.${homeLvl} · ${getLevelTitle(homeLvl)}</div>
+            <div class="hm-xp-row">
+              <div class="hm-xp-track"><div class="hm-xp-fill" style="width:${xpPct}%"></div></div>
+              <div class="hm-xp-lbl">${progress}/${needed} XP</div>
+            </div>
+            <div class="hm-score-row">
+              <div class="hm-score-badge" style="border-color:${scoreColor}">
+                <span class="hm-score-num" style="color:${scoreColor}">${score}</span>
+                <span class="hm-score-lbl">score</span>
+              </div>
+              <div style="flex:1">
+                <div class="hm-habits-bar-hdr"><span>Habits</span><span>${done}/${total}</span></div>
+                <div class="hm-habits-track"><div class="hm-habits-fill" style="width:${(pct*100).toFixed(0)}%"></div></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="h-prog"><div class="h-prog-track"><div class="h-prog-fill" style="width:${(pct*100).toFixed(0)}%"></div></div><div class="h-prog-ct">${done}/${total}</div></div>
     </div>
-    <div class="pillars">${cards}</div>
-    <div class="h-summary ani">
-      <div class="h-sum-card" onclick="go('workoutActive')">
-        <div class="h-sum-label">Today's Workout</div>
-        <div class="h-sum-title">${wDay.name} · ${wProg.name}</div>
-        <div class="h-sum-status">${wLogged ? '✓ Workout logged' : '→ Start workout'}</div>
+
+    <div class="hm-pillars ani">${pillarStrip}</div>
+
+    <div class="hm-sec ani">
+      <div class="hm-sec-title">Today</div>
+    </div>
+    <div class="hm-cards ani">
+      <div class="hm-card${wLogged ? ' hm-card-done' : ''}" onclick="go('workoutActive')">
+        ${wLogged ? '<div class="hm-card-glow"></div>' : ''}
+        <div class="hm-card-icon">🏋️</div>
+        <div class="hm-card-lbl">Workout</div>
+        <div class="hm-card-val">${wDay.name}</div>
+        <div class="hm-card-sub">${wProg.name}</div>
+        <div class="hm-card-status" style="${wLogged ? 'color:var(--accent-b)' : 'color:var(--fg3)'}">${wLogged ? '✓ Done' : '→ Start'}</div>
       </div>
-      <div class="h-sum-card" onclick="go('diet')">
-        <div class="h-sum-label">Nutrition</div>
-        <div class="h-sum-title">${dm.cal.toLocaleString()} / ${dGoal.toLocaleString()} cal</div>
-        <div class="h-prog" style="margin-top:8px"><div class="h-prog-track"><div class="h-prog-fill" style="width:${(dPct*100).toFixed(0)}%;background:var(--cal)"></div></div><div class="h-prog-ct">${dm.p}g P · ${dm.c}g C · ${dm.f}g F</div></div>
+      <div class="hm-card" onclick="go('diet')">
+        <div class="hm-card-icon">🥗</div>
+        <div class="hm-card-lbl">Nutrition</div>
+        <div class="hm-card-val">${dm.cal.toLocaleString()} cal</div>
+        <div class="hm-card-sub">${dGoal.toLocaleString()} goal</div>
+        <div class="hm-card-bar"><div class="hm-card-fill" style="width:${(dPct*100).toFixed(0)}%;background:var(--cal)"></div></div>
+        <div class="hm-card-status" style="color:var(--fg3)">${dm.p}p · ${dm.c}c · ${dm.f}f</div>
       </div>
     </div>
-    <div class="g-weekly ani">
-      <div class="sec-lbl" style="padding:0 0 8px">Weekly Challenges</div>
-      ${challengeHTML}
+
+    <div class="hm-sec ani">
+      <div class="hm-sec-title">⚡ Daily Quests</div>
     </div>
-    <div class="g-quests ani" id="quest-section">
-      <div class="sec-lbl" style="padding:0 0 8px">⚡ Daily Quests</div>
-      ${buildQuestHTML()}
-    </div>`;
+    <div class="hm-quest-list ani" id="quest-section">${questHTML}</div>
+
+    <div class="hm-sec ani">
+      <div class="hm-sec-title">🏆 Weekly Challenges</div>
+    </div>
+    <div class="hm-chal-list ani">${chalHTML}</div>
+  `;
 }
+
 
 // ══════════════════════════════════════════════════════════════════════════
 // RENDER: PILLAR

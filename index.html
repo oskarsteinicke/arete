@@ -19,7 +19,7 @@
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=8">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div id="app">
@@ -84,15 +84,17 @@
     </button>
   </nav>
 </div>
-<script src="data.js?v=8"></script>
-<script src="app.js?v=8"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
-    // Unregister all old service workers then register fresh
-    navigator.serviceWorker.getRegistrations().then(regs => {
-      regs.forEach(r => r.unregister());
+    navigator.serviceWorker.register('/northstar/service-worker.js').then(reg => {
+      reg.update(); // always check for new SW on load
     });
-    window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js?v=8'));
+    // When a new SW takes over, reload immediately to get fresh files
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      window.location.reload();
+    });
   }
 </script>
 </body>
