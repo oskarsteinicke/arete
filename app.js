@@ -1225,11 +1225,11 @@ function renderHome() {
   const homeLvl = getLevel(gamification.xp || 0);
   document.getElementById('view').innerHTML = `
     <div class="h-head ani">
-      <div style="display:flex;justify-content:space-between;align-items:center">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div><div class="h-eyebrow">${greeting()}${userName() ? ', ' + userName() : ''}.</div><div class="h-day">${dayName()}.</div></div>
-        <div style="cursor:pointer;flex-shrink:0" onclick="go('stats')" title="Profile">
-          <div style="width:72px;height:72px">${buildAvatarSVG(homeLvl)}</div>
-          <div style="text-align:center;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-top:2px">${getLevelTitle(homeLvl)}</div>
+        <div style="cursor:pointer;flex-shrink:0;display:flex;flex-direction:column;align-items:center" onclick="go('stats')" title="Profile">
+          <div style="width:58px;height:90px">${buildAvatarSVG(homeLvl)}</div>
+          <div style="text-align:center;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-top:1px">${getLevelTitle(homeLvl)}</div>
         </div>
       </div>
       <div class="h-prog"><div class="h-prog-track"><div class="h-prog-fill" style="width:${(pct*100).toFixed(0)}%"></div></div><div class="h-prog-ct">${done}/${total}</div></div>
@@ -3334,110 +3334,204 @@ function togglePast() {
 // ── Avatar builder ────────────────────────────────────────────────────────
 function buildAvatarSVG(lvl) {
   const stage = lvl >= 20 ? 6 : lvl >= 12 ? 5 : lvl >= 8 ? 4 : lvl >= 5 ? 3 : lvl >= 3 ? 2 : 1;
-  const uid = 'av' + stage + '_' + lvl; // unique ids per render
+  const uid = `av${stage}_${lvl}`;
+  const sk = '#fbd5b5', skS = '#e8a87c'; // skin, skin shadow
 
-  // Per-stage config
+  // Per-stage: hair color/highlight, eye iris/pupil/glow, outfit main/accent, aura color/opacity, particle count
   const C = [null,
-    // 1 Seeker — dim silver orb, no rings
-    { or:20, oc:['#718096','#1a202c'], ac:'#718096', gOp:.10,
-      rings:[], pars:0, rays:0 },
-    // 2 Apprentice — warm bronze, 1 slow ring
-    { or:23, oc:['#a37a4a','#3b1f0a'], ac:'#c49a6c', gOp:.15,
-      rings:[{rx:60,ry:17,from:'0',to:'360',dur:6}], pars:0, rays:0 },
-    // 3 Warrior — gold, 2 rings, 4 particles
-    { or:26, oc:['#d97706','#7c2d12'], ac:'#f59e0b', gOp:.22,
-      rings:[{rx:64,ry:19,from:'0',to:'360',dur:5},{rx:57,ry:11,from:'50',to:'410',dur:8}],
-      pars:4, rays:0 },
-    // 4 Champion — bright gold, 3 rings, 8 particles
-    { or:28, oc:['#fbbf24','#b45309'], ac:'#fbbf24', gOp:.30,
-      rings:[{rx:68,ry:21,from:'0',to:'360',dur:4},{rx:61,ry:13,from:'60',to:'420',dur:6.5},{rx:55,ry:7,from:'120',to:'480',dur:9}],
-      pars:8, rays:0 },
-    // 5 Legend — blue, star rays, 3 rings, 12 particles
-    { or:30, oc:['#7dd3fc','#1e3a8a'], ac:'#60a5fa', gOp:.30,
-      rings:[{rx:70,ry:21,from:'0',to:'360',dur:4},{rx:63,ry:14,from:'60',to:'420',dur:6.5},{rx:57,ry:8,from:'130',to:'490',dur:9}],
-      pars:12, rays:6 },
-    // 6 Northstar — blazing, 4 rings, 16 particles, 8 rays
-    { or:32, oc:['#f0f9ff','#60a5fa'], ac:'#e0f2fe', gOp:.42,
-      rings:[{rx:74,ry:23,from:'0',to:'360',dur:3.5},{rx:67,ry:15,from:'45',to:'405',dur:5.5},{rx:60,ry:9,from:'90',to:'450',dur:7.5},{rx:54,ry:5,from:'135',to:'495',dur:10}],
-      pars:16, rays:8 },
+    { hc:'#2d1b0e', hh:'#5c3a1e', ec:'#3d2412', ep:'#150800', eg:null,    oc:'#374151', oa:'#1f2937', ac:null,    ao:0,   pn:0 },
+    { hc:'#7c3a0e', hh:'#c47a3a', ec:'#92400e', ep:'#3d1500', eg:null,    oc:'#78350f', oa:'#451a03', ac:'#b45309', ao:.09, pn:0 },
+    { hc:'#b84c00', hh:'#f97316', ec:'#d97706', ep:'#7c2d00', eg:'#fb923c', oc:'#7c2d12', oa:'#450a00', ac:'#f97316', ao:.15, pn:4 },
+    { hc:'#b45309', hh:'#fde68a', ec:'#fbbf24', ep:'#78350f', eg:'#fde68a', oc:'#991b1b', oa:'#7c2d12', ac:'#fbbf24', ao:.20, pn:8 },
+    { hc:'#1e3a8a', hh:'#93c5fd', ec:'#60a5fa', ep:'#1e3a8a', eg:'#bfdbfe', oc:'#1e3a8a', oa:'#172554', ac:'#60a5fa', ao:.22, pn:12 },
+    { hc:'#d97706', hh:'#fef9c3', ec:'#e0f2fe', ep:'#1e40af', eg:'#ffffff', oc:'#1e3a8a', oa:'#d97706', ac:'#fbbf24', ao:.35, pn:16 },
   ][stage];
 
-  // Radial gradient (lighter core → darker edge)
-  const grad = `<radialGradient id="${uid}g" cx="38%" cy="32%" r="65%">
-    <stop offset="0%" stop-color="${C.oc[0]}"/>
-    <stop offset="100%" stop-color="${C.oc[1]}"/>
-  </radialGradient>`;
-
-  // Glow filter
-  const filt = `<filter id="${uid}f" x="-70%" y="-70%" width="240%" height="240%">
-    <feGaussianBlur in="SourceGraphic" stdDeviation="${2 + stage * 0.6}" result="b"/>
+  // SVG filters
+  const glowFilter = `<filter id="${uid}g" x="-60%" y="-60%" width="220%" height="220%">
+    <feGaussianBlur stdDeviation="2.5" result="b"/>
     <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
   </filter>`;
+  const eyeFilter = C.eg ? `<filter id="${uid}e" x="-100%" y="-100%" width="300%" height="300%">
+    <feGaussianBlur stdDeviation="3.5" result="b"/>
+    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>` : '';
 
-  // Pulsing outer aura
-  const aR = C.or + 16 + stage * 5;
-  const aura = `<circle r="${aR}" fill="${C.ac}" opacity="${C.gOp}">
-    <animate attributeName="r" values="${aR};${aR+6};${aR}" dur="3s" repeatCount="indefinite"/>
-    <animate attributeName="opacity" values="${C.gOp};${(C.gOp*0.5).toFixed(2)};${C.gOp}" dur="3s" repeatCount="indefinite"/>
-  </circle>`;
+  // Aura behind character
+  const auraRx = 36 + stage * 5, auraRy = 24 + stage * 4;
+  const aura = C.ac ? `<ellipse cx="50" cy="82" rx="${auraRx}" ry="${auraRy}" fill="${C.ac}" opacity="${C.ao}">
+    <animate attributeName="ry" values="${auraRy};${auraRy+6};${auraRy}" dur="3s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="${C.ao};${(C.ao*.45).toFixed(2)};${C.ao}" dur="3s" repeatCount="indefinite"/>
+  </ellipse>
+  <ellipse cx="50" cy="82" rx="${auraRx+8}" ry="${auraRy+6}" fill="none" stroke="${C.ac}" stroke-width="0.8" opacity="${(C.ao*.6).toFixed(2)}">
+    <animate attributeName="opacity" values="${(C.ao*.6).toFixed(2)};0.02;${(C.ao*.6).toFixed(2)}" dur="2.5s" repeatCount="indefinite"/>
+  </ellipse>` : '';
 
-  // Star rays (Legend+)
-  let raysHTML = '';
-  for (let i = 0; i < C.rays; i++) {
-    const a = (i / C.rays) * Math.PI * 2;
-    const r1 = C.or + 3, r2 = C.or + 18 + (stage === 6 ? 6 : 0);
-    const x1 = (Math.cos(a) * r1).toFixed(1), y1 = (Math.sin(a) * r1).toFixed(1);
-    const x2 = (Math.cos(a) * r2).toFixed(1), y2 = (Math.sin(a) * r2).toFixed(1);
-    raysHTML += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${C.ac}" stroke-width="${stage===6?1.8:1.2}" opacity="0.7">
-      <animate attributeName="opacity" values="0.7;0.25;0.7" dur="${(1.2+i*0.25).toFixed(2)}s" repeatCount="indefinite"/>
-      <animate attributeName="x2" values="${x2};${(Math.cos(a)*(r2+3)).toFixed(1)};${x2}" dur="${(1.2+i*0.25).toFixed(2)}s" repeatCount="indefinite"/>
-      <animate attributeName="y2" values="${y2};${(Math.sin(a)*(r2+3)).toFixed(1)};${y2}" dur="${(1.2+i*0.25).toFixed(2)}s" repeatCount="indefinite"/>
-    </line>`;
+  // Floating particles (higher stages)
+  let parts = '';
+  for (let i = 0; i < C.pn; i++) {
+    const a = (i / C.pn) * Math.PI * 2;
+    const r = 38 + (i % 3) * 9;
+    const cx = (50 + Math.cos(a) * r).toFixed(1);
+    const cy = (82 + Math.sin(a) * r * 0.55).toFixed(1);
+    const sz = i % 5 === 0 ? 2.4 : 1.5;
+    const dur = (1.4 + (i % 5) * 0.4).toFixed(1);
+    parts += `<circle cx="${cx}" cy="${cy}" r="${sz}" fill="${C.ac}" opacity="0.55">
+      <animate attributeName="opacity" values="0.55;0.1;0.55" dur="${dur}s" repeatCount="indefinite"/>
+      <animate attributeName="r" values="${sz};${(sz*1.6).toFixed(1)};${sz}" dur="${dur}s" repeatCount="indefinite"/>
+    </circle>`;
   }
 
-  // Orbital rings
-  let ringsHTML = '';
-  C.rings.forEach((ring, i) => {
-    const op = (0.55 - i * 0.07).toFixed(2);
-    const sw = i === 0 ? 1.4 : 1.0;
-    const dash = (stage >= 4 && i === C.rings.length - 1) ? 'stroke-dasharray="4 4"' : '';
-    ringsHTML += `<g>
-      <ellipse rx="${ring.rx}" ry="${ring.ry}" fill="none" stroke="${C.ac}" stroke-width="${sw}" opacity="${op}" ${dash}/>
-      <animateTransform attributeName="transform" type="rotate" from="${ring.from}" to="${ring.to}" dur="${ring.dur}s" repeatCount="indefinite"/>
-    </g>`;
-  });
+  // ── HAIR (back layer, drawn behind head) ─────────────────────────────
+  let hB = '', hF = ''; // hair back, hair front (bangs)
 
-  // Orbiting particles
-  let parsHTML = '';
-  for (let i = 0; i < C.pars; i++) {
-    const startA = Math.round((i / C.pars) * 360);
-    const dist = C.or + 20 + (i % 3) * 10;
-    const dur = (2.2 + (i % 5) * 0.65).toFixed(2);
-    const dir = i % 2 === 0 ? 1 : -1;
-    const sz = (i % 4 === 0 && stage >= 5) ? 3 : 2;
-    const pCol = (i % 5 === 0 && stage >= 5) ? '#ffffff' : C.ac;
-    const pOp = (0.45 + (i % 3) * 0.18).toFixed(2);
-    parsHTML += `<g>
-      <circle cx="${dist}" cy="0" r="${sz}" fill="${pCol}" opacity="${pOp}"/>
-      <animateTransform attributeName="transform" type="rotate" from="${startA}" to="${startA + dir * 360}" dur="${dur}s" repeatCount="indefinite"/>
-    </g>`;
+  if (stage === 1) {
+    // Short, tidy dark hair
+    hB = `<path d="M 23 58 Q 22 22 50 19 Q 78 22 77 58 Q 69 34 50 32 Q 31 34 23 58 Z" fill="${C.hc}"/>
+      <ellipse cx="23" cy="62" rx="4.5" ry="6.5" fill="${C.hc}"/>
+      <ellipse cx="77" cy="62" rx="4.5" ry="6.5" fill="${C.hc}"/>`;
+    hF = `<path d="M 30 45 Q 33 30 44 35 Q 41 47 35 49 Z" fill="${C.hc}"/>
+      <path d="M 70 45 Q 67 30 56 35 Q 59 47 65 49 Z" fill="${C.hc}"/>
+      <path d="M 40 31 Q 50 25 60 31 Q 55 37 50 34 Q 45 37 40 31 Z" fill="${C.hc}"/>`;
+
+  } else if (stage === 2) {
+    // Medium with swept bang + ahoge spike
+    hB = `<path d="M 22 58 Q 21 20 50 17 Q 79 20 78 58 Q 70 32 50 29 Q 30 32 22 58 Z" fill="${C.hc}"/>
+      <path d="M 46 19 Q 43 3 50 1 Q 57 3 54 19 Z" fill="${C.hc}"/>
+      <path d="M 22 58 Q 17 70 19 82 Q 23 84 25 72 Q 24 65 22 58 Z" fill="${C.hc}"/>
+      <ellipse cx="78" cy="63" rx="4.5" ry="6" fill="${C.hc}"/>`;
+    hF = `<path d="M 28 46 Q 31 27 44 33 Q 41 49 33 51 Z" fill="${C.hh}"/>
+      <path d="M 72 46 Q 69 30 58 34 Q 61 48 67 50 Z" fill="${C.hc}"/>
+      <path d="M 40 29 Q 50 22 60 29 Q 55 36 50 31 Q 45 36 40 29 Z" fill="${C.hc}"/>`;
+
+  } else if (stage === 3) {
+    // Spiky orange warrior hair
+    hB = `<path d="M 50 7 L 42 32 L 58 32 Z" fill="${C.hc}"/>
+      <path d="M 36 11 L 29 36 L 48 36 Z" fill="${C.hc}"/>
+      <path d="M 64 11 L 71 36 L 52 36 Z" fill="${C.hc}"/>
+      <path d="M 22 28 L 17 52 L 34 47 Z" fill="${C.hc}"/>
+      <path d="M 78 28 L 83 52 L 66 47 Z" fill="${C.hc}"/>
+      <path d="M 22 58 Q 22 38 38 35 Q 50 31 62 35 Q 78 38 78 58 Z" fill="${C.hc}"/>
+      <path d="M 22 58 Q 16 71 18 83 Q 22 85 24 73 Q 23 65 22 58 Z" fill="${C.hc}"/>
+      <path d="M 78 58 Q 84 71 82 83 Q 78 85 76 73 Q 77 65 78 58 Z" fill="${C.hc}"/>`;
+    hF = `<path d="M 29 46 Q 32 28 44 34 Q 40 50 33 52 Z" fill="${C.hh}"/>
+      <path d="M 71 46 Q 68 28 56 34 Q 60 50 67 52 Z" fill="${C.hh}"/>
+      <path d="M 40 32 Q 50 24 60 32 Q 55 39 50 35 Q 45 39 40 32 Z" fill="${C.hh}"/>`;
+
+  } else if (stage === 4) {
+    // Wild gold Champion spikes — bigger, more dramatic
+    hB = `<path d="M 50 3 L 40 30 L 60 30 Z" fill="${C.hc}"/>
+      <path d="M 34 7 L 25 34 L 48 33 Z" fill="${C.hc}"/>
+      <path d="M 66 7 L 75 34 L 52 33 Z" fill="${C.hc}"/>
+      <path d="M 18 21 L 11 50 L 32 45 Z" fill="${C.hc}"/>
+      <path d="M 82 21 L 89 50 L 68 45 Z" fill="${C.hc}"/>
+      <path d="M 7 34 L 2 62 L 22 56 Z" fill="${C.hc}"/>
+      <path d="M 93 34 L 98 62 L 78 56 Z" fill="${C.hc}"/>
+      <path d="M 20 58 Q 20 36 40 31 Q 50 27 60 31 Q 80 36 80 58 Z" fill="${C.hc}"/>
+      <path d="M 20 58 Q 12 74 14 88 Q 18 90 22 78 Q 21 68 20 58 Z" fill="${C.hc}"/>
+      <path d="M 80 58 Q 88 74 86 88 Q 82 90 78 78 Q 79 68 80 58 Z" fill="${C.hc}"/>`;
+    hF = `<path d="M 44 28 Q 50 17 56 28 Q 52 35 50 30 Q 48 35 44 28 Z" fill="${C.hh}"/>
+      <path d="M 26 47 Q 28 25 43 32 Q 38 52 30 54 Z" fill="${C.hh}"/>
+      <path d="M 74 47 Q 72 25 57 32 Q 62 52 70 54 Z" fill="${C.hh}"/>`;
+
+  } else if (stage === 5) {
+    // Long flowing silver-blue Legend hair
+    hB = `<path d="M 22 58 Q 20 26 38 21 Q 50 17 62 21 Q 80 26 78 58 Z" fill="${C.hc}"/>
+      <path d="M 47 19 Q 44 5 50 3 Q 56 5 53 19 Z" fill="${C.hc}"/>
+      <path d="M 22 58 Q 13 78 11 106 Q 15 110 19 96 Q 21 82 22 68 Q 22 63 22 58 Z" fill="${C.hc}"/>
+      <path d="M 78 58 Q 87 78 89 106 Q 85 110 81 96 Q 79 82 78 68 Q 78 63 78 58 Z" fill="${C.hc}"/>`;
+    hF = `<path d="M 28 46 Q 30 25 45 32 Q 40 51 32 53 Z" fill="${C.hh}"/>
+      <path d="M 72 46 Q 70 25 55 32 Q 60 51 68 53 Z" fill="${C.hh}"/>
+      <path d="M 40 29 Q 50 21 60 29 Q 55 36 50 32 Q 45 36 40 29 Z" fill="${C.hh}"/>`;
+    if (C.eg) hF += `<ellipse cx="50" cy="40" rx="28" ry="10" fill="${C.eg}" opacity="0.07" filter="url(#${uid}e)"/>`;
+
+  } else {
+    // Stage 6 Northstar — blazing golden-white SSJ hair
+    hB = `<path d="M 50 -6 L 38 26 L 62 26 Z" fill="${C.hh}"/>
+      <path d="M 32 -2 L 21 28 L 50 26 Z" fill="${C.hh}" opacity="0.9"/>
+      <path d="M 68 -2 L 79 28 L 50 26 Z" fill="${C.hh}" opacity="0.9"/>
+      <path d="M 14 14 L 5 46 L 32 41 Z" fill="${C.hc}"/>
+      <path d="M 86 14 L 95 46 L 68 41 Z" fill="${C.hc}"/>
+      <path d="M 4 30 L -3 60 L 20 55 Z" fill="${C.hc}"/>
+      <path d="M 96 30 L 103 60 L 80 55 Z" fill="${C.hc}"/>
+      <path d="M 18 58 Q 18 33 40 26 Q 50 22 60 26 Q 82 33 82 58 Z" fill="${C.hc}"/>
+      <path d="M 18 58 Q 9 78 7 106 Q 11 110 15 96 Q 17 82 18 68 Q 18 63 18 58 Z" fill="${C.hc}"/>
+      <path d="M 82 58 Q 91 78 93 106 Q 89 110 85 96 Q 83 82 82 68 Q 82 63 82 58 Z" fill="${C.hc}"/>`;
+    // Glow layer on spikes
+    hB += `<path d="M 50 -6 L 38 26 L 62 26 Z" fill="${C.eg}" opacity="0.55" filter="url(#${uid}e)">
+      <animate attributeName="opacity" values="0.55;0.85;0.55" dur="1.6s" repeatCount="indefinite"/>
+    </path>
+    <path d="M 32 -2 L 21 28 L 50 26 Z" fill="${C.eg}" opacity="0.35" filter="url(#${uid}e)"/>
+    <path d="M 68 -2 L 79 28 L 50 26 Z" fill="${C.eg}" opacity="0.35" filter="url(#${uid}e)"/>`;
+    hF = `<path d="M 40 24 Q 50 11 60 24 Q 54 31 50 27 Q 46 31 40 24 Z" fill="${C.hh}" opacity="0.95"/>
+      <path d="M 40 24 Q 50 11 60 24 Q 54 31 50 27 Q 46 31 40 24 Z" fill="${C.eg}" opacity="0.55" filter="url(#${uid}e)"/>`;
   }
 
-  // Core orb (pulsing radius)
-  const orbEl = `<circle r="${C.or}" fill="url(#${uid}g)" filter="url(#${uid}f)">
-    <animate attributeName="r" values="${C.or};${C.or+1.8};${C.or}" dur="2.8s" repeatCount="indefinite"/>
-  </circle>`;
+  // ── EYE GLOW (drawn behind eyes) ─────────────────────────────────────
+  const eyeGlow = C.eg ? `
+    <ellipse cx="39" cy="55" rx="10" ry="9" fill="${C.eg}" opacity="0.30" filter="url(#${uid}e)"/>
+    <ellipse cx="61" cy="55" rx="10" ry="9" fill="${C.eg}" opacity="0.30" filter="url(#${uid}e)"/>` : '';
 
-  // ✦ symbol
-  const sz = 14 + stage * 2.5;
-  const sym = `<text x="0" y="${(sz * 0.37).toFixed(1)}" text-anchor="middle" font-size="${sz.toFixed(1)}"
-    fill="${C.ac}" opacity="${Math.min(0.95, 0.55 + stage * 0.08).toFixed(2)}"
-    style="font-family:Georgia,serif;user-select:none;pointer-events:none" filter="url(#${uid}f)">✦</text>`;
+  // ── BODY / OUTFIT ─────────────────────────────────────────────────────
+  const neck = `<path d="M 44 82 L 44 91 Q 50 93 56 91 L 56 82 Z" fill="${sk}"/>`;
+  const torso = `<path d="M 19 95 Q 14 102 13 130 L 87 130 Q 86 102 81 95 Q 65 85 50 85 Q 35 85 19 95 Z" fill="${C.oc}"/>`;
 
-  return `<svg viewBox="-100 -100 200 200" xmlns="http://www.w3.org/2000/svg"
-      style="width:100%;height:100%;overflow:visible" aria-hidden="true">
-    <defs>${grad}${filt}</defs>
-    ${aura}${raysHTML}${ringsHTML}${parsHTML}${orbEl}${sym}
+  let outfitDetail = '';
+  if (stage <= 2) {
+    outfitDetail = `<path d="M 40 91 Q 50 100 60 91 Q 56 95 50 93 Q 44 95 40 91 Z" fill="${C.oa}"/>`;
+  } else if (stage === 3) {
+    outfitDetail = `<path d="M 38 91 Q 50 102 62 91" stroke="${C.oa}" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+      <line x1="50" y1="91" x2="50" y2="114" stroke="${C.oa}" stroke-width="1.5" opacity="0.55"/>
+      <line x1="32" y1="100" x2="68" y2="100" stroke="${C.oa}" stroke-width="1" opacity="0.4"/>`;
+  } else {
+    outfitDetail = `<path d="M 27 100 Q 50 105 73 100 Q 71 113 50 116 Q 29 113 27 100 Z" fill="${C.oa}" opacity="0.88"/>
+      <path d="M 44 91 Q 50 97 56 91 Q 54 97 50 95 Q 46 97 44 91 Z" fill="${C.oa}"/>`;
+    if (stage >= 5) {
+      outfitDetail += `<ellipse cx="21" cy="97" rx="10" ry="6.5" fill="${C.oa}" transform="rotate(-18 21 97)"/>
+        <ellipse cx="79" cy="97" rx="10" ry="6.5" fill="${C.oa}" transform="rotate(18 79 97)"/>`;
+    }
+    if (stage === 6) {
+      outfitDetail += `<path d="M 27 100 Q 50 105 73 100" stroke="#fbbf24" stroke-width="1.3" fill="none"/>
+        <ellipse cx="21" cy="97" rx="10" ry="6.5" fill="none" stroke="#fbbf24" stroke-width="1" transform="rotate(-18 21 97)"/>
+        <ellipse cx="79" cy="97" rx="10" ry="6.5" fill="none" stroke="#fbbf24" stroke-width="1" transform="rotate(18 79 97)"/>`;
+    }
+  }
+
+  // ── FACE ─────────────────────────────────────────────────────────────
+  const face = `
+    <circle cx="50" cy="58" r="27" fill="${sk}"/>
+    <ellipse cx="23" cy="60" rx="4" ry="5.5" fill="${sk}"/>
+    <ellipse cx="77" cy="60" rx="4" ry="5.5" fill="${sk}"/>
+    <ellipse cx="23" cy="61" rx="2.5" ry="3.2" fill="${skS}"/>
+    <ellipse cx="77" cy="61" rx="2.5" ry="3.2" fill="${skS}"/>
+    ${eyeGlow}
+    <ellipse cx="39" cy="56" rx="8.5" ry="8" fill="white"/>
+    <ellipse cx="61" cy="56" rx="8.5" ry="8" fill="white"/>
+    <ellipse cx="39" cy="57" rx="6.5" ry="6.5" fill="${C.ec}"/>
+    <ellipse cx="61" cy="57" rx="6.5" ry="6.5" fill="${C.ec}"/>
+    <circle cx="39" cy="58" r="3.5" fill="${C.ep}"/>
+    <circle cx="61" cy="58" r="3.5" fill="${C.ep}"/>
+    <circle cx="35.5" cy="53" r="2.2" fill="white"/>
+    <circle cx="57.5" cy="53" r="2.2" fill="white"/>
+    <circle cx="41.5" cy="59" r="1.1" fill="white" opacity="0.75"/>
+    <circle cx="63.5" cy="59" r="1.1" fill="white" opacity="0.75"/>
+    <path d="M 30.5 53 Q 39 48.5 47.5 53" stroke="#111" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <path d="M 52.5 53 Q 61 48.5 69.5 53" stroke="#111" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <path d="M 31 47 Q 39 43 47 45" stroke="${C.hc}" stroke-width="2.1" fill="none" stroke-linecap="round"/>
+    <path d="M 53 45 Q 61 43 69 47" stroke="${C.hc}" stroke-width="2.1" fill="none" stroke-linecap="round"/>
+    <path d="M 47 65 Q 50 68 53 65" stroke="${skS}" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+    <path d="M 43 73 Q 50 78 57 73" stroke="#d4826a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+    <ellipse cx="32" cy="65" rx="6" ry="3.5" fill="#ffaabb" opacity="0.30"/>
+    <ellipse cx="68" cy="65" rx="6" ry="3.5" fill="#ffaabb" opacity="0.30"/>`;
+
+  return `<svg viewBox="5 -10 90 140" xmlns="http://www.w3.org/2000/svg"
+      style="width:100%;height:100%" aria-hidden="true">
+    <defs>${glowFilter}${eyeFilter}</defs>
+    ${aura}${parts}
+    ${hB}
+    ${neck}${torso}${outfitDetail}
+    ${face}
+    ${hF}
   </svg>`;
 }
 
