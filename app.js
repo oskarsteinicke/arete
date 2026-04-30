@@ -911,6 +911,17 @@ function injectGamificationStyles() {
     .g-quest-done .g-quest-label{text-decoration:line-through;color:var(--text-dim)}
     .g-quest-xp{font-size:12px;font-weight:700;color:var(--accent-b);white-space:nowrap}
     .g-quest-done .g-quest-xp{color:var(--accent-b)}
+    /* Avatar */
+    .av-wrap{display:flex;flex-direction:column;align-items:center;padding:28px 24px 12px;text-align:center;position:relative}
+    .av-orb{width:170px;height:170px;position:relative;flex-shrink:0}
+    .av-stage-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-top:2px;opacity:0.8}
+    .av-name{font-family:var(--serif);font-size:24px;color:var(--text);margin-top:10px;line-height:1.2}
+    .av-level{font-size:13px;color:var(--text-dim);margin-top:3px;letter-spacing:.02em}
+    .av-xp-outer{width:100%;max-width:200px;margin-top:12px}
+    .av-xp-track{height:5px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
+    .av-xp-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .6s ease}
+    .av-xp-lbl{font-size:10px;color:var(--text-dim);margin-top:4px;letter-spacing:.01em}
+    .av-edit-btn{position:absolute;top:24px;right:20px;background:none;border:1px solid var(--border2);color:var(--text-dim);font-size:11px;padding:5px 10px;border-radius:8px;cursor:pointer}
   `;
   document.head.appendChild(s);
 }
@@ -3319,6 +3330,116 @@ function togglePast() {
 // ══════════════════════════════════════════════════════════════════════════
 // RENDER: STATS
 // ══════════════════════════════════════════════════════════════════════════
+// ── Avatar builder ────────────────────────────────────────────────────────
+function buildAvatarSVG(lvl) {
+  const stage = lvl >= 20 ? 6 : lvl >= 12 ? 5 : lvl >= 8 ? 4 : lvl >= 5 ? 3 : lvl >= 3 ? 2 : 1;
+  const uid = 'av' + stage + '_' + lvl; // unique ids per render
+
+  // Per-stage config
+  const C = [null,
+    // 1 Seeker — dim silver orb, no rings
+    { or:20, oc:['#718096','#1a202c'], ac:'#718096', gOp:.10,
+      rings:[], pars:0, rays:0 },
+    // 2 Apprentice — warm bronze, 1 slow ring
+    { or:23, oc:['#a37a4a','#3b1f0a'], ac:'#c49a6c', gOp:.15,
+      rings:[{rx:60,ry:17,from:'0',to:'360',dur:6}], pars:0, rays:0 },
+    // 3 Warrior — gold, 2 rings, 4 particles
+    { or:26, oc:['#d97706','#7c2d12'], ac:'#f59e0b', gOp:.22,
+      rings:[{rx:64,ry:19,from:'0',to:'360',dur:5},{rx:57,ry:11,from:'50',to:'410',dur:8}],
+      pars:4, rays:0 },
+    // 4 Champion — bright gold, 3 rings, 8 particles
+    { or:28, oc:['#fbbf24','#b45309'], ac:'#fbbf24', gOp:.30,
+      rings:[{rx:68,ry:21,from:'0',to:'360',dur:4},{rx:61,ry:13,from:'60',to:'420',dur:6.5},{rx:55,ry:7,from:'120',to:'480',dur:9}],
+      pars:8, rays:0 },
+    // 5 Legend — blue, star rays, 3 rings, 12 particles
+    { or:30, oc:['#7dd3fc','#1e3a8a'], ac:'#60a5fa', gOp:.30,
+      rings:[{rx:70,ry:21,from:'0',to:'360',dur:4},{rx:63,ry:14,from:'60',to:'420',dur:6.5},{rx:57,ry:8,from:'130',to:'490',dur:9}],
+      pars:12, rays:6 },
+    // 6 Northstar — blazing, 4 rings, 16 particles, 8 rays
+    { or:32, oc:['#f0f9ff','#60a5fa'], ac:'#e0f2fe', gOp:.42,
+      rings:[{rx:74,ry:23,from:'0',to:'360',dur:3.5},{rx:67,ry:15,from:'45',to:'405',dur:5.5},{rx:60,ry:9,from:'90',to:'450',dur:7.5},{rx:54,ry:5,from:'135',to:'495',dur:10}],
+      pars:16, rays:8 },
+  ][stage];
+
+  // Radial gradient (lighter core → darker edge)
+  const grad = `<radialGradient id="${uid}g" cx="38%" cy="32%" r="65%">
+    <stop offset="0%" stop-color="${C.oc[0]}"/>
+    <stop offset="100%" stop-color="${C.oc[1]}"/>
+  </radialGradient>`;
+
+  // Glow filter
+  const filt = `<filter id="${uid}f" x="-70%" y="-70%" width="240%" height="240%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="${2 + stage * 0.6}" result="b"/>
+    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>`;
+
+  // Pulsing outer aura
+  const aR = C.or + 16 + stage * 5;
+  const aura = `<circle r="${aR}" fill="${C.ac}" opacity="${C.gOp}">
+    <animate attributeName="r" values="${aR};${aR+6};${aR}" dur="3s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="${C.gOp};${(C.gOp*0.5).toFixed(2)};${C.gOp}" dur="3s" repeatCount="indefinite"/>
+  </circle>`;
+
+  // Star rays (Legend+)
+  let raysHTML = '';
+  for (let i = 0; i < C.rays; i++) {
+    const a = (i / C.rays) * Math.PI * 2;
+    const r1 = C.or + 3, r2 = C.or + 18 + (stage === 6 ? 6 : 0);
+    const x1 = (Math.cos(a) * r1).toFixed(1), y1 = (Math.sin(a) * r1).toFixed(1);
+    const x2 = (Math.cos(a) * r2).toFixed(1), y2 = (Math.sin(a) * r2).toFixed(1);
+    raysHTML += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${C.ac}" stroke-width="${stage===6?1.8:1.2}" opacity="0.7">
+      <animate attributeName="opacity" values="0.7;0.25;0.7" dur="${(1.2+i*0.25).toFixed(2)}s" repeatCount="indefinite"/>
+      <animate attributeName="x2" values="${x2};${(Math.cos(a)*(r2+3)).toFixed(1)};${x2}" dur="${(1.2+i*0.25).toFixed(2)}s" repeatCount="indefinite"/>
+      <animate attributeName="y2" values="${y2};${(Math.sin(a)*(r2+3)).toFixed(1)};${y2}" dur="${(1.2+i*0.25).toFixed(2)}s" repeatCount="indefinite"/>
+    </line>`;
+  }
+
+  // Orbital rings
+  let ringsHTML = '';
+  C.rings.forEach((ring, i) => {
+    const op = (0.55 - i * 0.07).toFixed(2);
+    const sw = i === 0 ? 1.4 : 1.0;
+    const dash = (stage >= 4 && i === C.rings.length - 1) ? 'stroke-dasharray="4 4"' : '';
+    ringsHTML += `<g>
+      <ellipse rx="${ring.rx}" ry="${ring.ry}" fill="none" stroke="${C.ac}" stroke-width="${sw}" opacity="${op}" ${dash}/>
+      <animateTransform attributeName="transform" type="rotate" from="${ring.from}" to="${ring.to}" dur="${ring.dur}s" repeatCount="indefinite"/>
+    </g>`;
+  });
+
+  // Orbiting particles
+  let parsHTML = '';
+  for (let i = 0; i < C.pars; i++) {
+    const startA = Math.round((i / C.pars) * 360);
+    const dist = C.or + 20 + (i % 3) * 10;
+    const dur = (2.2 + (i % 5) * 0.65).toFixed(2);
+    const dir = i % 2 === 0 ? 1 : -1;
+    const sz = (i % 4 === 0 && stage >= 5) ? 3 : 2;
+    const pCol = (i % 5 === 0 && stage >= 5) ? '#ffffff' : C.ac;
+    const pOp = (0.45 + (i % 3) * 0.18).toFixed(2);
+    parsHTML += `<g>
+      <circle cx="${dist}" cy="0" r="${sz}" fill="${pCol}" opacity="${pOp}"/>
+      <animateTransform attributeName="transform" type="rotate" from="${startA}" to="${startA + dir * 360}" dur="${dur}s" repeatCount="indefinite"/>
+    </g>`;
+  }
+
+  // Core orb (pulsing radius)
+  const orbEl = `<circle r="${C.or}" fill="url(#${uid}g)" filter="url(#${uid}f)">
+    <animate attributeName="r" values="${C.or};${C.or+1.8};${C.or}" dur="2.8s" repeatCount="indefinite"/>
+  </circle>`;
+
+  // ✦ symbol
+  const sz = 14 + stage * 2.5;
+  const sym = `<text x="0" y="${(sz * 0.37).toFixed(1)}" text-anchor="middle" font-size="${sz.toFixed(1)}"
+    fill="${C.ac}" opacity="${Math.min(0.95, 0.55 + stage * 0.08).toFixed(2)}"
+    style="font-family:Georgia,serif;user-select:none;pointer-events:none" filter="url(#${uid}f)">✦</text>`;
+
+  return `<svg viewBox="-100 -100 200 200" xmlns="http://www.w3.org/2000/svg"
+      style="width:100%;height:100%;overflow:visible" aria-hidden="true">
+    <defs>${grad}${filt}</defs>
+    ${aura}${raysHTML}${ringsHTML}${parsHTML}${orbEl}${sym}
+  </svg>`;
+}
+
 function renderStats() {
   const {done,total} = totalPct();
   const best = Math.max(0, ...habits.map(h => log[h.id]?.streak || 0));
@@ -3355,14 +3476,19 @@ function renderStats() {
     return daysWithAny;
   })();
 
+  const titleText = getLevelTitle(lvl);
+
   document.getElementById('view').innerHTML = `
-    <div class="sh ani" style="display:flex;align-items:flex-start;justify-content:space-between">
-      <div><div class="sh-title">Profile</div><div class="sh-sub">Become your greatest self.</div></div>
-      <button class="w-action-btn" style="margin:0;padding:10px 16px;font-size:13px;width:auto" onclick="openEditName()">Edit Name</button>
-    </div>
-    <div class="da-section ani" style="margin:0 24px 16px;padding:16px">
-      <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Name</div>
-      <div style="font-family:var(--serif);font-size:22px;color:var(--text)" id="profile-name-display">${userName() || '—'}</div>
+    <div class="av-wrap ani">
+      <button class="av-edit-btn" onclick="openEditName()">Edit</button>
+      <div class="av-orb">${buildAvatarSVG(lvl)}</div>
+      <div class="av-stage-label">${titleText}</div>
+      <div class="av-name" id="profile-name-display">${userName() || 'Northstar'}</div>
+      <div class="av-level">Level ${lvl} &nbsp;·&nbsp; ${(gamification.xp||0).toLocaleString()} XP</div>
+      <div class="av-xp-outer">
+        <div class="av-xp-track"><div class="av-xp-fill" style="width:${(xpBarPct*100).toFixed(1)}%"></div></div>
+        <div class="av-xp-lbl">${progress.toLocaleString()} / ${needed.toLocaleString()} XP &nbsp;·&nbsp; ${(needed-progress).toLocaleString()} to Level ${lvl+1}</div>
+      </div>
     </div>
     <div class="da-section ani" style="margin:0 24px 16px;padding:16px">
       <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Settings</div>
@@ -3392,14 +3518,6 @@ function renderStats() {
         <div class="s-card"><div class="s-val" style="font-size:22px">${ws.journalDays.length}</div><div class="s-lbl">Journaled</div></div>
         <div class="s-card"><div class="s-val" style="font-size:22px">${weekAvgCal !== null ? weekAvgCal.toLocaleString() : '—'}</div><div class="s-lbl">Avg Cal</div></div>
       </div>
-    </div>
-    <div class="da-section ani" style="margin:0 24px 16px">
-      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
-        <div style="font-size:13px;color:var(--text-dim)">Level <span style="font-family:var(--serif);font-size:26px;color:var(--accent-b);font-weight:700">${lvl}</span> <span style="font-size:12px;color:var(--accent);font-weight:600;letter-spacing:.04em">${getLevelTitle(lvl)}</span></div>
-        <div style="font-size:11px;color:var(--text-dim)">${(gamification.xp||0).toLocaleString()} XP &middot; ${(needed-progress).toLocaleString()} to next</div>
-      </div>
-      <div class="g-xp-bar-track"><div class="g-xp-bar-fill" style="width:${(xpBarPct*100).toFixed(1)}%"></div></div>
-      <div style="font-size:10px;color:var(--text-dim);text-align:right;margin-top:2px">${Math.round(xpBarPct*100)}% to Level ${lvl+1}</div>
     </div>
     <div class="sec-lbl" style="padding-left:24px">Pillar Scores</div>
     <div class="ps ani">${psRows}</div>
