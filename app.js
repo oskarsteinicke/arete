@@ -2197,31 +2197,46 @@ async function calculateMealDescription() {
   if (btn) { btn.disabled = true; btn.textContent = 'Calculating…'; }
 
   try {
-    const sys = `You are a nutrition database. Return ONLY a JSON array, nothing else. No markdown, no explanation. Each item: {"name":"...","calories":0,"protein":0,"carbs":0,"fat":0}. Macros in grams. Use accurate data and realistic serving sizes.`;
-    const prompt = `Calculate macros for: ${text}`;
-    const url = `https://text.pollinations.ai/${encodeURIComponent(prompt)}?model=openai&system=${encodeURIComponent(sys)}&private=true`;
+    const sysPrompt = 'You are a nutrition expert. The user describes a meal. Reply with ONLY a raw JSON array (no markdown, no text before or after). Each element must have: name (string), calories (integer), protein (integer), carbs (integer), fat (integer). All macros in grams. Be accurate. Example: [{"name":"Greek yoghurt","calories":130,"protein":11,"carbs":9,"fat":5}]';
 
-    const res = await fetch(url);
+    const res = await fetch('https://text.pollinations.ai/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [
+          { role: 'system', content: sysPrompt },
+          { role: 'user', content: text }
+        ],
+        model: 'openai',
+        private: true
+      })
+    });
+
     const raw = await res.text();
-
-    // Strip markdown fences if present, then extract JSON array
-    const cleaned = raw.replace(/```[\w]*\n?/g, '').trim();
-    const match = cleaned.match(/\[[\s\S]*\]/);
-    if (!match) throw new Error('No JSON');
-    const items = JSON.parse(match[0]);
-    if (!Array.isArray(items) || !items.length) throw new Error('Empty');
+    // Strip markdown fences, then grab outermost JSON array (greedy to capture all items)
+    const clean = raw.replace(/```[a-z]*\n?/gi, '').replace(/```/g, '').trim();
+    const match = clean.match(/\[[\s\S]*\]/);
+    if (!match) {
+      out.innerHTML = `<p class="dm-hint dm-warn">Could not parse response. Raw: ${esc(raw.slice(0,300))}</p>`;
+      return;
+    }
+    let items;
+    try { items = JSON.parse(match[0]); } catch(pe) {
+      out.innerHTML = `<p class="dm-hint dm-warn">JSON parse error: ${esc(String(pe))}. Raw: ${esc(raw.slice(0,300))}</p>`;
+      return;
+    }
+    if (!Array.isArray(items) || !items.length) throw new Error('Empty array');
 
     _parsedMealItems = items.map(it => ({
-      name: String(it.name || 'Food'),
+      name:     String(it.name || 'Food'),
       calories: Math.round(Number(it.calories) || 0),
       protein:  Math.round(Number(it.protein)  || 0),
       carbs:    Math.round(Number(it.carbs)     || 0),
       fat:      Math.round(Number(it.fat)       || 0),
     }));
-
     _renderParsedItems(out);
   } catch(e) {
-    out.innerHTML = `<p class="dm-hint dm-warn">Couldn't calculate macros — check your connection and try again.</p>`;
+    out.innerHTML = `<p class="dm-hint dm-warn">Error: ${esc(String(e))}. Check connection and try again.</p>`;
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'CALCULATE MACROS'; }
   }
@@ -2980,12 +2995,16 @@ function renderStats() {
     </div>
     <div class="da-section ani" style="margin:0 24px 16px;padding:16px">
       <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Settings</div>
-      <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
         <div style="font-size:14px;color:var(--text)">Units</div>
         <div class="unit-toggle">
           <button class="unit-btn${!isImperial()?' unit-btn-active':''}" onclick="setUnits('metric');renderStats()">kg</button>
           <button class="unit-btn${isImperial()?' unit-btn-active':''}" onclick="setUnits('imperial');renderStats()">lbs</button>
         </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:14px;color:var(--text)">App version</div>
+        <button class="unit-btn" style="padding:6px 14px;background:var(--surface);border:1px solid var(--border2)" onclick="if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(r=>r.forEach(x=>x.unregister())).then(()=>window.location.reload(true))}else{window.location.reload(true)}">Refresh</button>
       </div>
     </div>
     <div class="s-grid ani">
