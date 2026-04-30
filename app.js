@@ -2788,6 +2788,16 @@ function renderStats() {
       <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Name</div>
       <div style="font-family:var(--serif);font-size:22px;color:var(--text)" id="profile-name-display">${userName() || '—'}</div>
     </div>
+    <div class="da-section ani" style="margin:0 24px 16px;padding:16px">
+      <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Settings</div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:14px;color:var(--text)">Units</div>
+        <div class="unit-toggle">
+          <button class="unit-btn${!isImperial()?' unit-btn-active':''}" onclick="setUnits('metric');renderStats()">kg</button>
+          <button class="unit-btn${isImperial()?' unit-btn-active':''}" onclick="setUnits('imperial');renderStats()">lbs</button>
+        </div>
+      </div>
+    </div>
     <div class="s-grid ani">
       <div class="s-card"><div class="s-val">${done}</div><div class="s-lbl">Today</div></div>
       <div class="s-card"><div class="s-val">${best}</div><div class="s-lbl">Best Streak</div></div>
@@ -2825,16 +2835,6 @@ function renderStats() {
       <div class="q-nav"><button class="q-btn" onclick="rotQ(-1)">\u2190</button><button class="q-btn" onclick="rotQ(1)">\u2192</button></div>
     </div>
     <button class="w-action-btn" style="margin:16px 24px 8px" onclick="shareRecap()">📤 Share Weekly Recap</button>
-    <div class="da-section ani" style="margin:8px 24px 16px;padding:16px">
-      <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Settings</div>
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div style="font-size:14px;color:var(--text)">Units</div>
-        <div class="unit-toggle">
-          <button class="unit-btn${!isImperial()?' unit-btn-active':''}" onclick="setUnits('metric');renderStats()">kg</button>
-          <button class="unit-btn${isImperial()?' unit-btn-active':''}" onclick="setUnits('imperial');renderStats()">lbs</button>
-        </div>
-      </div>
-    </div>
     <button class="w-action-btn" style="margin:0 24px 32px;color:var(--fat);border-color:var(--fat)" onclick="if(confirm('Sign out?'))authSignOut()">Sign Out</button>`;
   qTimer = setInterval(() => rotQ(1), 30000);
 }
