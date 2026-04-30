@@ -2184,6 +2184,23 @@ function _parseChunk(chunk) {
   };
 }
 
+// Robustly extract the first complete JSON array using bracket depth matching
+function _extractJsonArray(str) {
+  const start = str.indexOf('[');
+  if (start === -1) return null;
+  let depth = 0, inStr = false, esc2 = false;
+  for (let i = start; i < str.length; i++) {
+    const c = str[i];
+    if (esc2)          { esc2 = false; continue; }
+    if (c === '\\' && inStr) { esc2 = true; continue; }
+    if (c === '"')     { inStr = !inStr; continue; }
+    if (inStr)         continue;
+    if (c === '[')     depth++;
+    if (c === ']') { depth--; if (depth === 0) return str.slice(start, i + 1); }
+  }
+  return null;
+}
+
 async function calculateMealDescription() {
   const ta = document.getElementById('describe-textarea');
   const out = document.getElementById('describe-output');
@@ -2192,12 +2209,20 @@ async function calculateMealDescription() {
   const text = ta.value.trim();
   if (!text) { out.innerHTML = '<p class="dm-hint">Describe what you ate above.</p>'; return; }
 
-  // Loading state
   out.innerHTML = '<p class="dm-hint" style="text-align:center">✦ Calculating macros…</p>';
   if (btn) { btn.disabled = true; btn.textContent = 'Calculating…'; }
 
   try {
-    const sysPrompt = 'You are a nutrition expert. The user describes a meal. Reply with ONLY a raw JSON array (no markdown, no text before or after). Each element must have: name (string), calories (integer), protein (integer), carbs (integer), fat (integer). All macros in grams. Be accurate. Example: [{"name":"Greek yoghurt","calories":130,"protein":11,"carbs":9,"fat":5}]';
+    const sysPrompt =
+      'You are a precise nutrition calculator. ' +
+      'The user will describe any food or meal in any format — vague, detailed, slang, restaurant items, branded foods, anything. ' +
+      'Your job: estimate the macros for everything described and return ONLY a JSON array. No prose, no markdown, no explanations. ' +
+      'Format: [{"name":"<food>","calories":<kcal>,"protein":<g>,"carbs":<g>,"fat":<g>},...] ' +
+      'Rules: calories and all macros must be integers. Use typical serving sizes if not specified. ' +
+      'If the user mentions a quantity (e.g. "2 eggs", "large pizza"), scale accordingly — list it as one item with total macros. ' +
+      'If something is truly unidentifiable, make your best estimate. Never refuse or add text outside the JSON array. ' +
+      'Example input: "bowl of oats with banana and honey" ' +
+      'Example output: [{"name":"Oats (80g)","calories":300,"protein":10,"carbs":54,"fat":6},{"name":"Banana","calories":89,"protein":1,"carbs":23,"fat":0},{"name":"Honey (1 tbsp)","calories":64,"protein":0,"carbs":17,"fat":0}]';
 
     const res = await fetch('https://text.pollinations.ai/', {
       method: 'POST',
@@ -2208,24 +2233,25 @@ async function calculateMealDescription() {
           { role: 'user', content: text }
         ],
         model: 'openai',
+        seed: 42,
         private: true
       })
     });
 
     const raw = await res.text();
-    // Strip markdown fences, then grab outermost JSON array (greedy to capture all items)
+    // Strip any markdown fences, then use bracket-depth extraction
     const clean = raw.replace(/```[a-z]*\n?/gi, '').replace(/```/g, '').trim();
-    const match = clean.match(/\[[\s\S]*\]/);
-    if (!match) {
-      out.innerHTML = `<p class="dm-hint dm-warn">Could not parse response. Raw: ${esc(raw.slice(0,300))}</p>`;
+    const jsonStr = _extractJsonArray(clean);
+    if (!jsonStr) {
+      out.innerHTML = `<p class="dm-hint dm-warn">Could not find JSON in response. Raw: ${esc(raw.slice(0,300))}</p>`;
       return;
     }
     let items;
-    try { items = JSON.parse(match[0]); } catch(pe) {
-      out.innerHTML = `<p class="dm-hint dm-warn">JSON parse error: ${esc(String(pe))}. Raw: ${esc(raw.slice(0,300))}</p>`;
+    try { items = JSON.parse(jsonStr); } catch(pe) {
+      out.innerHTML = `<p class="dm-hint dm-warn">Parse error: ${esc(String(pe))}. Raw: ${esc(raw.slice(0,300))}</p>`;
       return;
     }
-    if (!Array.isArray(items) || !items.length) throw new Error('Empty array');
+    if (!Array.isArray(items) || !items.length) throw new Error('Empty result');
 
     _parsedMealItems = items.map(it => ({
       name:     String(it.name || 'Food'),
