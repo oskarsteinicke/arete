@@ -2154,46 +2154,72 @@ function _parseChunk(chunk) {
   };
 }
 
-function parseMealDescription(text) {
-  const chunks = text.split(/[,\n]+/).map(s => s.trim()).filter(s => s.length > 1);
-  const matched = [], unmatched = [];
-  for (const c of chunks) {
-    const r = _parseChunk(c);
-    if (r) matched.push(r);
-    else unmatched.push(c);
-  }
-  return { matched, unmatched };
-}
-
-function calculateMealDescription() {
+async function calculateMealDescription() {
   const ta = document.getElementById('describe-textarea');
   const out = document.getElementById('describe-output');
+  const btn = document.getElementById('calc-macros-btn');
   if (!ta || !out) return;
   const text = ta.value.trim();
-  if (!text) { out.innerHTML = '<p class="dm-hint">Type something above first.</p>'; return; }
+  if (!text) { out.innerHTML = '<p class="dm-hint">Describe what you ate above.</p>'; return; }
 
-  const { matched, unmatched } = parseMealDescription(text);
-  _parsedMealItems = matched;
+  // Loading state
+  out.innerHTML = '<p class="dm-hint" style="text-align:center">✦ Calculating macros…</p>';
+  if (btn) { btn.disabled = true; btn.textContent = 'Calculating…'; }
 
-  if (!matched.length) {
-    out.innerHTML = `<p class="dm-hint">Couldn't recognise any foods. Try being more specific, e.g. "200g chicken breast, 1 cup rice, 2 eggs".</p>`;
-    return;
+  try {
+    const sysPrompt = `You are a precise nutrition database. The user will describe what they ate. Return ONLY a valid JSON array — no markdown, no explanation, no code block. Each element must have exactly these keys: "name" (string, short food name), "calories" (integer), "protein" (integer, grams), "carbs" (integer, grams), "fat" (integer, grams). Use real nutritional data. If the user gives a quantity (e.g. "200g", "2 eggs", "large") apply it. If no quantity is given use one standard serving. Be accurate for fast food, restaurant dishes, homemade food, snacks, drinks, and any cuisine. Example: [{"name":"Big Mac","calories":550,"protein":25,"carbs":46,"fat":30}]`;
+
+    const res = await fetch('https://text.pollinations.ai/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [
+          { role: 'system', content: sysPrompt },
+          { role: 'user', content: text }
+        ],
+        model: 'openai',
+        private: true,
+        jsonMode: true
+      })
+    });
+
+    const raw = await res.text();
+    // Extract JSON array from response
+    const match = raw.match(/\[[\s\S]*\]/);
+    if (!match) throw new Error('No JSON array in response');
+    const items = JSON.parse(match[0]);
+    if (!Array.isArray(items) || !items.length) throw new Error('Empty result');
+
+    _parsedMealItems = items.map(it => ({
+      name: String(it.name || 'Food'),
+      calories: Math.round(Number(it.calories) || 0),
+      protein:  Math.round(Number(it.protein)  || 0),
+      carbs:    Math.round(Number(it.carbs)     || 0),
+      fat:      Math.round(Number(it.fat)       || 0),
+    }));
+
+    _renderParsedItems(out);
+  } catch(e) {
+    out.innerHTML = `<p class="dm-hint dm-warn">Couldn't calculate macros — check your connection and try again.</p>`;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'CALCULATE MACROS'; }
   }
+}
 
-  const rows = matched.map((it, i) => `
+function _renderParsedItems(out) {
+  if (!out) out = document.getElementById('describe-output');
+  if (!out) return;
+  if (!_parsedMealItems.length) { out.innerHTML = ''; return; }
+  const rows = _parsedMealItems.map((it, i) => `
     <div class="dm-row">
       <div class="dm-row-name">${esc(it.name)}</div>
-      <div class="dm-row-macros">${it.calories} cal &middot; ${it.protein}P &middot; ${it.carbs}C &middot; ${it.fat}F</div>
-      <button class="dm-remove" onclick="_parsedMealItems.splice(${i},1);calculateMealDescription();">&times;</button>
+      <div class="dm-row-macros">${it.calories} cal · ${it.protein}P · ${it.carbs}C · ${it.fat}F</div>
+      <button class="dm-remove" onclick="_parsedMealItems.splice(${i},1);_renderParsedItems()">×</button>
     </div>`).join('');
-
-  const warn = unmatched.length
-    ? `<p class="dm-hint dm-warn">Not recognised: ${unmatched.map(esc).join(', ')}</p>` : '';
-
-  const totalCal = matched.reduce((s,i) => s + i.calories, 0);
-  out.innerHTML = `${rows}${warn}
-    <div class="dm-total">${totalCal} cal total</div>
-    <button class="w-action-btn" style="width:100%;margin-top:10px" onclick="addAllDescribed()">ADD ALL ITEMS</button>`;
+  const total = _parsedMealItems.reduce((s,i) => s + i.calories, 0);
+  out.innerHTML = `${rows}
+    <div class="dm-total">${total} cal total</div>
+    <button class="w-action-btn" style="width:100%;margin-top:10px" onclick="addAllDescribed()">ADD ALL TO MEAL</button>`;
 }
 
 function addAllDescribed() {
@@ -2227,8 +2253,8 @@ function renderDietAddMeal() {
           <span class="dm-header-text">Describe your meal</span>
           <span class="dm-header-sub">Instant macro calc</span>
         </div>
-        <textarea class="dm-textarea" id="describe-textarea" rows="3" placeholder="e.g. 200g chicken breast, 1 cup rice, 2 eggs, 1 tbsp olive oil"></textarea>
-        <button class="w-action-btn" style="width:100%;margin:8px 0 0" onclick="calculateMealDescription()">CALCULATE MACROS</button>
+        <textarea class="dm-textarea" id="describe-textarea" rows="3" placeholder="e.g. Big Mac and large fries, a bowl of pasta with chicken, 2 eggs and toast with butter…"></textarea>
+        <button class="w-action-btn" id="calc-macros-btn" style="width:100%;margin:8px 0 0" onclick="calculateMealDescription()">CALCULATE MACROS</button>
         <div id="describe-output" class="dm-output"></div>
       </div>
 
