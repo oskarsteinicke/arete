@@ -1,4 +1,4 @@
-const CACHE = 'ns-v11';
+const CACHE = 'ns-v12';
 const ASSETS = [
   '/northstar/',
   '/northstar/index.html',
