@@ -809,6 +809,27 @@ nav {
 .coach-bubble.coach li { margin-bottom: 4px; }
 .coach-bubble.coach strong { color: var(--accent-b); }
 
+.coach-bubble.coach-action {
+  background: rgba(154,130,86,0.10);
+  border: 1px solid rgba(154,130,86,0.25);
+  border-radius: 16px;
+  padding: 10px 14px;
+  margin: 4px 0;
+  max-width: 92%;
+}
+.coach-action-item {
+  font-size: 12px;
+  color: var(--accent-b);
+  padding: 4px 0;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+}
+.coach-action-item + .coach-action-item {
+  border-top: 1px solid rgba(154,130,86,0.12);
+  margin-top: 4px;
+  padding-top: 8px;
+}
+
 .coach-typing {
   display: flex; gap: 5px; align-items: center;
   padding: 12px 15px;
