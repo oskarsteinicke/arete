@@ -1054,3 +1054,37 @@ nav {
   background: rgba(154,130,86,0.08);
 }
 .ob-gender-card:active { transform: scale(0.97); }
+
+/* ═══ FOOD PHOTO SCAN ═════════════════════════════════════════════════════ */
+.photo-scan-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 14px; margin-bottom: 16px;
+  background: linear-gradient(135deg, rgba(154,130,86,0.15), rgba(154,130,86,0.06));
+  border: 1.5px dashed var(--accent); border-radius: 16px;
+  color: var(--accent); font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: background 0.2s, transform 0.15s;
+}
+.photo-scan-btn:active { transform: scale(0.97); }
+.photo-scan-btn svg { flex-shrink: 0; }
+.photo-preview {
+  margin-bottom: 16px; border-radius: 16px; overflow: hidden;
+  border: 1px solid var(--border2); position: relative;
+}
+.food-photo-img {
+  width: 100%; display: block; border-radius: 16px;
+  max-height: 220px; object-fit: cover;
+}
+.photo-preview .spinner-overlay {
+  position: absolute; inset: 0; display: flex;
+  align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.45); border-radius: 16px;
+  color: var(--accent); font-size: 13px; font-weight: 600;
+  gap: 8px;
+}
+.photo-preview .spinner-overlay::before {
+  content: ''; width: 20px; height: 20px;
+  border: 2.5px solid rgba(154,130,86,0.3);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }

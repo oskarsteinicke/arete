@@ -2523,6 +2523,116 @@ function addAllDescribed() {
   go('dietAddMeal');
 }
 
+// ── PHOTO MACRO SCANNER ──────────────────────────────────────────────────
+function triggerFoodPhoto() {
+  const inp = document.getElementById('food-photo-input');
+  if (inp) inp.click();
+}
+
+async function handleFoodPhoto(input) {
+  const file = input.files?.[0];
+  if (!file) return;
+
+  const out = document.getElementById('photo-output');
+  if (out) out.innerHTML = '<p class="dm-hint" style="text-align:center">✦ Analyzing photo…</p>';
+
+  // Show preview
+  const preview = document.getElementById('photo-preview');
+  if (preview) {
+    const url = URL.createObjectURL(file);
+    preview.innerHTML = `<img src="${url}" class="food-photo-img">`;
+  }
+
+  try {
+    // Convert to base64
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    // Resize if too large (max ~800px) to reduce payload
+    const resized = await _resizeImage(base64, 800);
+
+    const sysPrompt =
+      'You are a precise food nutrition analyzer. ' +
+      'The user will send a photo of food. Identify every food item visible and estimate macros. ' +
+      'Return ONLY a JSON array. No prose, no markdown, no explanations. ' +
+      'Format: [{"name":"<food>","calories":<kcal>,"protein":<g>,"carbs":<g>,"fat":<g>},...] ' +
+      'Rules: calories and all macros must be integers. Estimate portion sizes from visual cues. ' +
+      'If unsure about exact amounts, give your best estimate based on typical portions. ' +
+      'Never refuse or add text outside the JSON array.';
+
+    const res = await fetch('https://text.pollinations.ai/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [
+          { role: 'system', content: sysPrompt },
+          { role: 'user', content: [
+            { type: 'image_url', image_url: { url: resized } },
+            { type: 'text', text: 'Analyze this food photo and return the macro breakdown as a JSON array.' }
+          ]}
+        ],
+        model: 'openai',
+        seed: 42,
+        private: true
+      })
+    });
+
+    const raw = await res.text();
+    const clean = raw.replace(/```[a-z]*\n?/gi, '').replace(/```/g, '').trim();
+    const jsonStr = _extractJsonArray(clean);
+
+    if (!jsonStr) {
+      if (out) out.innerHTML = `<p class="dm-hint dm-warn">Could not identify food. Try a clearer photo or describe it instead.</p>`;
+      return;
+    }
+
+    let items;
+    try { items = JSON.parse(jsonStr); } catch(pe) {
+      if (out) out.innerHTML = `<p class="dm-hint dm-warn">Parse error. Try again or describe your meal instead.</p>`;
+      return;
+    }
+    if (!Array.isArray(items) || !items.length) throw new Error('No food detected');
+
+    _parsedMealItems = items.map(it => ({
+      name:     String(it.name || 'Food'),
+      calories: Math.round(Number(it.calories) || 0),
+      protein:  Math.round(Number(it.protein)  || 0),
+      carbs:    Math.round(Number(it.carbs)     || 0),
+      fat:      Math.round(Number(it.fat)       || 0),
+    }));
+    _renderParsedItems(out);
+
+  } catch(e) {
+    if (out) out.innerHTML = `<p class="dm-hint dm-warn">Error: ${esc(String(e))}. Try again.</p>`;
+  }
+
+  // Reset file input so same file can be re-selected
+  input.value = '';
+}
+
+function _resizeImage(base64, maxDim) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const { width, height } = img;
+      if (width <= maxDim && height <= maxDim) { resolve(base64); return; }
+      const scale = Math.min(maxDim / width, maxDim / height);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(width * scale);
+      canvas.height = Math.round(height * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', 0.8));
+    };
+    img.onerror = () => resolve(base64);
+    img.src = base64;
+  });
+}
+
 function renderDietAddMeal() {
   const types = ['Breakfast','Lunch','Dinner','Snack'];
   const typeBtns = types.map(t => `<button class="d-type-btn${t===curMealType?' active':''}" onclick="setMealType('${t}')">${t}</button>`).join('');
@@ -2540,6 +2650,20 @@ function renderDietAddMeal() {
     <div style="padding:0 24px">
       <div class="sec-lbl" style="padding:0 0 8px">Items${curMealItems.length ? ` \u00B7 ${totalCal} cal total` : ''}</div>
       <div class="d-items-list">${itemsList}</div>
+
+      <div class="dm-section">
+        <div class="dm-header">
+          <span class="dm-icon">📸</span>
+          <span class="dm-header-text">Scan Food Photo</span>
+          <span class="dm-header-sub">AI identifies & calculates</span>
+        </div>
+        <input type="file" accept="image/*" capture="environment" id="food-photo-input" style="display:none" onchange="handleFoodPhoto(this)">
+        <button class="w-action-btn photo-scan-btn" style="width:100%;margin:0" onclick="triggerFoodPhoto()">
+          <span style="font-size:18px">📷</span> TAKE PHOTO OR CHOOSE IMAGE
+        </button>
+        <div id="photo-preview" class="photo-preview"></div>
+        <div id="photo-output" class="dm-output"></div>
+      </div>
 
       <div class="dm-section">
         <div class="dm-header">
