@@ -33,6 +33,8 @@ let calMonth = new Date().getMonth();
 let calSelectedDate = '';
 let calView = 'monthly'; // 'monthly' | 'weekly' | 'daily'
 let calTasks = {};
+let sleepLog;
+let restTimer = null, restTimerEnd = 0, restTimerDur = 90;
 const USDA_KEY = 'DEMO_KEY';
 
 // ── Unit helpers ──────────────────────────────────────────────────────────
@@ -46,7 +48,7 @@ function setUnits(u) {
 // ── SUPABASE AUTH + CLOUD SYNC ────────────────────────────────────────────
 const SUPABASE_URL = 'https://socflncohsenjptgkkax.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_J2qJ8iTfCESrML5Hm6NGbQ_mz9uPeug';
-const SYNC_KEYS = ['hvi_habits','hvi_log','hvi_journal3','hvi_meta','hvi_workout_log','hvi_workout_meta','hvi_meal_log','hvi_diet_meta','hvi_weight_log','hvi_prs','hvi_gamification','hvi_achievements','hvi_tdee_profile','hvi_custom_programs','hvi_onboarded','hvi_wger_cache'];
+const SYNC_KEYS = ['hvi_habits','hvi_log','hvi_journal3','hvi_meta','hvi_workout_log','hvi_workout_meta','hvi_meal_log','hvi_diet_meta','hvi_weight_log','hvi_prs','hvi_gamification','hvi_achievements','hvi_tdee_profile','hvi_custom_programs','hvi_onboarded','hvi_wger_cache','hvi_sleep_log','hvi_settings'];
 
 // ── AUTH HELPERS ──────────────────────────────────────────────────────────
 async function authResetPassword(email) {
@@ -556,6 +558,15 @@ const ACHIEVEMENTS = [
   { id: 'quests_7',      icon: '🎯', name: 'Quest Master',    desc: 'Complete 7 daily quests total' },
   { id: 'pr_10',         icon: '💥', name: 'Record Breaker',  desc: 'Set 10 personal records' },
   { id: 'nutrition_30',  icon: '🥗', name: 'Dialled In',      desc: 'Log meals on 30 different days' },
+  { id: 'sleep_7',       icon: '😴', name: 'Well Rested',      desc: 'Log sleep for 7 days' },
+  { id: 'sleep_30',      icon: '💤', name: 'Sleep Master',     desc: 'Log sleep for 30 days' },
+  { id: 'xp_1000',       icon: '⚡', name: 'XP Grinder',       desc: 'Earn 1,000 XP total' },
+  { id: 'xp_5000',       icon: '💫', name: 'XP Legend',        desc: 'Earn 5,000 XP total' },
+  { id: 'perfect_14',    icon: '🌟', name: 'Perfect Fortnight', desc: '14 perfect habit days total' },
+  { id: 'workouts_100',  icon: '🏆', name: 'Century Club',     desc: 'Log 100 workouts' },
+  { id: 'pr_25',         icon: '💥', name: 'PR Machine',       desc: 'Set 25 personal records' },
+  { id: 'level_20',      icon: '👑', name: 'Northstar',        desc: 'Reach Level 20' },
+  { id: 'streak_60',     icon: '🔥', name: 'Relentless',       desc: '60-day streak on any habit' },
 ];
 
 // ── Level Titles ──────────────────────────────────────────────────────────
@@ -746,6 +757,15 @@ function checkAchievements() {
     all_pillars:   allPillarsHit,
     first_quest:   totalQuests >= 1,
     quests_7:      totalQuests >= 7,
+    sleep_7:       Object.keys(sleepLog || {}).filter(d => sleepLog[d]?.hours > 0).length >= 7,
+    sleep_30:      Object.keys(sleepLog || {}).filter(d => sleepLog[d]?.hours > 0).length >= 30,
+    xp_1000:       (gamification.xp || 0) >= 1000,
+    xp_5000:       (gamification.xp || 0) >= 5000,
+    perfect_14:    (meta.totalPerfectDays || 0) >= 14,
+    workouts_100:  totalWorkouts >= 100,
+    pr_25:         totalPRs >= 25,
+    level_20:      lvl >= 20,
+    streak_60:     maxStreak >= 60,
   };
 
   ACHIEVEMENTS.forEach(ach => {
@@ -1052,7 +1072,9 @@ async function init() {
   achievements = LS.get('hvi_achievements', []);
   settings = LS.get('hvi_settings', { units: 'metric' });
   calTasks = LS.get('hvi_cal_tasks', {});
+  sleepLog = LS.get('hvi_sleep_log', {});
 
+  applyTheme();
   injectAdaptiveStyles();
   injectExerciseBrowserStyles();
   injectGamificationStyles();
@@ -1067,7 +1089,7 @@ async function init() {
     renderOnboarding(0);
   } else {
     (() => {
-      const validViews = ['home','pillar','habits','habitCreate','stats','workout','workoutPicker','workoutActive','workoutHistory','workoutBuilder','exerciseBrowser','diet','dietAddMeal','dietRecipes','dietRecipeDetail','dietGoals','dietTrend','dietTDEE','library'];
+      const validViews = ['home','pillar','habits','habitCreate','stats','workout','workoutPicker','workoutActive','workoutHistory','workoutBuilder','exerciseBrowser','diet','dietAddMeal','dietRecipes','dietRecipeDetail','dietGoals','dietTrend','dietTDEE','library','sleep'];
       const hash = location.hash.replace(/^#/, '');
       const view = validViews.includes(hash) ? hash : 'home';
       go(view, {}, false);
@@ -1100,6 +1122,7 @@ function checkReset() {
   meta.lastOpenedDate = t;
   LS.set('hvi_log', log);
   LS.set('hvi_meta', meta);
+  maybeAwardStreakShield();
 }
 
 // ── NAVIGATION ────────────────────────────────────────────────────────────
@@ -1222,6 +1245,19 @@ function renderHome() {
   const wDay = wProg.days[workoutMeta.currentDayIndex % wProg.days.length];
   const wLogged = !!workoutLog[today()];
 
+  // Sleep data
+  const slp = sleepLog[today()] || {};
+  const slpHours = slp.hours || 0;
+  const slpQuality = slp.quality || 0;
+
+  // Time since last workout
+  const _lastWD = workoutMeta.lastWorkoutDate;
+  const _daysSince = _lastWD ? Math.floor((new Date(today() + 'T12:00') - new Date(_lastWD + 'T12:00')) / 86400000) : null;
+  const _sinceText = _daysSince === null ? '' : _daysSince === 0 ? 'Today' : _daysSince === 1 ? 'Yesterday' : _daysSince + 'd ago';
+
+  // Streak shields
+  const _shields = getStreakShields();
+
   // Nutrition card
   const dm = getDayMacros();
   const dGoal = dietMeta.dailyGoals.calories;
@@ -1301,6 +1337,7 @@ function renderHome() {
         <div class="hm-card-val">${wDay.name}</div>
         <div class="hm-card-sub">${wProg.name}</div>
         <div class="hm-card-status" style="${wLogged ? 'color:var(--accent-b)' : 'color:var(--fg3)'}">${wLogged ? '✓ Done' : '→ Start'}</div>
+        ${!wLogged && _sinceText ? `<div style="font-size:9px;color:var(--text-muted);margin-top:4px">Last: ${_sinceText}</div>` : ''}
       </div>
       <div class="hm-card" onclick="go('diet')">
         <div class="hm-card-icon">🥗</div>
@@ -1309,6 +1346,16 @@ function renderHome() {
         <div class="hm-card-sub">${dGoal.toLocaleString()} goal</div>
         <div class="hm-card-bar"><div class="hm-card-fill" style="width:${(dPct*100).toFixed(0)}%;background:var(--cal)"></div></div>
         <div class="hm-card-status" style="color:var(--fg3)">${dm.p}p · ${dm.c}c · ${dm.f}f</div>
+      </div>
+      <div class="hm-card" onclick="go('sleep')" style="grid-column:1/-1">
+        <div style="display:flex;align-items:center;gap:16px">
+          <div class="hm-card-icon" style="margin:0">😴</div>
+          <div style="flex:1">
+            <div class="hm-card-lbl">Sleep</div>
+            <div style="font-size:14px;color:var(--text)">${slpHours ? slpHours + 'h' : 'Not logged'}${slpQuality ? ' · Quality ' + slpQuality + '/5' : ''}</div>
+          </div>
+          ${_shields > 0 ? `<div style="font-size:10px;color:var(--accent);background:rgba(154,130,86,.12);padding:4px 8px;border-radius:100px;border:1px solid rgba(154,130,86,.2)">🛡️ ${_shields} shield${_shields>1?'s':''}</div>` : ''}
+        </div>
       </div>
     </div>
 
@@ -1321,6 +1368,13 @@ function renderHome() {
       <div class="hm-sec-title">🏆 Weekly Challenges</div>
     </div>
     <div class="hm-chal-list ani">${chalHTML}</div>
+
+    <!-- Daily quote -->
+    <div class="hm-sec ani"><div class="hm-sec-title">💡 Today's Wisdom</div></div>
+    <div class="hm-quote ani">
+      <div class="hm-quote-text">"${esc(QUOTES[meta.quoteIndex % QUOTES.length].text)}"</div>
+      <div class="hm-quote-auth">— ${esc(QUOTES[meta.quoteIndex % QUOTES.length].author)}</div>
+    </div>
   `;
 }
 
@@ -1358,7 +1412,9 @@ function renderHabits() {
         ${!_habitEditMode ? `<button class="w-action-btn" style="margin:0;padding:10px 16px;font-size:18px;width:auto;line-height:1" onclick="go('habitCreate')">+</button>` : ''}
       </div>
     </div>
-    <div class="ani">${groups}</div>`;
+    <div class="ani">${groups}</div>
+    <div class="sec-lbl" style="padding-top:20px">90-Day Activity</div>
+    ${buildHeatmapHTML()}`;
   if (!_habitEditMode) requestAnimationFrame(initSwipeGestures);
 }
 
@@ -1622,7 +1678,7 @@ function renderWorkoutActive() {
     }).join('');
     const canRemove = we.sets.length > 1;
     return `<div class="w-ex ani">
-      <div class="w-ex-head"><div><div class="w-ex-name">${esc(name)}</div><div class="w-ex-muscle">${esc(muscle)}</div></div></div>
+      <div class="w-ex-head"><div><div class="w-ex-name">${esc(name)}</div><div class="w-ex-muscle">${esc(muscle)}</div></div>${buildExerciseSparkline(we.exerciseId)}</div>
       ${tipHTML}
       ${setsHTML}
       <div class="w-set-actions">
@@ -1635,6 +1691,14 @@ function renderWorkoutActive() {
     <button class="back" onclick="go('workout')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
     <div class="page-head ani"><div class="w-day-badge">${day.name}</div><div class="page-title">${prog.name}</div><div class="page-sub">${day.focus}</div></div>
     ${exHTML}
+    <div id="rest-timer-bar" class="rt-bar" style="display:none"></div>
+    <div class="rt-presets">
+      <span style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.5px">Rest</span>
+      <button class="rt-preset-btn" onclick="startRestTimer(60)">1:00</button>
+      <button class="rt-preset-btn" onclick="startRestTimer(90)">1:30</button>
+      <button class="rt-preset-btn" onclick="startRestTimer(120)">2:00</button>
+      <button class="rt-preset-btn" onclick="startRestTimer(180)">3:00</button>
+    </div>
     <button class="w-finish" onclick="finishWorkout()">Finish Workout</button>`;
 }
 
@@ -1675,6 +1739,8 @@ function toggleSet(ei, si) {
       }, 2500);
     }
   }
+  // Auto-start rest timer when completing a set
+  if (set.completed) startRestTimer(restTimerDur);
   go('workoutActive');
 }
 
@@ -1698,6 +1764,42 @@ function removeSet(ei, si) {
   sets.splice(si, 1);
   LS.set('hvi_workout_log', workoutLog);
   go('workoutActive');
+}
+
+// ── REST TIMER ──────────────────────────────────────────────────────────
+function startRestTimer(dur) {
+  restTimerDur = dur || 90;
+  restTimerEnd = Date.now() + restTimerDur * 1000;
+  _updateRestTimer();
+  if (restTimer) clearInterval(restTimer);
+  restTimer = setInterval(_updateRestTimer, 250);
+  navigator.vibrate && navigator.vibrate(12);
+}
+function stopRestTimer() {
+  if (restTimer) { clearInterval(restTimer); restTimer = null; }
+  const el = document.getElementById('rest-timer-bar');
+  if (el) el.style.display = 'none';
+}
+function _updateRestTimer() {
+  const el = document.getElementById('rest-timer-bar');
+  if (!el) return;
+  const left = Math.max(0, restTimerEnd - Date.now());
+  const secs = Math.ceil(left / 1000);
+  const pct = restTimerDur > 0 ? (1 - left / (restTimerDur * 1000)) : 1;
+  if (secs <= 0) {
+    clearInterval(restTimer); restTimer = null;
+    el.innerHTML = '<div class="rt-done">REST COMPLETE</div>';
+    navigator.vibrate && navigator.vibrate([100, 50, 100]);
+    setTimeout(() => { if (el) el.style.display = 'none'; }, 2500);
+    return;
+  }
+  el.style.display = 'block';
+  const m = Math.floor(secs / 60), s = secs % 60;
+  el.innerHTML = `<div class="rt-row">
+    <div class="rt-time">${m}:${String(s).padStart(2,'0')}</div>
+    <div class="rt-track"><div class="rt-fill" style="width:${(pct*100).toFixed(0)}%"></div></div>
+    <button class="rt-skip" onclick="stopRestTimer()">Skip</button>
+  </div>`;
 }
 
 function finishWorkout() {
@@ -3867,9 +3969,23 @@ function renderStats() {
           <button class="unit-btn${isImperial()?' unit-btn-active':''}" onclick="setUnits('imperial');renderStats()">lbs</button>
         </div>
       </div>
-      <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="font-size:14px;color:var(--text)">Theme</div>
+        <div class="unit-toggle">
+          <button class="unit-btn${(settings.theme||'dark')==='dark'?' unit-btn-active':''}" onclick="settings.theme='dark';LS.set('hvi_settings',settings);applyTheme();renderStats()">Dark</button>
+          <button class="unit-btn${settings.theme==='light'?' unit-btn-active':''}" onclick="settings.theme='light';LS.set('hvi_settings',settings);applyTheme();renderStats()">Light</button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
         <div style="font-size:14px;color:var(--text)">App version</div>
         <button class="unit-btn" style="padding:6px 14px;background:var(--surface);border:1px solid var(--border2)" onclick="if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(r=>r.forEach(x=>x.unregister())).then(()=>window.location.reload(true))}else{window.location.reload(true)}">Refresh</button>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:14px;color:var(--text)">Backup</div>
+        <div style="display:flex;gap:6px">
+          <button class="unit-btn" style="padding:6px 14px;background:var(--surface);border:1px solid var(--border2)" onclick="exportAllData()">Export</button>
+          <label class="unit-btn" style="padding:6px 14px;background:var(--surface);border:1px solid var(--border2);cursor:pointer">Import<input type="file" accept=".json" style="display:none" onchange="importData(this)"></label>
+        </div>
       </div>
     </div>
     <div class="s-grid ani">
@@ -3954,7 +4070,7 @@ function rotQ(dir) {
 let _obGoalType = 'maintain';
 let _obCalories = 2500;
 let _obProtein = 180;
-let _obName = '';
+let _obName = '', _obGender = 'male';
 
 function injectOnboardingStyles() {
   if (document.getElementById('ob-styles')) return;
@@ -4017,17 +4133,33 @@ function renderOnboarding(step) {
     return;
   }
 
-  const dots = [1,2,3].map(i => `<div class="ob-dot${i===step?' active':''}" ></div>`).join('');
+  const dots = [1,2,3,4].map(i => `<div class="ob-dot${i===step?' active':''}" ></div>`).join('');
   let content = '';
 
   if (step === 1) {
     content = `
-      <div class="ob-eyebrow">Step 1 of 3</div>
+      <div class="ob-eyebrow">Step 1 of 4</div>
       <div class="ob-title">What\'s your name?</div>
       <div class="ob-sub">We\'ll personalise your experience and your AI coach will know what to call you.</div>
       <input class="ob-input" type="text" id="ob-name-input" placeholder="Your first name" maxlength="30" value="${esc(_obName)}" oninput="_obName=this.value.trim()">`;
 
   } else if (step === 2) {
+    content = `
+      <div class="ob-eyebrow">Step 2 of 4</div>
+      <div class="ob-title">Choose your avatar</div>
+      <div class="ob-sub">This shapes your character's appearance. You can always change it later.</div>
+      <div class="ob-gender-row">
+        <div class="ob-gender-card${_obGender==='male'?' active':''}" onclick="_obGender='male';renderOnboarding(2)">
+          <div style="width:60px;height:94px;margin:0 auto 8px">${buildAvatarSVG(1)}</div>
+          <div style="font-size:13px;color:var(--text)">Male</div>
+        </div>
+        <div class="ob-gender-card${_obGender==='female'?' active':''}" onclick="_obGender='female';renderOnboarding(2)">
+          <div style="width:60px;height:94px;margin:0 auto 8px">${(()=>{const _tmp=tdeeProfile;tdeeProfile={sex:'female'};const s=buildAvatarSVG(1);tdeeProfile=_tmp;return s;})()}</div>
+          <div style="font-size:13px;color:var(--text)">Female</div>
+        </div>
+      </div>`;
+
+  } else if (step === 3) {
     const goals = [
       {k:'habits', emoji:'\u{1F525}', name:'Build habits', desc:'Daily routines & discipline'},
       {k:'fitness', emoji:'\u{1F4AA}', name:'Get stronger', desc:'Workouts & performance'},
@@ -4041,18 +4173,18 @@ function renderOnboarding(step) {
         <div class="ob-goal-desc">${g.desc}</div>
       </div>`).join('');
     content = `
-      <div class="ob-eyebrow">Step 2 of 3</div>
+      <div class="ob-eyebrow">Step 3 of 4</div>
       <div class="ob-title">What brings you here?</div>
       <div class="ob-sub">Pick your main focus. You can use everything, but this helps us highlight what matters most.</div>
       <div class="ob-goal-grid">${cards}</div>`;
 
-  } else if (step === 3) {
+  } else if (step === 4) {
     const nuts = [['cut','Cut','Lose fat'],['maintain','Maintain','Stay lean'],['bulk','Bulk','Build muscle']];
     const nutBtns = nuts.map(([k,l,s]) =>
       `<button class="ob-nut-btn${_obGoalType===k?' active':''}" onclick="_obGoalType='${k}';_obCalories=${k==='cut'?2000:k==='bulk'?3000:2500};_obProtein=${k==='cut'?160:k==='bulk'?200:180};renderOnboarding(3)">${l}<br><span style="font-weight:400;font-size:10px;text-transform:none">${s}</span></button>`
     ).join('');
     content = `
-      <div class="ob-eyebrow">Step 3 of 3</div>
+      <div class="ob-eyebrow">Step 4 of 4</div>
       <div class="ob-title">Set your daily targets.</div>
       <div class="ob-sub">These feed into your macro rings. You can update them anytime in Diet \u2192 Goals.</div>
       <div class="ob-nut-btns">${nutBtns}</div>
@@ -4062,7 +4194,7 @@ function renderOnboarding(step) {
       </div>`;
   }
 
-  const isLast = step === 3;
+  const isLast = step === 4;
   overlay.innerHTML = `
     <div class="ob-wrap">
       <div class="ob-step-dots">${dots}</div>
@@ -4077,7 +4209,13 @@ function obNext(step) {
     const n = _obName || (document.getElementById('ob-name-input')?.value?.trim() || '');
     if (n) { _obName = n; localStorage.setItem('hvi_user_name', n); }
   }
-  if (step < 3) { renderOnboarding(step + 1); return; }
+  if (step === 2) {
+    // Save gender to tdee profile
+    if (!tdeeProfile) tdeeProfile = {};
+    tdeeProfile.sex = _obGender;
+    LS.set('hvi_tdee_profile', tdeeProfile);
+  }
+  if (step < 4) { renderOnboarding(step + 1); return; }
   obFinish();
 }
 
@@ -4283,6 +4421,231 @@ function shareRecap() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
+// SLEEP TRACKING
+// ══════════════════════════════════════════════════════════════════════════
+function renderSleep() {
+  const t = today();
+  const entry = sleepLog[t] || {};
+  const last7 = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const k = d.toLocaleDateString('en-CA');
+    const e = sleepLog[k];
+    if (e && e.hours) last7.push(e);
+  }
+  const avg = last7.length ? (last7.reduce((s,e) => s + e.hours, 0) / last7.length).toFixed(1) : '—';
+  const avgQ = last7.length ? (last7.reduce((s,e) => s + (e.quality || 3), 0) / last7.length).toFixed(1) : '—';
+
+  const barHTML = (() => {
+    const bars = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const k = d.toLocaleDateString('en-CA');
+      const e = sleepLog[k];
+      const h = e?.hours || 0;
+      const pct = Math.min(1, h / 10) * 100;
+      const dayLabel = d.toLocaleDateString('en-US', { weekday: 'short' }).slice(0,2);
+      const col = h >= 7 ? 'var(--accent-b)' : h >= 5 ? 'var(--carb)' : 'var(--fat)';
+      bars.push(`<div class="sl-bar-col">
+        <div class="sl-bar-val">${h || ''}</div>
+        <div class="sl-bar-track"><div class="sl-bar-fill" style="height:${pct}%;background:${col}"></div></div>
+        <div class="sl-bar-day">${dayLabel}</div>
+      </div>`);
+    }
+    return bars.join('');
+  })();
+
+  const qualOpts = [1,2,3,4,5].map(q =>
+    `<button class="sl-q-btn${(entry.quality||0)===q?' active':''}" onclick="setSleepQuality(${q})">${q}</button>`
+  ).join('');
+
+  document.getElementById('view').innerHTML = `
+    <button class="back" onclick="go('home')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
+    <div class="page-head ani"><div class="page-title">Sleep</div><div class="page-sub">Recovery is where growth happens.</div></div>
+    <div class="da-section ani" style="margin:0 24px 16px;padding:20px">
+      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px">Last Night's Sleep</div>
+      <div style="display:flex;gap:12px;align-items:flex-end;margin-bottom:16px">
+        <div style="flex:1">
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Hours slept</div>
+          <input class="d-input" type="number" min="0" max="16" step="0.5" value="${entry.hours||''}" placeholder="e.g. 7.5" style="margin:0" oninput="saveSleepHours(this.value)">
+        </div>
+        <div style="flex:1">
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Bedtime</div>
+          <input class="d-input" type="time" value="${entry.bedtime||''}" style="margin:0" oninput="saveSleepField('bedtime',this.value)">
+        </div>
+        <div style="flex:1">
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Wake time</div>
+          <input class="d-input" type="time" value="${entry.wake||''}" style="margin:0" oninput="saveSleepField('wake',this.value)">
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">Sleep quality</div>
+      <div class="sl-q-row">${qualOpts}</div>
+    </div>
+    <div class="da-section ani" style="margin:0 24px 16px;padding:20px">
+      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px">This Week</div>
+      <div class="s-grid" style="margin:0 0 16px">
+        <div class="s-card"><div class="s-val" style="font-size:22px">${avg}</div><div class="s-lbl">Avg Hours</div></div>
+        <div class="s-card"><div class="s-val" style="font-size:22px">${avgQ}</div><div class="s-lbl">Avg Quality</div></div>
+      </div>
+      <div class="sl-bars">${barHTML}</div>
+    </div>`;
+}
+
+function saveSleepHours(val) {
+  const t = today();
+  if (!sleepLog[t]) sleepLog[t] = {};
+  sleepLog[t].hours = parseFloat(val) || 0;
+  LS.set('hvi_sleep_log', sleepLog);
+}
+function setSleepQuality(q) {
+  const t = today();
+  if (!sleepLog[t]) sleepLog[t] = {};
+  sleepLog[t].quality = q;
+  LS.set('hvi_sleep_log', sleepLog);
+  renderSleep();
+}
+function saveSleepField(field, val) {
+  const t = today();
+  if (!sleepLog[t]) sleepLog[t] = {};
+  sleepLog[t][field] = val;
+  LS.set('hvi_sleep_log', sleepLog);
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// HABIT HEATMAP
+// ══════════════════════════════════════════════════════════════════════════
+function buildHeatmapHTML() {
+  const days = 91; // ~13 weeks
+  const cells = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const k = d.toLocaleDateString('en-CA');
+    const count = habits.filter(h => log[h.id]?.lastCompletedDate === k || (k === today() && log[h.id]?.completedToday)).length;
+    const total = habits.length || 1;
+    const pct = count / total;
+    const lvl = pct === 0 ? 0 : pct < 0.25 ? 1 : pct < 0.5 ? 2 : pct < 0.75 ? 3 : 4;
+    cells.push(`<div class="hm-heatcell hm-heat-${lvl}" title="${k}: ${count}/${habits.length}"></div>`);
+  }
+  return `<div class="hm-heatmap">
+    <div class="hm-heat-label">Less</div>
+    <div class="hm-heat-grid">${cells.join('')}</div>
+    <div class="hm-heat-label">More</div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// STREAK SHIELDS
+// ══════════════════════════════════════════════════════════════════════════
+function getStreakShields() {
+  return gamification.streakShields || 0;
+}
+function useStreakShield(habitId) {
+  if (getStreakShields() <= 0) return;
+  gamification.streakShields = (gamification.streakShields || 0) - 1;
+  // Restore the streak by re-setting lastCompletedDate to yesterday
+  if (log[habitId]) {
+    log[habitId].lastCompletedDate = yesterday();
+    // Don't increment streak, just preserve it
+  }
+  LS.set('hvi_gamification', gamification);
+  LS.set('hvi_log', log);
+}
+// Award a streak shield each Sunday (checked in checkReset)
+function maybeAwardStreakShield() {
+  const dow = new Date().getDay(); // 0 = Sunday
+  if (dow === 0 && gamification._lastShieldWeek !== getWeekKey()) {
+    gamification.streakShields = Math.min((gamification.streakShields || 0) + 1, 3); // Max 3
+    gamification._lastShieldWeek = getWeekKey();
+    LS.set('hvi_gamification', gamification);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// EXPORT DATA
+// ══════════════════════════════════════════════════════════════════════════
+function exportAllData() {
+  const data = {};
+  const keys = ['hvi_habits','hvi_log','hvi_journal3','hvi_meta','hvi_workout_log','hvi_workout_meta',
+    'hvi_meal_log','hvi_diet_meta','hvi_weight_log','hvi_prs','hvi_gamification','hvi_achievements',
+    'hvi_tdee_profile','hvi_custom_programs','hvi_sleep_log','hvi_cal_tasks','hvi_settings'];
+  keys.forEach(k => { try { data[k] = JSON.parse(localStorage.getItem(k)); } catch {} });
+  data.hvi_user_name = localStorage.getItem('hvi_user_name');
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `northstar-backup-${today()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(input) {
+  const file = input.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      Object.keys(data).forEach(k => {
+        if (k === 'hvi_user_name') localStorage.setItem(k, data[k] || '');
+        else localStorage.setItem(k, JSON.stringify(data[k]));
+      });
+      alert('Data imported! Reloading...');
+      window.location.reload();
+    } catch (err) { alert('Invalid backup file.'); }
+  };
+  reader.readAsText(file);
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// DARK/LIGHT THEME
+// ══════════════════════════════════════════════════════════════════════════
+function toggleTheme() {
+  const cur = settings.theme || 'dark';
+  settings.theme = cur === 'dark' ? 'light' : 'dark';
+  LS.set('hvi_settings', settings);
+  applyTheme();
+}
+function applyTheme() {
+  const theme = (settings || {}).theme || 'dark';
+  document.documentElement.setAttribute('data-theme', theme);
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// PROGRESSIVE OVERLOAD CHART (mini sparkline per exercise)
+// ══════════════════════════════════════════════════════════════════════════
+function buildExerciseSparkline(exerciseId) {
+  // Get last 10 sessions for this exercise
+  const sessions = [];
+  const dates = Object.keys(workoutLog).sort().reverse().slice(0, 60);
+  for (const d of dates) {
+    const wl = workoutLog[d];
+    if (!wl?.exercises) continue;
+    const ex = wl.exercises.find(e => e.exerciseId === exerciseId);
+    if (ex) {
+      const best = Math.max(0, ...ex.sets.filter(s=>s.completed).map(s => s.weight * s.reps));
+      if (best > 0) sessions.unshift({ date: d, vol: best });
+    }
+    if (sessions.length >= 10) break;
+  }
+  if (sessions.length < 2) return '';
+  const maxV = Math.max(...sessions.map(s => s.vol));
+  const minV = Math.min(...sessions.map(s => s.vol));
+  const range = maxV - minV || 1;
+  const w = 80, h = 24;
+  const pts = sessions.map((s, i) => {
+    const x = (i / (sessions.length - 1)) * w;
+    const y = h - ((s.vol - minV) / range) * h;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  const trend = sessions[sessions.length-1].vol >= sessions[0].vol;
+  const col = trend ? 'var(--accent-b)' : 'var(--fat)';
+  return `<svg viewBox="0 0 ${w} ${h}" class="w-sparkline" style="width:80px;height:24px">
+    <polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+
 // AI COACH
 // ══════════════════════════════════════════════════════════════════════════
 
