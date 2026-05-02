@@ -416,6 +416,23 @@ function finishWorkout() {
   go('workout');
 }
 
+function repeatWorkout(date) {
+  const src = workoutLog[date];
+  if (!src) return;
+  const t = today();
+  // Clone the workout with all sets unchecked but weights/reps preserved
+  workoutLog[t] = {
+    programId: src.programId,
+    dayIndex: src.dayIndex,
+    exercises: src.exercises.map(we => ({
+      exerciseId: we.exerciseId,
+      sets: we.sets.map(s => ({ weight: s.weight, reps: s.reps, completed: false }))
+    }))
+  };
+  LS.set('hvi_workout_log', workoutLog);
+  go('workoutActive');
+}
+
 function shiftWorkoutDay(delta) {
   const prog = findProgram(workoutMeta.activeProgram) || WORKOUT_PROGRAMS[0];
   const len = prog.days.length;
@@ -574,9 +591,10 @@ function renderWorkoutHistory() {
     const dayInfo = prog ? prog.days[wl.dayIndex % prog.days.length] : null;
     const totalVol = wl.exercises.reduce((sum, we) => sum + we.sets.reduce((s2, st) => s2 + (st.completed ? st.weight * st.reps : 0), 0), 0);
     const totalSets = wl.exercises.reduce((sum, we) => sum + we.sets.filter(s => s.completed).length, 0);
-    return `<div class="w-hist-item"><div class="w-hist-date">${fmtDate(d)}</div>
+    return `<div class="w-hist-item" style="position:relative"><div class="w-hist-date">${fmtDate(d)}</div>
       <div class="w-hist-prog">${dayInfo ? dayInfo.name : 'Workout'} ${prog ? '· ' + prog.name : ''}</div>
-      <div class="w-hist-vol">${totalSets} sets · ${totalVol.toLocaleString()} ${wtUnit()} volume</div></div>`;
+      <div class="w-hist-vol">${totalSets} sets · ${totalVol.toLocaleString()} ${wtUnit()} volume</div>
+      <button class="w-repeat-btn" onclick="event.stopPropagation();repeatWorkout('${d}')" title="Repeat this workout">↻</button></div>`;
   }).join('') : '<p style="padding:24px;font-size:13px;color:var(--text-muted)">No workouts logged yet.</p>';
 
   // Volume chart — last 7 days

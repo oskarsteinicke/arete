@@ -381,6 +381,8 @@ async function init() {
       const hash = location.hash.replace(/^#/, '');
       const view = validViews.includes(hash) ? hash : 'home';
       go(view, {}, false);
+      // Show weekly recap on Monday (or Sunday afternoon)
+      setTimeout(() => checkWeeklyRecap(), 600);
     })();
   }
 }
@@ -663,6 +665,12 @@ function renderHome() {
     <div class="hm-quote ani">
       <div class="hm-quote-text">"${esc(QUOTES[meta.quoteIndex % QUOTES.length].text)}"</div>
       <div class="hm-quote-auth">— ${esc(QUOTES[meta.quoteIndex % QUOTES.length].author)}</div>
+    </div>
+
+    <!-- Share -->
+    <div style="display:flex;gap:10px;padding:0 16px 32px" class="ani">
+      <button class="w-action-btn" style="flex:1;margin:0" onclick="shareDailyCard()">📤 Share Today</button>
+      <button class="w-action-btn" style="flex:1;margin:0" onclick="shareRecap()">📊 Weekly Recap</button>
     </div>
   `;
 }

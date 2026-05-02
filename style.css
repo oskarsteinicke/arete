@@ -377,6 +377,14 @@ nav {
 .w-hist-date { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
 .w-hist-prog { font-size: 14px; color: var(--text); }
 .w-hist-vol { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.w-repeat-btn {
+  position: absolute; top: 12px; right: 12px;
+  background: var(--surface2); border: 1px solid var(--border2); border-radius: 10px;
+  color: var(--accent); font-size: 18px; width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background 0.2s;
+}
+.w-repeat-btn:active { background: var(--accent); color: #fff; }
 
 /* ── DIET ── */
 .d-rings {

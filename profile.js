@@ -1077,6 +1077,13 @@ function renderStats() {
         </div>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="font-size:14px;color:var(--text)">Avatar</div>
+        <div class="unit-toggle">
+          <button class="unit-btn${(tdeeProfile?.sex||'male')==='male'?' unit-btn-active':''}" onclick="setGender('male')">Male</button>
+          <button class="unit-btn${(tdeeProfile?.sex||'male')==='female'?' unit-btn-active':''}" onclick="setGender('female')">Female</button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
         <div style="font-size:14px;color:var(--text)">App version</div>
         <button class="unit-btn" style="padding:6px 14px;background:var(--surface);border:1px solid var(--border2)" onclick="if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(r=>r.forEach(x=>x.unregister())).then(()=>window.location.reload(true))}else{window.location.reload(true)}">Refresh</button>
       </div>
@@ -1151,6 +1158,13 @@ function saveEditName() {
   closeEditName();
   const el = document.getElementById('profile-name-display');
   if (el) el.textContent = name;
+}
+
+function setGender(g) {
+  if (!tdeeProfile) tdeeProfile = {};
+  tdeeProfile.sex = g;
+  LS.set('hvi_tdee_profile', tdeeProfile);
+  renderStats();
 }
 
 function rotQ(dir) {
@@ -1502,6 +1516,164 @@ function wrapText(ctx, text, x, y, maxW, lineH) {
     } else { line = test; }
   }
   if (line) ctx.fillText(line, x, y);
+}
+
+function checkWeeklyRecap() {
+  const dow = new Date().getDay(); // 0=Sun, 1=Mon
+  const hour = new Date().getHours();
+  // Show on Monday, or Sunday after 4pm
+  if (dow !== 1 && !(dow === 0 && hour >= 16)) return;
+  const recapKey = 'hvi_last_recap_week';
+  const weekId = getWeekKey();
+  if (LS.get(recapKey, '') === weekId) return; // already shown this week
+  LS.set(recapKey, weekId);
+  showWeeklyRecap();
+}
+
+function showWeeklyRecap() {
+  ensureWeeklyStats();
+  const ws = gamification.weeklyStats;
+  const best = Math.max(0, ...habits.map(h => log[h.id]?.streak || 0));
+  const lvl = getLevel(gamification.xp || 0);
+  const weekAvgCal = computeWeeklyAvgCalories(mealLog);
+  const xp = gamification.xp || 0;
+
+  const modal = document.createElement('div');
+  modal.id = 'weekly-recap-modal';
+  modal.innerHTML = `
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:4000;display:flex;align-items:center;justify-content:center;padding:24px" onclick="this.remove()">
+      <div style="background:var(--bg);border:1px solid var(--border2);border-radius:24px;padding:32px 24px;max-width:360px;width:100%;text-align:center" onclick="event.stopPropagation()">
+        <div style="font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Weekly Recap</div>
+        <div style="font-family:var(--serif);font-size:28px;color:var(--text);margin-bottom:4px">Great week!</div>
+        <div style="font-size:13px;color:var(--text-dim);margin-bottom:24px">Here's how you showed up.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+          <div style="background:var(--surface);border-radius:14px;padding:14px">
+            <div style="font-family:var(--serif);font-size:26px;color:var(--accent-b)">${ws.workoutDays.length}</div>
+            <div style="font-size:10px;color:var(--text-muted);letter-spacing:1px">WORKOUTS</div>
+          </div>
+          <div style="background:var(--surface);border-radius:14px;padding:14px">
+            <div style="font-family:var(--serif);font-size:26px;color:var(--accent-b)">${best}d</div>
+            <div style="font-size:10px;color:var(--text-muted);letter-spacing:1px">BEST STREAK</div>
+          </div>
+          <div style="background:var(--surface);border-radius:14px;padding:14px">
+            <div style="font-family:var(--serif);font-size:26px;color:var(--accent-b)">${ws.journalDays.length}</div>
+            <div style="font-size:10px;color:var(--text-muted);letter-spacing:1px">JOURNALED</div>
+          </div>
+          <div style="background:var(--surface);border-radius:14px;padding:14px">
+            <div style="font-family:var(--serif);font-size:26px;color:var(--accent-b)">${weekAvgCal !== null ? weekAvgCal.toLocaleString() : '—'}</div>
+            <div style="font-size:10px;color:var(--text-muted);letter-spacing:1px">AVG CAL</div>
+          </div>
+        </div>
+        <div style="font-size:13px;color:var(--accent);font-weight:600;margin-bottom:20px">Level ${lvl} · ${xp.toLocaleString()} XP</div>
+        <div style="display:flex;gap:10px">
+          <button class="w-action-btn" style="flex:1;margin:0" onclick="this.closest('#weekly-recap-modal').remove()">Dismiss</button>
+          <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:#fff" onclick="this.closest('#weekly-recap-modal').remove();shareRecap()">Share</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function generateDailyCard() {
+  const W = 390, H = 500;
+  const canvas = document.createElement('canvas');
+  canvas.width = W * 2; canvas.height = H * 2;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(2, 2);
+
+  // Background
+  ctx.fillStyle = '#0a0908';
+  ctx.fillRect(0, 0, W, H);
+  const grad = ctx.createRadialGradient(W/2, H/2, H*0.15, W/2, H/2, H*0.7);
+  grad.addColorStop(0, 'transparent');
+  grad.addColorStop(1, 'rgba(60,20,5,0.6)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Date
+  const dateStr = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase();
+  ctx.fillStyle = 'rgba(228,218,206,0.4)';
+  ctx.font = '600 10px -apple-system,sans-serif';
+  ctx.letterSpacing = '2px';
+  ctx.fillText(dateStr, 28, 44);
+
+  // Gold line
+  ctx.fillStyle = '#9a8256';
+  ctx.fillRect(28, 52, 40, 2);
+
+  // Title
+  ctx.fillStyle = '#e4dace';
+  ctx.font = 'italic 600 44px "Georgia",serif';
+  ctx.fillText('Today's', 28, 100);
+  ctx.fillStyle = '#b89d68';
+  ctx.fillText('Progress.', 28, 148);
+
+  // Stats
+  const {done, total} = totalPct();
+  const pct = total > 0 ? Math.round((done/total)*100) : 0;
+  const best = Math.max(0, ...habits.map(h => log[h.id]?.streak || 0));
+  const todayMacros = getDayMacros();
+  const todayWorkout = workoutLog[today()];
+  const lvl = getLevel(gamification.xp || 0);
+
+  const stats = [
+    { label: 'HABITS', value: `${done}/${total}` },
+    { label: 'COMPLETION', value: `${pct}%` },
+    { label: 'BEST STREAK', value: `${best}d` },
+    { label: 'CALORIES', value: todayMacros.cal.toLocaleString() },
+  ];
+
+  const cardW = 156, cardH = 80, cardGap = 14;
+  stats.forEach((st, i) => {
+    const col = i % 2, row = Math.floor(i / 2);
+    const x = 28 + col * (cardW + cardGap);
+    const y = 190 + row * (cardH + cardGap);
+    ctx.fillStyle = '#141210';
+    roundRect(ctx, x, y, cardW, cardH, 12);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    roundRect(ctx, x, y, cardW, cardH, 12);
+    ctx.stroke();
+    ctx.fillStyle = '#b89d68';
+    ctx.font = '700 26px "Georgia",serif';
+    ctx.fillText(st.value, x + 14, y + 36);
+    ctx.fillStyle = 'rgba(228,218,206,0.4)';
+    ctx.font = '500 10px -apple-system,sans-serif';
+    ctx.fillText(st.label, x + 14, y + 56);
+  });
+
+  // Workout status
+  const workoutText = todayWorkout ? '✓ Workout completed' : '— No workout today';
+  ctx.fillStyle = todayWorkout ? '#9a8256' : 'rgba(228,218,206,0.35)';
+  ctx.font = '600 13px -apple-system,sans-serif';
+  ctx.fillText(workoutText, 28, 400);
+
+  // Level
+  ctx.fillStyle = '#b89d68';
+  ctx.font = '700 13px -apple-system,sans-serif';
+  ctx.fillText(`Level ${lvl} · ${getLevelTitle(lvl)}`, 28, 425);
+
+  // Branding
+  ctx.fillStyle = 'rgba(228,218,206,0.2)';
+  ctx.font = '700 11px -apple-system,sans-serif';
+  ctx.fillText('NORTHSTAR', 28, H - 28);
+
+  return canvas;
+}
+
+function shareDailyCard() {
+  const canvas = generateDailyCard();
+  canvas.toBlob(async blob => {
+    const file = new File([blob], 'northstar-today.png', { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: "Today's Northstar Progress" }); return; } catch {}
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'northstar-today.png';
+    a.click();
+  }, 'image/png');
 }
 
 function shareRecap() {
