@@ -1,10 +1,15 @@
-const CACHE = 'ns-v14';
+const CACHE = 'ns-v15';
 const ASSETS = [
   '/northstar/',
   '/northstar/index.html',
   '/northstar/style.css',
   '/northstar/data.js',
   '/northstar/app.js',
+  '/northstar/workout.js',
+  '/northstar/diet.js',
+  '/northstar/coach.js',
+  '/northstar/social.js',
+  '/northstar/profile.js',
   '/northstar/manifest.json'
 ];
 
@@ -18,8 +23,6 @@ self.addEventListener('activate', e => {
     caches.keys()
       .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
-      .then(() => self.clients.matchAll({ includeUncontrolled: true, type: 'window' }))
-      .then(clients => Promise.all(clients.map(c => c.navigate(c.url))))
   );
 });
 
