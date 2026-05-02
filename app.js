@@ -11,8 +11,6 @@ let curRecipeId = null, libTab = 'books';
 let curHabitCat = 'mindset';
 let builderProg = null, builderDayIdx = 0, builderSearch = '';
 let weightLog;
-let foodSearchCache = {};
-let selectedFood100g = null;
 let tdeeProfile;
 let wgerCache = {};
 let wgerSearchCache = {};
@@ -35,7 +33,6 @@ let calView = 'monthly'; // 'monthly' | 'weekly' | 'daily'
 let calTasks = {};
 let sleepLog;
 let restTimer = null, restTimerEnd = 0, restTimerDur = 90;
-const USDA_KEY = 'DEMO_KEY'; // Rate-limited (30 req/hr). Get a free key at https://fdc.nal.usda.gov/api-key-signup.html
 
 // ── Unit helpers ──────────────────────────────────────────────────────────
 function isImperial() { return (settings || {}).units === 'imperial'; }

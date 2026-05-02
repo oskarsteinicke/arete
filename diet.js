@@ -90,36 +90,6 @@ function injectAdaptiveStyles() {
   document.head.appendChild(s);
 }
 
-// ── USDA FOOD SEARCH ─────────────────────────────────────────────────────
-async function searchFoods(query) {
-  if (!query || query.length < 2) return [];
-  const key = query.toLowerCase();
-  if (foodSearchCache[key]) return foodSearchCache[key];
-  try {
-    const res = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(query)}&pageSize=8&dataType=Foundation,SR%20Legacy&api_key=${USDA_KEY}`);
-    if (res.status === 429) {
-      return { rateLimited: true };
-    }
-    if (!res.ok) return [];
-    const data = await res.json();
-    if (data.error) {
-      console.warn("USDA API error:", data.error);
-      return [];
-    }
-    const nutr = (f, id) => { const n = (f.foodNutrients || []).find(x => x.nutrientId === id); return n ? n.value : 0; };
-    const results = (data.foods || []).map(f => ({
-      fdcId: f.fdcId,
-      name: f.description,
-      cal100g: nutr(f, 1008),
-      protein100g: nutr(f, 1003),
-      carbs100g: nutr(f, 1005),
-      fat100g: nutr(f, 1004),
-    })).filter(r => r.cal100g > 0).slice(0, 8);
-    foodSearchCache[key] = results;
-    return results;
-  } catch { return []; }
-}
-
 function getDayMacros() {
   const freshLog = LS.get('hvi_meal_log', {});
   const t = today(), meals = (freshLog[t] || {}).meals || [];
@@ -553,7 +523,7 @@ function renderDietAddMeal() {
   const totalCal = curMealItems.reduce((s,i) => s + i.calories, 0);
 
   document.getElementById('view').innerHTML = `
-    <button class="back" onclick="curMealItems=[];selectedFood100g=null;go('diet')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
+    <button class="back" onclick="curMealItems=[];go('diet')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
     <div class="page-head ani"><div class="page-title">Add Meal</div><div class="page-sub">Log what you ate.</div></div>
     <div class="d-type-btns">${typeBtns}</div>
     <div style="padding:0 24px">
@@ -585,18 +555,7 @@ function renderDietAddMeal() {
         <div id="describe-output" class="dm-output"></div>
       </div>
 
-      <div class="sec-lbl" style="padding:12px 0 8px">Or Search Foods</div>
-      <div class="fs-input-row">
-        <input class="d-input" type="text" id="food-search-input" placeholder="Search foods... e.g. chicken breast" style="flex:1;margin:0" onkeydown="if(event.key==='Enter')doFoodSearch()">
-        <button class="fs-search-btn" id="food-search-btn" onclick="doFoodSearch()">SEARCH</button>
-      </div>
-      <div class="ani" id="food-search-results"></div>
-
-      <div class="j-lbl">Add Item</div>
-      <div id="food-grams-wrap" style="display:${selectedFood100g ? 'flex' : 'none'}" class="fs-grams-row">
-        <span class="fs-grams-label">Amount (g)</span>
-        <input class="d-input" type="number" id="food-grams" value="100" min="1" max="2000" step="1" style="flex:1;margin:0" oninput="scaleFoodMacros()">
-      </div>
+      <div class="j-lbl">Manual Entry</div>
       <input class="d-input" type="text" id="fi-name" placeholder="Food name (e.g. Chicken breast 200g)">
       <div class="d-input-row">
         <input class="d-input-sm" type="number" inputmode="decimal" id="fi-cal" placeholder="Cal">
@@ -612,60 +571,6 @@ function renderDietAddMeal() {
 
 function setMealType(t) { curMealType = t; go('dietAddMeal'); }
 
-async function doFoodSearch() {
-  const input = document.getElementById('food-search-input');
-  const container = document.getElementById('food-search-results');
-  if (!input || !container) return;
-  const q = input.value.trim();
-  if (q.length < 2) { container.innerHTML = '<div class="fs-status">Type at least 2 characters.</div>'; return; }
-  container.innerHTML = '<div class="fs-status">Searching\u2026</div>';
-  const results = await searchFoods(q);
-  if (results && results.rateLimited) {
-    container.innerHTML = '<div class="fs-status" style="color:var(--fat)">Food database rate limit reached. Try again in a minute, or use "Describe a meal" above.</div>';
-    return;
-  }
-  if (!results || !results.length) {
-    container.innerHTML = '<div class="fs-status">No results found. Enter manually below.</div>';
-    return;
-  }
-  container.innerHTML = results.map((r, i) =>
-    `<div class="fs-row" id="fs-row-${i}" onclick="selectFoodResult(${i})">
-      <div class="fs-row-name">${esc(r.name)}</div>
-      <div class="fs-row-macros">${Math.round(r.cal100g)} kcal \u00B7 ${Math.round(r.protein100g)}g P \u00B7 ${Math.round(r.carbs100g)}g C \u00B7 ${Math.round(r.fat100g)}g F  (per 100g)</div>
-    </div>`
-  ).join('');
-  container._results = results;
-}
-
-function selectFoodResult(idx) {
-  const container = document.getElementById('food-search-results');
-  if (!container || !container._results) return;
-  const r = container._results[idx];
-  if (!r) return;
-  selectedFood100g = { cal: r.cal100g, protein: r.protein100g, carbs: r.carbs100g, fat: r.fat100g };
-  container.querySelectorAll('.fs-row').forEach((el, i) => el.classList.toggle('selected', i === idx));
-  const nameEl = document.getElementById('fi-name');
-  if (nameEl) nameEl.value = r.name;
-  const gramsWrap = document.getElementById('food-grams-wrap');
-  if (gramsWrap) gramsWrap.style.display = 'flex';
-  const gramsEl = document.getElementById('food-grams');
-  if (gramsEl) gramsEl.value = '100';
-  scaleFoodMacros();
-  const nameField = document.getElementById('fi-name');
-  if (nameField) nameField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-
-function scaleFoodMacros() {
-  if (!selectedFood100g) return;
-  const grams = parseFloat(document.getElementById('food-grams')?.value) || 100;
-  const scale = grams / 100;
-  const calEl = document.getElementById('fi-cal'), pEl = document.getElementById('fi-p'), cEl = document.getElementById('fi-c'), fEl = document.getElementById('fi-f');
-  if (calEl) calEl.value = Math.round(selectedFood100g.cal * scale * 10) / 10;
-  if (pEl) pEl.value = Math.round(selectedFood100g.protein * scale * 10) / 10;
-  if (cEl) cEl.value = Math.round(selectedFood100g.carbs * scale * 10) / 10;
-  if (fEl) fEl.value = Math.round(selectedFood100g.fat * scale * 10) / 10;
-}
-
 function addFoodItem() {
   const name = document.getElementById('fi-name')?.value?.trim();
   if (!name) return;
@@ -676,7 +581,6 @@ function addFoodItem() {
     carbs: parseFloat(document.getElementById('fi-c')?.value) || 0,
     fat: parseFloat(document.getElementById('fi-f')?.value) || 0,
   });
-  selectedFood100g = null;
   go('dietAddMeal');
 }
 
@@ -693,7 +597,6 @@ function saveMeal() {
   if (dietMeta.dailyGoals.protein > 0 && _dm.p >= dietMeta.dailyGoals.protein * 0.9) trackWeeklyProtein();
   checkDailyQuests();
   curMealItems = [];
-  selectedFood100g = null;
   go('diet');
 }
 
