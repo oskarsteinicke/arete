@@ -178,7 +178,7 @@ function renderWorkout() {
       <div class="w-day-badge">${day.name}</div>
       <div class="w-card-name">${prog.name}</div>
       <div class="w-card-desc">${day.focus}</div>
-      <div class="w-card-days" style="margin-top:12px;color:var(--accent)">${todayLog ? '✓ Workout logged today' : '→ Start today’s workout'}</div>
+      <div class="w-card-days" style="margin-top:12px;color:var(--accent)">${todayLog ? '✓ Workout logged today' : '→ Start todays workout'}</div>
     </div>
     <div style="display:flex;gap:8px;padding:0 24px 16px">
       <button class="w-action-btn" style="margin:0;flex:1" onclick="go('workoutPicker')">Programs</button>

@@ -1614,7 +1614,7 @@ function generateDailyCard() {
   // Title
   ctx.fillStyle = '#e4dace';
   ctx.font = 'italic 600 44px "Georgia",serif';
-  ctx.fillText('Today's', 28, 100);
+  ctx.fillText("Today's", 28, 100);
   ctx.fillStyle = '#b89d68';
   ctx.fillText('Progress.', 28, 148);
 
