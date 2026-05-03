@@ -293,7 +293,10 @@ function renderWorkoutActive() {
   }).join('');
 
   document.getElementById('view').innerHTML = `
-    <button class="back" onclick="go('workout')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <button class="back" onclick="stopWorkoutTimer();go('workout')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
+      <div class="workout-elapsed-pill"><span class="workout-elapsed-dot"></span><span id="workout-elapsed">0:00</span></div>
+    </div>
     <div class="page-head ani"><div class="w-day-badge">${day.name}</div><div class="page-title">${prog.name}</div><div class="page-sub">${day.focus}</div></div>
     ${exHTML}
     <div id="rest-timer-bar" class="rt-bar" style="display:none"></div>
@@ -305,6 +308,7 @@ function renderWorkoutActive() {
       <button class="rt-preset-btn" onclick="startRestTimer(180)">3:00</button>
     </div>
     <button class="w-finish" onclick="finishWorkout()">Finish Workout</button>`;
+  startWorkoutTimer();
 }
 
 function updateSet(ei, si, field, val) {
@@ -375,6 +379,27 @@ function removeSet(ei, si) {
   go('workoutActive');
 }
 
+// ── ELAPSED WORKOUT TIMER ────────────────────────────────────────────────
+let _workoutStartTime = null;
+let _workoutElapsedTimer = null;
+function startWorkoutTimer() {
+  if (!_workoutStartTime) _workoutStartTime = Date.now();
+  if (_workoutElapsedTimer) clearInterval(_workoutElapsedTimer);
+  _workoutElapsedTimer = setInterval(_updateWorkoutElapsed, 1000);
+  _updateWorkoutElapsed();
+}
+function stopWorkoutTimer() {
+  if (_workoutElapsedTimer) { clearInterval(_workoutElapsedTimer); _workoutElapsedTimer = null; }
+  _workoutStartTime = null;
+}
+function _updateWorkoutElapsed() {
+  const el = document.getElementById('workout-elapsed');
+  if (!el || !_workoutStartTime) return;
+  const secs = Math.floor((Date.now() - _workoutStartTime) / 1000);
+  const m = Math.floor(secs / 60), s = secs % 60;
+  el.textContent = `${m}:${String(s).padStart(2, '0')}`;
+}
+
 // ── REST TIMER ──────────────────────────────────────────────────────────
 function startRestTimer(dur) {
   restTimerDur = dur || 90;
@@ -413,6 +438,7 @@ function _updateRestTimer() {
 }
 
 function finishWorkout() {
+  stopWorkoutTimer();
   workoutMeta.lastWorkoutDate = today();
   LS.set('hvi_workout_meta', workoutMeta);
   playSound('complete');
@@ -591,8 +617,19 @@ function saveCustomProgram() {
   builderProg = null;
 }
 
+let _workoutHistorySearch = '';
 function renderWorkoutHistory() {
-  const dates = Object.keys(workoutLog).sort().reverse().slice(0, 14);
+  const allDates = Object.keys(workoutLog).sort().reverse();
+  const dates = (_workoutHistorySearch
+    ? allDates.filter(d => {
+        const wl = workoutLog[d];
+        const prog = findProgram(wl.programId);
+        const dayInfo = prog ? prog.days[wl.dayIndex % prog.days.length] : null;
+        const txt = `${dayInfo?.name || ''} ${prog?.name || ''} ${fmtDate(d)}`.toLowerCase();
+        return txt.includes(_workoutHistorySearch.toLowerCase());
+      })
+    : allDates
+  ).slice(0, 30);
   const items = dates.length ? dates.map(d => {
     const wl = workoutLog[d];
     const prog = findProgram(wl.programId);
@@ -631,7 +668,8 @@ function renderWorkoutHistory() {
 
   document.getElementById('view').innerHTML = `
     <button class="back" onclick="go('workout')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
-    <div class="page-head ani"><div class="page-title">History</div><div class="page-sub">Your last 14 days of training.</div></div>
+    <div class="page-head ani"><div class="page-title">History</div><div class="page-sub">Your training log.</div></div>
+    <div style="padding:0 24px 12px" class="ani"><input class="search-input" type="text" placeholder="Search workouts…" value="${esc(_workoutHistorySearch)}" oninput="_workoutHistorySearch=this.value;renderWorkoutHistory()"></div>
     ${chartHTML}
     <button class="w-action-btn" onclick="go('prHistory')">🏆 Personal Records</button>
     <div class="ani">${items}</div>`;

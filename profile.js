@@ -901,6 +901,32 @@ function buildAvatarSVG(lvl) {
 
 function setCalView_stats(v) { calView = v; window._statsSubView = 'calendar'; renderStats(); }
 
+// ── WEEK-OVER-WEEK TREND HELPERS ─────────────────────────────────────────
+function _lastWeekDates() {
+  const dates = [];
+  for (let i = 7; i < 14; i++) { const d = new Date(); d.setDate(d.getDate() - i); dates.push(d.toLocaleDateString('en-CA')); }
+  return dates;
+}
+function _lastWeekWorkouts() {
+  return _lastWeekDates().filter(d => workoutLog[d] && workoutLog[d].exercises.some(e => e.sets.some(s => s.completed))).length;
+}
+function _lastWeekHabitDays() {
+  let ct = 0;
+  _lastWeekDates().forEach(d => { if (habits.some(h => log[h.id]?.lastCompletedDate === d)) ct++; });
+  return ct;
+}
+function _lastWeekJournalDays() {
+  return _lastWeekDates().filter(d => journal[d] && Object.values(journal[d]).some(Boolean)).length;
+}
+function _trendBadge(cur, prev) {
+  if (prev === 0 && cur === 0) return '';
+  const diff = cur - prev;
+  if (diff === 0) return '<div class="trend-badge trend-flat">—</div>';
+  const arrow = diff > 0 ? '↑' : '↓';
+  const cls = diff > 0 ? 'trend-up' : 'trend-down';
+  return `<div class="trend-badge ${cls}">${arrow}${Math.abs(diff)}</div>`;
+}
+
 function renderStats() {
   const {done,total} = totalPct();
   const best = Math.max(0, ...habits.map(h => log[h.id]?.streak || 0));
@@ -1093,6 +1119,14 @@ function renderStats() {
           <button class="unit-btn${settings.sounds===false?' unit-btn-active':''}" onclick="settings.sounds=false;LS.set('hvi_settings',settings);renderStats()">Off</button>
         </div>
       </div>
+      ${'Notification' in window ? `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="font-size:14px;color:var(--text)">Reminders</div>
+        <div class="unit-toggle">
+          ${Notification.permission === 'granted'
+            ? `<button class="unit-btn unit-btn-active">On</button><button class="unit-btn" onclick="settings.notifications=false;LS.set('hvi_settings',settings);renderStats()">Off</button>`
+            : `<button class="unit-btn" onclick="requestNotifications()">Enable</button>`}
+        </div>
+      </div>` : ''}
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
         <div style="font-size:14px;color:var(--text)">App version</div>
         <button class="unit-btn" style="padding:6px 14px;background:var(--surface);border:1px solid var(--border2)" onclick="if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(r=>r.forEach(x=>x.unregister())).then(()=>window.location.reload(true))}else{window.location.reload(true)}">Refresh</button>
@@ -1112,11 +1146,11 @@ function renderStats() {
       <div class="s-card"><div class="s-val">${total}</div><div class="s-lbl">Total Habits</div></div>
     </div>
     <div class="da-section ani" style="margin:0 24px 8px">
-      <div class="sec-lbl" style="padding:0 0 10px">THIS WEEK</div>
+      <div class="sec-lbl" style="padding:0 0 10px">THIS WEEK vs LAST WEEK</div>
       <div class="s-grid" style="margin:0">
-        <div class="s-card"><div class="s-val" style="font-size:22px">${ws.workoutDays.length}</div><div class="s-lbl">Workouts</div></div>
-        <div class="s-card"><div class="s-val" style="font-size:22px">${weekHabits7}</div><div class="s-lbl">Habit Days</div></div>
-        <div class="s-card"><div class="s-val" style="font-size:22px">${ws.journalDays.length}</div><div class="s-lbl">Journaled</div></div>
+        <div class="s-card"><div class="s-val" style="font-size:22px">${ws.workoutDays.length}</div><div class="s-lbl">Workouts</div>${_trendBadge(ws.workoutDays.length, _lastWeekWorkouts())}</div>
+        <div class="s-card"><div class="s-val" style="font-size:22px">${weekHabits7}</div><div class="s-lbl">Habit Days</div>${_trendBadge(weekHabits7, _lastWeekHabitDays())}</div>
+        <div class="s-card"><div class="s-val" style="font-size:22px">${ws.journalDays.length}</div><div class="s-lbl">Journaled</div>${_trendBadge(ws.journalDays.length, _lastWeekJournalDays())}</div>
         <div class="s-card"><div class="s-val" style="font-size:22px">${weekAvgCal !== null ? weekAvgCal.toLocaleString() : '—'}</div><div class="s-lbl">Avg Cal</div></div>
       </div>
     </div>

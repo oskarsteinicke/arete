@@ -408,6 +408,49 @@ function initPullToRefresh() {
   view.addEventListener('touchend', () => { pulling = false; }, { passive: true });
 }
 
+// ── OFFLINE INDICATOR ────────────────────────────────────────────────────
+function _updateOnlineStatus() {
+  let el = document.getElementById('offline-banner');
+  if (!navigator.onLine) {
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'offline-banner';
+      el.className = 'offline-banner';
+      el.innerHTML = '📡 You\'re offline — changes will sync when you reconnect.';
+      document.body.prepend(el);
+    }
+  } else if (el) {
+    el.textContent = '✓ Back online';
+    setTimeout(() => el.remove(), 1500);
+  }
+}
+window.addEventListener('online', _updateOnlineStatus);
+window.addEventListener('offline', _updateOnlineStatus);
+
+// ── NOTIFICATIONS ───────────────────────────────────────────────────────
+function requestNotifications() {
+  if (!('Notification' in window)) return;
+  Notification.requestPermission().then(p => {
+    settings.notifications = p === 'granted';
+    LS.set('hvi_settings', settings);
+    renderStats();
+  });
+}
+function _scheduleReminder() {
+  if (!settings.notifications || Notification.permission !== 'granted') return;
+  const now = new Date();
+  const hour = now.getHours();
+  // Check at 8pm-9pm if habits remain
+  if (hour >= 20 && hour < 21 && !LS.get('hvi_notif_sent_' + today(), false)) {
+    const {done, total} = totalPct();
+    const left = total - done;
+    if (left > 0) {
+      new Notification('Northstar', { body: `${left} habit${left>1?'s':''} left today — still time to show up.`, icon: '/northstar/manifest.json' });
+      LS.set('hvi_notif_sent_' + today(), true);
+    }
+  }
+}
+
 // ── SOUND EFFECTS ────────────────────────────────────────────────────────
 const _audioCtx = typeof AudioContext !== 'undefined' ? new AudioContext() : null;
 function playSound(type) {
@@ -509,6 +552,8 @@ async function init() {
     document.body.appendChild(fab);
   }
   initPullToRefresh();
+  _updateOnlineStatus();
+  _scheduleReminder();
 
   if (!LS.get('hvi_onboarded', false)) {
     renderOnboarding(0);
@@ -597,9 +642,12 @@ function habitRowHTML(h, suffix = '', editMode = false) {
   const e = log[h.id] || {}, s = e.streak || 0;
   const streakTxt = s > 0 ? `${s >= 3 ? '\uD83D\uDD25 ' : ''}${s} day streak` : 'Start your streak';
   if (editMode) {
+    const idx = habits.indexOf(h);
     return `<div class="hi" id="hi${suffix}-${h.id}" style="opacity:0.85">
       <div class="hi-info"><div class="hi-name">${esc(h.name)}</div><div class="hi-streak" id="hs${suffix}-${h.id}">${streakTxt}</div></div>
-      <div style="display:flex;gap:8px;flex-shrink:0">
+      <div style="display:flex;gap:6px;flex-shrink:0;align-items:center">
+        <button class="habit-move-btn" onclick="event.stopPropagation();moveHabit('${h.id}',-1)" ${idx===0?'disabled':''}>▲</button>
+        <button class="habit-move-btn" onclick="event.stopPropagation();moveHabit('${h.id}',1)" ${idx===habits.length-1?'disabled':''}>▼</button>
         <button class="habit-edit-btn" onclick="event.stopPropagation();openEditHabit('${h.id}')">✎</button>
         <button class="habit-del-btn" onclick="event.stopPropagation();deleteHabit('${h.id}')">&times;</button>
       </div></div>`;
@@ -866,6 +914,16 @@ function renderHabits() {
     <div class="sec-lbl" style="padding-top:20px">90-Day Activity</div>
     ${buildHeatmapHTML()}`;
   if (!_habitEditMode) requestAnimationFrame(initSwipeGestures);
+}
+
+function moveHabit(id, dir) {
+  const idx = habits.findIndex(h => h.id === id);
+  if (idx < 0) return;
+  const ni = idx + dir;
+  if (ni < 0 || ni >= habits.length) return;
+  [habits[idx], habits[ni]] = [habits[ni], habits[idx]];
+  LS.set('hvi_habits', habits);
+  renderHabits();
 }
 
 function deleteHabit(id) {

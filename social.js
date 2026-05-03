@@ -33,10 +33,19 @@ function renderLibraryBooks(tabs) {
     ${tabs}<div class="ani">${groups}</div>`;
 }
 
+let _journalSearch = '';
 function renderLibraryJournal(tabs) {
   const t = today();
   const e = journal[t] || { wins:'', lessons:'', intentions:'' };
-  const pastDates = Object.keys(journal).filter(d => d !== t && Object.values(journal[d]).some(Boolean)).sort().reverse().slice(0, 20);
+  let pastDates = Object.keys(journal).filter(d => d !== t && Object.values(journal[d]).some(Boolean)).sort().reverse();
+  if (_journalSearch) {
+    const q = _journalSearch.toLowerCase();
+    pastDates = pastDates.filter(d => {
+      const je = journal[d];
+      return `${je.wins||''} ${je.lessons||''} ${je.intentions||''}`.toLowerCase().includes(q);
+    });
+  }
+  pastDates = pastDates.slice(0, 30);
   const pastHTML = pastDates.length ? pastDates.map(d => {
     const je = journal[d]; let parts = '';
     if (je.wins) parts += `<div class="jp-field">Wins</div><div class="jp-text">${esc(je.wins)}</div>`;
@@ -54,7 +63,10 @@ function renderLibraryJournal(tabs) {
       <div class="j-lbl">Intentions for Tomorrow</div><textarea class="j-ta" id="j-intentions" placeholder="What will you focus on?" rows="3">${esc(e.intentions||'')}</textarea>
       <div class="j-status" id="j-status">Auto-saving</div>
       <button class="j-tog" onclick="togglePast()">Past Entries</button>
-      <div class="j-past" id="j-past">${pastHTML}</div>
+      <div class="j-past" id="j-past">
+        <input class="search-input" type="text" placeholder="Search entries…" value="${esc(_journalSearch)}" oninput="_journalSearch=this.value;renderLibrary()" style="margin-bottom:12px">
+        ${pastHTML}
+      </div>
     </div>`;
 
   ['wins','lessons','intentions'].forEach(f => {

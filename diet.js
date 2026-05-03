@@ -99,6 +99,35 @@ function getDayMacros() {
   }, { cal:0, p:0, c:0, f:0 });
 }
 
+function _buildCalorieTrendChart() {
+  const data = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const key = d.toLocaleDateString('en-CA');
+    const meals = (mealLog[key] || {}).meals || [];
+    const cal = meals.reduce((s, m) => s + m.items.reduce((s2, it) => s2 + (it.calories||0), 0), 0);
+    data.push({ day: d.toLocaleDateString('en-US',{weekday:'narrow'}), cal, key });
+  }
+  if (data.every(d => d.cal === 0)) return '';
+  const goal = dietMeta.dailyGoals.calories;
+  const maxCal = Math.max(goal, ...data.map(d => d.cal)) * 1.1;
+  const W = 320, H = 80, ML = 4, MR = 4;
+  const cW = W - ML - MR;
+  const x = i => ML + (i / (data.length - 1)) * cW;
+  const y = v => H - 8 - ((v / maxCal) * (H - 16));
+  const pts = data.map((d, i) => `${x(i).toFixed(1)},${y(d.cal).toFixed(1)}`).join(' ');
+  const goalY = y(goal).toFixed(1);
+  return `<div class="da-section ani" style="margin:0 24px 8px;padding:12px 12px 8px">
+    <div class="sec-lbl" style="padding:0 0 6px;font-size:9px">14-DAY CALORIES</div>
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;display:block">
+      <line x1="${ML}" y1="${goalY}" x2="${W-MR}" y2="${goalY}" stroke="var(--accent)" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.5"/>
+      <text x="${W-MR}" y="${goalY-3}" fill="var(--accent)" font-size="7" text-anchor="end" opacity="0.6">goal</text>
+      <polyline points="${pts}" fill="none" stroke="var(--cal)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+      ${data.map((d,i) => d.cal > 0 ? `<circle cx="${x(i).toFixed(1)}" cy="${y(d.cal).toFixed(1)}" r="2" fill="var(--cal)"/>` : '').join('')}
+    </svg>
+  </div>`;
+}
+
 function renderDiet() {
   mealLog = LS.get('hvi_meal_log', {});
   weightLog = LS.get('hvi_weight_log', {});
@@ -172,6 +201,7 @@ function renderDiet() {
   document.getElementById('view').innerHTML = `
     <div class="page-head ani"><div class="page-title">Nutrition</div><div class="page-sub">Fuel your body with intention.</div></div>
     <div class="d-rings ani">${rings}</div>
+    ${_buildCalorieTrendChart()}
     ${expenditureHTML}
     <div class="sec-lbl">Today's Meals</div>
     <div class="ani">${mealsHTML}</div>
