@@ -1158,7 +1158,7 @@ nav {
 
 /* ═══ QUICK-LOG FAB ═══════════════════════════════════════════════════════ */
 .quick-log-fab {
-  position: fixed; bottom: calc(var(--nav-h) + 20px); right: max(16px, calc(50% - 240px + 16px));
+  position: fixed; bottom: calc(var(--nav-h) + 20px); left: max(16px, calc(50% - 240px + 16px));
   width: 52px; height: 52px; border-radius: 50%;
   background: var(--accent); color: #fff; border: none;
   font-size: 26px; display: flex; align-items: center; justify-content: center;
@@ -1169,7 +1169,7 @@ nav {
 .quick-log-fab:active { transform: scale(0.92); }
 .quick-log-fab.open { transform: rotate(45deg); }
 .quick-log-menu {
-  position: fixed; bottom: calc(var(--nav-h) + 82px); right: max(16px, calc(50% - 240px + 16px));
+  position: fixed; bottom: calc(var(--nav-h) + 82px); left: max(16px, calc(50% - 240px + 16px));
   display: flex; flex-direction: column; gap: 8px; z-index: 1500;
   animation: fab-in 0.2s ease;
 }
