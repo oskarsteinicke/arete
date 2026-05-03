@@ -183,12 +183,15 @@ function showAchievementToast(ach) {
 }
 
 function awardXP(amount, pillarId) {
+  const prevLvl = getLevel(gamification.xp || 0);
   gamification.xp = (gamification.xp || 0) + amount;
   if (pillarId) {
     if (!gamification.pillarXP) gamification.pillarXP = {};
     gamification.pillarXP[pillarId] = (gamification.pillarXP[pillarId] || 0) + amount;
   }
   LS.set('hvi_gamification', gamification);
+  const newLvl = getLevel(gamification.xp || 0);
+  if (newLvl > prevLvl && amount > 0) playSound('levelup');
   showXPToast('+' + amount + ' XP');
   checkAchievements();
 }
@@ -1081,6 +1084,13 @@ function renderStats() {
         <div class="unit-toggle">
           <button class="unit-btn${(tdeeProfile?.sex||'male')==='male'?' unit-btn-active':''}" onclick="setGender('male')">Male</button>
           <button class="unit-btn${(tdeeProfile?.sex||'male')==='female'?' unit-btn-active':''}" onclick="setGender('female')">Female</button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="font-size:14px;color:var(--text)">Sounds</div>
+        <div class="unit-toggle">
+          <button class="unit-btn${settings.sounds!==false?' unit-btn-active':''}" onclick="settings.sounds=true;LS.set('hvi_settings',settings);renderStats()">On</button>
+          <button class="unit-btn${settings.sounds===false?' unit-btn-active':''}" onclick="settings.sounds=false;LS.set('hvi_settings',settings);renderStats()">Off</button>
         </div>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">

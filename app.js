@@ -312,6 +312,134 @@ function ring(r, pct, sw = 3, color = 'var(--accent)') {
   </svg>`;
 }
 
+// ── SKELETON LOADING ──────────────────────────────────────────────────────
+function showSkeleton(type = 'home') {
+  const view = document.getElementById('view');
+  if (!view) return;
+  const skels = {
+    home: `<div class="skel-bar skeleton" style="width:40%;margin-top:48px"></div>
+      <div class="skel-bar skeleton" style="width:70%;height:36px;margin-top:4px"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:24px 16px">
+        <div class="skel-card skeleton"></div><div class="skel-card skeleton"></div>
+        <div class="skel-card skeleton"></div><div class="skel-card skeleton"></div>
+      </div>`,
+    list: Array.from({length:6}, () => `<div class="skel-row skeleton"></div>`).join(''),
+  };
+  view.innerHTML = skels[type] || skels.home;
+}
+
+// ── UNDO TOAST ───────────────────────────────────────────────────────────
+let _undoTimer = null;
+function showUndo(msg, undoFn) {
+  clearTimeout(_undoTimer);
+  document.getElementById('undo-toast-el')?.remove();
+  const el = document.createElement('div');
+  el.id = 'undo-toast-el';
+  el.className = 'undo-toast';
+  el.innerHTML = `<div class="undo-toast-text">${msg}</div><button class="undo-toast-btn" id="undo-btn">UNDO</button>`;
+  document.body.appendChild(el);
+  document.getElementById('undo-btn').onclick = () => { undoFn(); el.remove(); clearTimeout(_undoTimer); };
+  _undoTimer = setTimeout(() => el.remove(), 5000);
+}
+
+// ── QUICK-LOG FAB ────────────────────────────────────────────────────────
+let _fabOpen = false;
+function toggleQuickLog() {
+  _fabOpen = !_fabOpen;
+  const fab = document.getElementById('quick-log-fab');
+  if (fab) fab.classList.toggle('open', _fabOpen);
+  const existing = document.getElementById('quick-log-menu');
+  if (existing) { existing.remove(); _fabOpen = false; fab?.classList.remove('open'); return; }
+  if (!_fabOpen) return;
+  const menu = document.createElement('div');
+  menu.id = 'quick-log-menu';
+  menu.className = 'quick-log-menu';
+  menu.innerHTML = `
+    <div class="quick-log-item" onclick="closeQuickLog();go('dietAddMeal')">🍽️ Log Meal</div>
+    <div class="quick-log-item" onclick="closeQuickLog();go('workoutActive')">💪 Start Workout</div>
+    <div class="quick-log-item" onclick="closeQuickLog();go('library')">📝 Journal</div>
+    <div class="quick-log-item" onclick="closeQuickLog();go('sleep')">🌙 Log Sleep</div>`;
+  document.body.appendChild(menu);
+}
+function closeQuickLog() {
+  _fabOpen = false;
+  document.getElementById('quick-log-menu')?.remove();
+  document.getElementById('quick-log-fab')?.classList.remove('open');
+}
+
+// ── EVENING REMINDER ─────────────────────────────────────────────────────
+function getEveningReminder() {
+  const hour = new Date().getHours();
+  if (hour < 20 || hour >= 24) return '';
+  if (LS.get('hvi_evening_dismissed_' + today(), false)) return '';
+  const {done, total} = totalPct();
+  const left = total - done;
+  if (left <= 0) return '';
+  return `<div class="evening-banner ani">
+    <div style="font-size:24px">🌙</div>
+    <div class="evening-banner-text"><strong>${left} habit${left>1?'s':''} left today</strong> — still time to show up.</div>
+    <button class="evening-banner-close" onclick="LS.set('hvi_evening_dismissed_${today()}',true);this.closest('.evening-banner').remove()">✕</button>
+  </div>`;
+}
+
+// ── PULL TO REFRESH ──────────────────────────────────────────────────────
+function initPullToRefresh() {
+  const view = document.getElementById('view');
+  if (!view) return;
+  let startY = 0, pulling = false;
+  view.addEventListener('touchstart', e => {
+    if (view.scrollTop <= 0) { startY = e.touches[0].clientY; pulling = true; }
+  }, { passive: true });
+  view.addEventListener('touchmove', e => {
+    if (!pulling) return;
+    const diff = e.touches[0].clientY - startY;
+    if (diff > 80 && view.scrollTop <= 0) {
+      pulling = false;
+      const ind = document.createElement('div');
+      ind.className = 'ptr-indicator';
+      ind.textContent = 'Syncing…';
+      view.prepend(ind);
+      cloudPull().then(() => {
+        ind.textContent = 'Updated ✓';
+        setTimeout(() => { ind.remove(); go(curView, {}, false); }, 800);
+      });
+    }
+  }, { passive: true });
+  view.addEventListener('touchend', () => { pulling = false; }, { passive: true });
+}
+
+// ── SOUND EFFECTS ────────────────────────────────────────────────────────
+const _audioCtx = typeof AudioContext !== 'undefined' ? new AudioContext() : null;
+function playSound(type) {
+  if (!_audioCtx || (settings || {}).sounds === false) return;
+  if (_audioCtx.state === 'suspended') _audioCtx.resume();
+  const osc = _audioCtx.createOscillator();
+  const gain = _audioCtx.createGain();
+  osc.connect(gain); gain.connect(_audioCtx.destination);
+  gain.gain.value = 0.08;
+  if (type === 'check') {
+    osc.frequency.value = 880; osc.type = 'sine';
+    gain.gain.setValueAtTime(0.08, _audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, _audioCtx.currentTime + 0.15);
+    osc.start(); osc.stop(_audioCtx.currentTime + 0.15);
+  } else if (type === 'levelup') {
+    osc.frequency.value = 523; osc.type = 'sine';
+    osc.frequency.setValueAtTime(523, _audioCtx.currentTime);
+    osc.frequency.setValueAtTime(659, _audioCtx.currentTime + 0.1);
+    osc.frequency.setValueAtTime(784, _audioCtx.currentTime + 0.2);
+    gain.gain.setValueAtTime(0.1, _audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, _audioCtx.currentTime + 0.4);
+    osc.start(); osc.stop(_audioCtx.currentTime + 0.4);
+  } else if (type === 'complete') {
+    osc.frequency.value = 660; osc.type = 'triangle';
+    osc.frequency.setValueAtTime(660, _audioCtx.currentTime);
+    osc.frequency.setValueAtTime(880, _audioCtx.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.1, _audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, _audioCtx.currentTime + 0.2);
+    osc.start(); osc.stop(_audioCtx.currentTime + 0.2);
+  }
+}
+
 // ── ALL PROGRAMS (built-in + custom) ──────────────────────────────────────
 function allPrograms() { return [...WORKOUT_PROGRAMS, ...LS.get('hvi_custom_programs', [])]; }
 function findProgram(id) { return allPrograms().find(p => p.id === id); }
@@ -370,6 +498,17 @@ async function init() {
   // Push once on load so new devices register themselves
   cloudPush();
 
+  // Inject quick-log FAB
+  if (!document.getElementById('quick-log-fab')) {
+    const fab = document.createElement('button');
+    fab.id = 'quick-log-fab';
+    fab.className = 'quick-log-fab';
+    fab.innerHTML = '+';
+    fab.onclick = toggleQuickLog;
+    document.body.appendChild(fab);
+  }
+  initPullToRefresh();
+
   if (!LS.get('hvi_onboarded', false)) {
     renderOnboarding(0);
   } else {
@@ -415,6 +554,7 @@ function checkReset() {
 // ── NAVIGATION ────────────────────────────────────────────────────────────
 function go(view, params = {}, pushState = true) {
   clearInterval(qTimer);
+  closeQuickLog();
   curView = view;
   curPillar = params.pillar || null;
   curRecipeId = params.recipeId || null;
@@ -478,10 +618,20 @@ function tapHabit(id, suffix) {
   const pillarId = habit ? PILLARS.find(p => p.cats.includes(habit.category))?.id : null;
   if (e.completedToday) {
     navigator.vibrate && navigator.vibrate(10);
+    playSound('check');
     const s = e.streak || 0;
     const bonus = s >= 30 ? 10 : s >= 14 ? 7 : s >= 7 ? 5 : 0;
     awardXP(10 + bonus, pillarId || undefined);
     if (wasFirst) launchConfetti(0.5);
+    // Streak milestone celebrations
+    if ([7, 14, 30, 60, 100].includes(s)) {
+      launchConfetti(1.5);
+      const el = document.createElement('div');
+      el.className = 'streak-toast';
+      el.innerHTML = `🔥 ${s}-day streak!`;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 3000);
+    }
     checkDailyQuests();
   } else {
     // Deduct XP when unchecking — prevents farming
@@ -663,6 +813,8 @@ function renderHome() {
       <div class="hm-quote-text">"${esc(QUOTES[meta.quoteIndex % QUOTES.length].text)}"</div>
       <div class="hm-quote-auth">— ${esc(QUOTES[meta.quoteIndex % QUOTES.length].author)}</div>
     </div>
+
+    ${getEveningReminder()}
 
     <!-- Share -->
     <div style="display:flex;gap:10px;padding:0 16px 32px" class="ani">

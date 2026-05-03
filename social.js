@@ -43,7 +43,7 @@ function renderLibraryJournal(tabs) {
     if (je.lessons) parts += `<div class="jp-field">Lessons</div><div class="jp-text">${esc(je.lessons)}</div>`;
     if (je.intentions) parts += `<div class="jp-field">Intentions</div><div class="jp-text">${esc(je.intentions)}</div>`;
     return `<div class="jp-item"><div class="jp-date">${fmtDate(d)}</div>${parts}</div>`;
-  }).join('') : '<p style="font-size:13px;color:var(--text-muted);padding:8px 0">No past entries yet.</p>';
+  }).join('') : '<div class="empty-state" style="padding:16px 0"><div class="empty-state-icon">📝</div><div class="empty-state-title">No past entries</div><div class="empty-state-sub">Write your first journal entry above to start reflecting.</div></div>';
 
   document.getElementById('view').innerHTML = `
     <div class="jh ani"><div class="jh-title">Library</div><div class="jh-sub">Reflect on your day. Recalibrate for tomorrow.</div></div>

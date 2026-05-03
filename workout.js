@@ -410,6 +410,7 @@ function _updateRestTimer() {
 function finishWorkout() {
   workoutMeta.lastWorkoutDate = today();
   LS.set('hvi_workout_meta', workoutMeta);
+  playSound('complete');
   awardXP(50, 'body');
   trackWeeklyWorkout();
   checkDailyQuests();
@@ -595,7 +596,7 @@ function renderWorkoutHistory() {
       <div class="w-hist-prog">${dayInfo ? dayInfo.name : 'Workout'} ${prog ? '· ' + prog.name : ''}</div>
       <div class="w-hist-vol">${totalSets} sets · ${totalVol.toLocaleString()} ${wtUnit()} volume</div>
       <button class="w-repeat-btn" onclick="event.stopPropagation();repeatWorkout('${d}')" title="Repeat this workout">↻</button></div>`;
-  }).join('') : '<p style="padding:24px;font-size:13px;color:var(--text-muted)">No workouts logged yet.</p>';
+  }).join('') : '<div class="empty-state"><div class="empty-state-icon">🏋️</div><div class="empty-state-title">No workouts yet</div><div class="empty-state-sub">Start your first workout to see your history here.</div><button class="empty-state-btn" onclick="go(\'workoutActive\')">Start Workout</button></div>';
 
   // Volume chart — last 7 days
   const last7 = Array.from({length:7}, (_,i) => {
