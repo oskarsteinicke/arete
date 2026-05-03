@@ -577,9 +577,20 @@ function checkReset() {
   habits.forEach(h => {
     const e = log[h.id];
     if (e) {
+      // Record completion in history for weekly scheduling
+      if (e.completedToday && meta.lastOpenedDate) {
+        const hist = LS.get('hvi_habit_history') || {};
+        if (!hist[h.id]) hist[h.id] = [];
+        hist[h.id].push(meta.lastOpenedDate);
+        if (hist[h.id].length > 60) hist[h.id] = hist[h.id].slice(-60);
+        LS.set('hvi_habit_history', hist);
+      }
       e.completedToday = false;
+      // Only break streak if habit was due yesterday
       if (e.streak > 0 && e.lastCompletedDate !== yesterday()) {
-        e.streak = 0;
+        const wasDueYesterday = !h.schedule || h.schedule === 'daily' ||
+          (h.schedule === 'specific' && (h.days || [0,1,2,3,4,5,6]).includes(new Date(yesterday()).getDay()));
+        if (wasDueYesterday) e.streak = 0;
       }
     }
   });
@@ -635,12 +646,36 @@ window.addEventListener('popstate', e => {
 
 // ── HABIT HELPERS ─────────────────────────────────────────────────────────
 function pillarHabits(pid) { const p = PILLARS.find(x => x.id === pid); return habits.filter(h => p.cats.includes(h.category)); }
-function pillarPct(pid) { const ph = pillarHabits(pid); if (!ph.length) return {done:0,total:0,pct:0}; const d = ph.filter(h => log[h.id]?.completedToday).length; return {done:d,total:ph.length,pct:d/ph.length}; }
+function isHabitDueToday(h) {
+  if (!h.schedule || h.schedule === 'daily') return true;
+  const dow = new Date().getDay(); // 0=Sun
+  if (h.schedule === 'specific') return (h.days || [0,1,2,3,4,5,6]).includes(dow);
+  if (h.schedule === 'weekly') {
+    // Due if completed < perWeek this calendar week
+    const perWeek = h.perWeek || 7;
+    const now = new Date(), start = new Date(now); start.setDate(now.getDate() - now.getDay());
+    let count = 0;
+    for (let d = new Date(start); d <= now; d.setDate(d.getDate()+1)) {
+      const key = d.toISOString().slice(0,10);
+      if (key === today() && log[h.id]?.completedToday) count++;
+      else if (key !== today()) { /* check history */ const hist = LS.get('hvi_habit_history') || {}; if (hist[h.id]?.includes(key)) count++; }
+    }
+    return count < perWeek;
+  }
+  return true;
+}
+function pillarPct(pid) { const ph = pillarHabits(pid).filter(isHabitDueToday); if (!ph.length) return {done:0,total:0,pct:0}; const d = ph.filter(h => log[h.id]?.completedToday).length; return {done:d,total:ph.length,pct:d/ph.length}; }
 function totalPct() { const d = habits.filter(h => log[h.id]?.completedToday).length; return {done:d,total:habits.length,pct:habits.length?d/habits.length:0}; }
 
 function habitRowHTML(h, suffix = '', editMode = false) {
   const e = log[h.id] || {}, s = e.streak || 0;
+  const due = isHabitDueToday(h);
   const streakTxt = s > 0 ? `${s >= 3 ? '\uD83D\uDD25 ' : ''}${s} day streak` : 'Start your streak';
+  if (!due && !editMode) {
+    return `<div class="hi rest-day" id="hi${suffix}-${h.id}" style="opacity:0.4;pointer-events:none">
+      <div class="hi-info"><div class="hi-name">${esc(h.name)}</div><div class="hi-streak">Rest day</div></div>
+      <div class="hi-check" aria-hidden="true">\u2014</div></div>`;
+  }
   if (editMode) {
     const idx = habits.indexOf(h);
     return `<div class="hi" id="hi${suffix}-${h.id}" style="opacity:0.85">
@@ -940,7 +975,10 @@ function openEditHabit(id) {
   const h = habits.find(x => x.id === id);
   if (!h) return;
   const cats = ['mindset','discipline','fitness','health','learning','social','financial'];
-  const catBtns = cats.map(c => `<button class="d-type-btn${c===h.category?' active':''}" onclick="document.querySelectorAll('#edit-habit-modal .d-type-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');this.dataset.val='${c}'" data-val="${c}">${c}</button>`).join('');
+  const catBtns = cats.map(c => `<button class="d-type-btn${c===h.category?' active':''}" onclick="document.querySelectorAll('#edit-habit-modal .cat-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');this.dataset.val='${c}'" data-val="${c}" class="d-type-btn cat-btn${c===h.category?' active':''}">${c}</button>`).join('');
+  const sched = h.schedule || 'daily';
+  const dayNames = ['S','M','T','W','T','F','S'];
+  const dayBtns = dayNames.map((d,i) => `<button class="sched-day-btn${(!h.days || h.days.includes(i))?' active':''}" data-day="${i}" onclick="this.classList.toggle('active')">${d}</button>`).join('');
   let modal = document.getElementById('edit-habit-modal');
   if (!modal) { modal = document.createElement('div'); modal.id = 'edit-habit-modal'; document.body.appendChild(modal); }
   modal.innerHTML = `
@@ -950,12 +988,29 @@ function openEditHabit(id) {
       <input class="d-input" id="edit-habit-name" type="text" value="${esc(h.name)}" placeholder="Habit name" style="margin-bottom:16px">
       <div class="sec-lbl" style="padding:0 0 8px">Category</div>
       <div class="d-type-row" style="flex-wrap:wrap;gap:6px">${catBtns}</div>
+      <div class="sec-lbl" style="padding:12px 0 8px">Schedule</div>
+      <div class="d-type-row" style="flex-wrap:wrap;gap:6px">
+        <button class="d-type-btn sched-btn${sched==='daily'?' active':''}" data-sched="daily" onclick="_setEditSchedMode(this,'daily')">Daily</button>
+        <button class="d-type-btn sched-btn${sched==='specific'?' active':''}" data-sched="specific" onclick="_setEditSchedMode(this,'specific')">Specific</button>
+        <button class="d-type-btn sched-btn${sched==='weekly'?' active':''}" data-sched="weekly" onclick="_setEditSchedMode(this,'weekly')">× / week</button>
+      </div>
+      <div id="edit-sched-days" style="display:${sched==='specific'?'block':'none'};padding:8px 0"><div class="sched-day-row">${dayBtns}</div></div>
+      <div id="edit-sched-weekly" style="display:${sched==='weekly'?'block':'none'};padding:8px 0">
+        <div class="d-goals-row"><div class="d-goals-label">× per week</div><input class="d-input" type="number" id="edit-per-week" value="${h.perWeek||3}" min="1" max="7" style="width:60px;text-align:center"></div>
+      </div>
       <div style="display:flex;gap:10px;margin-top:20px">
         <button class="w-action-btn" style="flex:1;margin:0" onclick="closeEditHabit()">Cancel</button>
         <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:#fff" onclick="saveEditHabit('${id}')">Save</button>
       </div>
     </div>`;
   modal.style.display = 'block';
+}
+
+function _setEditSchedMode(btn, mode) {
+  btn.parentElement.querySelectorAll('.sched-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('edit-sched-days').style.display = mode === 'specific' ? 'block' : 'none';
+  document.getElementById('edit-sched-weekly').style.display = mode === 'weekly' ? 'block' : 'none';
 }
 
 function closeEditHabit() {
@@ -965,13 +1020,23 @@ function closeEditHabit() {
 
 function saveEditHabit(id) {
   const name = document.getElementById('edit-habit-name')?.value?.trim();
-  const catBtn = document.querySelector('#edit-habit-modal .d-type-btn.active');
+  const catBtn = document.querySelector('#edit-habit-modal .cat-btn.active');
   const category = catBtn?.dataset?.val || catBtn?.textContent;
   if (!name) return;
   const h = habits.find(x => x.id === id);
   if (!h) return;
   h.name = name;
   if (category) h.category = category;
+  // Save schedule
+  const schedBtn = document.querySelector('#edit-habit-modal .sched-btn.active');
+  const sched = schedBtn?.dataset?.sched || 'daily';
+  h.schedule = sched;
+  if (sched === 'specific') {
+    h.days = [...document.querySelectorAll('#edit-sched-days .sched-day-btn.active')].map(b => parseInt(b.dataset.day));
+  } else { delete h.days; }
+  if (sched === 'weekly') {
+    h.perWeek = Math.min(7, Math.max(1, parseInt(document.getElementById('edit-per-week')?.value) || 3));
+  } else { delete h.perWeek; }
   LS.set('hvi_habits', habits);
   closeEditHabit();
   renderHabits();
@@ -981,6 +1046,8 @@ function renderHabitCreate() {
   const cats = ['mindset','discipline','fitness','health','learning','social','financial'];
   const catBtns = cats.map(c => `<button class="d-type-btn${c===curHabitCat?' active':''}" onclick="curHabitCat='${c}';go('habitCreate')">${c}</button>`).join('');
 
+  const dayNames = ['S','M','T','W','T','F','S'];
+  const dayBtns = dayNames.map((d,i) => `<button class="sched-day-btn active" data-day="${i}" onclick="this.classList.toggle('active')">${d}</button>`).join('');
   document.getElementById('view').innerHTML = `
     <button class="back" onclick="go('habits')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
     <div class="page-head ani"><div class="page-title">New Habit</div><div class="page-sub">Build your own daily practice.</div></div>
@@ -988,6 +1055,16 @@ function renderHabitCreate() {
       <div class="d-goals-row"><div class="d-goals-label">Name</div><input class="d-input" type="text" id="hc-name" placeholder="e.g. Cold plunge 5 min" style="flex:1"></div>
       <div class="sec-lbl" style="padding:16px 0 8px">Category</div>
       <div class="d-type-btns" style="padding:0 0 16px">${catBtns}</div>
+      <div class="sec-lbl" style="padding:0 0 8px">Schedule</div>
+      <div class="d-type-btns" style="padding:0 0 8px">
+        <button class="d-type-btn active" data-sched="daily" onclick="_setSchedMode(this,'daily')">Daily</button>
+        <button class="d-type-btn" data-sched="specific" onclick="_setSchedMode(this,'specific')">Specific Days</button>
+        <button class="d-type-btn" data-sched="weekly" onclick="_setSchedMode(this,'weekly')">× per week</button>
+      </div>
+      <div id="sched-days" style="display:none;padding:0 0 12px"><div class="sched-day-row">${dayBtns}</div></div>
+      <div id="sched-weekly" style="display:none;padding:0 0 12px">
+        <div class="d-goals-row"><div class="d-goals-label">Times per week</div><input class="d-input" type="number" id="hc-per-week" value="3" min="1" max="7" inputmode="numeric" style="width:60px;text-align:center"></div>
+      </div>
       <div style="display:flex;gap:8px">
         <button class="w-finish" style="flex:1" onclick="saveHabit()">SAVE</button>
         <button class="w-action-btn" style="flex:1;margin:16px 0 24px" onclick="go('habits')">CANCEL</button>
@@ -995,11 +1072,35 @@ function renderHabitCreate() {
     </div>`;
 }
 
+function _setSchedMode(btn, mode) {
+  btn.parentElement.querySelectorAll('.d-type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('sched-days').style.display = mode === 'specific' ? 'block' : 'none';
+  document.getElementById('sched-weekly').style.display = mode === 'weekly' ? 'block' : 'none';
+}
+
+function _getSchedFromForm() {
+  const active = document.querySelector('[data-sched].active');
+  const mode = active?.dataset?.sched || 'daily';
+  if (mode === 'daily') return { schedule: 'daily' };
+  if (mode === 'specific') {
+    const days = [...document.querySelectorAll('.sched-day-btn.active')].map(b => parseInt(b.dataset.day));
+    return { schedule: 'specific', days };
+  }
+  if (mode === 'weekly') {
+    const pw = Math.min(7, Math.max(1, parseInt(document.getElementById('hc-per-week')?.value) || 3));
+    return { schedule: 'weekly', perWeek: pw };
+  }
+  return { schedule: 'daily' };
+}
+
 function saveHabit() {
   const name = document.getElementById('hc-name')?.value?.trim();
   if (!name) return;
   const id = 'cu_' + Date.now();
-  habits.push({ id, name, category: curHabitCat });
+  const sched = _getSchedFromForm();
+  const h = { id, name, category: curHabitCat, ...sched };
+  habits.push(h);
   log[id] = { streak: 0, lastCompletedDate: '', completedToday: false };
   LS.set('hvi_habits', habits);
   LS.set('hvi_log', log);

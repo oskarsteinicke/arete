@@ -587,6 +587,18 @@ function renderDietAddMeal() {
         <div id="describe-output" class="dm-output"></div>
       </div>
 
+      <div class="dm-section">
+        <div class="dm-header">
+          <span class="dm-icon">\ud83d\udd0d</span>
+          <span class="dm-header-text">Search Food Database</span>
+          <span class="dm-header-sub">Open Food Facts \u2014 millions of foods</span>
+        </div>
+        <input class="search-input" type="text" id="food-search-input" placeholder="Search foods (e.g. chicken breast, oatmeal)\u2026" oninput="doFoodSearch(this.value)">
+        <div id="food-search-results"></div>
+      </div>
+
+      ${_buildFavoritesSection()}
+
       <div class="j-lbl">Manual Entry</div>
       <input class="d-input" type="text" id="fi-name" placeholder="Food name (e.g. Chicken breast 200g)">
       <div class="d-input-row">
@@ -619,8 +631,155 @@ function addFoodItem() {
 
 function removeFoodItem(i) { curMealItems.splice(i, 1); go('dietAddMeal'); }
 
+// ── OPEN FOOD FACTS SEARCH ──────────────────────────────────────────────
+let _foodSearchResults = [];
+let _foodSearchDebounce = null;
+function doFoodSearch(q) {
+  clearTimeout(_foodSearchDebounce);
+  if (!q || q.length < 2) { _foodSearchResults = []; _renderFoodResults(); return; }
+  const out = document.getElementById('food-search-results');
+  if (out) out.innerHTML = '<div style="text-align:center;padding:12px;color:var(--text-dim)">Searching…</div>';
+  _foodSearchDebounce = setTimeout(async () => {
+    try {
+      const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=8&fields=product_name,nutriments,serving_size,brands`);
+      const data = await res.json();
+      _foodSearchResults = (data.products || []).filter(p => p.product_name && p.nutriments).map(p => {
+        const n = p.nutriments;
+        return {
+          name: p.product_name + (p.brands ? ` (${p.brands})` : ''),
+          calories: Math.round(n['energy-kcal_100g'] || n['energy-kcal'] || 0),
+          protein: Math.round(n.proteins_100g || n.proteins || 0),
+          carbs: Math.round(n.carbohydrates_100g || n.carbohydrates || 0),
+          fat: Math.round(n.fat_100g || n.fat || 0),
+          per: '100g',
+          serving: p.serving_size || null,
+        };
+      });
+      _renderFoodResults();
+    } catch(e) {
+      if (out) out.innerHTML = '<div style="text-align:center;padding:12px;color:var(--fat)">Search failed — check connection</div>';
+    }
+  }, 400);
+}
+
+function _renderFoodResults() {
+  const out = document.getElementById('food-search-results');
+  if (!out) return;
+  if (!_foodSearchResults.length) { out.innerHTML = ''; return; }
+  out.innerHTML = _foodSearchResults.map((f, i) =>
+    `<div class="food-result" onclick="selectFoodResult(${i})">
+      <div class="food-result-name">${esc(f.name)}</div>
+      <div class="food-result-macros">${f.calories} cal · ${f.protein}P · ${f.carbs}C · ${f.fat}F <span style="color:var(--text-muted)">per ${f.per}</span></div>
+    </div>`
+  ).join('');
+}
+
+function selectFoodResult(i) {
+  const f = _foodSearchResults[i];
+  if (!f) return;
+  curMealItems.push({ name: f.name, calories: f.calories, protein: f.protein, carbs: f.carbs, fat: f.fat });
+  _foodSearchResults = [];
+  go('dietAddMeal');
+}
+
+// ── MEAL FAVORITES ──────────────────────────────────────────────────────
+function getMealFavorites() { return LS.get('hvi_meal_favorites', []); }
+
+function saveMealAsFavorite() {
+  if (!curMealItems.length) return;
+  const favs = getMealFavorites();
+  favs.unshift({ name: curMealType, items: [...curMealItems], savedAt: Date.now() });
+  if (favs.length > 20) favs.length = 20;
+  LS.set('hvi_meal_favorites', favs);
+}
+
+function logFavorite(i) {
+  const favs = getMealFavorites();
+  const fav = favs[i];
+  if (!fav) return;
+  const t = today();
+  if (!mealLog[t]) mealLog[t] = { meals: [] };
+  mealLog[t].meals.push({ id: 'm_' + Date.now(), name: fav.name, items: [...fav.items] });
+  LS.set('hvi_meal_log', mealLog);
+  awardXP(15, 'body');
+  checkDailyQuests();
+  go('diet');
+}
+
+function deleteFavorite(i) {
+  const favs = getMealFavorites();
+  favs.splice(i, 1);
+  LS.set('hvi_meal_favorites', favs);
+  go('dietAddMeal');
+}
+
+function getRecentMeals() {
+  const recent = [];
+  const seen = new Set();
+  const dates = Object.keys(mealLog).sort().reverse().slice(0, 14);
+  for (const d of dates) {
+    for (const meal of (mealLog[d]?.meals || [])) {
+      const key = meal.items.map(it => it.name).sort().join('|');
+      if (!seen.has(key)) {
+        seen.add(key);
+        recent.push(meal);
+        if (recent.length >= 8) return recent;
+      }
+    }
+  }
+  return recent;
+}
+
+function _buildFavoritesSection() {
+  const favs = getMealFavorites();
+  const recent = getRecentMeals();
+  if (!favs.length && !recent.length) return '';
+
+  let html = '<div class="dm-section"><div class="dm-header"><span class="dm-icon">⭐</span><span class="dm-header-text">Quick Re-log</span><span class="dm-header-sub">Favorites & recent meals</span></div>';
+
+  if (favs.length) {
+    html += '<div class="sec-lbl" style="padding:8px 0 4px;font-size:9px">FAVORITES</div>';
+    html += favs.map((f, i) => {
+      const cal = f.items.reduce((s, it) => s + (it.calories||0), 0);
+      return `<div class="food-result" style="position:relative" onclick="logFavorite(${i})">
+        <div class="food-result-name">${esc(f.name)} — ${f.items.map(it=>esc(it.name)).join(', ')}</div>
+        <div class="food-result-macros">${cal} cal · tap to log</div>
+        <button class="d-del-btn" style="position:absolute;right:8px;top:8px" onclick="event.stopPropagation();deleteFavorite(${i})">×</button>
+      </div>`;
+    }).join('');
+  }
+
+  if (recent.length) {
+    html += '<div class="sec-lbl" style="padding:8px 0 4px;font-size:9px">RECENT MEALS</div>';
+    html += recent.map((m, i) => {
+      const cal = m.items.reduce((s, it) => s + (it.calories||0), 0);
+      return `<div class="food-result" onclick="logRecentMeal(${i})">
+        <div class="food-result-name">${esc(m.name)} — ${m.items.map(it=>esc(it.name)).join(', ')}</div>
+        <div class="food-result-macros">${cal} cal · tap to log again</div>
+      </div>`;
+    }).join('');
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function logRecentMeal(i) {
+  const recent = getRecentMeals();
+  const m = recent[i];
+  if (!m) return;
+  const t = today();
+  if (!mealLog[t]) mealLog[t] = { meals: [] };
+  mealLog[t].meals.push({ id: 'm_' + Date.now(), name: m.name, items: [...m.items] });
+  LS.set('hvi_meal_log', mealLog);
+  awardXP(15, 'body');
+  checkDailyQuests();
+  go('diet');
+}
+
 function saveMeal() {
   if (!curMealItems.length) return;
+  saveMealAsFavorite();
   const t = today();
   if (!mealLog[t]) mealLog[t] = { meals: [] };
   mealLog[t].meals.push({ id: 'm_' + Date.now(), name: curMealType, items: [...curMealItems] });

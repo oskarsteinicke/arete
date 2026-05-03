@@ -306,6 +306,7 @@ function renderWorkoutActive() {
       <button class="rt-preset-btn" onclick="startRestTimer(90)">1:30</button>
       <button class="rt-preset-btn" onclick="startRestTimer(120)">2:00</button>
       <button class="rt-preset-btn" onclick="startRestTimer(180)">3:00</button>
+      <button class="rt-preset-btn" onclick="showPlateCalc()" style="margin-left:auto;background:var(--surface2);border:1px solid var(--border2)">🍽 Plates</button>
     </div>
     <button class="w-finish" onclick="finishWorkout()">Finish Workout</button>`;
   startWorkoutTimer();
@@ -377,6 +378,54 @@ function removeSet(ei, si) {
   sets.splice(si, 1);
   LS.set('hvi_workout_log', workoutLog);
   go('workoutActive');
+}
+
+// ── PLATE CALCULATOR ────────────────────────────────────────────────────
+function showPlateCalc() {
+  let modal = document.getElementById('plate-calc-modal');
+  if (!modal) { modal = document.createElement('div'); modal.id = 'plate-calc-modal'; document.body.appendChild(modal); }
+  modal.innerHTML = `
+    <div class="edit-habit-backdrop" onclick="closePlateCalc()"></div>
+    <div class="edit-habit-sheet">
+      <div class="edit-habit-title">Plate Calculator</div>
+      <div class="d-goals-row" style="margin-bottom:12px"><div class="d-goals-label">Target (${wtUnit()})</div><input class="d-input" type="number" id="plate-target" placeholder="e.g. 225" inputmode="decimal" oninput="calcPlates()"></div>
+      <div class="d-goals-row" style="margin-bottom:16px"><div class="d-goals-label">Bar (${wtUnit()})</div><input class="d-input" type="number" id="plate-bar" value="${isImperial() ? 45 : 20}" inputmode="decimal" oninput="calcPlates()"></div>
+      <div id="plate-result" style="min-height:40px"></div>
+      <button class="w-action-btn" style="margin:16px 0 0;width:100%" onclick="closePlateCalc()">Done</button>
+    </div>`;
+  modal.style.display = 'block';
+  setTimeout(() => document.getElementById('plate-target')?.focus(), 100);
+}
+
+function closePlateCalc() {
+  const m = document.getElementById('plate-calc-modal');
+  if (m) m.style.display = 'none';
+}
+
+function calcPlates() {
+  const target = parseFloat(document.getElementById('plate-target')?.value) || 0;
+  const bar = parseFloat(document.getElementById('plate-bar')?.value) || (isImperial() ? 45 : 20);
+  const out = document.getElementById('plate-result');
+  if (!out) return;
+  const perSide = (target - bar) / 2;
+  if (perSide <= 0) { out.innerHTML = '<div style="color:var(--text-dim);font-size:13px">Just the bar</div>'; return; }
+
+  const plates = isImperial() ? [45, 35, 25, 10, 5, 2.5] : [25, 20, 15, 10, 5, 2.5, 1.25];
+  let remaining = perSide;
+  const needed = [];
+  for (const p of plates) {
+    while (remaining >= p - 0.01) { needed.push(p); remaining -= p; }
+  }
+  if (remaining > 0.1) {
+    out.innerHTML = `<div style="color:var(--fat);font-size:13px">Can't make exact weight with standard plates</div>`;
+    return;
+  }
+  const counts = {};
+  needed.forEach(p => { counts[p] = (counts[p] || 0) + 1; });
+  const html = Object.entries(counts).sort((a,b) => b[0]-a[0]).map(([p, c]) =>
+    `<span class="plate-chip">${c}× ${p}${wtUnit()}</span>`
+  ).join(' ');
+  out.innerHTML = `<div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Each side:</div><div style="display:flex;flex-wrap:wrap;gap:6px">${html}</div>`;
 }
 
 // ── ELAPSED WORKOUT TIMER ────────────────────────────────────────────────
