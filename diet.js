@@ -186,6 +186,8 @@ function renderDiet() {
 function deleteMeal(mi) {
   const t = today();
   if (!mealLog[t]) return;
+  const meal = mealLog[t].meals[mi];
+  if (!confirm(`Delete "${meal ? meal.name : 'this meal'}"?`)) return;
   mealLog[t].meals.splice(mi, 1);
   LS.set('hvi_meal_log', mealLog);
   go('diet');
@@ -574,12 +576,13 @@ function setMealType(t) { curMealType = t; go('dietAddMeal'); }
 function addFoodItem() {
   const name = document.getElementById('fi-name')?.value?.trim();
   if (!name) return;
+  const clamp = (v, max) => Math.max(0, Math.min(parseFloat(v) || 0, max));
   curMealItems.push({
     name,
-    calories: parseFloat(document.getElementById('fi-cal')?.value) || 0,
-    protein: parseFloat(document.getElementById('fi-p')?.value) || 0,
-    carbs: parseFloat(document.getElementById('fi-c')?.value) || 0,
-    fat: parseFloat(document.getElementById('fi-f')?.value) || 0,
+    calories: clamp(document.getElementById('fi-cal')?.value, 15000),
+    protein: clamp(document.getElementById('fi-p')?.value, 1000),
+    carbs: clamp(document.getElementById('fi-c')?.value, 1000),
+    fat: clamp(document.getElementById('fi-f')?.value, 1000),
   });
   go('dietAddMeal');
 }
@@ -666,11 +669,12 @@ function renderDietGoals() {
 }
 
 function saveDietGoals() {
+  const clampGoal = (v, fallback, max) => Math.max(1, Math.min(parseInt(v) || fallback, max));
   dietMeta.dailyGoals = {
-    calories: parseInt(document.getElementById('dg-cal')?.value) || 2500,
-    protein: parseInt(document.getElementById('dg-p')?.value) || 180,
-    carbs: parseInt(document.getElementById('dg-c')?.value) || 280,
-    fat: parseInt(document.getElementById('dg-f')?.value) || 80,
+    calories: clampGoal(document.getElementById('dg-cal')?.value, 2500, 15000),
+    protein: clampGoal(document.getElementById('dg-p')?.value, 180, 1000),
+    carbs: clampGoal(document.getElementById('dg-c')?.value, 280, 1500),
+    fat: clampGoal(document.getElementById('dg-f')?.value, 80, 1000),
   };
   LS.set('hvi_diet_meta', dietMeta);
   go('diet');

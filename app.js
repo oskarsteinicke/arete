@@ -504,6 +504,7 @@ async function init() {
     fab.id = 'quick-log-fab';
     fab.className = 'quick-log-fab';
     fab.innerHTML = '+';
+    fab.setAttribute('aria-label', 'Quick log');
     fab.onclick = toggleQuickLog;
     document.body.appendChild(fab);
   }
@@ -603,9 +604,9 @@ function habitRowHTML(h, suffix = '', editMode = false) {
         <button class="habit-del-btn" onclick="event.stopPropagation();deleteHabit('${h.id}')">&times;</button>
       </div></div>`;
   }
-  return `<div class="hi${e.completedToday?' done':''}" id="hi${suffix}-${h.id}" onclick="tapHabit('${h.id}','${suffix}')">
+  return `<div class="hi${e.completedToday?' done':''}" id="hi${suffix}-${h.id}" onclick="tapHabit('${h.id}','${suffix}')" role="checkbox" aria-checked="${!!e.completedToday}" aria-label="${esc(h.name)} \u2014 ${streakTxt}" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();tapHabit('${h.id}','${suffix}')}">
     <div class="hi-info"><div class="hi-name">${esc(h.name)}</div><div class="hi-streak${s>=3?' hot':''}" id="hs${suffix}-${h.id}">${streakTxt}</div></div>
-    <div class="hi-check" id="hc${suffix}-${h.id}">\u2713</div></div>`;
+    <div class="hi-check" id="hc${suffix}-${h.id}" aria-hidden="true">\u2713</div></div>`;
 }
 
 function tapHabit(id, suffix) {
@@ -617,7 +618,6 @@ function tapHabit(id, suffix) {
   const habit = habits.find(h => h.id === id);
   const pillarId = habit ? PILLARS.find(p => p.cats.includes(habit.category))?.id : null;
   if (e.completedToday) {
-    navigator.vibrate && navigator.vibrate(10);
     playSound('check');
     const s = e.streak || 0;
     const bonus = s >= 30 ? 10 : s >= 14 ? 7 : s >= 7 ? 5 : 0;
@@ -626,11 +626,14 @@ function tapHabit(id, suffix) {
     // Streak milestone celebrations
     if ([7, 14, 30, 60, 100].includes(s)) {
       launchConfetti(1.5);
+      navigator.vibrate && navigator.vibrate([50, 30, 50, 30, 80]);
       const el = document.createElement('div');
       el.className = 'streak-toast';
       el.innerHTML = `🔥 ${s}-day streak!`;
       document.body.appendChild(el);
       setTimeout(() => el.remove(), 3000);
+    } else {
+      navigator.vibrate && navigator.vibrate(10);
     }
     checkDailyQuests();
   } else {
@@ -641,6 +644,7 @@ function tapHabit(id, suffix) {
   if (!row) return;
   const s = e.streak || 0;
   row.classList.toggle('done', !!e.completedToday);
+  row.setAttribute('aria-checked', !!e.completedToday);
   if (stk) { stk.textContent = s > 0 ? `${s>=3?'\uD83D\uDD25 ':''}${s} day streak` : 'Start your streak'; stk.className = `hi-streak${s>=3?' hot':''}`; }
   if (chk) { chk.classList.remove('pop'); void chk.offsetWidth; chk.classList.add('pop'); }
   if (curView === 'pillar') refreshPillarRing();
@@ -865,6 +869,8 @@ function renderHabits() {
 }
 
 function deleteHabit(id) {
+  const h = habits.find(x => x.id === id);
+  if (!confirm(`Delete "${h ? h.name : 'this habit'}"? This can't be undone.`)) return;
   habits = habits.filter(h => h.id !== id);
   delete log[id];
   LS.set('hvi_habits', habits);

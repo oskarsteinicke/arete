@@ -184,6 +184,7 @@ function closeCoach() {
 }
 
 function clearCoachHistory() {
+  if (_coachHistory.length > 0 && !confirm('Clear conversation history?')) return;
   _coachHistory = [];
   localStorage.removeItem('hvi_coach_history');
   _renderCoachMsgs();

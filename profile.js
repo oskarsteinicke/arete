@@ -191,7 +191,7 @@ function awardXP(amount, pillarId) {
   }
   LS.set('hvi_gamification', gamification);
   const newLvl = getLevel(gamification.xp || 0);
-  if (newLvl > prevLvl && amount > 0) playSound('levelup');
+  if (newLvl > prevLvl && amount > 0) { playSound('levelup'); navigator.vibrate && navigator.vibrate([30, 20, 30, 20, 60]); }
   showXPToast('+' + amount + ' XP');
   checkAchievements();
 }

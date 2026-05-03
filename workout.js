@@ -274,10 +274,10 @@ function renderWorkoutActive() {
       return `
       <div class="w-set">
         <span class="w-set-num">${si+1}</span>
-        <input class="w-input" type="number" inputmode="decimal" value="${s.weight||''}" placeholder="${wtUnit()}" onfocus="this.select()" oninput="updateSet(${ei},${si},'weight',this.value)">
-        <span class="w-input-label">×</span>
-        <input class="w-input" type="number" inputmode="decimal" value="${s.reps||''}" placeholder="reps" onfocus="this.select()" oninput="updateSet(${ei},${si},'reps',this.value)">
-        <div class="w-set-check${s.completed?' done':''}" onclick="toggleSet(${ei},${si})">✓</div>
+        <input class="w-input" type="number" inputmode="decimal" value="${s.weight||''}" placeholder="${wtUnit()}" aria-label="Weight set ${si+1}" onfocus="this.select()" oninput="updateSet(${ei},${si},'weight',this.value)">
+        <span class="w-input-label" aria-hidden="true">×</span>
+        <input class="w-input" type="number" inputmode="decimal" value="${s.reps||''}" placeholder="reps" aria-label="Reps set ${si+1}" onfocus="this.select()" oninput="updateSet(${ei},${si},'reps',this.value)">
+        <div class="w-set-check${s.completed?' done':''}" onclick="toggleSet(${ei},${si})" role="checkbox" aria-checked="${!!s.completed}" aria-label="Complete set ${si+1}" tabindex="0">✓</div>
         ${showPR ? '<span class="pr-badge">🏆 New PR!</span>' : ''}
       </div>`;
     }).join('');
@@ -310,7 +310,11 @@ function renderWorkoutActive() {
 function updateSet(ei, si, field, val) {
   const t = today(), wl = workoutLog[t];
   if (!wl) return;
-  wl.exercises[ei].sets[si][field] = field === 'weight' ? parseFloat(val) || 0 : parseInt(val) || 0;
+  let num = field === 'weight' ? parseFloat(val) || 0 : parseInt(val) || 0;
+  if (num < 0) num = 0;
+  if (field === 'weight' && num > 2000) num = 2000;
+  if (field === 'reps' && num > 999) num = 999;
+  wl.exercises[ei].sets[si][field] = num;
   LS.set('hvi_workout_log', workoutLog);
 }
 
@@ -394,7 +398,8 @@ function _updateRestTimer() {
   if (secs <= 0) {
     clearInterval(restTimer); restTimer = null;
     el.innerHTML = '<div class="rt-done">REST COMPLETE</div>';
-    navigator.vibrate && navigator.vibrate([100, 50, 100]);
+    navigator.vibrate && navigator.vibrate([100, 50, 100, 50, 100]);
+    playSound('complete');
     setTimeout(() => { if (el) el.style.display = 'none'; }, 2500);
     return;
   }
@@ -411,6 +416,7 @@ function finishWorkout() {
   workoutMeta.lastWorkoutDate = today();
   LS.set('hvi_workout_meta', workoutMeta);
   playSound('complete');
+  navigator.vibrate && navigator.vibrate([40, 30, 40, 30, 80]);
   awardXP(50, 'body');
   trackWeeklyWorkout();
   checkDailyQuests();
@@ -446,6 +452,7 @@ function shiftWorkoutDay(delta) {
 }
 
 function deleteCustomProgram(id) {
+  if (!confirm('Delete this custom program? This can\'t be undone.')) return;
   const progs = LS.get('hvi_custom_programs', []).filter(p => p.id !== id);
   LS.set('hvi_custom_programs', progs);
   if (workoutMeta.activeProgram === id) {
