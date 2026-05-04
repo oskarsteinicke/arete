@@ -141,6 +141,25 @@ function authHeaders(extra = {}) {
 async function cloudPush() {
   const uid = getCurrentUserId();
   if (!uid) return;
+  // Pull first so we merge before overwriting cloud
+  try {
+    const pullRes = await fetch(`${SUPABASE_URL}/rest/v1/hvi_data?user_id=eq.${uid}&select=data`, { headers: authHeaders() });
+    if (pullRes.ok) {
+      const rows = await pullRes.json();
+      if (rows.length) {
+        const cloud = rows[0].data || {};
+        MERGE_KEYS.forEach(k => {
+          if (cloud[k]) {
+            try {
+              const local = JSON.parse(localStorage.getItem(k) || '{}');
+              const merged = { ...cloud[k], ...local }; // local wins on conflict
+              localStorage.setItem(k, JSON.stringify(merged));
+            } catch {}
+          }
+        });
+      }
+    }
+  } catch {}
   const data = {};
   SYNC_KEYS.forEach(k => { const v = localStorage.getItem(k); if (v !== null) { try { data[k] = JSON.parse(v); } catch {} } });
   setSyncStatus('pending');
@@ -561,9 +580,10 @@ async function init() {
       setSyncStatus('pending');
       const pulled = await cloudPull();
       if (pulled) {
-        // Reload state from localStorage with fresh cloud data
+        // Reload all in-memory state from localStorage with fresh cloud data
         habits = LS.get('hvi_habits', habits);
         log = LS.get('hvi_log', log);
+        habits.forEach(h => { if (!log[h.id]) log[h.id] = { streak: 0, lastCompletedDate: '', completedToday: false }; });
         journal = LS.get('hvi_journal3', journal);
         meta = LS.get('hvi_meta', meta);
         workoutLog = LS.get('hvi_workout_log', workoutLog);
@@ -574,6 +594,10 @@ async function init() {
         sleepLog = LS.get('hvi_sleep_log', sleepLog);
         prs = LS.get('hvi_prs', prs);
         gamification = LS.get('hvi_gamification', gamification);
+        achievements = LS.get('hvi_achievements', achievements);
+        settings = LS.get('hvi_settings', settings);
+        // Push merged state back so cloud has everything from both devices
+        cloudPush();
         // Re-render current view
         go(curView, {}, false);
       }
