@@ -45,7 +45,9 @@ function setUnits(u) {
 // ── SUPABASE AUTH + CLOUD SYNC ────────────────────────────────────────────
 const SUPABASE_URL = 'https://socflncohsenjptgkkax.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_J2qJ8iTfCESrML5Hm6NGbQ_mz9uPeug';
-const SYNC_KEYS = ['hvi_habits','hvi_log','hvi_journal3','hvi_meta','hvi_workout_log','hvi_workout_meta','hvi_meal_log','hvi_diet_meta','hvi_weight_log','hvi_prs','hvi_gamification','hvi_achievements','hvi_tdee_profile','hvi_custom_programs','hvi_onboarded','hvi_sleep_log','hvi_settings'];
+const SYNC_KEYS = ['hvi_habits','hvi_log','hvi_journal3','hvi_meta','hvi_workout_log','hvi_workout_meta','hvi_meal_log','hvi_diet_meta','hvi_weight_log','hvi_prs','hvi_gamification','hvi_achievements','hvi_tdee_profile','hvi_custom_programs','hvi_onboarded','hvi_sleep_log','hvi_settings','hvi_habit_history','hvi_meal_favorites'];
+// Keys that are date-keyed objects — these get merged instead of overwritten
+const MERGE_KEYS = ['hvi_workout_log','hvi_meal_log','hvi_journal3','hvi_weight_log','hvi_sleep_log','hvi_habit_history'];
 
 // ── AUTH HELPERS ──────────────────────────────────────────────────────────
 async function authResetPassword(email) {
@@ -164,7 +166,19 @@ async function cloudPull() {
     const rows = await res.json();
     if (!rows.length) return false;
     const cloud = rows[0].data || {};
-    SYNC_KEYS.forEach(k => { if (cloud[k] !== undefined) localStorage.setItem(k, JSON.stringify(cloud[k])); });
+    SYNC_KEYS.forEach(k => {
+      if (cloud[k] === undefined) return;
+      // For date-keyed objects, merge cloud + local so neither device loses entries
+      if (MERGE_KEYS.includes(k)) {
+        try {
+          const local = JSON.parse(localStorage.getItem(k) || '{}');
+          const merged = { ...local, ...cloud[k] }; // cloud wins per-key on conflict
+          localStorage.setItem(k, JSON.stringify(merged));
+        } catch { localStorage.setItem(k, JSON.stringify(cloud[k])); }
+      } else {
+        localStorage.setItem(k, JSON.stringify(cloud[k]));
+      }
+    });
     return true;
   } catch { return false; }
 }
@@ -540,6 +554,32 @@ async function init() {
   setSyncStatus('ok');
   // Push once on load so new devices register themselves
   cloudPush();
+
+  // Re-sync when user returns to the app (tab becomes visible again)
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible' && getAccessToken()) {
+      setSyncStatus('pending');
+      const pulled = await cloudPull();
+      if (pulled) {
+        // Reload state from localStorage with fresh cloud data
+        habits = LS.get('hvi_habits', habits);
+        log = LS.get('hvi_log', log);
+        journal = LS.get('hvi_journal3', journal);
+        meta = LS.get('hvi_meta', meta);
+        workoutLog = LS.get('hvi_workout_log', workoutLog);
+        workoutMeta = LS.get('hvi_workout_meta', workoutMeta);
+        mealLog = LS.get('hvi_meal_log', mealLog);
+        dietMeta = LS.get('hvi_diet_meta', dietMeta);
+        weightLog = LS.get('hvi_weight_log', weightLog);
+        sleepLog = LS.get('hvi_sleep_log', sleepLog);
+        prs = LS.get('hvi_prs', prs);
+        gamification = LS.get('hvi_gamification', gamification);
+        // Re-render current view
+        go(curView, {}, false);
+      }
+      setSyncStatus('ok');
+    }
+  });
 
   // Inject quick-log FAB
   if (!document.getElementById('quick-log-fab')) {
