@@ -138,9 +138,26 @@ function authHeaders(extra = {}) {
   return { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', ...extra };
 }
 
+// Proactively refresh token if it expires within 5 minutes
+async function _ensureFreshToken() {
+  const session = getSession();
+  if (!session?.access_token) return;
+  try {
+    // Decode JWT expiry (payload is base64url, second segment)
+    const payload = JSON.parse(atob(session.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    const expiresAt = payload.exp * 1000;
+    if (Date.now() > expiresAt - 5 * 60 * 1000) {
+      console.log('[sync] token expiring soon, refreshing...');
+      await authRefresh();
+    }
+  } catch {}
+}
+
 async function cloudPush() {
   const uid = getCurrentUserId();
   if (!uid) return;
+  // Ensure token is fresh before any request
+  await _ensureFreshToken();
   // Pull first so we merge before overwriting cloud
   try {
     const pullRes = await fetch(`${SUPABASE_URL}/rest/v1/hvi_data?user_id=eq.${uid}&select=data`, { headers: authHeaders() });
@@ -152,7 +169,7 @@ async function cloudPush() {
           if (cloud[k]) {
             try {
               const local = JSON.parse(localStorage.getItem(k) || '{}');
-              const merged = { ...cloud[k], ...local }; // local wins on conflict
+              const merged = { ...cloud[k], ...local };
               localStorage.setItem(k, JSON.stringify(merged));
             } catch {}
           }
@@ -169,29 +186,41 @@ async function cloudPush() {
       headers: authHeaders({ 'Prefer': 'resolution=merge-duplicates' }),
       body: JSON.stringify({ user_id: uid, data, updated_at: new Date().toISOString() })
     });
-    if (res.status === 401) { await authRefresh(); }
-    setSyncStatus(res.ok || res.status === 401 ? 'ok' : 'offline');
-  } catch { setSyncStatus('offline'); }
+    if (!res.ok) {
+      console.warn('[sync] push failed:', res.status, await res.text().catch(() => ''));
+      if (res.status === 401) { const ok = await authRefresh(); if (ok) return cloudPush(); }
+      setSyncStatus('offline');
+    } else {
+      console.log('[sync] push OK, keys:', Object.keys(data).length);
+      setSyncStatus('ok');
+    }
+  } catch(e) { console.warn('[sync] push error:', e); setSyncStatus('offline'); }
 }
 
 async function cloudPull() {
   const uid = getCurrentUserId();
   if (!uid) return false;
+  await _ensureFreshToken();
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/hvi_data?user_id=eq.${uid}&select=data`, {
       headers: authHeaders()
     });
-    if (!res.ok) return false;
+    if (!res.ok) {
+      console.warn('[sync] pull failed:', res.status, await res.text().catch(() => ''));
+      if (res.status === 401) { const ok = await authRefresh(); if (ok) return cloudPull(); }
+      return false;
+    }
     const rows = await res.json();
+    console.log('[sync] pull got', rows.length, 'rows');
     if (!rows.length) return false;
     const cloud = rows[0].data || {};
+    console.log('[sync] cloud keys:', Object.keys(cloud).join(', '));
     SYNC_KEYS.forEach(k => {
       if (cloud[k] === undefined) return;
-      // For date-keyed objects, merge cloud + local so neither device loses entries
       if (MERGE_KEYS.includes(k)) {
         try {
           const local = JSON.parse(localStorage.getItem(k) || '{}');
-          const merged = { ...local, ...cloud[k] }; // cloud wins per-key on conflict
+          const merged = { ...local, ...cloud[k] };
           localStorage.setItem(k, JSON.stringify(merged));
         } catch { localStorage.setItem(k, JSON.stringify(cloud[k])); }
       } else {
@@ -199,12 +228,44 @@ async function cloudPull() {
       }
     });
     return true;
-  } catch { return false; }
+  } catch(e) { console.warn('[sync] pull error:', e); return false; }
 }
 
 function schedulePush() {
   clearTimeout(_syncDebounce);
   _syncDebounce = setTimeout(cloudPush, 2500);
+}
+
+async function forceSync() {
+  const logEl = document.getElementById('sync-log');
+  const btn = document.getElementById('force-sync-btn');
+  const _log = (msg) => { console.log(msg); if (logEl) logEl.textContent += msg + '\n'; };
+  if (btn) btn.disabled = true;
+  if (logEl) logEl.textContent = '';
+  _log('[sync] Starting force sync...');
+  _log('[sync] User ID: ' + (getCurrentUserId() || 'NONE'));
+  _log('[sync] Token: ' + (getAccessToken() ? getAccessToken().substring(0, 20) + '...' : 'NONE'));
+  await _ensureFreshToken();
+  _log('[sync] Token after refresh check: ' + (getAccessToken() ? 'OK' : 'NONE'));
+  // Pull
+  _log('[sync] Pulling from cloud...');
+  const pulled = await cloudPull();
+  _log('[sync] Pull result: ' + (pulled ? 'got data' : 'no data / failed'));
+  // Push
+  _log('[sync] Pushing to cloud...');
+  await cloudPush();
+  _log('[sync] Push done. Check sync dot color.');
+  // Reload in-memory state
+  habits = LS.get('hvi_habits', habits);
+  log = LS.get('hvi_log', log);
+  journal = LS.get('hvi_journal3', journal);
+  workoutLog = LS.get('hvi_workout_log', workoutLog);
+  workoutMeta = LS.get('hvi_workout_meta', workoutMeta);
+  mealLog = LS.get('hvi_meal_log', mealLog);
+  dietMeta = LS.get('hvi_diet_meta', dietMeta);
+  _log('[sync] Done! Reloading view...');
+  if (btn) btn.disabled = false;
+  go(curView, {}, false);
 }
 
 // ── AUTH UI ───────────────────────────────────────────────────────────────
