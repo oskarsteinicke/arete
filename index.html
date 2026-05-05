@@ -90,7 +90,7 @@
 <script>
   if ('serviceWorker' in navigator) {
     // Purge ALL old caches on load to ensure fresh files
-    caches.keys().then(ks => ks.filter(k => k !== 'ns-v25').forEach(k => caches.delete(k)));
+    caches.keys().then(ks => ks.filter(k => k !== 'ns-v26').forEach(k => caches.delete(k)));
     navigator.serviceWorker.register('/northstar/service-worker.js').then(reg => {
       reg.update();
     });
