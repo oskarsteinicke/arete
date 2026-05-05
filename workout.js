@@ -282,8 +282,17 @@ function renderWorkoutActive() {
       </div>`;
     }).join('');
     const canRemove = we.sets.length > 1;
+    const muscles = ex && ex.muscles && ex.muscles.length ? ex.muscles.join(', ') : '';
+    const desc = ex && ex.description ? ex.description.slice(0, 150) : '';
+    const img = ex && ex.image ? `<img src="${ex.image}" style="max-width:100%;border-radius:8px;margin-top:6px">` : '';
+    const infoHTML = (muscles || desc) ? `<div class="w-ex-info" id="w-ex-info-${ei}" style="display:none">
+      ${muscles ? `<div style="font-size:11px;color:var(--accent-b);margin-bottom:4px">💪 ${esc(muscles)}</div>` : ''}
+      ${desc ? `<div style="font-size:11px;color:var(--text-dim);line-height:1.4">${esc(desc)}</div>` : ''}
+      ${img}
+    </div>` : '';
     return `<div class="w-ex ani">
-      <div class="w-ex-head"><div><div class="w-ex-name">${esc(name)}</div><div class="w-ex-muscle">${esc(muscle)}</div></div>${buildExerciseSparkline(we.exerciseId)}</div>
+      <div class="w-ex-head" onclick="toggleExInfo(${ei})"><div><div class="w-ex-name">${esc(name)}</div><div class="w-ex-muscle">${esc(muscle)}${muscles || desc ? ' <span style=&quot;font-size:9px;opacity:0.5&quot;>ⓘ</span>' : ''}</div></div>${buildExerciseSparkline(we.exerciseId)}</div>
+      ${infoHTML}
       ${tipHTML}
       ${setsHTML}
       <div class="w-set-actions">
@@ -321,6 +330,11 @@ function updateSet(ei, si, field, val) {
   if (field === 'reps' && num > 999) num = 999;
   wl.exercises[ei].sets[si][field] = num;
   LS.set('hvi_workout_log', workoutLog);
+}
+
+function toggleExInfo(ei) {
+  const el = document.getElementById('w-ex-info-' + ei);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
 function toggleSet(ei, si) {

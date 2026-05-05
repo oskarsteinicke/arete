@@ -1335,3 +1335,28 @@ nav {
   background: var(--accent); color: #fff; font-size: 12px;
   font-weight: 700; margin: 3px 4px 3px 0;
 }
+
+/* ═══ PROGRESS PHOTOS ══════════════════════════════════════════════ */
+.progress-photo-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+}
+.progress-photo-card {
+  background: var(--surface); border-radius: 12px; overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.05); cursor: pointer;
+  transition: transform 0.15s;
+}
+.progress-photo-card:active { transform: scale(0.97); }
+.progress-photo-img {
+  width: 100%; aspect-ratio: 3/4; object-fit: cover; display: block;
+}
+.progress-photo-date {
+  padding: 8px 10px 4px; font-size: 11px; color: var(--text-dim);
+}
+.progress-photo-note {
+  padding: 0 10px 8px; font-size: 11px; color: var(--text-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.w-ex-info {
+  padding: 8px 0 4px; border-bottom: 1px solid rgba(255,255,255,0.04);
+  margin-bottom: 4px;
+}

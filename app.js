@@ -45,7 +45,7 @@ function setUnits(u) {
 // ── SUPABASE AUTH + CLOUD SYNC ────────────────────────────────────────────
 const SUPABASE_URL = 'https://socflncohsenjptgkkax.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_J2qJ8iTfCESrML5Hm6NGbQ_mz9uPeug';
-const SYNC_KEYS = ['hvi_habits','hvi_log','hvi_journal3','hvi_meta','hvi_workout_log','hvi_workout_meta','hvi_meal_log','hvi_diet_meta','hvi_weight_log','hvi_prs','hvi_gamification','hvi_achievements','hvi_tdee_profile','hvi_custom_programs','hvi_onboarded','hvi_sleep_log','hvi_settings','hvi_habit_history','hvi_meal_favorites'];
+const SYNC_KEYS = ['hvi_habits','hvi_log','hvi_journal3','hvi_meta','hvi_workout_log','hvi_workout_meta','hvi_meal_log','hvi_diet_meta','hvi_weight_log','hvi_prs','hvi_gamification','hvi_achievements','hvi_tdee_profile','hvi_custom_programs','hvi_onboarded','hvi_sleep_log','hvi_settings','hvi_habit_history','hvi_meal_favorites','hvi_progress_photos'];
 // Keys that are date-keyed objects — these get merged instead of overwritten
 const MERGE_KEYS = ['hvi_workout_log','hvi_meal_log','hvi_journal3','hvi_weight_log','hvi_sleep_log','hvi_habit_history'];
 
@@ -139,12 +139,8 @@ function setSyncStatus(state) {
 }
 
 function _syncToast(msg) {
-  let t = document.getElementById('sync-toast');
-  if (!t) { t = document.createElement('div'); t.id = 'sync-toast'; t.style.cssText = 'position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;z-index:9999;opacity:0.9;pointer-events:none;transition:opacity .3s'; document.body.appendChild(t); }
-  t.textContent = msg;
-  t.style.opacity = '0.9';
-  clearTimeout(t._tid);
-  t._tid = setTimeout(() => { t.style.opacity = '0'; }, 4000);
+  // Silent — only log to console for debugging
+  console.log('[sync]', msg);
 }
 
 function authHeaders(extra = {}) {
@@ -607,7 +603,7 @@ const NAV_PARENT = {
   habitCreate: 'habits',
   workoutPicker: 'workout', workoutActive: 'workout', workoutHistory: 'workout', workoutBuilder: 'workout', exerciseBrowser: 'workout', prHistory: 'workout',
   dietAddMeal: 'diet', dietRecipes: 'diet', dietRecipeDetail: 'diet', dietGoals: 'diet', dietTrend: 'diet', dietTDEE: 'diet',
-  calendar: 'stats',
+  calendar: 'stats', progressPhotos: 'stats',
 };
 
 // ── INIT ──────────────────────────────────────────────────────────────────
@@ -704,7 +700,7 @@ async function init() {
     renderOnboarding(0);
   } else {
     (() => {
-      const validViews = ['home','pillar','habits','habitCreate','stats','workout','workoutPicker','workoutActive','workoutHistory','workoutBuilder','exerciseBrowser','diet','dietAddMeal','dietRecipes','dietRecipeDetail','dietGoals','dietTrend','dietTDEE','library','calendar','sleep'];
+      const validViews = ['home','pillar','habits','habitCreate','stats','progressPhotos','workout','workoutPicker','workoutActive','workoutHistory','workoutBuilder','exerciseBrowser','diet','dietAddMeal','dietRecipes','dietRecipeDetail','dietGoals','dietTrend','dietTDEE','library','calendar','sleep'];
       const hash = location.hash.replace(/^#/, '');
       const view = validViews.includes(hash) ? hash : 'home';
       go(view, {}, false);
@@ -779,7 +775,7 @@ function go(view, params = {}, pushState = true) {
     workout: renderWorkout, workoutPicker: renderWorkoutPicker, workoutActive: renderWorkoutActive, workoutHistory: renderWorkoutHistory, workoutBuilder: renderWorkoutBuilder, exerciseBrowser: renderExerciseBrowser, prHistory: renderPRHistory,
     diet: renderDiet, dietAddMeal: renderDietAddMeal, dietRecipes: renderDietRecipes, dietRecipeDetail: renderDietRecipeDetail, dietGoals: renderDietGoals, dietTrend: renderDietTrend, dietTDEE: renderDietTDEE,
     library: renderLibrary,
-    sleep: renderSleep,
+    sleep: renderSleep, progressPhotos: renderProgressPhotos,
     calendar: () => { window._statsSubView = 'calendar'; renderStats(); },
   };
   (renders[view] || renderHome)();

@@ -1167,7 +1167,8 @@ function renderStats() {
       <div class="q-auth" id="qa">\u2014 ${esc(q.author)}</div>
       <div class="q-nav"><button class="q-btn" onclick="rotQ(-1)">\u2190</button><button class="q-btn" onclick="rotQ(1)">\u2192</button></div>
     </div>
-    <button class="w-action-btn" style="margin:16px 24px 8px" onclick="shareRecap()">📤 Share Weekly Recap</button>
+    <button class="w-action-btn" style="margin:16px 24px 8px" onclick="go('progressPhotos')">📸 Progress Photos</button>
+    <button class="w-action-btn" style="margin:0 24px 8px" onclick="shareRecap()">📤 Share Weekly Recap</button>
     <button class="w-action-btn" style="margin:0 24px 8px" onclick="forceSync()" id="force-sync-btn">🔄 Force Sync Now</button>
     <div id="sync-log" style="margin:0 24px 8px;font-size:11px;color:var(--text-dim);max-height:120px;overflow:auto;font-family:monospace;white-space:pre-wrap"></div>
     <button class="w-action-btn" style="margin:0 24px 32px;color:var(--fat);border-color:var(--fat)" onclick="if(confirm('Sign out?'))authSignOut()">Sign Out</button>`;
@@ -1836,4 +1837,113 @@ function toggleTheme() {
 function applyTheme() {
   const theme = (settings || {}).theme || 'dark';
   document.documentElement.setAttribute('data-theme', theme);
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// PROGRESS PHOTOS
+// ══════════════════════════════════════════════════════════════════════════
+
+function getProgressPhotos() { return LS.get('hvi_progress_photos', []); }
+
+function renderProgressPhotos() {
+  const photos = getProgressPhotos();
+  document.getElementById('view').innerHTML = `
+    <button class="back" onclick="go('stats')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
+    <div class="page-head ani"><div class="page-title">Progress Photos</div><div class="page-sub">Track your visual transformation over time.</div></div>
+    <div style="padding:0 24px">
+      <label class="w-action-btn" style="display:block;text-align:center;cursor:pointer;margin-bottom:20px">
+        📸 Take / Upload Photo
+        <input type="file" accept="image/*" capture="environment" style="display:none" onchange="handleProgressPhoto(this)">
+      </label>
+      ${photos.length === 0 ? `<div class="empty-state"><div class="empty-icon">📷</div><div class="empty-txt">No progress photos yet.<br>Take your first photo to start tracking your transformation.</div></div>` : ''}
+      ${photos.length >= 2 ? `<button class="w-action-btn" style="margin-bottom:16px;width:100%" onclick="showPhotoCompare()">↔ Compare Photos</button>` : ''}
+      <div class="progress-photo-grid">
+        ${photos.map((p, i) => `
+          <div class="progress-photo-card" onclick="viewProgressPhoto(${i})">
+            <img src="${p.thumb}" class="progress-photo-img">
+            <div class="progress-photo-date">${new Date(p.date).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})}</div>
+            ${p.note ? `<div class="progress-photo-note">${esc(p.note)}</div>` : ''}
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function handleProgressPhoto(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    // Resize to thumbnail (max 600px wide) to save localStorage space
+    const img = new Image();
+    img.onload = function() {
+      const maxW = 600, maxH = 800;
+      let w = img.width, h = img.height;
+      if (w > maxW) { h = h * maxW / w; w = maxW; }
+      if (h > maxH) { w = w * maxH / h; h = maxH; }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      const thumb = canvas.toDataURL('image/jpeg', 0.7);
+      // Ask for optional note
+      const note = prompt('Add a note (optional):', '') || '';
+      const photos = getProgressPhotos();
+      photos.unshift({ date: new Date().toISOString(), thumb, note });
+      // Keep max 30 photos to avoid localStorage overflow
+      if (photos.length > 30) photos.pop();
+      LS.set('hvi_progress_photos', photos);
+      renderProgressPhotos();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function viewProgressPhoto(i) {
+  const photos = getProgressPhotos();
+  const p = photos[i];
+  if (!p) return;
+  let modal = document.getElementById('photo-view-modal');
+  if (!modal) { modal = document.createElement('div'); modal.id = 'photo-view-modal'; document.body.appendChild(modal); }
+  modal.innerHTML = `
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:5000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px" onclick="this.parentElement.style.display='none'">
+      <img src="${p.thumb}" style="max-width:90%;max-height:70vh;border-radius:12px;object-fit:contain">
+      <div style="color:#fff;margin-top:12px;font-size:14px">${new Date(p.date).toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric', year:'numeric'})}</div>
+      ${p.note ? `<div style="color:var(--text-dim);margin-top:4px;font-size:13px">${esc(p.note)}</div>` : ''}
+      <button style="margin-top:16px;background:var(--fat);color:#fff;border:none;padding:8px 20px;border-radius:8px;font-size:12px;cursor:pointer" onclick="event.stopPropagation();deleteProgressPhoto(${i})">Delete Photo</button>
+    </div>`;
+  modal.style.display = 'block';
+}
+
+function deleteProgressPhoto(i) {
+  if (!confirm('Delete this progress photo?')) return;
+  const photos = getProgressPhotos();
+  photos.splice(i, 1);
+  LS.set('hvi_progress_photos', photos);
+  document.getElementById('photo-view-modal').style.display = 'none';
+  renderProgressPhotos();
+}
+
+function showPhotoCompare() {
+  const photos = getProgressPhotos();
+  if (photos.length < 2) return;
+  const first = photos[photos.length - 1]; // oldest
+  const last = photos[0]; // newest
+  let modal = document.getElementById('photo-compare-modal');
+  if (!modal) { modal = document.createElement('div'); modal.id = 'photo-compare-modal'; document.body.appendChild(modal); }
+  modal.innerHTML = `
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:5000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px" onclick="this.parentElement.style.display='none'">
+      <div style="color:var(--text);font-size:16px;font-weight:600;margin-bottom:16px">Your Transformation</div>
+      <div style="display:flex;gap:12px;max-width:100%;overflow:hidden">
+        <div style="flex:1;text-align:center">
+          <img src="${first.thumb}" style="max-width:100%;max-height:50vh;border-radius:10px;object-fit:contain">
+          <div style="color:var(--text-dim);font-size:11px;margin-top:6px">${new Date(first.date).toLocaleDateString('en-US',{month:'short',year:'numeric'})}</div>
+        </div>
+        <div style="flex:1;text-align:center">
+          <img src="${last.thumb}" style="max-width:100%;max-height:50vh;border-radius:10px;object-fit:contain">
+          <div style="color:var(--text-dim);font-size:11px;margin-top:6px">${new Date(last.date).toLocaleDateString('en-US',{month:'short',year:'numeric'})}</div>
+        </div>
+      </div>
+      <div style="color:var(--text-muted);font-size:12px;margin-top:12px">Tap anywhere to close</div>
+    </div>`;
+  modal.style.display = 'block';
 }

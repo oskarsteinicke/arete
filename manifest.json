@@ -21,5 +21,31 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "Start Workout",
+      "short_name": "Workout",
+      "url": "/northstar/#workoutActive",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Log Meal",
+      "short_name": "Meal",
+      "url": "/northstar/#dietAddMeal",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Check Habits",
+      "short_name": "Habits",
+      "url": "/northstar/#habits",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "AI Coach",
+      "short_name": "Coach",
+      "url": "/northstar/#home",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
   ]
 }
