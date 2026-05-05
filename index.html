@@ -89,10 +89,11 @@
 <script src="profile.js?v=25"></script>
 <script>
   if ('serviceWorker' in navigator) {
+    // Purge ALL old caches on load to ensure fresh files
+    caches.keys().then(ks => ks.filter(k => k !== 'ns-v25').forEach(k => caches.delete(k)));
     navigator.serviceWorker.register('/northstar/service-worker.js').then(reg => {
-      reg.update(); // always check for new SW on load
+      reg.update();
     });
-    // When a new SW takes over, reload immediately to get fresh files
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       window.location.reload();
     });

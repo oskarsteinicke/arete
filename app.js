@@ -111,7 +111,9 @@ async function authRefresh() {
 
 async function authSignOut() {
   const token = getAccessToken();
+  // Push data to cloud BEFORE signing out so nothing is lost
   if (token) {
+    try { await cloudPush(); } catch {}
     try {
       await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
         method: 'POST',
