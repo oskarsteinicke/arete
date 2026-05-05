@@ -133,6 +133,18 @@ function setSyncStatus(state) {
   let el = document.getElementById('sync-dot');
   if (!el) { el = document.createElement('div'); el.id = 'sync-dot'; el.title = 'Cloud sync'; document.body.appendChild(el); }
   el.className = 'sync-' + state;
+  // Show last sync time on the dot
+  if (state === 'ok') el.title = 'Synced ' + new Date().toLocaleTimeString();
+  else if (state === 'offline') el.title = 'Sync failed';
+}
+
+function _syncToast(msg) {
+  let t = document.getElementById('sync-toast');
+  if (!t) { t = document.createElement('div'); t.id = 'sync-toast'; t.style.cssText = 'position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;z-index:9999;opacity:0.9;pointer-events:none;transition:opacity .3s'; document.body.appendChild(t); }
+  t.textContent = msg;
+  t.style.opacity = '0.9';
+  clearTimeout(t._tid);
+  t._tid = setTimeout(() => { t.style.opacity = '0'; }, 4000);
 }
 
 function authHeaders(extra = {}) {
@@ -189,11 +201,14 @@ async function cloudPush() {
       body: JSON.stringify({ user_id: uid, data, updated_at: new Date().toISOString() })
     });
     if (!res.ok) {
-      console.warn('[sync] push failed:', res.status, await res.text().catch(() => ''));
+      const errText = await res.text().catch(() => '');
+      console.warn('[sync] push failed:', res.status, errText);
+      _syncToast('⚠️ Sync failed: ' + res.status);
       if (res.status === 401) { const ok = await authRefresh(); if (ok) return cloudPush(); }
       setSyncStatus('offline');
     } else {
       console.log('[sync] push OK, keys:', Object.keys(data).length);
+      _syncToast('✓ Synced to cloud');
       setSyncStatus('ok');
     }
   } catch(e) { console.warn('[sync] push error:', e); setSyncStatus('offline'); }
@@ -208,15 +223,18 @@ async function cloudPull() {
       headers: authHeaders()
     });
     if (!res.ok) {
-      console.warn('[sync] pull failed:', res.status, await res.text().catch(() => ''));
+      const errText = await res.text().catch(() => '');
+      console.warn('[sync] pull failed:', res.status, errText);
+      _syncToast('⚠️ Pull failed: ' + res.status);
       if (res.status === 401) { const ok = await authRefresh(); if (ok) return cloudPull(); }
       return false;
     }
     const rows = await res.json();
     console.log('[sync] pull got', rows.length, 'rows');
-    if (!rows.length) return false;
+    if (!rows.length) { _syncToast('☁️ No cloud data yet'); return false; }
     const cloud = rows[0].data || {};
     console.log('[sync] cloud keys:', Object.keys(cloud).join(', '));
+    _syncToast('✓ Pulled ' + Object.keys(cloud).length + ' keys from cloud');
     SYNC_KEYS.forEach(k => {
       if (cloud[k] === undefined) return;
       if (MERGE_KEYS.includes(k)) {
