@@ -632,34 +632,120 @@ function addFoodItem() {
 function removeFoodItem(i) { curMealItems.splice(i, 1); go('dietAddMeal'); }
 
 // ── OPEN FOOD FACTS SEARCH ──────────────────────────────────────────────
+// ── FOOD DATABASE ────────────────────────────────────────────────────────
+// Built-in common foods (per typical serving) for instant search
+const COMMON_FOODS = [
+  // Proteins
+  { name: 'Chicken Breast (grilled)', calories: 165, protein: 31, carbs: 0, fat: 3.6, serving: '100g' },
+  { name: 'Chicken Thigh (skin-on)', calories: 209, protein: 26, carbs: 0, fat: 11, serving: '100g' },
+  { name: 'Ground Beef (85/15)', calories: 215, protein: 26, carbs: 0, fat: 13, serving: '100g' },
+  { name: 'Salmon Fillet', calories: 208, protein: 20, carbs: 0, fat: 13, serving: '100g' },
+  { name: 'Tuna (canned, drained)', calories: 116, protein: 26, carbs: 0, fat: 1, serving: '100g' },
+  { name: 'Eggs (whole, large)', calories: 72, protein: 6, carbs: 0.4, fat: 5, serving: '1 egg' },
+  { name: 'Egg Whites', calories: 17, protein: 3.6, carbs: 0.2, fat: 0.1, serving: '1 white' },
+  { name: 'Turkey Breast (deli)', calories: 104, protein: 18, carbs: 2, fat: 2, serving: '100g' },
+  { name: 'Shrimp', calories: 85, protein: 20, carbs: 0, fat: 0.5, serving: '100g' },
+  { name: 'Greek Yogurt (plain, 0%)', calories: 59, protein: 10, carbs: 3.6, fat: 0.4, serving: '100g' },
+  { name: 'Greek Yogurt (plain, 2%)', calories: 73, protein: 10, carbs: 4, fat: 2, serving: '100g' },
+  { name: 'Cottage Cheese (2%)', calories: 84, protein: 11, carbs: 4.3, fat: 2.3, serving: '100g' },
+  { name: 'Whey Protein Scoop', calories: 120, protein: 24, carbs: 3, fat: 1.5, serving: '1 scoop (30g)' },
+  { name: 'Tofu (firm)', calories: 76, protein: 8, carbs: 2, fat: 4.2, serving: '100g' },
+  // Carbs
+  { name: 'White Rice (cooked)', calories: 130, protein: 2.7, carbs: 28, fat: 0.3, serving: '100g' },
+  { name: 'Brown Rice (cooked)', calories: 123, protein: 2.7, carbs: 26, fat: 1, serving: '100g' },
+  { name: 'Pasta (cooked)', calories: 131, protein: 5, carbs: 25, fat: 1.1, serving: '100g' },
+  { name: 'Bread (white, 1 slice)', calories: 79, protein: 2.7, carbs: 15, fat: 1, serving: '1 slice' },
+  { name: 'Bread (whole wheat, 1 slice)', calories: 81, protein: 4, carbs: 14, fat: 1.1, serving: '1 slice' },
+  { name: 'Oatmeal (dry)', calories: 150, protein: 5, carbs: 27, fat: 3, serving: '40g' },
+  { name: 'Sweet Potato', calories: 86, protein: 1.6, carbs: 20, fat: 0.1, serving: '100g' },
+  { name: 'Potato (baked)', calories: 93, protein: 2.5, carbs: 21, fat: 0.1, serving: '100g' },
+  { name: 'Banana', calories: 105, protein: 1.3, carbs: 27, fat: 0.4, serving: '1 medium' },
+  { name: 'Apple', calories: 95, protein: 0.5, carbs: 25, fat: 0.3, serving: '1 medium' },
+  { name: 'Blueberries', calories: 57, protein: 0.7, carbs: 14, fat: 0.3, serving: '100g' },
+  { name: 'Orange', calories: 62, protein: 1.2, carbs: 15, fat: 0.2, serving: '1 medium' },
+  { name: 'Tortilla (flour, large)', calories: 218, protein: 5.7, carbs: 36, fat: 5, serving: '1 tortilla' },
+  { name: 'Bagel', calories: 245, protein: 10, carbs: 48, fat: 1.5, serving: '1 bagel' },
+  // Fats
+  { name: 'Avocado', calories: 240, protein: 3, carbs: 13, fat: 22, serving: '1 medium' },
+  { name: 'Peanut Butter', calories: 94, protein: 4, carbs: 3, fat: 8, serving: '1 tbsp' },
+  { name: 'Almond Butter', calories: 98, protein: 3.4, carbs: 3, fat: 9, serving: '1 tbsp' },
+  { name: 'Almonds', calories: 164, protein: 6, carbs: 6, fat: 14, serving: '28g' },
+  { name: 'Walnuts', calories: 185, protein: 4.3, carbs: 3.9, fat: 18.5, serving: '28g' },
+  { name: 'Olive Oil', calories: 119, protein: 0, carbs: 0, fat: 14, serving: '1 tbsp' },
+  { name: 'Butter', calories: 102, protein: 0.1, carbs: 0, fat: 11.5, serving: '1 tbsp' },
+  { name: 'Cheese (cheddar)', calories: 113, protein: 7, carbs: 0.4, fat: 9.3, serving: '28g' },
+  { name: 'Mozzarella', calories: 85, protein: 6.3, carbs: 0.7, fat: 6.3, serving: '28g' },
+  { name: 'Cream Cheese', calories: 51, protein: 0.9, carbs: 0.8, fat: 5, serving: '1 tbsp' },
+  // Dairy & Drinks
+  { name: 'Whole Milk', calories: 149, protein: 8, carbs: 12, fat: 8, serving: '1 cup (240ml)' },
+  { name: 'Skim Milk', calories: 83, protein: 8, carbs: 12, fat: 0.2, serving: '1 cup (240ml)' },
+  { name: 'Oat Milk', calories: 120, protein: 3, carbs: 16, fat: 5, serving: '1 cup (240ml)' },
+  { name: 'Almond Milk (unsweetened)', calories: 30, protein: 1, carbs: 1, fat: 2.5, serving: '1 cup (240ml)' },
+  { name: 'Orange Juice', calories: 112, protein: 1.7, carbs: 26, fat: 0.5, serving: '1 cup (240ml)' },
+  // Snacks & Common
+  { name: 'Protein Bar (average)', calories: 210, protein: 20, carbs: 22, fat: 8, serving: '1 bar' },
+  { name: 'Granola Bar', calories: 140, protein: 3, carbs: 22, fat: 5, serving: '1 bar' },
+  { name: 'Dark Chocolate (70%)', calories: 170, protein: 2.2, carbs: 13, fat: 12, serving: '28g' },
+  { name: 'Honey', calories: 64, protein: 0.1, carbs: 17, fat: 0, serving: '1 tbsp' },
+  { name: 'Hummus', calories: 25, protein: 1.2, carbs: 2, fat: 1.4, serving: '1 tbsp' },
+  // Vegetables
+  { name: 'Broccoli', calories: 55, protein: 3.7, carbs: 11, fat: 0.6, serving: '1 cup' },
+  { name: 'Spinach (raw)', calories: 7, protein: 0.9, carbs: 1.1, fat: 0.1, serving: '1 cup' },
+  { name: 'Mixed Salad Greens', calories: 10, protein: 1, carbs: 2, fat: 0.1, serving: '1 cup' },
+  { name: 'Tomato', calories: 22, protein: 1.1, carbs: 4.8, fat: 0.2, serving: '1 medium' },
+  { name: 'Cucumber', calories: 16, protein: 0.7, carbs: 3.6, fat: 0.1, serving: '1 cup sliced' },
+  { name: 'Bell Pepper', calories: 31, protein: 1, carbs: 6, fat: 0.3, serving: '1 medium' },
+  { name: 'Carrots', calories: 25, protein: 0.6, carbs: 6, fat: 0.1, serving: '1 medium' },
+];
+
 let _foodSearchResults = [];
 let _foodSearchDebounce = null;
+
 function doFoodSearch(q) {
   clearTimeout(_foodSearchDebounce);
   if (!q || q.length < 2) { _foodSearchResults = []; _renderFoodResults(); return; }
-  const out = document.getElementById('food-search-results');
-  if (out) out.innerHTML = '<div style="text-align:center;padding:12px;color:var(--text-dim)">Searching…</div>';
+
+  // Search local database first (instant)
+  const terms = q.toLowerCase().split(/\s+/);
+  const localResults = COMMON_FOODS.filter(f => {
+    const name = f.name.toLowerCase();
+    return terms.every(t => name.includes(t));
+  }).slice(0, 6).map(f => ({ ...f, per: f.serving, source: 'local' }));
+
+  _foodSearchResults = localResults;
+  _renderFoodResults();
+
+  // Then search Open Food Facts for branded/packaged items (async)
   _foodSearchDebounce = setTimeout(async () => {
     try {
-      const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=8&fields=product_name,nutriments,serving_size,brands`);
+      const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=6&fields=product_name,nutriments,serving_size,brands`);
       const data = await res.json();
-      _foodSearchResults = (data.products || []).filter(p => p.product_name && p.nutriments).map(p => {
-        const n = p.nutriments;
-        return {
-          name: p.product_name + (p.brands ? ` (${p.brands})` : ''),
-          calories: Math.round(n['energy-kcal_100g'] || n['energy-kcal'] || 0),
-          protein: Math.round(n.proteins_100g || n.proteins || 0),
-          carbs: Math.round(n.carbohydrates_100g || n.carbohydrates || 0),
-          fat: Math.round(n.fat_100g || n.fat || 0),
-          per: '100g',
-          serving: p.serving_size || null,
-        };
-      });
+      const apiResults = (data.products || [])
+        .filter(p => p.product_name && p.nutriments && (p.nutriments['energy-kcal_100g'] || p.nutriments['energy-kcal']) > 0)
+        .map(p => {
+          const n = p.nutriments;
+          const servSize = p.serving_size || '100g';
+          const hasPer = n['energy-kcal_serving'] && n['proteins_serving'] != null;
+          return {
+            name: p.product_name + (p.brands ? ` (${p.brands})` : ''),
+            calories: Math.round(hasPer ? n['energy-kcal_serving'] : (n['energy-kcal_100g'] || n['energy-kcal'] || 0)),
+            protein: Math.round(hasPer ? n['proteins_serving'] : (n.proteins_100g || n.proteins || 0)),
+            carbs: Math.round(hasPer ? n['carbohydrates_serving'] : (n.carbohydrates_100g || n.carbohydrates || 0)),
+            fat: Math.round(hasPer ? n['fat_serving'] : (n.fat_100g || n.fat || 0)),
+            per: hasPer ? servSize : '100g',
+            source: 'api',
+          };
+        }).slice(0, 5);
+      // Combine: local first, then API results (deduped by name)
+      const localNames = new Set(localResults.map(f => f.name.toLowerCase()));
+      const combined = [...localResults, ...apiResults.filter(f => !localNames.has(f.name.toLowerCase()))];
+      _foodSearchResults = combined;
       _renderFoodResults();
     } catch(e) {
-      if (out) out.innerHTML = '<div style="text-align:center;padding:12px;color:var(--fat)">Search failed — check connection</div>';
+      // Keep local results, just don't add API results
+      console.warn('[food] API search failed:', e);
     }
-  }, 400);
+  }, 500);
 }
 
 function _renderFoodResults() {
@@ -668,8 +754,8 @@ function _renderFoodResults() {
   if (!_foodSearchResults.length) { out.innerHTML = ''; return; }
   out.innerHTML = _foodSearchResults.map((f, i) =>
     `<div class="food-result" onclick="selectFoodResult(${i})">
-      <div class="food-result-name">${esc(f.name)}</div>
-      <div class="food-result-macros">${f.calories} cal · ${f.protein}P · ${f.carbs}C · ${f.fat}F <span style="color:var(--text-muted)">per ${f.per}</span></div>
+      <div class="food-result-name">${esc(f.name)}${f.source === 'api' ? ' <span style="font-size:10px;color:var(--text-dim);background:rgba(255,255,255,0.06);padding:1px 5px;border-radius:4px">OFF</span>' : ''}</div>
+      <div class="food-result-macros">${f.calories} cal · ${f.protein}P · ${f.carbs}C · ${f.fat}F <span style="color:var(--text-dim)">per ${esc(f.per)}</span></div>
     </div>`
   ).join('');
 }
