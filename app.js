@@ -418,7 +418,8 @@ function ring(r, pct, sw = 3, color = 'var(--accent)') {
   return `<svg viewBox="0 0 ${sz} ${sz}">
     <circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="${sw}"/>
     <circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="${color}" stroke-width="${sw}"
-      stroke-dasharray="${c.toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}" stroke-linecap="round"/>
+      stroke-dasharray="${c.toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}" stroke-linecap="round"
+      style="--ring-c:${c.toFixed(2)};--ring-off:${off.toFixed(2)}"/>
   </svg>`;
 }
 
@@ -850,14 +851,14 @@ function tapHabit(id, suffix) {
     // Streak milestone celebrations
     if ([7, 14, 30, 60, 100].includes(s)) {
       launchConfetti(1.5);
-      navigator.vibrate && navigator.vibrate([50, 30, 50, 30, 80]);
+      haptic([50, 30, 50, 30, 80]);
       const el = document.createElement('div');
       el.className = 'streak-toast';
       el.innerHTML = `🔥 ${s}-day streak!`;
       document.body.appendChild(el);
       setTimeout(() => el.remove(), 3000);
     } else {
-      navigator.vibrate && navigator.vibrate(10);
+      haptic(10);
     }
     checkDailyQuests();
   } else {
@@ -893,6 +894,23 @@ function renderHome() {
   const score = computeDailyScore();
   const scoreColor = score >= 80 ? 'var(--accent-b)' : score >= 50 ? 'var(--carb)' : 'var(--fat)';
   const dateStr = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+
+  // Overall streak — consecutive days with at least 1 habit done
+  const _overallStreak = (() => {
+    let streak = 0, d = new Date();
+    // Check today first
+    if (habits.some(h => log[h.id]?.completedToday)) streak++;
+    else return 0;
+    // Check backwards
+    for (let i = 1; i < 365; i++) {
+      d.setDate(d.getDate() - 1);
+      const key = d.toISOString().slice(0, 10);
+      const hist = LS.get('hvi_habit_history', {});
+      const anyDone = Object.values(hist).some(arr => arr.includes(key));
+      if (anyDone) streak++; else break;
+    }
+    return streak;
+  })();
 
   // Pillar strip
   const pillarStrip = PILLARS.map(p => {
@@ -992,6 +1010,12 @@ function renderHome() {
 
     <div class="hm-pillars ani">${pillarStrip}</div>
 
+    ${_overallStreak >= 2 ? `<div class="hm-streak-banner ani">
+      <div class="hm-streak-fire">🔥</div>
+      <div class="hm-streak-num">${_overallStreak}</div>
+      <div class="hm-streak-lbl">day streak</div>
+    </div>` : ''}
+
     <div class="hm-sec ani">
       <div class="hm-sec-title">Today</div>
     </div>
@@ -1045,9 +1069,16 @@ function renderHome() {
     ${getEveningReminder()}
 
     <!-- Share -->
-    <div style="display:flex;gap:10px;padding:0 16px 32px" class="ani">
+    <div style="display:flex;gap:10px;padding:0 16px 16px" class="ani">
       <button class="w-action-btn" style="flex:1;margin:0" onclick="shareDailyCard()">📤 Share Today</button>
       <button class="w-action-btn" style="flex:1;margin:0" onclick="shareRecap()">📊 Weekly Recap</button>
+    </div>
+
+    <!-- Invite -->
+    <div class="invite-card ani">
+      <div class="invite-title">Enjoying Northstar?</div>
+      <div class="invite-sub">Share it with a friend who's leveling up their life.</div>
+      <button class="invite-btn" onclick="shareInvite()">🔗 Invite a Friend</button>
     </div>
   `;
 }
@@ -1248,5 +1279,138 @@ function saveHabit() {
   go('habits');
 }
 
+// ── SWIPE NAVIGATION ─────────────────────────────────────────────────────
+const _NAV_ORDER = ['home', 'habits', 'workout', 'diet', 'library', 'stats'];
+let _swipeX0 = null, _swipeY0 = null, _swiping = false;
+
+function initSwipeNav() {
+  const view = document.getElementById('view');
+  view.addEventListener('touchstart', e => {
+    _swipeX0 = e.touches[0].clientX;
+    _swipeY0 = e.touches[0].clientY;
+    _swiping = false;
+  }, { passive: true });
+
+  view.addEventListener('touchmove', e => {
+    if (_swipeX0 === null) return;
+    const dx = e.touches[0].clientX - _swipeX0;
+    const dy = e.touches[0].clientY - _swipeY0;
+    if (Math.abs(dx) > Math.abs(dy) * 1.5 && Math.abs(dx) > 30) _swiping = true;
+  }, { passive: true });
+
+  view.addEventListener('touchend', e => {
+    if (!_swiping || _swipeX0 === null) { _swipeX0 = null; return; }
+    const dx = e.changedTouches[0].clientX - _swipeX0;
+    _swipeX0 = null; _swiping = false;
+    if (Math.abs(dx) < 60) return;
+    const base = NAV_PARENT[curView] || curView;
+    const idx = _NAV_ORDER.indexOf(base);
+    if (idx === -1) return;
+    const next = dx < 0 ? _NAV_ORDER[idx + 1] : _NAV_ORDER[idx - 1];
+    if (next) go(next);
+  }, { passive: true });
+}
+
+// ── iOS HAPTIC FALLBACK ──────────────────────────────────────────────────
+function haptic(pattern) {
+  if (navigator.vibrate) {
+    navigator.vibrate(pattern || 10);
+  } else {
+    // iOS Safari fallback — play a short silent-ish tick
+    try {
+      if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = _audioCtx.createOscillator();
+      const gain = _audioCtx.createGain();
+      osc.connect(gain); gain.connect(_audioCtx.destination);
+      gain.gain.value = 0.01; // nearly silent
+      osc.frequency.value = 200;
+      osc.start(); osc.stop(_audioCtx.currentTime + 0.02);
+    } catch {}
+  }
+}
+
+// ── INVITE / REFERRAL ────────────────────────────────────────────────────
+function shareInvite() {
+  const text = "I've been using Northstar to track my habits, workouts, and nutrition all in one app. It's free — check it out!";
+  const url = 'https://oskarsteinicke.github.io/northstar/';
+  if (navigator.share) {
+    navigator.share({ title: 'Northstar', text, url }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(text + '\n' + url).then(() => {
+      alert('Link copied to clipboard!');
+    }).catch(() => {});
+  }
+}
+
+// ── PRO UPGRADE PROMPT ───────────────────────────────────────────────────
+function showProPrompt() {
+  let el = document.getElementById('pro-overlay');
+  if (!el) { el = document.createElement('div'); el.id = 'pro-overlay'; document.body.appendChild(el); }
+  el.innerHTML = `
+    <div class="pro-overlay" onclick="closeProPrompt()">
+      <div class="pro-card" onclick="event.stopPropagation()">
+        <div class="pro-star">✦</div>
+        <div class="pro-title">Northstar Pro</div>
+        <div class="pro-sub">Unlock the full system to accelerate your progress.</div>
+        <div class="pro-features">
+          <div class="pro-feat"><span class="pro-feat-icon">🤖</span> Unlimited AI Coach conversations</div>
+          <div class="pro-feat"><span class="pro-feat-icon">🔍</span> Food database search (millions of foods)</div>
+          <div class="pro-feat"><span class="pro-feat-icon">📸</span> Progress photo timeline & comparison</div>
+          <div class="pro-feat"><span class="pro-feat-icon">☁️</span> Cloud sync across all devices</div>
+          <div class="pro-feat"><span class="pro-feat-icon">📊</span> Advanced analytics & trends</div>
+          <div class="pro-feat"><span class="pro-feat-icon">📤</span> Shareable weekly recaps</div>
+        </div>
+        <button class="pro-btn" onclick="alert('Coming soon!')">UPGRADE — $4.99/MONTH</button>
+        <button class="pro-skip" onclick="closeProPrompt()">Maybe later</button>
+      </div>
+    </div>`;
+}
+
+function closeProPrompt() {
+  const el = document.getElementById('pro-overlay');
+  if (el) el.remove();
+}
+
+// ── SMART SYNC (only changed keys) ───────────────────────────────────────
+let _lastSyncHash = {};
+
+function _computeSyncHash() {
+  const h = {};
+  SYNC_KEYS.forEach(k => {
+    const v = localStorage.getItem(k);
+    if (v) h[k] = v.length; // simple length-based change detection
+  });
+  return h;
+}
+
+function _getChangedKeys() {
+  const cur = _computeSyncHash();
+  const changed = SYNC_KEYS.filter(k => cur[k] !== _lastSyncHash[k]);
+  _lastSyncHash = cur;
+  return changed;
+}
+
+// ── ERROR BOUNDARY ───────────────────────────────────────────────────────
+window.onerror = function(msg, src, line) {
+  console.error('[northstar] Error:', msg, src, line);
+  const view = document.getElementById('view');
+  if (view && !document.querySelector('.error-boundary')) {
+    const el = document.createElement('div');
+    el.className = 'error-boundary';
+    el.innerHTML = `
+      <h2>Something went wrong</h2>
+      <p>An unexpected error occurred. This won't affect your saved data.</p>
+      <button onclick="this.closest('.error-boundary').remove();go('home')">Back to Home</button>`;
+    document.body.appendChild(el);
+  }
+};
+
+window.addEventListener('unhandledrejection', e => {
+  console.error('[northstar] Unhandled rejection:', e.reason);
+});
+
 // ── START ─────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', () => {
+  init();
+  initSwipeNav();
+});

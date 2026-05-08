@@ -80,17 +80,17 @@
     </button>
   </nav>
 </div>
-<script src="data.js?v=27"></script>
-<script src="app.js?v=27"></script>
-<script src="workout.js?v=27"></script>
-<script src="diet.js?v=27"></script>
-<script src="coach.js?v=27"></script>
-<script src="social.js?v=27"></script>
-<script src="profile.js?v=27"></script>
+<script src="data.js?v=28"></script>
+<script src="app.js?v=28"></script>
+<script src="workout.js?v=28"></script>
+<script src="diet.js?v=28"></script>
+<script src="coach.js?v=28"></script>
+<script src="social.js?v=28"></script>
+<script src="profile.js?v=28"></script>
 <script>
   if ('serviceWorker' in navigator) {
     // Purge ALL old caches on load to ensure fresh files
-    caches.keys().then(ks => ks.filter(k => k !== 'ns-v27').forEach(k => caches.delete(k)));
+    caches.keys().then(ks => ks.filter(k => k !== 'ns-v28').forEach(k => caches.delete(k)));
     navigator.serviceWorker.register('/northstar/service-worker.js').then(reg => {
       reg.update();
     });

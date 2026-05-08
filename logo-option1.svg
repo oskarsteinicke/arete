@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="256" fill="#0a0908"/>
+  <!-- Outer ring -->
+  <circle cx="256" cy="256" r="220" fill="none" stroke="#c9a84c" stroke-width="2" opacity="0.3"/>
+  <!-- North Star - 4-pointed star with elongated vertical axis -->
+  <path d="M256 60 L272 220 L400 256 L272 292 L256 452 L240 292 L112 256 L240 220 Z" fill="url(#gold1)" />
+  <!-- Inner diamond accent -->
+  <path d="M256 160 L280 240 L320 256 L280 272 L256 352 L232 272 L192 256 L232 240 Z" fill="#0a0908" opacity="0.5"/>
+  <!-- Center dot -->
+  <circle cx="256" cy="256" r="8" fill="#fff" opacity="0.9"/>
+  <!-- Compass lines (subtle) -->
+  <line x1="256" y1="50" x2="256" y2="100" stroke="#c9a84c" stroke-width="1.5" opacity="0.4"/>
+  <line x1="256" y1="412" x2="256" y2="462" stroke="#c9a84c" stroke-width="1.5" opacity="0.2"/>
+  <line x1="50" y1="256" x2="100" y2="256" stroke="#c9a84c" stroke-width="1.5" opacity="0.2"/>
+  <line x1="412" y1="256" x2="462" y2="256" stroke="#c9a84c" stroke-width="1.5" opacity="0.2"/>
+  <defs>
+    <linearGradient id="gold1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f0d078"/>
+      <stop offset="50%" stop-color="#c9a84c"/>
+      <stop offset="100%" stop-color="#8b6914"/>
+    </linearGradient>
+  </defs>
+</svg>

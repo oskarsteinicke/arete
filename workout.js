@@ -343,7 +343,7 @@ function toggleSet(ei, si) {
   const set = wl.exercises[ei].sets[si];
   set.completed = !set.completed;
   LS.set('hvi_workout_log', workoutLog);
-  navigator.vibrate && navigator.vibrate(set.completed ? 12 : 6);
+  haptic(set.completed ? 12 : 6);
 
   if (set.completed) checkDailyQuests();
   if (set.completed && set.weight > 0 && set.reps > 0) {
@@ -470,7 +470,7 @@ function startRestTimer(dur) {
   _updateRestTimer();
   if (restTimer) clearInterval(restTimer);
   restTimer = setInterval(_updateRestTimer, 250);
-  navigator.vibrate && navigator.vibrate(12);
+  haptic(12);
 }
 function stopRestTimer() {
   if (restTimer) { clearInterval(restTimer); restTimer = null; }
@@ -486,7 +486,7 @@ function _updateRestTimer() {
   if (secs <= 0) {
     clearInterval(restTimer); restTimer = null;
     el.innerHTML = '<div class="rt-done">REST COMPLETE</div>';
-    navigator.vibrate && navigator.vibrate([100, 50, 100, 50, 100]);
+    haptic([100, 50, 100, 50, 100]);
     playSound('complete');
     setTimeout(() => { if (el) el.style.display = 'none'; }, 2500);
     return;
@@ -505,7 +505,7 @@ function finishWorkout() {
   workoutMeta.lastWorkoutDate = today();
   LS.set('hvi_workout_meta', workoutMeta);
   playSound('complete');
-  navigator.vibrate && navigator.vibrate([40, 30, 40, 30, 80]);
+  haptic([40, 30, 40, 30, 80]);
   awardXP(50, 'body');
   trackWeeklyWorkout();
   checkDailyQuests();

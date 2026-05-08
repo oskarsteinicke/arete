@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="112" fill="#0a0908"/>
+  <!-- Abstract north star / compass rose - modern geometric -->
+  <!-- Main vertical beam (north pointer - longest) -->
+  <path d="M256 72 L276 230 L256 240 L236 230 Z" fill="url(#gold3)"/>
+  <!-- South beam (shorter) -->
+  <path d="M256 440 L276 282 L256 272 L236 282 Z" fill="url(#gold3)" opacity="0.5"/>
+  <!-- East beam -->
+  <path d="M420 256 L282 236 L272 256 L282 276 Z" fill="url(#gold3h)" opacity="0.6"/>
+  <!-- West beam -->
+  <path d="M92 256 L230 236 L240 256 L230 276 Z" fill="url(#gold3h)" opacity="0.4"/>
+  <!-- Center circle -->
+  <circle cx="256" cy="256" r="20" fill="#0a0908" stroke="url(#gold3)" stroke-width="3"/>
+  <circle cx="256" cy="256" r="6" fill="#c9a84c"/>
+  <!-- Orbit ring -->
+  <circle cx="256" cy="256" r="140" fill="none" stroke="#c9a84c" stroke-width="1" opacity="0.2" stroke-dasharray="4 8"/>
+  <defs>
+    <linearGradient id="gold3" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffe0a0"/>
+      <stop offset="40%" stop-color="#c9a84c"/>
+      <stop offset="100%" stop-color="#6b4e0a"/>
+    </linearGradient>
+    <linearGradient id="gold3h" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#6b4e0a"/>
+      <stop offset="50%" stop-color="#c9a84c"/>
+      <stop offset="100%" stop-color="#6b4e0a"/>
+    </linearGradient>
+  </defs>
+</svg>

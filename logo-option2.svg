@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Background with rounded square (app icon style) -->
+  <rect width="512" height="512" rx="112" fill="#0a0908"/>
+  <!-- Subtle radial glow -->
+  <circle cx="256" cy="240" r="180" fill="url(#glow2)" opacity="0.15"/>
+  <!-- Minimalist N lettermark with star integrated -->
+  <path d="M160 380 L160 132 L180 132 L320 340 L320 132 L340 132 L340 380 L320 380 L180 172 L180 380 Z"
+        fill="none" stroke="url(#gold2)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Star accent at the top of the N -->
+  <path d="M320 108 L325 120 L338 120 L327 128 L331 140 L320 133 L309 140 L313 128 L302 120 L315 120 Z" fill="#c9a84c"/>
+  <defs>
+    <linearGradient id="gold2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f0d078"/>
+      <stop offset="100%" stop-color="#a07c28"/>
+    </linearGradient>
+    <radialGradient id="glow2" cx="50%" cy="50%">
+      <stop offset="0%" stop-color="#c9a84c"/>
+      <stop offset="100%" stop-color="transparent"/>
+    </radialGradient>
+  </defs>
+</svg>

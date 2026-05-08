@@ -191,7 +191,7 @@ function awardXP(amount, pillarId) {
   }
   LS.set('hvi_gamification', gamification);
   const newLvl = getLevel(gamification.xp || 0);
-  if (newLvl > prevLvl && amount > 0) { playSound('levelup'); navigator.vibrate && navigator.vibrate([30, 20, 30, 20, 60]); }
+  if (newLvl > prevLvl && amount > 0) { playSound('levelup'); haptic([30, 20, 30, 20, 60]); }
   showXPToast('+' + amount + ' XP');
   checkAchievements();
 }
@@ -1169,6 +1169,7 @@ function renderStats() {
     </div>
     <button class="w-action-btn" style="margin:16px 24px 8px" onclick="go('progressPhotos')">📸 Progress Photos</button>
     <button class="w-action-btn" style="margin:0 24px 8px" onclick="shareRecap()">📤 Share Weekly Recap</button>
+    <button class="w-action-btn" style="margin:0 24px 8px" onclick="shareInvite()">🔗 Invite a Friend</button>
     <button class="w-action-btn" style="margin:0 24px 8px" onclick="forceSync()" id="force-sync-btn">🔄 Force Sync Now</button>
     <div id="sync-log" style="margin:0 24px 8px;font-size:11px;color:var(--text-dim);max-height:120px;overflow:auto;font-family:monospace;white-space:pre-wrap"></div>
     <button class="w-action-btn" style="margin:0 24px 32px;color:var(--fat);border-color:var(--fat)" onclick="if(confirm('Sign out?'))authSignOut()">Sign Out</button>`;
@@ -1529,10 +1530,15 @@ function generateRecapCard() {
   ctx.font = '11px -apple-system,sans-serif';
   ctx.fillText('— ' + q.author, barX + 20, barY + 165);
 
-  // Branding
+  // Branding + watermark
   ctx.fillStyle = 'rgba(228,218,206,0.2)';
   ctx.font = '700 11px -apple-system,sans-serif';
   ctx.fillText('HIGH VALUE INDIVIDUAL', barX, H - 28);
+  ctx.fillStyle = 'rgba(184,157,104,0.35)';
+  ctx.font = '600 10px -apple-system,sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('northstarapp.me', W - 28, H - 28);
+  ctx.textAlign = 'left';
 
   return canvas;
 }

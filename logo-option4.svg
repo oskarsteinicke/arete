@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="112" fill="#0f0d0a"/>
+  <!-- Concentric progress rings (representing the 5 pillars) -->
+  <circle cx="256" cy="256" r="190" fill="none" stroke="#c9a84c" stroke-width="4" opacity="0.15" stroke-dasharray="600 600" stroke-dashoffset="150"/>
+  <circle cx="256" cy="256" r="160" fill="none" stroke="#c9a84c" stroke-width="4" opacity="0.2" stroke-dasharray="500 500" stroke-dashoffset="125"/>
+  <circle cx="256" cy="256" r="130" fill="none" stroke="#c9a84c" stroke-width="4" opacity="0.3" stroke-dasharray="400 400" stroke-dashoffset="80"/>
+  <circle cx="256" cy="256" r="100" fill="none" stroke="#c9a84c" stroke-width="4" opacity="0.5" stroke-dasharray="314 314" stroke-dashoffset="60"/>
+  <circle cx="256" cy="256" r="70" fill="none" stroke="#c9a84c" stroke-width="4" opacity="0.7" stroke-dasharray="220 220" stroke-dashoffset="30"/>
+  <!-- Center star -->
+  <path d="M256 206 L268 244 L308 244 L275 268 L286 308 L256 284 L226 308 L237 268 L204 244 L244 244 Z"
+        fill="url(#gold4)"/>
+  <defs>
+    <linearGradient id="gold4" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffe8a0"/>
+      <stop offset="100%" stop-color="#a07c28"/>
+    </linearGradient>
+  </defs>
+</svg>
