@@ -15,6 +15,7 @@ body, #app, .view, nav, .coach-panel { transition: background-color 0.2s ease, c
   --accent-b: #c4a96c;
   --nav-h: 64px;
   --serif: 'Playfair Display', Georgia, serif;
+  --display: 'Cinzel', 'Playfair Display', Georgia, serif;
   --radius: 16px;
   --radius-sm: 10px;
   --cal: #c4a96c;
@@ -121,15 +122,15 @@ nav {
 .view-slide-in { animation: viewSlide 0.2s cubic-bezier(0.25,0.46,0.45,0.94) forwards; }
 
 /* SHARED */
-.sec-lbl { font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--text-dim); padding: 16px 24px 8px; font-weight: 600; }
+.sec-lbl { font-family: var(--display); font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--text-dim); padding: 16px 24px 8px; font-weight: 500; }
 .page-head { padding: 52px 24px 28px; }
-.page-title { font-family: var(--serif); font-size: 30px; color: var(--text); margin-bottom: 4px; font-weight: 400; }
+.page-title { font-family: var(--display); font-size: 26px; color: var(--text); margin-bottom: 4px; font-weight: 400; letter-spacing: 0.5px; }
 .page-sub { font-size: 13px; color: var(--text-dim); line-height: 1.5; }
 
 /* HOME */
 .h-head { padding: 48px 24px 28px; }
 .h-eyebrow { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
-.h-day { font-family: var(--serif); font-size: 44px; font-style: italic; color: var(--text); line-height: 1.1; }
+.h-day { font-family: var(--display); font-size: 36px; color: var(--text); line-height: 1.1; letter-spacing: 1px; }
 .h-prog { display: flex; align-items: center; gap: 12px; margin-top: 20px; }
 .h-prog-track { flex: 1; height: 1px; background: var(--border); overflow: hidden; }
 .h-prog-fill { height: 100%; background: var(--accent); transition: width 0.6s ease; }
@@ -154,7 +155,7 @@ nav {
 .pc-icon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
 .pc-icon svg { width: 20px; height: 20px; stroke: var(--accent); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 
-.pc-name { font-family: var(--serif); font-size: 17px; color: var(--text); text-align: center; }
+.pc-name { font-family: var(--display); font-size: 15px; color: var(--text); text-align: center; letter-spacing: 0.3px; }
 .pc-meta { font-size: 10px; color: var(--text-muted); text-align: center; line-height: 1.5; }
 
 /* PILLAR DETAIL */
@@ -163,7 +164,7 @@ nav {
 .pd-ring > svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
 .pd-pct { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--serif); font-size: 14px; color: var(--accent-b); }
 .pd-info { flex: 1; padding-top: 4px; }
-.pd-name { font-family: var(--serif); font-size: 28px; color: var(--text); margin-bottom: 8px; }
+.pd-name { font-family: var(--display); font-size: 24px; color: var(--text); margin-bottom: 8px; letter-spacing: 0.5px; }
 .pd-sep { width: 28px; height: 1px; background: var(--accent); margin-bottom: 10px; }
 .pd-desc { font-size: 13px; color: var(--text-dim); line-height: 1.6; }
 
@@ -183,7 +184,7 @@ nav {
 #edit-habit-modal, #edit-name-modal { display: none; position: fixed; inset: 0; z-index: 3000; }
 .edit-habit-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.6); }
 .edit-habit-sheet { position: absolute; bottom: 0; left: 0; right: 0; background: var(--surface); border-radius: 20px 20px 0 0; padding: 28px 24px 40px; }
-.edit-habit-title { font-family: var(--serif); font-size: 22px; color: var(--text); margin-bottom: 20px; }
+.edit-habit-title { font-family: var(--display); font-size: 20px; color: var(--text); margin-bottom: 20px; letter-spacing: 0.3px; }
 .hi.done .hi-name { color: var(--text-muted); text-decoration: line-through; text-decoration-color: rgba(228,218,206,0.25); }
 .hi.done .hi-check { background: rgba(154,130,86,0.18); border-color: var(--accent); color: var(--accent-b); }
 @keyframes ck { 0%{transform:scale(1)} 40%{transform:scale(1.3)} 100%{transform:scale(1)} }
@@ -191,12 +192,12 @@ nav {
 
 /* ALL HABITS */
 .ah-head { padding: 52px 24px 24px; }
-.ah-title { font-family: var(--serif); font-size: 30px; color: var(--text); margin-bottom: 4px; font-weight: 400; }
+.ah-title { font-family: var(--display); font-size: 26px; color: var(--text); margin-bottom: 4px; font-weight: 400; letter-spacing: 0.5px; }
 .ah-sub { font-size: 13px; color: var(--text-dim); }
 
 /* JOURNAL */
 .jh { padding: 48px 24px 28px; }
-.jh-title { font-family: var(--serif); font-size: 32px; color: var(--text); margin-bottom: 4px; }
+.jh-title { font-family: var(--display); font-size: 28px; color: var(--text); margin-bottom: 4px; letter-spacing: 0.5px; }
 .jh-sub { font-size: 13px; color: var(--text-dim); }
 .j-body { padding: 0 24px 24px; }
 .j-lbl { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--text-muted); padding: 16px 0 10px; }
@@ -217,7 +218,7 @@ nav {
 
 /* STATS */
 .sh { padding: 52px 24px 24px; }
-.sh-title { font-family: var(--serif); font-size: 30px; color: var(--text); margin-bottom: 4px; font-weight: 400; }
+.sh-title { font-family: var(--display); font-size: 26px; color: var(--text); margin-bottom: 4px; font-weight: 400; letter-spacing: 0.5px; }
 .sh-sub { font-size: 13px; color: var(--text-dim); }
 .s-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 24px 24px; }
 .s-card { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); padding: 20px 16px; }
@@ -250,7 +251,7 @@ nav {
 }
 .w-card:hover { background: var(--surface2); border-color: var(--border); }
 .w-card:active { transform: scale(0.98); }
-.w-card-name { font-family: var(--serif); font-size: 20px; color: var(--text); margin-bottom: 4px; }
+.w-card-name { font-family: var(--display); font-size: 18px; color: var(--text); margin-bottom: 4px; letter-spacing: 0.3px; }
 .w-card-desc { font-size: 12px; color: var(--text-dim); line-height: 1.5; }
 .w-card-days { font-size: 11px; color: var(--text-dim); margin-top: 8px; }
 .w-card.active { border-color: rgba(154,130,86,0.4); background: rgba(154,130,86,0.04); }
@@ -562,7 +563,7 @@ nav {
   padding: 18px;
   margin: 0 24px 10px;
 }
-.book-title { font-family: var(--serif); font-size: 16px; color: var(--text); margin-bottom: 3px; }
+.book-title { font-family: var(--display); font-size: 15px; color: var(--text); margin-bottom: 3px; letter-spacing: 0.2px; }
 .book-author { font-size: 12px; color: var(--accent-b); margin-bottom: 6px; font-weight: 500; }
 .book-desc { font-size: 12px; color: var(--text-dim); line-height: 1.55; }
 .book-card-link { cursor: pointer; transition: border-color 0.15s, background 0.15s; }
@@ -604,7 +605,7 @@ nav {
 .hm-hero-row { display: flex; align-items: flex-start; gap: 16px; }
 .hm-hero-info { flex: 1; padding-top: 6px; }
 .hm-hero-date { font-size: 9.5px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; font-weight: 500; }
-.hm-hero-name { font-family: var(--serif); font-size: 24px; color: var(--text); line-height: 1.15; margin-bottom: 2px; }
+.hm-hero-name { font-family: var(--display); font-size: 22px; color: var(--text); line-height: 1.15; margin-bottom: 2px; letter-spacing: 0.3px; }
 .hm-hero-greet { font-size: 12px; color: var(--text-dim); margin-bottom: 8px; }
 .hm-hero-lvl { display: inline-flex; align-items: center; gap: 5px; background: rgba(154,130,86,.10); border: 1px solid rgba(154,130,86,.18); border-radius: 20px; padding: 3px 10px; font-size: 10px; color: var(--accent-b); font-weight: 600; letter-spacing: .04em; }
 .hm-xp-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
@@ -637,7 +638,7 @@ nav {
 
 /* Section heading */
 .hm-sec { display: flex; align-items: center; justify-content: space-between; padding: 20px 16px 10px; }
-.hm-sec-title { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); font-weight: 600; }
+.hm-sec-title { font-family: var(--display); font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--text-dim); font-weight: 500; }
 .hm-sec-link { font-size: 11px; color: var(--accent-b); cursor: pointer; font-weight: 500; }
 
 /* Today cards (2-col) */
@@ -922,7 +923,7 @@ nav {
   color: var(--text-dim);
 }
 .coach-welcome-star { font-size: 32px; color: var(--accent); margin-bottom: 12px; }
-.coach-welcome h3 { font-family: var(--serif); font-size: 20px; color: var(--text); margin-bottom: 8px; }
+.coach-welcome h3 { font-family: var(--display); font-size: 18px; color: var(--text); margin-bottom: 8px; letter-spacing: 0.3px; }
 .coach-welcome p { font-size: 13px; line-height: 1.6; }
 .coach-setup-card {
   background: var(--surface2);
@@ -1235,7 +1236,7 @@ nav {
   animation: streak-pop 0.5s cubic-bezier(0.17,0.67,0.35,1.5);
 }
 .streak-toast-icon { font-size: 48px; margin-bottom: 8px; }
-.streak-toast-title { font-family: var(--serif); font-size: 24px; color: var(--accent-b); }
+.streak-toast-title { font-family: var(--display); font-size: 22px; color: var(--accent-b); letter-spacing: 0.3px; }
 .streak-toast-sub { font-size: 13px; color: var(--text-dim); margin-top: 4px; }
 .streak-toast-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 4999; }
 @keyframes streak-pop {
@@ -1248,7 +1249,7 @@ nav {
   text-align: center; padding: 48px 32px;
 }
 .empty-state-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.6; }
-.empty-state-title { font-family: var(--serif); font-size: 18px; color: var(--text); margin-bottom: 6px; }
+.empty-state-title { font-family: var(--display); font-size: 16px; color: var(--text); margin-bottom: 6px; letter-spacing: 0.3px; }
 .empty-state-sub { font-size: 13px; color: var(--text-dim); line-height: 1.6; margin-bottom: 20px; }
 .empty-state-btn {
   display: inline-block; padding: 12px 24px; background: var(--accent);
@@ -1467,4 +1468,79 @@ nav {
   padding: 14px 32px; border-radius: 12px; border: none;
   background: var(--accent); color: #fff; font-size: 13px; font-weight: 700;
   cursor: pointer;
+}
+
+/* ═══ GREEK / CLASSICAL IDENTITY ═════════════════════════════════ */
+
+/* Greek key (meander) border — reusable class */
+.meander-border {
+  position: relative;
+}
+.meander-border::after {
+  content: '';
+  display: block;
+  width: 60px;
+  height: 2px;
+  margin: 12px auto 0;
+  background: linear-gradient(90deg,
+    transparent 0%, var(--accent) 15%, var(--accent) 35%,
+    transparent 36%, transparent 40%,
+    var(--accent) 41%, var(--accent) 60%,
+    transparent 61%, transparent 65%,
+    var(--accent) 66%, var(--accent) 85%,
+    transparent 100%);
+  opacity: 0.35;
+}
+
+/* Laurel divider — small SVG-based decorative line */
+.laurel-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 4px 24px 8px;
+  opacity: 0.25;
+}
+.laurel-divider::before,
+.laurel-divider::after {
+  content: '';
+  flex: 1;
+  max-width: 40px;
+  height: 1px;
+  background: var(--accent);
+}
+
+/* Quote block — inscription style */
+.hm-quote {
+  margin: 8px 16px 24px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  padding: 24px 20px 20px;
+  text-align: center;
+  position: relative;
+}
+.hm-quote::before {
+  content: '※';
+  display: block;
+  font-size: 16px;
+  color: var(--accent);
+  opacity: 0.4;
+  margin-bottom: 12px;
+  letter-spacing: 8px;
+}
+.hm-quote-text {
+  font-family: var(--serif);
+  font-size: 14px;
+  font-style: italic;
+  color: var(--text-dim);
+  line-height: 1.7;
+  margin-bottom: 10px;
+}
+.hm-quote-auth {
+  font-family: var(--display);
+  font-size: 9px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }

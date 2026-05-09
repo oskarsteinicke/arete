@@ -7,7 +7,7 @@
   <title>Arete — Pursue Daily Excellence</title>
   <meta name="description" content="Habits, workouts, nutrition, and growth — all in one place. Arete helps you pursue daily excellence, one day at a time.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -25,6 +25,7 @@
       --text-dim: #a09880;
       --text-muted: #5c5648;
       --serif:    'Playfair Display', Georgia, serif;
+      --display:  'Cinzel', 'Playfair Display', Georgia, serif;
       --sans:     'Inter', system-ui, sans-serif;
       --glow:     rgba(154,130,86,0.12);
     }
@@ -55,10 +56,10 @@
       border-bottom: 1px solid var(--border2);
     }
     .nav-logo {
-      font-family: var(--serif);
-      font-size: 22px;
+      font-family: var(--display);
+      font-size: 20px;
       color: var(--accent-b);
-      letter-spacing: 0.04em;
+      letter-spacing: 0.12em;
     }
     .nav-logo span { color: var(--text-muted); font-style: italic; font-weight: 400; }
     .nav-cta {
@@ -110,23 +111,26 @@
       50%       { opacity: 0.7; transform: scale(0.92); }
     }
     .hero-eyebrow {
+      font-family: var(--display);
       font-size: 10px;
-      letter-spacing: 4px;
+      letter-spacing: 5px;
       text-transform: uppercase;
       color: var(--accent);
-      font-weight: 600;
+      font-weight: 500;
       margin-bottom: 20px;
     }
     .hero-title {
-      font-family: var(--serif);
-      font-size: clamp(44px, 8vw, 86px);
-      line-height: 1.05;
+      font-family: var(--display);
+      font-size: clamp(38px, 7vw, 72px);
+      line-height: 1.1;
       color: var(--text);
       margin-bottom: 12px;
-      font-weight: 700;
+      font-weight: 500;
+      letter-spacing: 1px;
     }
     .hero-title em {
       font-style: italic;
+      font-family: var(--serif);
       color: var(--accent-b);
     }
     .hero-subtitle {
@@ -234,22 +238,24 @@
       margin: 0 auto;
     }
     .section-eyebrow {
+      font-family: var(--display);
       font-size: 10px;
-      letter-spacing: 4px;
+      letter-spacing: 5px;
       text-transform: uppercase;
       color: var(--accent);
-      font-weight: 600;
+      font-weight: 500;
       text-align: center;
       margin-bottom: 16px;
     }
     .section-title {
-      font-family: var(--serif);
-      font-size: clamp(32px, 5vw, 52px);
+      font-family: var(--display);
+      font-size: clamp(28px, 4.5vw, 46px);
       text-align: center;
-      line-height: 1.15;
+      line-height: 1.2;
       margin-bottom: 16px;
+      letter-spacing: 0.5px;
     }
-    .section-title em { font-style: italic; color: var(--accent-b); }
+    .section-title em { font-style: italic; font-family: var(--serif); color: var(--accent-b); }
     .section-sub {
       font-size: 16px;
       color: var(--text-dim);
@@ -292,10 +298,11 @@
       display: block;
     }
     .feature-title {
-      font-family: var(--serif);
-      font-size: 22px;
+      font-family: var(--display);
+      font-size: 19px;
       color: var(--text);
       margin-bottom: 10px;
+      letter-spacing: 0.3px;
     }
     .feature-desc {
       font-size: 14px;
@@ -338,12 +345,13 @@
       margin-bottom: 14px;
     }
     .big-title {
-      font-family: var(--serif);
-      font-size: clamp(28px, 4vw, 42px);
-      line-height: 1.15;
+      font-family: var(--display);
+      font-size: clamp(24px, 3.5vw, 36px);
+      line-height: 1.2;
       margin-bottom: 16px;
+      letter-spacing: 0.5px;
     }
-    .big-title em { font-style: italic; color: var(--accent-b); }
+    .big-title em { font-style: italic; font-family: var(--serif); color: var(--accent-b); }
     .big-desc {
       font-size: 15px;
       color: var(--text-dim);
@@ -359,7 +367,7 @@
       color: var(--text-dim);
     }
     .big-bullets li::before {
-      content: '✦';
+      content: '‣';
       color: var(--accent);
       font-size: 10px;
       margin-top: 4px;
@@ -627,9 +635,10 @@
       flex-wrap: gap;
     }
     .footer-logo {
-      font-family: var(--serif);
-      font-size: 18px;
+      font-family: var(--display);
+      font-size: 17px;
       color: var(--accent-b);
+      letter-spacing: 0.12em;
     }
     .footer-note {
       font-size: 12px;
@@ -659,13 +668,13 @@
 
 <!-- ── NAV ───────────────────────────────────────────────────────────────── -->
 <nav>
-  <div class="nav-logo">✦ Arete</div>
+  <div class="nav-logo"><svg viewBox="0 0 100 80" width="18" height="14" style="vertical-align:-2px;margin-right:5px" xmlns="http://www.w3.org/2000/svg"><path d="M50 2 L92 72 C88 72 82 72 78 72 L72 60 L28 60 L22 72 C18 72 12 72 8 72 Z" fill="none" stroke="#c4a96c" stroke-width="4"/><path d="M50 22 L68 56 L32 56 Z" fill="none" stroke="#c4a96c" stroke-width="3"/><line x1="20" y1="72" x2="2" y2="72" stroke="#c4a96c" stroke-width="3" stroke-linecap="round"/><line x1="80" y1="72" x2="98" y2="72" stroke="#c4a96c" stroke-width="3" stroke-linecap="round"/></svg>Arete</div>
   <a class="nav-cta" href="/arete/">Open App</a>
 </nav>
 
 <!-- ── HERO ──────────────────────────────────────────────────────────────── -->
 <section class="hero">
-  <span class="hero-star">✦</span>
+  <span class="hero-star"><svg viewBox="0 0 120 120" width="44" height="44" xmlns="http://www.w3.org/2000/svg"><g fill="#c4a96c"><ellipse cx="35" cy="12" rx="3.5" ry="8" transform="rotate(-65,35,12)"/><ellipse cx="25" cy="22" rx="4" ry="9" transform="rotate(-50,25,22)"/><ellipse cx="17" cy="34" rx="4.5" ry="10" transform="rotate(-38,17,34)"/><ellipse cx="13" cy="48" rx="5" ry="11" transform="rotate(-22,13,48)"/><ellipse cx="13" cy="62" rx="5" ry="11" transform="rotate(-8,13,62)"/><ellipse cx="17" cy="76" rx="5" ry="11" transform="rotate(10,17,76)"/><ellipse cx="25" cy="88" rx="4.5" ry="10" transform="rotate(26,25,88)"/><ellipse cx="36" cy="97" rx="4" ry="9" transform="rotate(40,36,97)"/><ellipse cx="48" cy="102" rx="3.5" ry="8" transform="rotate(55,48,102)"/><ellipse cx="85" cy="12" rx="3.5" ry="8" transform="rotate(65,85,12)"/><ellipse cx="95" cy="22" rx="4" ry="9" transform="rotate(50,95,22)"/><ellipse cx="103" cy="34" rx="4.5" ry="10" transform="rotate(38,103,34)"/><ellipse cx="107" cy="48" rx="5" ry="11" transform="rotate(22,107,48)"/><ellipse cx="107" cy="62" rx="5" ry="11" transform="rotate(8,107,62)"/><ellipse cx="103" cy="76" rx="5" ry="11" transform="rotate(-10,103,76)"/><ellipse cx="95" cy="88" rx="4.5" ry="10" transform="rotate(-26,95,88)"/><ellipse cx="84" cy="97" rx="4" ry="9" transform="rotate(-40,84,97)"/><ellipse cx="72" cy="102" rx="3.5" ry="8" transform="rotate(-55,72,102)"/></g><path d="M52 106 Q56 112 60 114 Q64 112 68 106" fill="none" stroke="#c4a96c" stroke-width="2.5" stroke-linecap="round"/></svg></span>
   <p class="hero-eyebrow">Your daily operating system</p>
   <h1 class="hero-title">Build the life<br>you <em>actually want.</em></h1>
   <p class="hero-subtitle">Habits. Workouts. Nutrition. Growth.</p>
@@ -717,7 +726,7 @@
       <span class="feature-tag">AI-powered · USDA database</span>
     </div>
     <div class="feature-card">
-      <span class="feature-icon">✦</span>
+      <span class="feature-icon"><svg viewBox="0 0 100 80" width="22" height="18" xmlns="http://www.w3.org/2000/svg"><path d="M50 2 L92 72 C88 72 82 72 78 72 L72 60 L28 60 L22 72 C18 72 12 72 8 72 Z" fill="none" stroke="#c4a96c" stroke-width="4"/><path d="M50 22 L68 56 L32 56 Z" fill="none" stroke="#c4a96c" stroke-width="3"/><line x1="20" y1="72" x2="2" y2="72" stroke="#c4a96c" stroke-width="3" stroke-linecap="round"/><line x1="80" y1="72" x2="98" y2="72" stroke="#c4a96c" stroke-width="3" stroke-linecap="round"/></svg></span>
       <div class="feature-title">AI Coach</div>
       <p class="feature-desc">Ask your coach anything — training advice, nutrition questions, how to break a bad habit. Personalized to your data and goals.</p>
       <span class="feature-tag">Always available</span>
@@ -895,7 +904,7 @@
       </ul>
     </div>
     <div class="big-visual">
-      <div class="mock-head">✦ Arete Coach</div>
+      <div class="mock-head"><svg viewBox="0 0 100 80" width="14" height="11" style="vertical-align:-1px" xmlns="http://www.w3.org/2000/svg"><path d="M50 2 L92 72 C88 72 82 72 78 72 L72 60 L28 60 L22 72 C18 72 12 72 8 72 Z" fill="none" stroke="#c4a96c" stroke-width="4"/><path d="M50 22 L68 56 L32 56 Z" fill="none" stroke="#c4a96c" stroke-width="3"/><line x1="20" y1="72" x2="2" y2="72" stroke="#c4a96c" stroke-width="3" stroke-linecap="round"/><line x1="80" y1="72" x2="98" y2="72" stroke="#c4a96c" stroke-width="3" stroke-linecap="round"/></svg> Arete Coach</div>
       <div class="mock-chat-msg mock-chat-user">I've been stuck on bench press for 3 weeks at 185 lbs. What should I do?</div>
       <div class="mock-chat-msg mock-chat-ai">Plateaus at your stage usually come down to one of three things: volume, frequency, or recovery. Since you're on PPL you're benching 2–3x a week which is solid — I'd try adding a pause rep variation or a top set with 2–3 back-off sets to break the adaptation...</div>
       <div class="mock-chat-msg mock-chat-user" style="margin-top:6px">What should I eat before my push day?</div>
@@ -991,7 +1000,7 @@
 <!-- ── CTA ────────────────────────────────────────────────────────────────── -->
 <section class="cta-section">
   <p class="section-eyebrow">Begin today</p>
-  <h2 class="section-title">Your guiding <em>star</em><br>is waiting.</h2>
+  <h2 class="section-title">The path to <em>excellence</em><br>begins now.</h2>
   <p class="section-sub">Free. No account. No subscriptions. Just open it and start — your data stays on your device.</p>
   <a class="btn-primary" href="/arete/">Launch Arete →</a>
   <p class="hero-note" style="margin-top:24px">Works on iPhone, Android, and desktop &nbsp;·&nbsp; Installable as an app</p>
@@ -999,7 +1008,7 @@
 
 <!-- ── FOOTER ─────────────────────────────────────────────────────────────── -->
 <footer>
-  <div class="footer-logo">✦ Arete</div>
+  <div class="footer-logo"><svg viewBox="0 0 100 80" width="18" height="14" style="vertical-align:-2px;margin-right:5px" xmlns="http://www.w3.org/2000/svg"><path d="M50 2 L92 72 C88 72 82 72 78 72 L72 60 L28 60 L22 72 C18 72 12 72 8 72 Z" fill="none" stroke="#c4a96c" stroke-width="4"/><path d="M50 22 L68 56 L32 56 Z" fill="none" stroke="#c4a96c" stroke-width="3"/><line x1="20" y1="72" x2="2" y2="72" stroke="#c4a96c" stroke-width="3" stroke-linecap="round"/><line x1="80" y1="72" x2="98" y2="72" stroke="#c4a96c" stroke-width="3" stroke-linecap="round"/></svg>Arete</div>
   <span class="footer-note">Your daily operating system.</span>
   <a class="footer-link" href="/arete/">Open App →</a>
 </footer>

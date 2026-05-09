@@ -3,15 +3,15 @@
 // ══════════════════════════════════════════════════════════════════════════
 
 const PILLARS = [
-  { id: 'mind', name: 'Mind', desc: 'Cultivate mental clarity, emotional resilience, and intentional thought.', cats: ['mindset','discipline'],
+  { id: 'mind', name: 'Mind', desc: 'The soul becomes dyed with the colour of its thoughts. Guard yours well.', cats: ['mindset','discipline'],
     icon: '<svg viewBox="0 0 24 24"><path d="M9.5 2A6.5 6.5 0 003 8.5c0 2.06.96 3.9 2.46 5.1L5 17h2v2h10v-2h2l-.46-3.4A6.5 6.5 0 0020.5 8.5 6.5 6.5 0 0014 2h-4.5z"/><line x1="9" y1="17" x2="9" y2="19"/><line x1="15" y1="17" x2="15" y2="19"/></svg>' },
-  { id: 'body', name: 'Body', desc: 'Build physical strength, vitality, and discipline through daily practice.', cats: ['fitness','health'],
+  { id: 'body', name: 'Body', desc: 'No citizen has a right to be an amateur in the matter of physical training.', cats: ['fitness','health'],
     icon: '<svg viewBox="0 0 24 24"><circle cx="12" cy="4" r="2"/><path d="M15.89 8.11L13 9v4l2.95 5.9A1 1 0 0115 20.5h0a1 1 0 01-.9-.55L12 15l-2.1 4.95a1 1 0 01-.9.55h0a1 1 0 01-.95-1.31L10 13V9l-2.89-.89A2 2 0 015.5 6.3V6a1 1 0 011-1h11a1 1 0 011 1v.3a2 2 0 01-1.61 1.81z"/></svg>' },
-  { id: 'mastery', name: 'Mastery', desc: 'Pursue deep knowledge and continuous skill development every day.', cats: ['learning'],
+  { id: 'mastery', name: 'Mastery', desc: 'The roots of education are bitter, but the fruit is sweet.', cats: ['learning'],
     icon: '<svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>' },
-  { id: 'social', name: 'Social', desc: 'Build meaningful connections and create genuine value for others.', cats: ['social'],
+  { id: 'social', name: 'Social', desc: 'We are, by nature, social creatures. To live for others is to live fully.', cats: ['social'],
     icon: '<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>' },
-  { id: 'wealth', name: 'Wealth', desc: 'Build financial discipline, awareness, and long-term abundance.', cats: ['financial'],
+  { id: 'wealth', name: 'Wealth', desc: 'Wealth consists not in having great possessions, but in having few wants.', cats: ['financial'],
     icon: '<svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>' },
 ];
 
@@ -31,19 +31,28 @@ const DEFAULT_HABITS = [
 ];
 
 const QUOTES = [
-  { text: 'Discipline is choosing between what you want now and what you want most.', author: 'Abraham Lincoln' },
+  // Marcus Aurelius
+  { text: 'You have power over your mind \u2014 not outside events. Realise this, and you will find strength.', author: 'Marcus Aurelius' },
+  { text: 'The impediment to action advances action. What stands in the way becomes the way.', author: 'Marcus Aurelius' },
+  { text: 'Waste no more time arguing about what a good man should be. Be one.', author: 'Marcus Aurelius' },
+  { text: 'When you arise in the morning, think of what a privilege it is to be alive \u2014 to think, to enjoy, to love.', author: 'Marcus Aurelius' },
+  { text: 'The soul becomes dyed with the colour of its thoughts.', author: 'Marcus Aurelius' },
+  { text: 'Very little is needed to make a happy life; it is all within yourself, in your way of thinking.', author: 'Marcus Aurelius' },
+  // Epictetus
+  { text: 'No man is free who is not master of himself.', author: 'Epictetus' },
+  { text: 'First say to yourself what you would be; and then do what you have to do.', author: 'Epictetus' },
+  { text: 'It is not things that disturb us, but our judgements about those things.', author: 'Epictetus' },
+  { text: 'Make the best use of what is in your power, and take the rest as it happens.', author: 'Epictetus' },
+  { text: 'Difficulty shows what men are.', author: 'Epictetus' },
+  // Seneca
+  { text: 'We suffer more often in imagination than in reality.', author: 'Seneca' },
+  { text: 'Luck is what happens when preparation meets opportunity.', author: 'Seneca' },
+  { text: 'It is not that we have a short time to live, but that we waste a great deal of it.', author: 'Seneca' },
+  { text: 'Begin at once to live, and count each separate day as a separate life.', author: 'Seneca' },
+  { text: 'He who is brave is free.', author: 'Seneca' },
+  // Aristotle (the origin of Arete)
   { text: 'We are what we repeatedly do. Excellence, then, is not an act but a habit.', author: 'Aristotle' },
-  { text: 'You do not rise to the level of your goals. You fall to the level of your systems.', author: 'James Clear' },
-  { text: 'Hard choices, easy life. Easy choices, hard life.', author: 'Jerzy Gregorek' },
-  { text: 'The secret of your success is determined by your daily agenda.', author: 'John C. Maxwell' },
-  { text: 'The successful warrior is the average man with laser-like focus.', author: 'Bruce Lee' },
-  { text: 'Success is nothing more than a few simple disciplines, practiced every day.', author: 'Jim Rohn' },
-  { text: 'The pain of discipline is far less than the pain of regret.', author: 'Sarah Bombell' },
-  { text: 'A man who conquers himself is greater than one who conquers a thousand.', author: 'Buddha' },
-  { text: 'Iron rusts from disuse \u2014 even so does inaction sap the vigor of the mind.', author: 'Leonardo da Vinci' },
-  { text: "Don't count the days, make the days count.", author: 'Muhammad Ali' },
-  { text: 'Motivation is what gets you started. Habit is what keeps you going.', author: 'Jim Ryun' },
-  { text: 'Standards, not goals. A goal is temporary. A standard is who you are.', author: 'Unknown' },
+  { text: 'Knowing yourself is the beginning of all wisdom.', author: 'Aristotle' },
 ];
 
 // ── EXERCISES ─────────────────────────────────────────────────────────────

@@ -7,48 +7,48 @@
 // ══════════════════════════════════════════════════════════════════════════
 
 const ACHIEVEMENTS = [
-  { id: 'first_habit',   icon: '⚡', name: 'First Step',       desc: 'Complete your first habit' },
-  { id: 'streak_3',      icon: '🔥', name: 'On Fire',    desc: '3-day streak on any habit' },
-  { id: 'streak_7',      icon: '🔥', name: 'Locked In',  desc: '7-day streak on any habit' },
-  { id: 'streak_30',     icon: '💎', name: 'Iron Will',  desc: '30-day streak on any habit' },
-  { id: 'perfect_day',   icon: '⭐', name: 'Full Send',        desc: 'Complete all habits in one day' },
-  { id: 'perfect_3',     icon: '🌟', name: 'Consistent', desc: '3 perfect habit days' },
-  { id: 'first_workout', icon: '💪', name: 'First Rep',  desc: 'Log your first workout' },
-  { id: 'workouts_10',   icon: '🏋', name: 'Iron Regular', desc: 'Log 10 workouts' },
-  { id: 'workouts_50',   icon: '🏆', name: 'Gym Rat',    desc: 'Log 50 workouts' },
-  { id: 'first_pr',      icon: '🏆', name: 'Personal Best', desc: 'Set your first PR' },
-  { id: 'pr_5',          icon: '💥', name: 'Getting Stronger', desc: 'Set 5 PRs' },
-  { id: 'journal_7',     icon: '📖', name: 'Self Aware', desc: 'Journal for 7 days' },
-  { id: 'nutrition_7',   icon: '🥗', name: 'Dialed In',  desc: 'Log meals 7 days' },
-  { id: 'level_5',       icon: '⬆️', name: 'Leveling Up',     desc: 'Reach Level 5' },
-  { id: 'level_10',      icon: '👑', name: 'Elite',           desc: 'Reach Level 10' },
-  { id: 'all_pillars',   icon: '🏛', name: 'Five Pillars',    desc: 'Complete a habit in every pillar' },
-  { id: 'streak_14',     icon: '🔥', name: 'Two Weeks',       desc: '14-day streak on any habit' },
-  { id: 'streak_100',    icon: '💎', name: 'Unbreakable',     desc: '100-day streak on any habit' },
-  { id: 'perfect_7',     icon: '🌟', name: 'Perfect Week',    desc: '7 perfect habit days in total' },
-  { id: 'workouts_25',   icon: '💪', name: 'Regular',         desc: 'Log 25 workouts' },
-  { id: 'first_quest',   icon: '⚡', name: 'On a Mission',    desc: 'Complete your first daily quest' },
-  { id: 'quests_7',      icon: '🎯', name: 'Quest Master',    desc: 'Complete 7 daily quests total' },
-  { id: 'pr_10',         icon: '💥', name: 'Record Breaker',  desc: 'Set 10 personal records' },
-  { id: 'nutrition_30',  icon: '🥗', name: 'Dialled In',      desc: 'Log meals on 30 different days' },
-  { id: 'sleep_7',       icon: '😴', name: 'Well Rested',      desc: 'Log sleep for 7 days' },
-  { id: 'sleep_30',      icon: '💤', name: 'Sleep Master',     desc: 'Log sleep for 30 days' },
-  { id: 'xp_1000',       icon: '⚡', name: 'XP Grinder',       desc: 'Earn 1,000 XP total' },
-  { id: 'xp_5000',       icon: '💫', name: 'XP Legend',        desc: 'Earn 5,000 XP total' },
-  { id: 'perfect_14',    icon: '🌟', name: 'Perfect Fortnight', desc: '14 perfect habit days total' },
-  { id: 'workouts_100',  icon: '🏆', name: 'Century Club',     desc: 'Log 100 workouts' },
-  { id: 'pr_25',         icon: '💥', name: 'PR Machine',       desc: 'Set 25 personal records' },
-  { id: 'level_20',      icon: '👑', name: 'Arete',             desc: 'Reach Level 20' },
-  { id: 'streak_60',     icon: '🔥', name: 'Relentless',       desc: '60-day streak on any habit' },
+  { id: 'first_habit',   icon: '⚡', name: 'Prótos',            desc: 'Complete your first habit' },
+  { id: 'streak_3',      icon: '🔥', name: 'Kindled',           desc: '3-day streak on any habit' },
+  { id: 'streak_7',      icon: '🔥', name: 'Hepta',             desc: '7-day streak on any habit' },
+  { id: 'streak_30',     icon: '💎', name: 'Adámantos',         desc: '30-day streak on any habit' },
+  { id: 'perfect_day',   icon: '⭐', name: 'Kalokagathía',      desc: 'Complete all habits in one day' },
+  { id: 'perfect_3',     icon: '🌟', name: 'Steadfast',         desc: '3 perfect habit days' },
+  { id: 'first_workout', icon: '💪', name: 'First Labour',      desc: 'Log your first workout' },
+  { id: 'workouts_10',   icon: '🏋', name: 'Palaestra',         desc: 'Log 10 workouts' },
+  { id: 'workouts_50',   icon: '🏆', name: 'Olympian',          desc: 'Log 50 workouts' },
+  { id: 'first_pr',      icon: '🏆', name: 'Aristeia',          desc: 'Set your first PR' },
+  { id: 'pr_5',          icon: '💥', name: 'Rising Titan',      desc: 'Set 5 PRs' },
+  { id: 'journal_7',     icon: '📖', name: 'Gnōthi Seautón',    desc: 'Journal for 7 days' },
+  { id: 'nutrition_7',   icon: '🥗', name: 'Sōphrosynē',        desc: 'Log meals 7 days' },
+  { id: 'level_5',       icon: '⬆️', name: 'Ascent',            desc: 'Reach Level 5' },
+  { id: 'level_10',      icon: '👑', name: 'Héros',              desc: 'Reach Level 10' },
+  { id: 'all_pillars',   icon: '🏛', name: 'Five Pillars',      desc: 'Complete a habit in every pillar' },
+  { id: 'streak_14',     icon: '🔥', name: 'Fortnight',         desc: '14-day streak on any habit' },
+  { id: 'streak_100',    icon: '💎', name: 'Hekatón',            desc: '100-day streak on any habit' },
+  { id: 'perfect_7',     icon: '🌟', name: 'Teleios',           desc: '7 perfect habit days in total' },
+  { id: 'workouts_25',   icon: '💪', name: 'Agonistés',         desc: 'Log 25 workouts' },
+  { id: 'first_quest',   icon: '⚡', name: 'Odyssey Begun',     desc: 'Complete your first daily quest' },
+  { id: 'quests_7',      icon: '🎯', name: 'Labour Master',     desc: 'Complete 7 daily quests total' },
+  { id: 'pr_10',         icon: '💥', name: 'Krátos',             desc: 'Set 10 personal records' },
+  { id: 'nutrition_30',  icon: '🥗', name: 'Diaita',             desc: 'Log meals on 30 different days' },
+  { id: 'sleep_7',       icon: '😴', name: 'Hypnos',             desc: 'Log sleep for 7 days' },
+  { id: 'sleep_30',      icon: '💤', name: 'Morpheus',           desc: 'Log sleep for 30 days' },
+  { id: 'xp_1000',       icon: '⚡', name: 'Chiliarch',          desc: 'Earn 1,000 XP total' },
+  { id: 'xp_5000',       icon: '💫', name: 'Demigod',            desc: 'Earn 5,000 XP total' },
+  { id: 'perfect_14',    icon: '🌟', name: 'Unwavering',        desc: '14 perfect habit days total' },
+  { id: 'workouts_100',  icon: '🏆', name: 'Heraklean',          desc: 'Log 100 workouts' },
+  { id: 'pr_25',         icon: '💥', name: 'Titan',              desc: 'Set 25 personal records' },
+  { id: 'level_20',      icon: '👑', name: 'Arete',              desc: 'Reach Level 20' },
+  { id: 'streak_60',     icon: '🔥', name: 'Athanatos',          desc: '60-day streak on any habit' },
 ];
 
 // ── Level Titles ──────────────────────────────────────────────────────────
 const LEVEL_TITLES = [
-  { min: 1,  title: 'Seeker' },
-  { min: 3,  title: 'Apprentice' },
-  { min: 5,  title: 'Warrior' },
-  { min: 8,  title: 'Champion' },
-  { min: 12, title: 'Legend' },
+  { min: 1,  title: 'Neophyte' },
+  { min: 3,  title: 'Ephebos' },
+  { min: 5,  title: 'Hoplite' },
+  { min: 8,  title: 'Strategos' },
+  { min: 12, title: 'Philosophos' },
   { min: 20, title: 'Arete' },
 ];
 function getLevelTitle(lvl) {
@@ -1245,8 +1245,8 @@ function injectOnboardingStyles() {
     .ob-step-dots{display:flex;gap:6px;justify-content:center;padding:20px 0 4px}
     .ob-dot{width:6px;height:6px;border-radius:3px;background:rgba(255,255,255,0.15);transition:all .3s}
     .ob-dot.active{width:20px;background:var(--accent)}
-    .ob-eyebrow{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;margin-top:32px}
-    .ob-title{font-family:var(--serif);font-size:34px;color:var(--text);line-height:1.2;margin-bottom:8px}
+    .ob-eyebrow{font-family:var(--display);font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;margin-top:32px}
+    .ob-title{font-family:var(--display);font-size:28px;color:var(--text);line-height:1.2;margin-bottom:8px;letter-spacing:0.5px}
     .ob-sub{font-size:14px;color:var(--text-dim);line-height:1.6;margin-bottom:28px}
     .ob-input{width:100%;background:var(--surface);border:1.5px solid var(--border2);border-radius:14px;color:var(--text);font-size:18px;padding:18px 20px;outline:none;font-family:var(--serif);margin-bottom:24px;box-sizing:border-box}
     .ob-input:focus{border-color:var(--accent)}
@@ -1269,7 +1269,7 @@ function injectOnboardingStyles() {
     .ob-btn:active{transform:scale(0.98)}
     .ob-welcome{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 32px 60px}
     .ob-welcome-star{font-size:48px;color:var(--accent);margin-bottom:20px;line-height:1}
-    .ob-welcome-title{font-family:var(--serif);font-size:44px;color:var(--text);margin-bottom:14px;letter-spacing:-0.5px}
+    .ob-welcome-title{font-family:var(--display);font-size:38px;color:var(--text);margin-bottom:14px;letter-spacing:2px}
     .ob-welcome-sub{font-size:15px;color:var(--text-dim);line-height:1.7;margin-bottom:48px;max-width:300px}
     .ob-welcome-btn{padding:18px 48px;border:none;border-radius:14px;background:var(--accent);color:#0a0908;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer}
   `;
@@ -1288,9 +1288,9 @@ function renderOnboarding(step) {
   if (step === 0) {
     overlay.innerHTML = `
       <div class="ob-welcome">
-        <div class="ob-welcome-star">\u2726</div>
+        <div class="ob-welcome-star"><svg viewBox="0 0 120 120" width="72" height="72" xmlns="http://www.w3.org/2000/svg"><g fill="#c4a96c"><ellipse cx="35" cy="12" rx="3.5" ry="8" transform="rotate(-65,35,12)"/><ellipse cx="25" cy="22" rx="4" ry="9" transform="rotate(-50,25,22)"/><ellipse cx="17" cy="34" rx="4.5" ry="10" transform="rotate(-38,17,34)"/><ellipse cx="13" cy="48" rx="5" ry="11" transform="rotate(-22,13,48)"/><ellipse cx="13" cy="62" rx="5" ry="11" transform="rotate(-8,13,62)"/><ellipse cx="17" cy="76" rx="5" ry="11" transform="rotate(10,17,76)"/><ellipse cx="25" cy="88" rx="4.5" ry="10" transform="rotate(26,25,88)"/><ellipse cx="36" cy="97" rx="4" ry="9" transform="rotate(40,36,97)"/><ellipse cx="48" cy="102" rx="3.5" ry="8" transform="rotate(55,48,102)"/><ellipse cx="85" cy="12" rx="3.5" ry="8" transform="rotate(65,85,12)"/><ellipse cx="95" cy="22" rx="4" ry="9" transform="rotate(50,95,22)"/><ellipse cx="103" cy="34" rx="4.5" ry="10" transform="rotate(38,103,34)"/><ellipse cx="107" cy="48" rx="5" ry="11" transform="rotate(22,107,48)"/><ellipse cx="107" cy="62" rx="5" ry="11" transform="rotate(8,107,62)"/><ellipse cx="103" cy="76" rx="5" ry="11" transform="rotate(-10,103,76)"/><ellipse cx="95" cy="88" rx="4.5" ry="10" transform="rotate(-26,95,88)"/><ellipse cx="84" cy="97" rx="4" ry="9" transform="rotate(-40,84,97)"/><ellipse cx="72" cy="102" rx="3.5" ry="8" transform="rotate(-55,72,102)"/></g><path d="M52 106 Q56 112 60 114 Q64 112 68 106" fill="none" stroke="#c4a96c" stroke-width="2.5" stroke-linecap="round"/></svg></div>
         <div class="ob-welcome-title">Arete</div>
-        <div class="ob-welcome-sub">Pursue daily excellence — habits, fitness, nutrition, and growth.</div>
+        <div class="ob-welcome-sub">The pursuit of excellence in mind, body, and spirit.</div>
         <button class="ob-welcome-btn" onclick="renderOnboarding(1)">GET STARTED \u2192</button>
       </div>`;
     return;
@@ -1302,8 +1302,8 @@ function renderOnboarding(step) {
   if (step === 1) {
     content = `
       <div class="ob-eyebrow">Step 1 of 4</div>
-      <div class="ob-title">What\'s your name?</div>
-      <div class="ob-sub">We\'ll personalise your experience and your AI coach will know what to call you.</div>
+      <div class="ob-title">What is your name?</div>
+      <div class="ob-sub">Knowing yourself is the beginning of all wisdom.</div>
       <input class="ob-input" type="text" id="ob-name-input" placeholder="Your first name" maxlength="30" value="${esc(_obName)}" oninput="_obName=this.value.trim()">`;
 
   } else if (step === 2) {
@@ -1324,10 +1324,10 @@ function renderOnboarding(step) {
 
   } else if (step === 3) {
     const goals = [
-      {k:'habits', emoji:'\u{1F525}', name:'Build habits', desc:'Daily routines & discipline'},
-      {k:'fitness', emoji:'\u{1F4AA}', name:'Get stronger', desc:'Workouts & performance'},
-      {k:'nutrition', emoji:'\u{1F957}', name:'Eat better', desc:'Macros & meal tracking'},
-      {k:'all', emoji:'\u2726', name:'All of the above', desc:'The full Arete system', full:true},
+      {k:'habits', emoji:'\u{1F525}', name:'Forge discipline', desc:'Daily virtues & practice'},
+      {k:'fitness', emoji:'\u{1F4AA}', name:'Strengthen the body', desc:'Training & performance'},
+      {k:'nutrition', emoji:'\u{1F957}', name:'Master your diet', desc:'Macros & nourishment'},
+      {k:'all', emoji:'\u{1F3DB}', name:'Pursue arete', desc:'The complete path to excellence', full:true},
     ];
     const cards = goals.map(g => `
       <div class="ob-goal-card${_obGoalType===g.k?' active':''} ${g.full?'full':''}" onclick="_obGoalType='${g.k}';renderOnboarding(2)">
@@ -1337,8 +1337,8 @@ function renderOnboarding(step) {
       </div>`).join('');
     content = `
       <div class="ob-eyebrow">Step 3 of 4</div>
-      <div class="ob-title">What brings you here?</div>
-      <div class="ob-sub">Pick your main focus. You can use everything, but this helps us highlight what matters most.</div>
+      <div class="ob-title">Choose your path.</div>
+      <div class="ob-sub">First say to yourself what you would be; and then do what you have to do.</div>
       <div class="ob-goal-grid">${cards}</div>`;
 
   } else if (step === 4) {
@@ -1348,8 +1348,8 @@ function renderOnboarding(step) {
     ).join('');
     content = `
       <div class="ob-eyebrow">Step 4 of 4</div>
-      <div class="ob-title">Set your daily targets.</div>
-      <div class="ob-sub">These feed into your macro rings. You can update them anytime in Diet \u2192 Goals.</div>
+      <div class="ob-title">Set your measures.</div>
+      <div class="ob-sub">Without measure, even the finest things become excess. Set your daily targets.</div>
       <div class="ob-nut-btns">${nutBtns}</div>
       <div class="ob-macro-row">
         <div class="ob-macro-card"><div class="ob-macro-label">Calories</div><input class="ob-macro-input" type="number" id="ob-cal" value="${_obCalories}" onchange="_obCalories=+this.value"></div>

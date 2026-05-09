@@ -294,7 +294,7 @@ function injectAuthStyles() {
   s.textContent = `
     #auth-overlay{position:fixed;inset:0;background:var(--bg);z-index:3000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 28px}
     .auth-logo{margin-bottom:40px;text-align:center;display:flex;flex-direction:column;align-items:center}
-    .auth-title{font-family:var(--serif);font-size:36px;color:var(--text);text-align:center;margin-bottom:8px;line-height:1.2}
+    .auth-title{font-family:var(--display);font-size:30px;color:var(--text);text-align:center;margin-bottom:8px;line-height:1.2;letter-spacing:0.5px}
     .auth-sub{font-size:13px;color:var(--text-dim);text-align:center;margin-bottom:36px;line-height:1.6}
     .auth-input{width:100%;padding:16px 18px;border:1px solid rgba(255,255,255,0.1);border-radius:12px;background:var(--surface);color:var(--text);font-size:15px;margin-bottom:12px;outline:none;transition:border .2s;box-sizing:border-box}
     .auth-input:focus{border-color:var(--accent)}
@@ -340,8 +340,8 @@ function renderAuth() {
       </svg>
       <div style="font-size:13px;letter-spacing:.25em;color:var(--accent-b);margin-top:8px;font-weight:600">ARETE</div>
     </div>
-    <div class="auth-title">${isSignIn ? 'Welcome back.' : 'Start your journey.'}</div>
-    <div class="auth-sub">${isSignIn ? 'Sign in to access your data on any device.' : 'Create your account to get started.'}</div>
+    <div class="auth-title">${isSignIn ? 'Welcome back.' : 'Begin the path to excellence.'}</div>
+    <div class="auth-sub">${isSignIn ? 'Sign in to continue your pursuit of arete.' : 'Create your account and pursue daily excellence.'}</div>
     <div style="width:100%;max-width:360px">
       ${!isSignIn ? `<input class="auth-input" type="text" id="auth-name" placeholder="First name" autocomplete="given-name" onkeydown="if(event.key==='Enter')submitAuth()">` : ''}
       <input class="auth-input" type="email" id="auth-email" placeholder="Email address" autocomplete="email">
@@ -1014,7 +1014,7 @@ function renderHome() {
     </div>` : ''}
 
     <div class="hm-sec ani">
-      <div class="hm-sec-title">Today</div>
+      <div class="hm-sec-title">Today's Labours</div>
     </div>
     <div class="hm-cards ani">
       <div class="hm-card${wLogged ? ' hm-card-done' : ''}" onclick="go('workoutActive')">
@@ -1036,11 +1036,11 @@ function renderHome() {
     </div>
 
     <div class="hm-sec ani">
-      <div class="hm-sec-title">Quests</div>
+      <div class="hm-sec-title">Daily Quests</div>
     </div>
     <div class="hm-quest-list ani" id="quest-section">${questHTML}</div>
     ${challenges.length ? `<div class="hm-sec ani">
-      <div class="hm-sec-title">Weekly Challenges</div>
+      <div class="hm-sec-title">Weekly Trials</div>
     </div>
     <div class="hm-chal-list ani">${chalHTML}</div>` : ''}
 
@@ -1082,7 +1082,7 @@ function renderHabits() {
   }).join('');
   document.getElementById('view').innerHTML = `
     <div class="ah-head ani" style="display:flex;align-items:flex-start;justify-content:space-between">
-      <div><div class="ah-title">All Habits</div><div class="ah-sub">Reflect on your day. Recalibrate for tomorrow.</div></div>
+      <div><div class="ah-title">All Habits</div><div class="ah-sub">We are what we repeatedly do.</div></div>
       <div style="display:flex;gap:8px;padding-top:8px">
         ${!_habitEditMode ? `<button class="w-action-btn" style="margin:0;padding:8px 18px;font-size:11px;width:auto" onclick="_habitEditMode=true;renderHabits()">Edit</button>` : `<button class="w-action-btn" style="margin:0;padding:8px 18px;font-size:11px;width:auto;background:rgba(154,130,86,0.15);border-color:var(--accent)" onclick="_habitEditMode=false;renderHabits()">Done</button>`}
         ${!_habitEditMode ? `<button class="w-action-btn" style="margin:0;padding:8px 14px;font-size:16px;width:auto;line-height:1" onclick="go('habitCreate')">+</button>` : ''}
@@ -1320,7 +1320,7 @@ function showProPrompt() {
   el.innerHTML = `
     <div class="pro-overlay" onclick="closeProPrompt()">
       <div class="pro-card" onclick="event.stopPropagation()">
-        <div class="pro-star">✦</div>
+        <div class="pro-star"><svg viewBox="0 0 120 120" width="52" height="52" xmlns="http://www.w3.org/2000/svg"><g fill="#c4a96c"><ellipse cx="35" cy="12" rx="3.5" ry="8" transform="rotate(-65,35,12)"/><ellipse cx="25" cy="22" rx="4" ry="9" transform="rotate(-50,25,22)"/><ellipse cx="17" cy="34" rx="4.5" ry="10" transform="rotate(-38,17,34)"/><ellipse cx="13" cy="48" rx="5" ry="11" transform="rotate(-22,13,48)"/><ellipse cx="13" cy="62" rx="5" ry="11" transform="rotate(-8,13,62)"/><ellipse cx="17" cy="76" rx="5" ry="11" transform="rotate(10,17,76)"/><ellipse cx="25" cy="88" rx="4.5" ry="10" transform="rotate(26,25,88)"/><ellipse cx="36" cy="97" rx="4" ry="9" transform="rotate(40,36,97)"/><ellipse cx="48" cy="102" rx="3.5" ry="8" transform="rotate(55,48,102)"/><ellipse cx="85" cy="12" rx="3.5" ry="8" transform="rotate(65,85,12)"/><ellipse cx="95" cy="22" rx="4" ry="9" transform="rotate(50,95,22)"/><ellipse cx="103" cy="34" rx="4.5" ry="10" transform="rotate(38,103,34)"/><ellipse cx="107" cy="48" rx="5" ry="11" transform="rotate(22,107,48)"/><ellipse cx="107" cy="62" rx="5" ry="11" transform="rotate(8,107,62)"/><ellipse cx="103" cy="76" rx="5" ry="11" transform="rotate(-10,103,76)"/><ellipse cx="95" cy="88" rx="4.5" ry="10" transform="rotate(-26,95,88)"/><ellipse cx="84" cy="97" rx="4" ry="9" transform="rotate(-40,84,97)"/><ellipse cx="72" cy="102" rx="3.5" ry="8" transform="rotate(-55,72,102)"/></g><path d="M52 106 Q56 112 60 114 Q64 112 68 106" fill="none" stroke="#c4a96c" stroke-width="2.5" stroke-linecap="round"/></svg></div>
         <div class="pro-title">Arete Pro</div>
         <div class="pro-sub">Unlock the full system to accelerate your progress.</div>
         <div class="pro-features">

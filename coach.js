@@ -58,7 +58,7 @@ function buildCoachSystemPrompt() {
   // Available programs
   const progList = allPrograms().map(p => `  - id="${p.id}" | ${p.name} (${p.days.length}-day)`).join('\n');
 
-  return `You are Arete Coach — a sharp, warm, and deeply personalised life coach inside the Arete lifestyle app, inspired by the Stoic pursuit of excellence. Your job is to help ${name} build elite habits, perform at their peak, eat well, and grow continuously.
+  return `You are Arete Coach — a wise, direct, and deeply personalised guide inside the Arete lifestyle app. You draw from the Stoic philosophers — Marcus Aurelius, Epictetus, and Seneca — blending ancient wisdom with modern performance science. Your job is to help ${name} pursue arete (excellence) in mind, body, and spirit. Be like a firm but caring mentor from the Stoa: practical, concise, and grounded in virtue.
 
 TODAY: ${d}
 
@@ -147,9 +147,9 @@ function _renderCoachMsgs() {
     const name = userName();
     el.innerHTML = `
       <div class="coach-welcome">
-        <div class="coach-welcome-star">✦</div>
-        <h3>Hey${name ? ', ' + name : ''}.</h3>
-        <p>I'm your Arete Coach. Ask me anything about your habits, workouts, nutrition, or mindset — I can see your real data.</p>
+        <div class="coach-welcome-star"><svg viewBox="0 0 120 120" width="52" height="52" xmlns="http://www.w3.org/2000/svg"><g fill="#c4a96c"><ellipse cx="35" cy="12" rx="3.5" ry="8" transform="rotate(-65,35,12)"/><ellipse cx="25" cy="22" rx="4" ry="9" transform="rotate(-50,25,22)"/><ellipse cx="17" cy="34" rx="4.5" ry="10" transform="rotate(-38,17,34)"/><ellipse cx="13" cy="48" rx="5" ry="11" transform="rotate(-22,13,48)"/><ellipse cx="13" cy="62" rx="5" ry="11" transform="rotate(-8,13,62)"/><ellipse cx="17" cy="76" rx="5" ry="11" transform="rotate(10,17,76)"/><ellipse cx="25" cy="88" rx="4.5" ry="10" transform="rotate(26,25,88)"/><ellipse cx="36" cy="97" rx="4" ry="9" transform="rotate(40,36,97)"/><ellipse cx="48" cy="102" rx="3.5" ry="8" transform="rotate(55,48,102)"/><ellipse cx="85" cy="12" rx="3.5" ry="8" transform="rotate(65,85,12)"/><ellipse cx="95" cy="22" rx="4" ry="9" transform="rotate(50,95,22)"/><ellipse cx="103" cy="34" rx="4.5" ry="10" transform="rotate(38,103,34)"/><ellipse cx="107" cy="48" rx="5" ry="11" transform="rotate(22,107,48)"/><ellipse cx="107" cy="62" rx="5" ry="11" transform="rotate(8,107,62)"/><ellipse cx="103" cy="76" rx="5" ry="11" transform="rotate(-10,103,76)"/><ellipse cx="95" cy="88" rx="4.5" ry="10" transform="rotate(-26,95,88)"/><ellipse cx="84" cy="97" rx="4" ry="9" transform="rotate(-40,84,97)"/><ellipse cx="72" cy="102" rx="3.5" ry="8" transform="rotate(-55,72,102)"/></g><path d="M52 106 Q56 112 60 114 Q64 112 68 106" fill="none" stroke="#c4a96c" stroke-width="2.5" stroke-linecap="round"/></svg></div>
+        <h3>Welcome${name ? ', ' + name : ''}.</h3>
+        <p>I am your Arete Coach — a guide in the Stoic tradition. Ask me about your habits, training, nutrition, or mindset. I can see your real data and will speak plainly.</p>
       </div>`;
     return;
   }
@@ -272,7 +272,7 @@ function _executeCoachAction(action) {
 }
 
 function _coachActionBubbleHTML(results) {
-  const items = results.map(r => `<div class="coach-action-item">✦ ${esc(r)}</div>`).join('');
+  const items = results.map(r => `<div class="coach-action-item">‣ ${esc(r)}</div>`).join('');
   return `<div class="coach-bubble coach-action">${items}</div>`;
 }
 

@@ -336,7 +336,7 @@ async function calculateMealDescription() {
   const text = ta.value.trim();
   if (!text) { out.innerHTML = '<p class="dm-hint">Describe what you ate above.</p>'; return; }
 
-  out.innerHTML = '<p class="dm-hint" style="text-align:center">✦ Calculating macros…</p>';
+  out.innerHTML = '<p class="dm-hint" style="text-align:center">‣ Calculating macros…</p>';
   if (btn) { btn.disabled = true; btn.textContent = 'Calculating…'; }
 
   try {
@@ -437,7 +437,7 @@ async function handleFoodPhoto(input) {
   if (!file) return;
 
   const out = document.getElementById('photo-output');
-  if (out) out.innerHTML = '<p class="dm-hint" style="text-align:center">✦ Analyzing photo…</p>';
+  if (out) out.innerHTML = '<p class="dm-hint" style="text-align:center">‣ Analyzing photo…</p>';
 
   // Show preview
   const preview = document.getElementById('photo-preview');
@@ -578,7 +578,7 @@ function renderDietAddMeal() {
 
       <div class="dm-section">
         <div class="dm-header">
-          <span class="dm-icon">✦</span>
+          <span class="dm-icon">‣</span>
           <span class="dm-header-text">Describe your meal</span>
           <span class="dm-header-sub">Instant macro calc</span>
         </div>
