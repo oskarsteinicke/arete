@@ -1,9 +1,9 @@
 {
-  "name": "Northstar",
-  "short_name": "Northstar",
-  "description": "Your guiding star — habits, workouts, diet, and growth.",
-  "start_url": "/northstar/",
-  "scope": "/northstar/",
+  "name": "Arete",
+  "short_name": "Arete",
+  "description": "Pursue daily excellence — habits, workouts, diet, and growth.",
+  "start_url": "/arete/",
+  "scope": "/arete/",
   "display": "standalone",
   "background_color": "#0a0908",
   "theme_color": "#0a0908",
@@ -26,25 +26,25 @@
     {
       "name": "Start Workout",
       "short_name": "Workout",
-      "url": "/northstar/#workoutActive",
+      "url": "/arete/#workoutActive",
       "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Log Meal",
       "short_name": "Meal",
-      "url": "/northstar/#dietAddMeal",
+      "url": "/arete/#dietAddMeal",
       "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Check Habits",
       "short_name": "Habits",
-      "url": "/northstar/#habits",
+      "url": "/arete/#habits",
       "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "AI Coach",
       "short_name": "Coach",
-      "url": "/northstar/#home",
+      "url": "/arete/#home",
       "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     }
   ]

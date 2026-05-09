@@ -2,10 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "ns-dev",
+      "name": "arete-dev",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8080"],
-      "port": 8080
+      "runtimeArgs": ["-m", "http.server", "3000", "-d", "/Users/steinicke/Documents/ANDET/APP"],
+      "port": 3000
     }
   ]
 }

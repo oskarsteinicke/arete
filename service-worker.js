@@ -1,16 +1,16 @@
-const CACHE = 'ns-v28';
+const CACHE = 'arete-v1';
 const ASSETS = [
-  '/northstar/',
-  '/northstar/index.html',
-  '/northstar/style.css',
-  '/northstar/data.js',
-  '/northstar/app.js',
-  '/northstar/workout.js',
-  '/northstar/diet.js',
-  '/northstar/coach.js',
-  '/northstar/social.js',
-  '/northstar/profile.js',
-  '/northstar/manifest.json'
+  '/arete/',
+  '/arete/index.html',
+  '/arete/style.css',
+  '/arete/data.js',
+  '/arete/app.js',
+  '/arete/workout.js',
+  '/arete/diet.js',
+  '/arete/coach.js',
+  '/arete/social.js',
+  '/arete/profile.js',
+  '/arete/manifest.json'
 ];
 
 self.addEventListener('install', e => {

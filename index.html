@@ -6,9 +6,11 @@
   <meta name="theme-color" content="#0a0908">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Northstar">
-  <title>Northstar</title>
+  <meta name="apple-mobile-web-app-title" content="Arete">
+  <title>Arete</title>
   <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
   <!-- Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-4NQYVJR5S2"></script>
   <script>
@@ -19,16 +21,16 @@
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=33">
 </head>
 <body>
-<div id="app" role="application" aria-label="Northstar lifestyle tracker">
+<div id="app" role="application" aria-label="Arete lifestyle tracker">
   <main class="view" id="view" role="main" aria-live="polite"></main>
   <!-- AI Coach -->
   <div id="coach-overlay" class="coach-overlay coach-hidden" role="dialog" aria-label="AI Coach" aria-modal="true">
     <div class="coach-panel">
       <div class="coach-hdr">
-        <div class="coach-hdr-title"><span class="coach-star">✦</span> Northstar Coach</div>
+        <div class="coach-hdr-title"><span class="coach-star">✦</span> Arete Coach</div>
         <div style="display:flex;gap:6px;align-items:center">
           <button class="coach-hdr-btn" onclick="clearCoachHistory()" title="New conversation" aria-label="Clear conversation">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
@@ -80,18 +82,18 @@
     </button>
   </nav>
 </div>
-<script src="data.js?v=28"></script>
-<script src="app.js?v=28"></script>
-<script src="workout.js?v=28"></script>
-<script src="diet.js?v=28"></script>
-<script src="coach.js?v=28"></script>
-<script src="social.js?v=28"></script>
-<script src="profile.js?v=28"></script>
+<script src="data.js?v=33"></script>
+<script src="app.js?v=33"></script>
+<script src="workout.js?v=33"></script>
+<script src="diet.js?v=33"></script>
+<script src="coach.js?v=33"></script>
+<script src="social.js?v=33"></script>
+<script src="profile.js?v=33"></script>
 <script>
   if ('serviceWorker' in navigator) {
     // Purge ALL old caches on load to ensure fresh files
-    caches.keys().then(ks => ks.filter(k => k !== 'ns-v28').forEach(k => caches.delete(k)));
-    navigator.serviceWorker.register('/northstar/service-worker.js').then(reg => {
+    caches.keys().then(ks => ks.filter(k => k !== 'arete-v1').forEach(k => caches.delete(k)));
+    navigator.serviceWorker.register('/arete/service-worker.js').then(reg => {
       reg.update();
     });
     navigator.serviceWorker.addEventListener('controllerchange', () => {

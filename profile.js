@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-// Northstar — Profile Module
+// Arete — Profile Module
 // ══════════════════════════════════════════════════════════════════════════
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -38,7 +38,7 @@ const ACHIEVEMENTS = [
   { id: 'perfect_14',    icon: '🌟', name: 'Perfect Fortnight', desc: '14 perfect habit days total' },
   { id: 'workouts_100',  icon: '🏆', name: 'Century Club',     desc: 'Log 100 workouts' },
   { id: 'pr_25',         icon: '💥', name: 'PR Machine',       desc: 'Set 25 personal records' },
-  { id: 'level_20',      icon: '👑', name: 'Northstar',        desc: 'Reach Level 20' },
+  { id: 'level_20',      icon: '👑', name: 'Arete',             desc: 'Reach Level 20' },
   { id: 'streak_60',     icon: '🔥', name: 'Relentless',       desc: '60-day streak on any habit' },
 ];
 
@@ -49,7 +49,7 @@ const LEVEL_TITLES = [
   { min: 5,  title: 'Warrior' },
   { min: 8,  title: 'Champion' },
   { min: 12, title: 'Legend' },
-  { min: 20, title: 'Northstar' },
+  { min: 20, title: 'Arete' },
 ];
 function getLevelTitle(lvl) {
   let t = LEVEL_TITLES[0].title;
@@ -324,8 +324,8 @@ function injectGamificationStyles() {
     .g-score-ring{text-align:center;cursor:pointer;padding:4px 8px}
     .g-score-val{font-family:var(--serif);font-size:32px;font-weight:700;line-height:1}
     .g-score-lbl{font-size:10px;letter-spacing:.04em;color:var(--accent);font-weight:600;margin-top:2px}
-    .g-xp-bar-track{height:6px;background:rgba(255,255,255,0.07);border-radius:3px;overflow:hidden;margin:6px 0 2px}
-    .g-xp-bar-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .5s ease}
+    .g-xp-bar-track{height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;margin:6px 0 2px}
+    .g-xp-bar-fill{height:100%;background:var(--accent-b);border-radius:2px;transition:width .5s ease}
     .g-challenge{background:var(--surface2);border-radius:10px;padding:12px 16px;margin-bottom:8px}
     .g-challenge-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
     .g-challenge-label{font-size:13px;color:var(--text)}
@@ -356,8 +356,8 @@ function injectGamificationStyles() {
     .cal-month-label{font-family:var(--serif);font-size:18px;color:var(--text);text-align:center;flex:1}
     .cal-nav-btn{background:none;border:none;color:var(--text);font-size:28px;padding:4px 10px;cursor:pointer;line-height:1;flex-shrink:0}
     .cal-nav-disabled{opacity:0.25;pointer-events:none}
-    .cal-view-seg{display:flex;background:var(--surface2);border-radius:20px;padding:3px;gap:2px;margin:0 20px 10px}
-    .cal-vbtn{flex:1;border:none;background:none;color:var(--text-dim);font-size:12px;padding:6px 4px;border-radius:16px;cursor:pointer;transition:all .2s;font-weight:600;letter-spacing:.02em}
+    .cal-view-seg{display:flex;background:var(--surface2);border-radius:12px;padding:3px;gap:2px;margin:0 24px 12px}
+    .cal-vbtn{flex:1;border:none;background:none;color:var(--text-muted);font-size:12px;padding:7px 4px;border-radius:10px;cursor:pointer;transition:all .2s;font-weight:600;letter-spacing:.02em}
     .cal-vbtn-active{background:var(--accent);color:#1a1208}
     .cal-legend{display:flex;flex-wrap:wrap;gap:10px;padding:0 20px 10px}
     .cal-leg{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-dim)}
@@ -406,8 +406,8 @@ function injectGamificationStyles() {
     .cal-task-input:focus{border-color:var(--accent)}
     .cal-task-add-btn{background:var(--accent);border:none;color:#1a1208;border-radius:10px;width:36px;height:36px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700}
     /* Unit toggle */
-    .unit-toggle{display:flex;background:var(--surface2);border-radius:8px;padding:2px;gap:2px}
-    .unit-btn{background:none;border:none;color:var(--text-dim);font-size:13px;font-weight:600;padding:6px 16px;border-radius:6px;cursor:pointer;transition:all .2s}
+    .unit-toggle{display:flex;background:var(--surface2);border-radius:10px;padding:3px;gap:2px}
+    .unit-btn{background:none;border:none;color:var(--text-muted);font-size:12px;font-weight:600;padding:6px 16px;border-radius:8px;cursor:pointer;transition:all .2s;letter-spacing:.02em}
     .unit-btn-active{background:var(--accent);color:#fff}
     .g-quests{padding:0 24px 16px}
     .g-quest{display:flex;align-items:center;gap:12px;background:var(--surface2);border-radius:10px;padding:12px 14px;margin-bottom:8px;border:1px solid transparent;transition:all .25s}
@@ -1078,10 +1078,12 @@ function renderStats() {
       <button class="cal-vbtn" onclick="window._statsSubView='calendar';renderStats()">Calendar</button>
     </div>
     <div class="da-section ani" style="margin:0 24px 16px;padding:16px">
-      <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Name</div>
-      <div style="font-family:var(--serif);font-size:22px;color:var(--text)" id="profile-name-display">${userName() || '—'}</div>
-    </div>
-    <div class="da-section ani" style="margin:0 24px 16px;padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border2)">
+        <div>
+          <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px">Name</div>
+          <div style="font-family:var(--serif);font-size:20px;color:var(--text)" id="profile-name-display">${userName() || 'Tap Edit Name →'}</div>
+        </div>
+      </div>
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
         <div style="font-size:13px;color:var(--text-dim)">Level <span style="font-family:var(--serif);font-size:26px;color:var(--accent-b);font-weight:700">${lvl}</span> <span style="font-size:12px;color:var(--accent);font-weight:600;letter-spacing:.04em">${getLevelTitle(lvl)}</span></div>
         <div style="font-size:11px;color:var(--text-dim)">${(gamification.xp||0).toLocaleString()} XP</div>
@@ -1158,7 +1160,7 @@ function renderStats() {
     <div class="ps ani">${psRows}</div>
     <div class="sec-lbl" style="padding-left:24px">Pillar Levels</div>
     <div class="g-pillar-levels ani">${pillarLevels}</div>
-    <div class="sec-lbl" style="padding-left:24px">Achievements Â· ${achievements.length}/${ACHIEVEMENTS.length}</div>
+    <div class="sec-lbl" style="padding-left:24px">Achievements · ${achievements.length}/${ACHIEVEMENTS.length}</div>
     <div class="g-ach-grid ani">${achHTML}</div>
     <div class="sec-lbl" style="padding-left:24px">Today's Wisdom</div>
     <div class="q-block ani">
@@ -1287,8 +1289,8 @@ function renderOnboarding(step) {
     overlay.innerHTML = `
       <div class="ob-welcome">
         <div class="ob-welcome-star">\u2726</div>
-        <div class="ob-welcome-title">Northstar</div>
-        <div class="ob-welcome-sub">Your guiding star for habits, fitness, nutrition, and growth.</div>
+        <div class="ob-welcome-title">Arete</div>
+        <div class="ob-welcome-sub">Pursue daily excellence — habits, fitness, nutrition, and growth.</div>
         <button class="ob-welcome-btn" onclick="renderOnboarding(1)">GET STARTED \u2192</button>
       </div>`;
     return;
@@ -1325,7 +1327,7 @@ function renderOnboarding(step) {
       {k:'habits', emoji:'\u{1F525}', name:'Build habits', desc:'Daily routines & discipline'},
       {k:'fitness', emoji:'\u{1F4AA}', name:'Get stronger', desc:'Workouts & performance'},
       {k:'nutrition', emoji:'\u{1F957}', name:'Eat better', desc:'Macros & meal tracking'},
-      {k:'all', emoji:'\u2726', name:'All of the above', desc:'The full Northstar system', full:true},
+      {k:'all', emoji:'\u2726', name:'All of the above', desc:'The full Arete system', full:true},
     ];
     const cards = goals.map(g => `
       <div class="ob-goal-card${_obGoalType===g.k?' active':''} ${g.full?'full':''}" onclick="_obGoalType='${g.k}';renderOnboarding(2)">
@@ -1533,11 +1535,11 @@ function generateRecapCard() {
   // Branding + watermark
   ctx.fillStyle = 'rgba(228,218,206,0.2)';
   ctx.font = '700 11px -apple-system,sans-serif';
-  ctx.fillText('HIGH VALUE INDIVIDUAL', barX, H - 28);
+  ctx.fillText('ARETE', barX, H - 28);
   ctx.fillStyle = 'rgba(184,157,104,0.35)';
   ctx.font = '600 10px -apple-system,sans-serif';
   ctx.textAlign = 'right';
-  ctx.fillText('northstarapp.me', W - 28, H - 28);
+  ctx.fillText('arete', W - 28, H - 28);
   ctx.textAlign = 'left';
 
   return canvas;
@@ -1710,7 +1712,7 @@ function generateDailyCard() {
   // Branding
   ctx.fillStyle = 'rgba(228,218,206,0.2)';
   ctx.font = '700 11px -apple-system,sans-serif';
-  ctx.fillText('NORTHSTAR', 28, H - 28);
+  ctx.fillText('ARETE', 28, H - 28);
 
   return canvas;
 }
@@ -1718,13 +1720,13 @@ function generateDailyCard() {
 function shareDailyCard() {
   const canvas = generateDailyCard();
   canvas.toBlob(async blob => {
-    const file = new File([blob], 'northstar-today.png', { type: 'image/png' });
+    const file = new File([blob], 'arete-today.png', { type: 'image/png' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try { await navigator.share({ files: [file], title: "Today's Northstar Progress" }); return; } catch {}
+      try { await navigator.share({ files: [file], title: "Today's Arete Progress" }); return; } catch {}
     }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'northstar-today.png';
+    a.download = 'arete-today.png';
     a.click();
   }, 'image/png');
 }
@@ -1734,7 +1736,7 @@ function shareRecap() {
   canvas.toBlob(async blob => {
     const file = new File([blob], 'hvi-recap.png', { type: 'image/png' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try { await navigator.share({ files: [file], title: 'My Northstar Weekly Recap' }); return; } catch {}
+      try { await navigator.share({ files: [file], title: 'My Arete Weekly Recap' }); return; } catch {}
     }
     // Fallback: download
     const a = document.createElement('a');
@@ -1808,7 +1810,7 @@ function exportAllData() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `northstar-backup-${today()}.json`;
+  a.download = `arete-backup-${today()}.json`;
   a.click();
   URL.revokeObjectURL(url);
 }

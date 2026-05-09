@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-// Northstar — AI Coach Module
+// Arete — AI Coach Module
 // ══════════════════════════════════════════════════════════════════════════
 
 let _coachHistory = [];   // [{role:'user'|'assistant', content:'...'}]
@@ -58,7 +58,7 @@ function buildCoachSystemPrompt() {
   // Available programs
   const progList = allPrograms().map(p => `  - id="${p.id}" | ${p.name} (${p.days.length}-day)`).join('\n');
 
-  return `You are Northstar Coach — a sharp, warm, and deeply personalised life coach inside the Northstar lifestyle app. Your job is to help ${name} build elite habits, perform at their peak, eat well, and grow continuously.
+  return `You are Arete Coach — a sharp, warm, and deeply personalised life coach inside the Arete lifestyle app, inspired by the Stoic pursuit of excellence. Your job is to help ${name} build elite habits, perform at their peak, eat well, and grow continuously.
 
 TODAY: ${d}
 
@@ -149,7 +149,7 @@ function _renderCoachMsgs() {
       <div class="coach-welcome">
         <div class="coach-welcome-star">✦</div>
         <h3>Hey${name ? ', ' + name : ''}.</h3>
-        <p>I'm your Northstar Coach. Ask me anything about your habits, workouts, nutrition, or mindset — I can see your real data.</p>
+        <p>I'm your Arete Coach. Ask me anything about your habits, workouts, nutrition, or mindset — I can see your real data.</p>
       </div>`;
     return;
   }

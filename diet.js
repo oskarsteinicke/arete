@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-// Northstar — Diet Module
+// Arete — Diet Module
 // ══════════════════════════════════════════════════════════════════════════
 
 // ── ADAPTIVE NUTRITION HELPERS ────────────────────────────────────────────
@@ -51,7 +51,7 @@ function injectAdaptiveStyles() {
   const s = document.createElement('style');
   s.id = 'diet-adaptive-styles';
   s.textContent = `
-    .da-section{background:var(--surface2);border-radius:14px;padding:16px;margin:16px 24px}
+    .da-section{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);padding:16px;margin:16px 24px}
     .da-stat{text-align:center}
     .da-stat-val{font-size:20px;font-weight:700;color:var(--accent-b);font-family:var(--serif)}
     .da-stat-lbl{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px}
@@ -196,7 +196,7 @@ function renderDiet() {
     const itemsHTML = ml.items.map(it => `<div class="d-meal-item">${esc(it.name)} \u2014 ${it.calories}cal, ${it.protein}P, ${it.carbs}C, ${it.fat}F</div>`).join('');
     return `<div class="d-meal"><div class="d-meal-head"><div class="d-meal-name">${esc(ml.name)}</div><div style="display:flex;align-items:center;gap:8px"><div class="d-meal-cal">${mCal} cal</div><button class="d-del-btn" onclick="deleteMeal(${mi})">\u00D7</button></div></div>
       <div class="d-meal-macros">${mP}P</div>${itemsHTML}</div>`;
-  }).join('') : '<p style="padding:0 24px;font-size:13px;color:var(--text-muted)">No meals logged today.</p>';
+  }).join('') : '<p style="padding:0 24px;font-size:13px;color:var(--text-dim)">No meals logged today.</p>';
 
   document.getElementById('view').innerHTML = `
     <div class="page-head ani"><div class="page-title">Nutrition</div><div class="page-sub">Fuel your body with intention.</div></div>

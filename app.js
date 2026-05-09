@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-// Northstar — Application Logic
+// Arete — Application Logic
 // ══════════════════════════════════════════════════════════════════════════
 
 // ── STATE ─────────────────────────────────────────────────────────────────
@@ -320,11 +320,25 @@ function renderAuth() {
   overlay.innerHTML = `
     <div class="auth-logo">
       <svg viewBox="0 0 120 120" width="72" height="72" xmlns="http://www.w3.org/2000/svg">
-        <path d="M60 4 C62 30 90 58 116 60 C90 62 62 90 60 116 C58 90 30 62 4 60 C30 58 58 30 60 4 Z" fill="#9a8256"/>
-        <path d="M60 28 C61 44 76 59 92 60 C76 61 61 76 60 92 C59 76 44 61 28 60 C44 59 59 44 60 28 Z" fill="#b89d68" opacity="0.6"/>
-        <circle cx="60" cy="60" r="4" fill="#e4dace"/>
+        <g transform="translate(60,60)" fill="none" stroke="#c4a96c" stroke-width="1.5" stroke-linecap="round">
+          <path d="M-4,32 Q-8,16 -7,0 Q-8,-16 -4,-32" stroke-width="1.5" opacity="0.3"/>
+          <ellipse cx="-16" cy="24" rx="8" ry="3.5" transform="rotate(-25,-16,24)" fill="#c4a96c" stroke="none" opacity="0.85"/>
+          <ellipse cx="-20" cy="14" rx="9" ry="3.5" transform="rotate(-15,-20,14)" fill="#c4a96c" stroke="none" opacity="0.85"/>
+          <ellipse cx="-22" cy="4" rx="9" ry="3.5" transform="rotate(-5,-22,4)" fill="#c4a96c" stroke="none" opacity="0.85"/>
+          <ellipse cx="-21" cy="-7" rx="9" ry="3.5" transform="rotate(8,-21,-7)" fill="#c4a96c" stroke="none" opacity="0.85"/>
+          <ellipse cx="-18" cy="-17" rx="8" ry="3.5" transform="rotate(18,-18,-17)" fill="#c4a96c" stroke="none" opacity="0.85"/>
+          <ellipse cx="-14" cy="-26" rx="7" ry="3.5" transform="rotate(30,-14,-26)" fill="#c4a96c" stroke="none" opacity="0.85"/>
+          <path d="M4,32 Q8,16 7,0 Q8,-16 4,-32" stroke-width="1.5" opacity="0.3"/>
+          <ellipse cx="16" cy="24" rx="8" ry="3.5" transform="rotate(25,16,24)" fill="#c4a96c" stroke="none" opacity="0.85"/>
+          <ellipse cx="20" cy="14" rx="9" ry="3.5" transform="rotate(15,20,14)" fill="#c4a96c" stroke="none" opacity="0.85"/>
+          <ellipse cx="22" cy="4" rx="9" ry="3.5" transform="rotate(5,22,4)" fill="#c4a96c" stroke="none" opacity="0.85"/>
+          <ellipse cx="21" cy="-7" rx="9" ry="3.5" transform="rotate(-8,21,-7)" fill="#c4a96c" stroke="none" opacity="0.85"/>
+          <ellipse cx="18" cy="-17" rx="8" ry="3.5" transform="rotate(-18,18,-17)" fill="#c4a96c" stroke="none" opacity="0.85"/>
+          <ellipse cx="14" cy="-26" rx="7" ry="3.5" transform="rotate(-30,14,-26)" fill="#c4a96c" stroke="none" opacity="0.85"/>
+        </g>
+        <text x="60" y="68" text-anchor="middle" font-family="Georgia,serif" font-weight="600" font-size="36" fill="#e4dace">A</text>
       </svg>
-      <div style="font-size:13px;letter-spacing:.25em;color:var(--accent-b);margin-top:8px;font-weight:600">NORTHSTAR</div>
+      <div style="font-size:13px;letter-spacing:.25em;color:var(--accent-b);margin-top:8px;font-weight:600">ARETE</div>
     </div>
     <div class="auth-title">${isSignIn ? 'Welcome back.' : 'Start your journey.'}</div>
     <div class="auth-sub">${isSignIn ? 'Sign in to access your data on any device.' : 'Create your account to get started.'}</div>
@@ -416,7 +430,8 @@ function ring(r, pct, sw = 3, color = 'var(--accent)') {
   const sz = (r + sw) * 2;
   const cx = r + sw;
   return `<svg viewBox="0 0 ${sz} ${sz}">
-    <circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="${sw}"/>
+    <circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="${sw + 1}"/>
+    <circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="${sw}"/>
     <circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="${color}" stroke-width="${sw}"
       stroke-dasharray="${c.toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}" stroke-linecap="round"
       style="--ring-c:${c.toFixed(2)};--ring-off:${off.toFixed(2)}"/>
@@ -556,7 +571,7 @@ function _scheduleReminder() {
     const {done, total} = totalPct();
     const left = total - done;
     if (left > 0) {
-      new Notification('Northstar', { body: `${left} habit${left>1?'s':''} left today — still time to show up.`, icon: '/northstar/manifest.json' });
+      new Notification('Arete', { body: `${left} habit${left>1?'s':''} left today — still time to show up.`, icon: '/arete/manifest.json' });
       LS.set('hvi_notif_sent_' + today(), true);
     }
   }
@@ -683,16 +698,7 @@ async function init() {
     }
   });
 
-  // Inject quick-log FAB
-  if (!document.getElementById('quick-log-fab')) {
-    const fab = document.createElement('button');
-    fab.id = 'quick-log-fab';
-    fab.className = 'quick-log-fab';
-    fab.innerHTML = '+';
-    fab.setAttribute('aria-label', 'Quick log');
-    fab.onclick = toggleQuickLog;
-    document.body.appendChild(fab);
-  }
+  // Quick-log FAB removed — actions accessible from nav tabs and home cards
   initPullToRefresh();
   _updateOnlineStatus();
   _scheduleReminder();
@@ -987,17 +993,8 @@ function renderHome() {
           <div class="hm-hero-info">
             <div class="hm-hero-date">${dateStr}</div>
             <div class="hm-hero-name">${greeting()}${userName() ? ', ' + userName() : ''}.</div>
-            <div class="hm-hero-greet">${dayName()}</div>
             <div class="hm-hero-lvl">Lv.${homeLvl} · ${getLevelTitle(homeLvl)}</div>
-            <div class="hm-xp-row">
-              <div class="hm-xp-track"><div class="hm-xp-fill" style="width:${xpPct}%"></div></div>
-              <div class="hm-xp-lbl">${progress}/${needed} XP</div>
-            </div>
-            <div class="hm-score-row">
-              <div class="hm-score-badge" style="border-color:${scoreColor}">
-                <span class="hm-score-num" style="color:${scoreColor}">${score}</span>
-                <span class="hm-score-lbl">score</span>
-              </div>
+            <div class="hm-score-row" style="margin-top:10px">
               <div style="flex:1">
                 <div class="hm-habits-bar-hdr"><span>Habits</span><span>${done}/${total}</span></div>
                 <div class="hm-habits-track"><div class="hm-habits-fill" style="width:${(pct*100).toFixed(0)}%"></div></div>
@@ -1027,7 +1024,6 @@ function renderHome() {
         <div class="hm-card-val">${wDay.name}</div>
         <div class="hm-card-sub">${wProg.name}</div>
         <div class="hm-card-status" style="${wLogged ? 'color:var(--accent-b)' : 'color:var(--fg3)'}">${wLogged ? '✓ Done' : '→ Start'}</div>
-        ${!wLogged && _sinceText ? `<div style="font-size:9px;color:var(--text-muted);margin-top:4px">Last: ${_sinceText}</div>` : ''}
       </div>
       <div class="hm-card" onclick="go('diet')">
         <div class="hm-card-icon">🥗</div>
@@ -1037,49 +1033,24 @@ function renderHome() {
         <div class="hm-card-bar"><div class="hm-card-fill" style="width:${(dPct*100).toFixed(0)}%;background:var(--cal)"></div></div>
         <div class="hm-card-status" style="color:var(--fg3)">${dm.p}p · ${dm.c}c · ${dm.f}f</div>
       </div>
-      <div class="hm-card" onclick="go('sleep')" style="grid-column:1/-1">
-        <div style="display:flex;align-items:center;gap:16px">
-          <div class="hm-card-icon" style="margin:0">😴</div>
-          <div style="flex:1">
-            <div class="hm-card-lbl">Sleep</div>
-            <div style="font-size:14px;color:var(--text)">${slpHours ? slpHours + 'h' : 'Not logged'}${slpQuality ? ' · Quality ' + slpQuality + '/5' : ''}</div>
-          </div>
-          ${_shields > 0 ? `<div style="font-size:10px;color:var(--accent);background:rgba(154,130,86,.12);padding:4px 8px;border-radius:100px;border:1px solid rgba(154,130,86,.2)">🛡️ ${_shields} shield${_shields>1?'s':''}</div>` : ''}
-        </div>
-      </div>
     </div>
 
     <div class="hm-sec ani">
-      <div class="hm-sec-title">⚡ Daily Quests</div>
+      <div class="hm-sec-title">Quests</div>
     </div>
     <div class="hm-quest-list ani" id="quest-section">${questHTML}</div>
-
-    <div class="hm-sec ani">
-      <div class="hm-sec-title">🏆 Weekly Challenges</div>
+    ${challenges.length ? `<div class="hm-sec ani">
+      <div class="hm-sec-title">Weekly Challenges</div>
     </div>
-    <div class="hm-chal-list ani">${chalHTML}</div>
+    <div class="hm-chal-list ani">${chalHTML}</div>` : ''}
 
     <!-- Daily quote -->
-    <div class="hm-sec ani"><div class="hm-sec-title">💡 Today's Wisdom</div></div>
-    <div class="hm-quote ani">
+    <div class="hm-quote ani" style="margin-top:16px">
       <div class="hm-quote-text">"${esc(QUOTES[meta.quoteIndex % QUOTES.length].text)}"</div>
       <div class="hm-quote-auth">— ${esc(QUOTES[meta.quoteIndex % QUOTES.length].author)}</div>
     </div>
 
     ${getEveningReminder()}
-
-    <!-- Share -->
-    <div style="display:flex;gap:10px;padding:0 16px 16px" class="ani">
-      <button class="w-action-btn" style="flex:1;margin:0" onclick="shareDailyCard()">📤 Share Today</button>
-      <button class="w-action-btn" style="flex:1;margin:0" onclick="shareRecap()">📊 Weekly Recap</button>
-    </div>
-
-    <!-- Invite -->
-    <div class="invite-card ani">
-      <div class="invite-title">Enjoying Northstar?</div>
-      <div class="invite-sub">Share it with a friend who's leveling up their life.</div>
-      <button class="invite-btn" onclick="shareInvite()">🔗 Invite a Friend</button>
-    </div>
   `;
 }
 
@@ -1112,9 +1083,9 @@ function renderHabits() {
   document.getElementById('view').innerHTML = `
     <div class="ah-head ani" style="display:flex;align-items:flex-start;justify-content:space-between">
       <div><div class="ah-title">All Habits</div><div class="ah-sub">Reflect on your day. Recalibrate for tomorrow.</div></div>
-      <div style="display:flex;gap:8px">
-        ${!_habitEditMode ? `<button class="w-action-btn" style="margin:0;padding:10px 16px;font-size:13px;width:auto" onclick="_habitEditMode=true;renderHabits()">Edit</button>` : `<button class="w-action-btn" style="margin:0;padding:10px 16px;font-size:13px;width:auto;background:var(--accent)" onclick="_habitEditMode=false;renderHabits()">Done</button>`}
-        ${!_habitEditMode ? `<button class="w-action-btn" style="margin:0;padding:10px 16px;font-size:18px;width:auto;line-height:1" onclick="go('habitCreate')">+</button>` : ''}
+      <div style="display:flex;gap:8px;padding-top:8px">
+        ${!_habitEditMode ? `<button class="w-action-btn" style="margin:0;padding:8px 18px;font-size:11px;width:auto" onclick="_habitEditMode=true;renderHabits()">Edit</button>` : `<button class="w-action-btn" style="margin:0;padding:8px 18px;font-size:11px;width:auto;background:rgba(154,130,86,0.15);border-color:var(--accent)" onclick="_habitEditMode=false;renderHabits()">Done</button>`}
+        ${!_habitEditMode ? `<button class="w-action-btn" style="margin:0;padding:8px 14px;font-size:16px;width:auto;line-height:1" onclick="go('habitCreate')">+</button>` : ''}
       </div>
     </div>
     <div class="ani">${groups}</div>
@@ -1331,10 +1302,10 @@ function haptic(pattern) {
 
 // ── INVITE / REFERRAL ────────────────────────────────────────────────────
 function shareInvite() {
-  const text = "I've been using Northstar to track my habits, workouts, and nutrition all in one app. It's free — check it out!";
-  const url = 'https://oskarsteinicke.github.io/northstar/';
+  const text = "I've been using Arete to track my habits, workouts, and nutrition all in one app. It's free — check it out!";
+  const url = 'https://oskarsteinicke.github.io/arete/';
   if (navigator.share) {
-    navigator.share({ title: 'Northstar', text, url }).catch(() => {});
+    navigator.share({ title: 'Arete', text, url }).catch(() => {});
   } else {
     navigator.clipboard.writeText(text + '\n' + url).then(() => {
       alert('Link copied to clipboard!');
@@ -1350,7 +1321,7 @@ function showProPrompt() {
     <div class="pro-overlay" onclick="closeProPrompt()">
       <div class="pro-card" onclick="event.stopPropagation()">
         <div class="pro-star">✦</div>
-        <div class="pro-title">Northstar Pro</div>
+        <div class="pro-title">Arete Pro</div>
         <div class="pro-sub">Unlock the full system to accelerate your progress.</div>
         <div class="pro-features">
           <div class="pro-feat"><span class="pro-feat-icon">🤖</span> Unlimited AI Coach conversations</div>
@@ -1392,7 +1363,7 @@ function _getChangedKeys() {
 
 // ── ERROR BOUNDARY ───────────────────────────────────────────────────────
 window.onerror = function(msg, src, line) {
-  console.error('[northstar] Error:', msg, src, line);
+  console.error('[arete] Error:', msg, src, line);
   const view = document.getElementById('view');
   if (view && !document.querySelector('.error-boundary')) {
     const el = document.createElement('div');
@@ -1406,7 +1377,7 @@ window.onerror = function(msg, src, line) {
 };
 
 window.addEventListener('unhandledrejection', e => {
-  console.error('[northstar] Unhandled rejection:', e.reason);
+  console.error('[arete] Unhandled rejection:', e.reason);
 });
 
 // ── START ─────────────────────────────────────────────────────────────────
