@@ -255,6 +255,10 @@ nav {
 .w-card-desc { font-size: 12px; color: var(--text-dim); line-height: 1.5; }
 .w-card-days { font-size: 11px; color: var(--text-dim); margin-top: 8px; }
 .w-card.active { border-color: rgba(154,130,86,0.4); background: rgba(154,130,86,0.04); }
+.w-ex-preview-list { margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.w-ex-preview-item { display: flex; justify-content: space-between; align-items: center; }
+.w-ex-preview-name { font-size: 12px; color: var(--text-dim); }
+.w-ex-preview-muscle { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
 
 .w-day-nav {
   display: flex;

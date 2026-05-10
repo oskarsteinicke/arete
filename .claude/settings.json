@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/steinicke/Documents/ANDET/northstar && if [ -n \"$(git status --porcelain)\" ]; then BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo main) && git add -A && git commit -m \"Auto-deploy: $(date '+%Y-%m-%d %H:%M:%S')\" && git push origin \"$BRANCH\"; fi",
+            "timeout": 30,
+            "statusMessage": "Deploying to GitHub..."
+          }
+        ]
+      }
+    ]
+  }
+}

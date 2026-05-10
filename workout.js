@@ -167,6 +167,18 @@ function renderWorkout() {
   const day = prog.days[dayIdx];
   const todayLog = workoutLog[today()];
 
+  const exPreviewHTML = day.ex.length ? `
+    <div class="w-ex-preview-list">
+      ${day.ex.map(eid => {
+        const ex = lookupExercise(eid);
+        if (!ex) return '';
+        return `<div class="w-ex-preview-item">
+          <span class="w-ex-preview-name">${esc(ex.name)}</span>
+          <span class="w-ex-preview-muscle">${esc(ex.muscle)}</span>
+        </div>`;
+      }).filter(Boolean).join('')}
+    </div>` : '';
+
   document.getElementById('view').innerHTML = `
     <div class="page-head ani"><div class="page-title">Workout</div><div class="page-sub">Train with purpose. Build discipline.</div></div>
     <div class="w-day-nav ani">
@@ -178,6 +190,7 @@ function renderWorkout() {
       <div class="w-day-badge">${day.name}</div>
       <div class="w-card-name">${prog.name}</div>
       <div class="w-card-desc">${day.focus}</div>
+      ${exPreviewHTML}
       <div class="w-card-days" style="margin-top:12px;color:var(--accent)">${todayLog ? '✓ Workout logged today' : '→ Start today&#39;s workout'}</div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 24px 8px">
