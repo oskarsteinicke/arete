@@ -1330,7 +1330,7 @@ function renderOnboarding(step) {
       {k:'all', emoji:'\u{1F3DB}', name:'Pursue arete', desc:'The complete path to excellence', full:true},
     ];
     const cards = goals.map(g => `
-      <div class="ob-goal-card${_obGoalType===g.k?' active':''} ${g.full?'full':''}" onclick="_obGoalType='${g.k}';renderOnboarding(2)">
+      <div class="ob-goal-card${_obGoalType===g.k?' active':''} ${g.full?'full':''}" onclick="_obGoalType='${g.k}';renderOnboarding(3)">
         <div class="ob-goal-emoji">${g.emoji}</div>
         <div class="ob-goal-name">${g.name}</div>
         <div class="ob-goal-desc">${g.desc}</div>
@@ -1344,7 +1344,7 @@ function renderOnboarding(step) {
   } else if (step === 4) {
     const nuts = [['cut','Cut','Lose fat'],['maintain','Maintain','Stay lean'],['bulk','Bulk','Build muscle']];
     const nutBtns = nuts.map(([k,l,s]) =>
-      `<button class="ob-nut-btn${_obGoalType===k?' active':''}" onclick="_obGoalType='${k}';_obCalories=${k==='cut'?2000:k==='bulk'?3000:2500};_obProtein=${k==='cut'?160:k==='bulk'?200:180};renderOnboarding(3)">${l}<br><span style="font-weight:400;font-size:10px;text-transform:none">${s}</span></button>`
+      `<button class="ob-nut-btn${_obGoalType===k?' active':''}" onclick="_obGoalType='${k}';_obCalories=${k==='cut'?2000:k==='bulk'?3000:2500};_obProtein=${k==='cut'?160:k==='bulk'?200:180};renderOnboarding(4)">${l}<br><span style="font-weight:400;font-size:10px;text-transform:none">${s}</span></button>`
     ).join('');
     content = `
       <div class="ob-eyebrow">Step 4 of 4</div>

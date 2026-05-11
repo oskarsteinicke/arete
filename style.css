@@ -111,6 +111,7 @@ nav {
 #sync-dot.sync-ok      { background:#6fd48e; }
 #sync-dot.sync-pending { background:#b89d68; animation:pulse 1s ease infinite; }
 #sync-dot.sync-offline { background:#d46f6f; }
+#sync-dot.sync-away { background:rgba(255,255,255,0.2); }
 
 /* ANIMATIONS */
 @keyframes fu { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }

@@ -18,18 +18,22 @@ function buildCoachSystemPrompt() {
   const name = userName() || 'there';
   const d = today();
 
-  // Habits
-  const todayDone = (log[d] || []).length;
+  // Habits — log is keyed by habit ID, not date
+  const todayDone = habits.filter(h => log[h.id]?.completedToday).length;
   const totalH = habits.length;
   const pct = totalH ? Math.round(todayDone / totalH * 100) : 0;
 
-  // Weekly average
+  // Weekly average from habit history
+  const hist = LS.get('hvi_habit_history', {});
   const weekDays = [...Array(7)].map((_, i) => {
     const dt = new Date(); dt.setDate(dt.getDate() - i);
     return dt.toISOString().slice(0, 10);
   });
-  const weekAvg = totalH
-    ? Math.round(weekDays.reduce((s, dd) => s + (log[dd] || []).length, 0) / 7 / totalH * 100) : 0;
+  const weekTotal = weekDays.reduce((s, dd) => {
+    if (dd === d) return s + todayDone;
+    return s + Object.values(hist).filter(arr => arr.includes(dd)).length;
+  }, 0);
+  const weekAvg = totalH ? Math.round(weekTotal / 7 / totalH * 100) : 0;
 
   // Workout
   const progName = (workoutMeta?.activeProgram
@@ -41,12 +45,15 @@ function buildCoachSystemPrompt() {
   const dm = getDayMacros();
   const goals = dietMeta?.dailyGoals || {};
 
-  // Weight
-  const wt = weightLog?.length ? weightLog[weightLog.length - 1] : null;
+  // Weight — weightLog is date-keyed object
+  const wtDates = Object.keys(weightLog || {}).sort().reverse();
+  const latestWtDate = wtDates[0];
+  const latestWt = latestWtDate ? weightLog[latestWtDate] : null;
 
   // Gamification
   const g = gamification || {};
-  const streak = meta?.streak || 0;
+  const lvl = getLevel(g.xp || 0);
+  const maxStreak = Math.max(0, ...habits.map(h => log[h.id]?.streak || 0));
 
   // Last journal
   const jKeys = Object.keys(journal || {}).sort().reverse();
@@ -58,13 +65,13 @@ function buildCoachSystemPrompt() {
   // Available programs
   const progList = allPrograms().map(p => `  - id="${p.id}" | ${p.name} (${p.days.length}-day)`).join('\n');
 
-  return `You are Arete Coach — a wise, direct, and deeply personalised guide inside the Arete lifestyle app. You draw from the Stoic philosophers — Marcus Aurelius, Epictetus, and Seneca — blending ancient wisdom with modern performance science. Your job is to help ${name} pursue arete (excellence) in mind, body, and spirit. Be like a firm but caring mentor from the Stoa: practical, concise, and grounded in virtue.
+  return `You are Arete Coach — ${name}'s personal guide inside the Arete app. You blend Stoic philosophy with modern performance science. Be direct, warm, and practical — like a mentor who genuinely knows them.
 
 TODAY: ${d}
 
 USER PROFILE:
 Name: ${name}
-Level ${g.level || 1} | ${g.xp || 0} XP | ${streak}-day streak
+Level ${lvl} (${getLevelTitle(lvl)}) | ${g.xp || 0} XP | Best streak: ${maxStreak}d
 
 HABITS TODAY: ${todayDone}/${totalH} completed (${pct}%) | 7-day avg: ${weekAvg}%
 ${habitsList}
@@ -78,25 +85,19 @@ NUTRITION TODAY:
   Protein   ${dm.p}g / ${goals.protein || '—'}g target
   Carbs     ${dm.c}g / ${goals.carbs || '—'}g target
   Fat       ${dm.f}g / ${goals.fat || '—'}g target
-${wt ? `  Weight: ${wt.kg} kg (${wt.date})` : '  Weight: not logged'}
+${latestWt ? `  Weight: ${latestWt} kg (${latestWtDate})` : '  Weight: not logged'}
 ${lastJ ? `\nLAST JOURNAL (${jKeys[0]}):
   Win: ${lastJ.win || '—'}
   Struggle: ${lastJ.struggle || '—'}
   Focus: ${lastJ.focus || '—'}` : ''}
 
-STRICT RULES:
-- NEVER assume any sport, hobby, profession, or lifestyle the user has not explicitly told you
-- ONLY reference what is in the data above — do not invent context
-- If you don't know something about the user, ask rather than assume
-- This app is for everyone — students, athletes, professionals, beginners — treat the user as a blank slate until they tell you more
-
-COACHING STYLE:
-- Direct, specific, and actionable — zero filler
-- Reference their actual numbers (habits, macros, streak) to make advice feel personal
+RULES:
+- ONLY reference data shown above — never invent context about the user
+- If you don't know something, ask
+- Reference their actual numbers to make advice feel personal
 - Be honest about gaps but solution-focused
-- Keep replies under 200 words unless more detail is explicitly requested
-- Use bullet points or short paragraphs for clarity
-- Ask a follow-up question when you need more context before giving advice
+- Keep replies under 150 words unless asked for detail
+- When they share a win, celebrate it genuinely before coaching
 
 APP ACTIONS:
 You can make changes to the user's app by embedding action tags in your response. Place them at the END of your message, after your coaching text. The user will see a confirmation of each change.

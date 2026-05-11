@@ -132,10 +132,12 @@ let _syncDebounce = null;
 function setSyncStatus(state) {
   let el = document.getElementById('sync-dot');
   if (!el) { el = document.createElement('div'); el.id = 'sync-dot'; el.title = 'Cloud sync'; document.body.appendChild(el); }
+  if (!navigator.onLine && state === 'offline') state = 'away';
   el.className = 'sync-' + state;
-  // Show last sync time on the dot
   if (state === 'ok') el.title = 'Synced ' + new Date().toLocaleTimeString();
-  else if (state === 'offline') el.title = 'Sync failed';
+  else if (state === 'away') el.title = 'Offline — changes saved locally';
+  else if (state === 'offline') el.title = 'Sync pending — will retry';
+  else if (state === 'pending') el.title = 'Syncing…';
 }
 
 function _syncToast(msg) {
@@ -166,6 +168,7 @@ async function _ensureFreshToken() {
 async function cloudPush() {
   const uid = getCurrentUserId();
   if (!uid) return;
+  if (!navigator.onLine) { setSyncStatus('away'); return; }
   // Ensure token is fresh before any request
   await _ensureFreshToken();
   // Pull first so we merge before overwriting cloud
@@ -207,7 +210,19 @@ async function cloudPush() {
       _syncToast('✓ Synced to cloud');
       setSyncStatus('ok');
     }
-  } catch(e) { console.warn('[sync] push error:', e); setSyncStatus('offline'); }
+  } catch(e) { console.warn('[sync] push error:', e); setSyncStatus('offline'); _scheduleRetry(); }
+}
+
+let _retryTimer = null, _retryDelay = 5000;
+function _scheduleRetry() {
+  if (_retryTimer) return;
+  _retryTimer = setTimeout(async () => {
+    _retryTimer = null;
+    if (!navigator.onLine || !getAccessToken()) return;
+    await cloudPush();
+    if (document.getElementById('sync-dot')?.className === 'sync-ok') _retryDelay = 5000;
+    else { _retryDelay = Math.min(_retryDelay * 2, 60000); _scheduleRetry(); }
+  }, _retryDelay);
 }
 
 async function cloudPull() {
@@ -550,7 +565,7 @@ function _updateOnlineStatus() {
     setTimeout(() => el.remove(), 1500);
   }
 }
-window.addEventListener('online', _updateOnlineStatus);
+window.addEventListener('online', () => { _updateOnlineStatus(); if (getAccessToken()) { _retryDelay = 5000; cloudPush(); } });
 window.addEventListener('offline', _updateOnlineStatus);
 
 // ── NOTIFICATIONS ───────────────────────────────────────────────────────
