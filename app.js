@@ -1090,6 +1090,8 @@ function renderHome() {
       <div class="hm-quote-auth">— ${esc(QUOTES[meta.quoteIndex % QUOTES.length].author)}</div>
     </div>
 
+    ${done > 0 ? `<button class="hm-share-btn ani" onclick="shareDailyCard()">📤 Share Today's Progress</button>` : ''}
+
     ${getEveningReminder()}
   `;
 }

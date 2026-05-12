@@ -160,12 +160,30 @@ function getProgressionTip(exerciseId) {
 // ══════════════════════════════════════════════════════════════════════════
 // RENDER: WORKOUT
 // ══════════════════════════════════════════════════════════════════════════
+function _workoutStats() {
+  const dates = Object.keys(workoutLog).sort().reverse();
+  const thisWeek = dates.filter(d => {
+    const diff = (new Date(today() + 'T12:00') - new Date(d + 'T12:00')) / 86400000;
+    return diff >= 0 && diff < 7;
+  }).length;
+  const totalSessions = dates.length;
+  const totalVolume = dates.reduce((sum, d) => {
+    const wl = workoutLog[d];
+    if (!wl?.exercises) return sum;
+    return sum + wl.exercises.reduce((es, ex) =>
+      es + (ex.sets || []).filter(s => s.completed).reduce((ss, s) => ss + (s.weight || 0) * (s.reps || 0), 0), 0);
+  }, 0);
+  const prCount = Object.keys(prs).length;
+  return { thisWeek, totalSessions, totalVolume, prCount };
+}
+
 function renderWorkout() {
   const prog = findProgram(workoutMeta.activeProgram) || WORKOUT_PROGRAMS[0];
   const dayCount = prog.days.length;
   const dayIdx = workoutMeta.currentDayIndex % dayCount;
   const day = prog.days[dayIdx];
   const todayLog = workoutLog[today()];
+  const stats = _workoutStats();
 
   const exPreviewHTML = day.ex.length ? `
     <div class="w-ex-preview-list">
@@ -179,19 +197,32 @@ function renderWorkout() {
       }).filter(Boolean).join('')}
     </div>` : '';
 
+  const muscles = [...new Set(day.ex.map(eid => lookupExercise(eid)?.muscle).filter(Boolean))];
+  const muscleTagsHTML = muscles.map(m => `<span class="w-muscle-tag">${esc(m)}</span>`).join('');
+
   document.getElementById('view').innerHTML = `
     <div class="page-head ani"><div class="page-title">Workout</div><div class="page-sub">Train with purpose. Build discipline.</div></div>
+
+    <div class="w-stats-strip ani">
+      <div class="w-stat-item"><div class="w-stat-val">${stats.thisWeek}</div><div class="w-stat-lbl">This week</div></div>
+      <div class="w-stat-item"><div class="w-stat-val">${stats.totalSessions}</div><div class="w-stat-lbl">Total</div></div>
+      <div class="w-stat-item"><div class="w-stat-val">${stats.totalVolume >= 1000 ? (stats.totalVolume/1000).toFixed(0)+'k' : stats.totalVolume}</div><div class="w-stat-lbl">Volume ${wtUnit()}</div></div>
+      <div class="w-stat-item"><div class="w-stat-val">${stats.prCount}</div><div class="w-stat-lbl">PRs</div></div>
+    </div>
+
     <div class="w-day-nav ani">
       <button class="w-day-arrow" onclick="shiftWorkoutDay(-1)">&#8249;</button>
       <div class="w-day-label">Day ${dayIdx + 1} of ${dayCount}</div>
       <button class="w-day-arrow" onclick="shiftWorkoutDay(1)">&#8250;</button>
     </div>
-    <div class="w-card ani" onclick="go('workoutActive')">
+    <div class="w-hero-card ani" onclick="go('workoutActive')">
+      <div class="w-hero-glow"></div>
       <div class="w-day-badge">${day.name}</div>
-      <div class="w-card-name">${prog.name}</div>
+      <div class="w-card-name" style="font-size:22px;margin:4px 0 2px">${prog.name}</div>
       <div class="w-card-desc">${day.focus}</div>
+      ${muscleTagsHTML ? `<div class="w-muscle-tags">${muscleTagsHTML}</div>` : ''}
       ${exPreviewHTML}
-      <div class="w-card-days" style="margin-top:12px;color:var(--accent)">${todayLog ? '✓ Workout logged today' : '→ Start today&#39;s workout'}</div>
+      <div class="w-hero-cta ${todayLog ? 'done' : ''}">${todayLog ? '✓ Workout logged today' : '→ Start today\'s workout'}</div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 24px 8px">
       <button class="w-action-btn" style="margin:0;width:100%" onclick="go('workoutPicker')">Programs</button>

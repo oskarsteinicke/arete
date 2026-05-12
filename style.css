@@ -262,6 +262,21 @@ nav {
 .w-card-desc { font-size: 12px; color: var(--text-dim); line-height: 1.5; }
 .w-card-days { font-size: 11px; color: var(--text-dim); margin-top: 8px; }
 .w-card.active { border-color: rgba(154,130,86,0.4); background: rgba(154,130,86,0.04); }
+/* Workout stats strip */
+.w-stats-strip { display: flex; justify-content: space-around; padding: 0 24px 16px; gap: 8px; }
+.w-stat-item { text-align: center; flex: 1; }
+.w-stat-val { font-family: var(--display); font-size: 22px; color: var(--accent-b); font-weight: 700; letter-spacing: 0.3px; }
+.w-stat-lbl { font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.2px; margin-top: 2px; }
+
+/* Workout hero card */
+.w-hero-card { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); padding: 24px; margin: 0 24px 16px; cursor: pointer; transition: background 0.2s, border-color 0.2s, transform 0.15s; position: relative; overflow: hidden; }
+.w-hero-card:active { transform: scale(0.98); }
+.w-hero-glow { position: absolute; top: -40px; right: -40px; width: 140px; height: 140px; background: radial-gradient(circle, rgba(154,130,86,0.08) 0%, transparent 70%); pointer-events: none; }
+.w-muscle-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.w-muscle-tag { font-size: 10px; color: var(--accent); background: rgba(154,130,86,0.08); border: 1px solid rgba(154,130,86,0.15); padding: 3px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.8px; }
+.w-hero-cta { margin-top: 14px; font-size: 13px; font-weight: 600; letter-spacing: 0.5px; color: var(--accent); }
+.w-hero-cta.done { color: var(--accent-b); }
+
 .w-ex-preview-list { margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px; display: flex; flex-direction: column; gap: 6px; }
 .w-ex-preview-item { display: flex; justify-content: space-between; align-items: center; }
 .w-ex-preview-name { font-size: 12px; color: var(--text-dim); }
@@ -1033,6 +1048,10 @@ nav {
   color: var(--text-dim); line-height: 1.7; margin-bottom: 8px;
 }
 .hm-quote-auth { font-size: 10.5px; color: var(--text-muted); letter-spacing: 0.3px; }
+
+/* Share button */
+.hm-share-btn { display: block; width: calc(100% - 48px); margin: 12px 24px; padding: 14px; background: rgba(154,130,86,0.06); border: 1px solid rgba(154,130,86,0.2); border-radius: var(--radius-sm); color: var(--accent-b); font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; text-align: center; cursor: pointer; transition: all 0.2s; }
+.hm-share-btn:active { background: rgba(154,130,86,0.15); transform: scale(0.98); }
 
 /* ═══ SPARKLINE ════════════════════════════════════════════════════════════ */
 .w-sparkline { flex-shrink: 0; opacity: 0.8; }
