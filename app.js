@@ -337,25 +337,7 @@ function renderAuth() {
   const isSignIn = _authMode === 'signin';
   overlay.innerHTML = `
     <div class="auth-logo">
-      <svg viewBox="0 0 120 120" width="72" height="72" xmlns="http://www.w3.org/2000/svg">
-        <g transform="translate(60,60)" fill="none" stroke="#c4a96c" stroke-width="1.5" stroke-linecap="round">
-          <path d="M-4,32 Q-8,16 -7,0 Q-8,-16 -4,-32" stroke-width="1.5" opacity="0.3"/>
-          <ellipse cx="-16" cy="24" rx="8" ry="3.5" transform="rotate(-25,-16,24)" fill="#c4a96c" stroke="none" opacity="0.85"/>
-          <ellipse cx="-20" cy="14" rx="9" ry="3.5" transform="rotate(-15,-20,14)" fill="#c4a96c" stroke="none" opacity="0.85"/>
-          <ellipse cx="-22" cy="4" rx="9" ry="3.5" transform="rotate(-5,-22,4)" fill="#c4a96c" stroke="none" opacity="0.85"/>
-          <ellipse cx="-21" cy="-7" rx="9" ry="3.5" transform="rotate(8,-21,-7)" fill="#c4a96c" stroke="none" opacity="0.85"/>
-          <ellipse cx="-18" cy="-17" rx="8" ry="3.5" transform="rotate(18,-18,-17)" fill="#c4a96c" stroke="none" opacity="0.85"/>
-          <ellipse cx="-14" cy="-26" rx="7" ry="3.5" transform="rotate(30,-14,-26)" fill="#c4a96c" stroke="none" opacity="0.85"/>
-          <path d="M4,32 Q8,16 7,0 Q8,-16 4,-32" stroke-width="1.5" opacity="0.3"/>
-          <ellipse cx="16" cy="24" rx="8" ry="3.5" transform="rotate(25,16,24)" fill="#c4a96c" stroke="none" opacity="0.85"/>
-          <ellipse cx="20" cy="14" rx="9" ry="3.5" transform="rotate(15,20,14)" fill="#c4a96c" stroke="none" opacity="0.85"/>
-          <ellipse cx="22" cy="4" rx="9" ry="3.5" transform="rotate(5,22,4)" fill="#c4a96c" stroke="none" opacity="0.85"/>
-          <ellipse cx="21" cy="-7" rx="9" ry="3.5" transform="rotate(-8,21,-7)" fill="#c4a96c" stroke="none" opacity="0.85"/>
-          <ellipse cx="18" cy="-17" rx="8" ry="3.5" transform="rotate(-18,18,-17)" fill="#c4a96c" stroke="none" opacity="0.85"/>
-          <ellipse cx="14" cy="-26" rx="7" ry="3.5" transform="rotate(-30,14,-26)" fill="#c4a96c" stroke="none" opacity="0.85"/>
-        </g>
-        <text x="60" y="68" text-anchor="middle" font-family="Georgia,serif" font-weight="600" font-size="36" fill="#e4dace">A</text>
-      </svg>
+      <img src="icon-192.png" alt="Arete" style="width:72px;height:72px;border-radius:16px">
       <div style="font-size:13px;letter-spacing:.25em;color:var(--accent-b);margin-top:8px;font-weight:600">ARETE</div>
     </div>
     <div class="auth-title">${isSignIn ? 'Welcome back.' : 'Begin the path to excellence.'}</div>
