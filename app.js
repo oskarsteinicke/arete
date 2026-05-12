@@ -673,7 +673,10 @@ async function init() {
   settings = LS.get('hvi_settings', { units: 'metric' });
   calTasks = LS.get('hvi_cal_tasks', {});
   sleepLog = LS.get('hvi_sleep_log', {});
-  routines = LS.get('hvi_routines', { morning: [], night: [] });
+  routines = LS.get('hvi_routines', {
+    morning: ['Make bed', 'Hydrate (big glass of water)', 'Stretch / mobility (5 min)', 'Cold shower', 'Meditate (10 min)', 'Review today\'s goals'],
+    night: ['Screen off 30 min before bed', 'Journal / reflect on the day', 'Prepare tomorrow\'s clothes', 'Gratitude (3 things)', 'Lights out by 22:30']
+  });
   routineLog = LS.get('hvi_routine_log', {});
 
   applyTheme();
