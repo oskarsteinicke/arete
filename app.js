@@ -19,6 +19,8 @@ let browserContext = null;
 let pendingExercise = null;
 let browserState = { category: null, equipment: null, search: '', results: [], nextUrl: null, loading: false, expanded: null };
 let _habitEditMode = false;
+let _habitsTab = 'habits';
+let _routineEditMode = false;
 let _parsedMealItems = [];   // staging area for describe-meal results
 let browserSearchDebounce = null;
 let builderSearchDebounce = null;
@@ -26,6 +28,7 @@ let builderSearchResults = [];
 let builderSearchLoading = false;
 let gamification, achievements;
 let settings;
+let routines, routineLog;
 let calYear = new Date().getFullYear();
 let calMonth = new Date().getMonth();
 let calSelectedDate = '';
@@ -45,7 +48,7 @@ function setUnits(u) {
 // ── SUPABASE AUTH + CLOUD SYNC ────────────────────────────────────────────
 const SUPABASE_URL = 'https://socflncohsenjptgkkax.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_J2qJ8iTfCESrML5Hm6NGbQ_mz9uPeug';
-const SYNC_KEYS = ['hvi_habits','hvi_log','hvi_journal3','hvi_meta','hvi_workout_log','hvi_workout_meta','hvi_meal_log','hvi_diet_meta','hvi_weight_log','hvi_prs','hvi_gamification','hvi_achievements','hvi_tdee_profile','hvi_custom_programs','hvi_onboarded','hvi_sleep_log','hvi_settings','hvi_habit_history','hvi_meal_favorites','hvi_progress_photos'];
+const SYNC_KEYS = ['hvi_habits','hvi_log','hvi_journal3','hvi_meta','hvi_workout_log','hvi_workout_meta','hvi_meal_log','hvi_diet_meta','hvi_weight_log','hvi_prs','hvi_gamification','hvi_achievements','hvi_tdee_profile','hvi_custom_programs','hvi_onboarded','hvi_sleep_log','hvi_settings','hvi_habit_history','hvi_meal_favorites','hvi_progress_photos','hvi_routines','hvi_routine_log'];
 // Keys that are date-keyed objects — these get merged instead of overwritten
 const MERGE_KEYS = ['hvi_workout_log','hvi_meal_log','hvi_journal3','hvi_weight_log','hvi_sleep_log','hvi_habit_history'];
 
@@ -670,6 +673,8 @@ async function init() {
   settings = LS.get('hvi_settings', { units: 'metric' });
   calTasks = LS.get('hvi_cal_tasks', {});
   sleepLog = LS.get('hvi_sleep_log', {});
+  routines = LS.get('hvi_routines', { morning: [], night: [] });
+  routineLog = LS.get('hvi_routine_log', {});
 
   applyTheme();
   injectAdaptiveStyles();
@@ -1089,6 +1094,13 @@ function renderPillar() {
 // RENDER: ALL HABITS
 // ══════════════════════════════════════════════════════════════════════════
 function renderHabits() {
+  const toggle = `<div class="hab-toggle">
+    <button class="hab-toggle-btn${_habitsTab==='habits'?' active':''}" onclick="_habitsTab='habits';renderHabits()">Habits</button>
+    <button class="hab-toggle-btn${_habitsTab==='routines'?' active':''}" onclick="_habitsTab='routines';renderHabits()">Routines</button>
+  </div>`;
+
+  if (_habitsTab === 'routines') { renderRoutines(toggle); return; }
+
   const groups = PILLARS.map(p => {
     const ph = pillarHabits(p.id);
     if (!ph.length) return '';
@@ -1096,6 +1108,7 @@ function renderHabits() {
     return `<div class="sec-lbl" style="padding-top:20px">${p.name}</div>${rows}`;
   }).join('');
   document.getElementById('view').innerHTML = `
+    ${toggle}
     <div class="ah-head ani" style="display:flex;align-items:flex-start;justify-content:space-between">
       <div><div class="ah-title">All Habits</div><div class="ah-sub">We are what we repeatedly do.</div></div>
       <div style="display:flex;gap:8px;padding-top:8px">
@@ -1107,6 +1120,108 @@ function renderHabits() {
     <div class="sec-lbl" style="padding-top:20px">90-Day Activity</div>
     ${buildHeatmapHTML()}`;
   if (!_habitEditMode) requestAnimationFrame(initSwipeGestures);
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// RENDER: ROUTINES
+// ══════════════════════════════════════════════════════════════════════════
+function getRoutineLogToday() {
+  const dk = new Date().toISOString().slice(0, 10);
+  if (!routineLog[dk]) routineLog[dk] = {};
+  return routineLog[dk];
+}
+
+function toggleRoutineItem(period, idx) {
+  const today = getRoutineLogToday();
+  const key = period + '_' + idx;
+  today[key] = !today[key];
+  LS.set('hvi_routine_log', routineLog);
+  renderHabits();
+}
+
+function renderRoutines(toggle) {
+  const today = getRoutineLogToday();
+  const buildSection = (period, label, icon) => {
+    const items = routines[period] || [];
+    if (!items.length && !_routineEditMode) return `<div class="sec-lbl" style="padding-top:20px">${icon} ${label}</div><div class="routine-empty">No ${label.toLowerCase()} items yet. Tap Edit to add some.</div>`;
+    const rows = items.map((item, i) => {
+      const key = period + '_' + i;
+      const done = !!today[key];
+      return `<div class="habit-row ani">
+        <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0">
+          ${!_routineEditMode ? `<button class="h-check${done?' checked':''}" onclick="toggleRoutineItem('${period}',${i})">${done ? '✓' : ''}</button>` : ''}
+          <span class="h-name" style="${done?'opacity:0.5;text-decoration:line-through':''}">${esc(item)}</span>
+        </div>
+        ${_routineEditMode ? `<div style="display:flex;gap:4px">
+          ${i > 0 ? `<button class="h-edit-btn" onclick="moveRoutineItem('${period}',${i},-1)">↑</button>` : ''}
+          ${i < items.length - 1 ? `<button class="h-edit-btn" onclick="moveRoutineItem('${period}',${i},1)">↓</button>` : ''}
+          <button class="h-edit-btn" onclick="deleteRoutineItem('${period}',${i})">✕</button>
+        </div>` : ''}
+      </div>`;
+    }).join('');
+    return `<div class="sec-lbl" style="padding-top:20px">${icon} ${label}</div>${rows}
+      ${_routineEditMode ? `<div style="display:flex;gap:8px;padding:10px 0">
+        <input class="d-input" id="add-${period}" placeholder="Add ${label.toLowerCase()} item…" style="flex:1" onkeydown="if(event.key==='Enter')addRoutineItem('${period}')">
+        <button class="w-action-btn" style="margin:0;padding:8px 14px;font-size:16px;width:auto;line-height:1" onclick="addRoutineItem('${period}')">+</button>
+      </div>` : ''}`;
+  };
+
+  const morningItems = routines.morning || [];
+  const nightItems = routines.night || [];
+  const totalItems = morningItems.length + nightItems.length;
+  const doneCount = Object.keys(today).filter(k => today[k]).length;
+  const pct = totalItems ? Math.round((doneCount / totalItems) * 100) : 0;
+
+  document.getElementById('view').innerHTML = `
+    ${toggle}
+    <div class="ah-head ani" style="display:flex;align-items:flex-start;justify-content:space-between">
+      <div><div class="ah-title">Routines</div><div class="ah-sub">${totalItems ? `${doneCount}/${totalItems} done today · ${pct}%` : 'Build your daily rituals.'}</div></div>
+      <div style="display:flex;gap:8px;padding-top:8px">
+        ${!_routineEditMode ? `<button class="w-action-btn" style="margin:0;padding:8px 18px;font-size:11px;width:auto" onclick="_routineEditMode=true;renderHabits()">Edit</button>` : `<button class="w-action-btn" style="margin:0;padding:8px 18px;font-size:11px;width:auto;background:rgba(154,130,86,0.15);border-color:var(--accent)" onclick="_routineEditMode=false;renderHabits()">Done</button>`}
+      </div>
+    </div>
+    <div class="ani">
+      ${buildSection('morning', 'Morning Routine', '☀️')}
+      ${buildSection('night', 'Night Routine', '🌙')}
+    </div>`;
+}
+
+function addRoutineItem(period) {
+  const input = document.getElementById('add-' + period);
+  const name = input?.value?.trim();
+  if (!name) return;
+  if (!routines[period]) routines[period] = [];
+  routines[period].push(name);
+  LS.set('hvi_routines', routines);
+  renderHabits();
+}
+
+function moveRoutineItem(period, idx, dir) {
+  const arr = routines[period];
+  const ni = idx + dir;
+  if (ni < 0 || ni >= arr.length) return;
+  [arr[idx], arr[ni]] = [arr[ni], arr[idx]];
+  LS.set('hvi_routines', routines);
+  renderHabits();
+}
+
+function deleteRoutineItem(period, idx) {
+  const item = routines[period][idx];
+  if (!confirm(`Delete "${item}"?`)) return;
+  routines[period].splice(idx, 1);
+  LS.set('hvi_routines', routines);
+  const dk = new Date().toISOString().slice(0, 10);
+  if (routineLog[dk]) {
+    const newLog = {};
+    Object.keys(routineLog[dk]).forEach(k => {
+      const [p, i] = k.split('_');
+      if (p === period && parseInt(i) > idx) newLog[p + '_' + (parseInt(i) - 1)] = routineLog[dk][k];
+      else if (p !== period || parseInt(i) !== idx) newLog[k] = routineLog[dk][k];
+    });
+    routineLog[dk] = newLog;
+    LS.set('hvi_routine_log', routineLog);
+  }
+  renderHabits();
 }
 
 function moveHabit(id, dir) {

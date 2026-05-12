@@ -192,9 +192,15 @@ nav {
 .pop { animation: ck 0.22s ease; }
 
 /* ALL HABITS */
-.ah-head { padding: 52px 24px 24px; }
+.ah-head { padding: 20px 24px 24px; }
 .ah-title { font-family: var(--display); font-size: 26px; color: var(--text); margin-bottom: 4px; font-weight: 400; letter-spacing: 0.5px; }
 .ah-sub { font-size: 13px; color: var(--text-dim); }
+
+/* HABITS/ROUTINES TOGGLE */
+.hab-toggle { display: flex; gap: 0; padding: 52px 24px 0; }
+.hab-toggle-btn { flex: 1; padding: 10px 0; font-size: 13px; font-family: var(--body); font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-dim); cursor: pointer; transition: all 0.2s; }
+.hab-toggle-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.routine-empty { padding: 16px 24px; font-size: 13px; color: var(--text-dim); font-style: italic; }
 
 /* JOURNAL */
 .jh { padding: 48px 24px 28px; }
