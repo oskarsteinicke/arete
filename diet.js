@@ -1032,8 +1032,8 @@ function renderDietTDEE() {
       </div>
       <div class="tp-input-grid ani">
         <div class="tp-input-card"><div class="tp-input-label">Age (years)</div><input class="tp-input" type="number" id="tdee-age" min="10" max="100" value="${tdeeProfile?.age||''}"></div>
-        <div class="tp-input-card"><div class="tp-input-label">Weight (kg)</div><input class="tp-input" type="number" id="tdee-weight" min="20" max="300" step="0.1" value="${tdeeProfile?.weight_kg||''}"></div>
-        <div class="tp-input-card"><div class="tp-input-label">Height (cm)</div><input class="tp-input" type="number" id="tdee-height" min="100" max="250" value="${tdeeProfile?.height_cm||''}"></div>
+        <div class="tp-input-card"><div class="tp-input-label">Weight (${isImperial() ? 'lbs' : 'kg'})</div><input class="tp-input" type="number" id="tdee-weight" min="${isImperial() ? 44 : 20}" max="${isImperial() ? 660 : 300}" step="0.1" value="${tdeeProfile?.weight_kg ? (isImperial() ? Math.round(tdeeProfile.weight_kg * 2.205) : tdeeProfile.weight_kg) : ''}"></div>
+        <div class="tp-input-card"><div class="tp-input-label">Height (${isImperial() ? 'in' : 'cm'})</div><input class="tp-input" type="number" id="tdee-height" min="${isImperial() ? 39 : 100}" max="${isImperial() ? 98 : 250}" value="${tdeeProfile?.height_cm ? (isImperial() ? Math.round(tdeeProfile.height_cm / 2.54) : tdeeProfile.height_cm) : ''}"></div>
       </div>
 
       <div class="sec-lbl ani" style="padding-top:20px">Activity Level</div>
@@ -1050,12 +1050,14 @@ function renderDietTDEE() {
 
 function calculateTDEE() {
   const age = parseFloat(document.getElementById('tdee-age')?.value);
-  const weight = parseFloat(document.getElementById('tdee-weight')?.value);
-  const height = parseFloat(document.getElementById('tdee-height')?.value);
+  const rawWeight = parseFloat(document.getElementById('tdee-weight')?.value);
+  const rawHeight = parseFloat(document.getElementById('tdee-height')?.value);
+  const weight = isImperial() ? rawWeight / 2.205 : rawWeight;
+  const height = isImperial() ? rawHeight * 2.54 : rawHeight;
   const errEl = document.getElementById('tdee-error');
   const resEl = document.getElementById('tdee-results');
 
-  if (!age || !weight || !height || age < 10 || weight < 20 || height < 100) {
+  if (!age || !rawWeight || !rawHeight || age < 10 || weight < 20 || height < 100) {
     if (errEl) errEl.innerHTML = '<div class="tp-error">Please fill in all fields before calculating.</div>';
     if (resEl) resEl.innerHTML = '';
     return;
