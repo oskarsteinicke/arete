@@ -674,8 +674,25 @@ async function init() {
   calTasks = LS.get('hvi_cal_tasks', {});
   sleepLog = LS.get('hvi_sleep_log', {});
   routines = LS.get('hvi_routines', {
-    morning: ['Make bed', 'Hydrate (big glass of water)', 'Stretch / mobility (5 min)', 'Cold shower', 'Meditate (10 min)', 'Review today\'s goals'],
-    night: ['Screen off 30 min before bed', 'Journal / reflect on the day', 'Prepare tomorrow\'s clothes', 'Gratitude (3 things)', 'Lights out by 22:30']
+    morning: [
+      { name: 'Make bed' },
+      { name: 'Hydrate (big glass of water)', habitId: 'h07' },
+      { name: 'Stretch / mobility (5 min)' },
+      { name: 'Cold shower', habitId: 'h04' },
+      { name: 'Meditate (10 min)', habitId: 'h01' },
+      { name: 'Review today\'s goals', habitId: 'h02' }
+    ],
+    night: [
+      { name: 'Screen off 30 min before bed' },
+      { name: 'Journal / reflect on the day' },
+      { name: 'Prepare tomorrow\'s clothes' },
+      { name: 'Gratitude (3 things)' },
+      { name: 'Lights out by 22:30', habitId: 'h08' }
+    ]
+  });
+  // Migrate old string-based routines to object format
+  ['morning', 'night'].forEach(p => {
+    routines[p] = (routines[p] || []).map(item => typeof item === 'string' ? { name: item } : item);
   });
   routineLog = LS.get('hvi_routine_log', {});
 
@@ -1134,7 +1151,22 @@ function getRoutineLogToday() {
   return routineLog[dk];
 }
 
+function isRoutineItemDone(period, idx) {
+  const item = routines[period]?.[idx];
+  if (!item) return false;
+  if (item.habitId && log[item.habitId]) return !!log[item.habitId].completedToday;
+  const today = getRoutineLogToday();
+  return !!today[period + '_' + idx];
+}
+
 function toggleRoutineItem(period, idx) {
+  const item = routines[period]?.[idx];
+  if (!item) return;
+  if (item.habitId) {
+    tapHabit(item.habitId, 'r');
+    renderHabits();
+    return;
+  }
   const today = getRoutineLogToday();
   const key = period + '_' + idx;
   today[key] = !today[key];
@@ -1148,14 +1180,15 @@ function renderRoutines(toggle) {
     const items = routines[period] || [];
     if (!items.length && !_routineEditMode) return `<div class="sec-lbl" style="padding-top:20px">${icon} ${label}</div><div class="routine-empty">No ${label.toLowerCase()} items yet. Tap Edit to add some.</div>`;
     const rows = items.map((item, i) => {
-      const key = period + '_' + i;
-      const done = !!today[key];
+      const done = isRoutineItemDone(period, i);
+      const linked = item.habitId ? ' · habit' : '';
       return `<div class="habit-row ani">
         <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0">
           ${!_routineEditMode ? `<button class="h-check${done?' checked':''}" onclick="toggleRoutineItem('${period}',${i})">${done ? '✓' : ''}</button>` : ''}
-          <span class="h-name" style="${done?'opacity:0.5;text-decoration:line-through':''}">${esc(item)}</span>
+          <span class="h-name" style="${done?'opacity:0.5;text-decoration:line-through':''}">${esc(item.name)}<span style="font-size:10px;color:var(--text-dim);opacity:0.5">${linked}</span></span>
         </div>
         ${_routineEditMode ? `<div style="display:flex;gap:4px">
+          ${item.habitId ? `<button class="h-edit-btn" style="font-size:9px;opacity:0.5" disabled>linked</button>` : ''}
           ${i > 0 ? `<button class="h-edit-btn" onclick="moveRoutineItem('${period}',${i},-1)">↑</button>` : ''}
           ${i < items.length - 1 ? `<button class="h-edit-btn" onclick="moveRoutineItem('${period}',${i},1)">↓</button>` : ''}
           <button class="h-edit-btn" onclick="deleteRoutineItem('${period}',${i})">✕</button>
@@ -1172,7 +1205,9 @@ function renderRoutines(toggle) {
   const morningItems = routines.morning || [];
   const nightItems = routines.night || [];
   const totalItems = morningItems.length + nightItems.length;
-  const doneCount = Object.keys(today).filter(k => today[k]).length;
+  let doneCount = 0;
+  morningItems.forEach((_, i) => { if (isRoutineItemDone('morning', i)) doneCount++; });
+  nightItems.forEach((_, i) => { if (isRoutineItemDone('night', i)) doneCount++; });
   const pct = totalItems ? Math.round((doneCount / totalItems) * 100) : 0;
 
   document.getElementById('view').innerHTML = `
@@ -1194,7 +1229,9 @@ function addRoutineItem(period) {
   const name = input?.value?.trim();
   if (!name) return;
   if (!routines[period]) routines[period] = [];
-  routines[period].push(name);
+  const matchingHabit = habits.find(h => h.name.toLowerCase() === name.toLowerCase());
+  const item = matchingHabit ? { name, habitId: matchingHabit.id } : { name };
+  routines[period].push(item);
   LS.set('hvi_routines', routines);
   renderHabits();
 }
@@ -1210,7 +1247,7 @@ function moveRoutineItem(period, idx, dir) {
 
 function deleteRoutineItem(period, idx) {
   const item = routines[period][idx];
-  if (!confirm(`Delete "${item}"?`)) return;
+  if (!confirm(`Delete "${item.name}"?`)) return;
   routines[period].splice(idx, 1);
   LS.set('hvi_routines', routines);
   const dk = new Date().toISOString().slice(0, 10);
