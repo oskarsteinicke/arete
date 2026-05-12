@@ -2,6 +2,34 @@
 // Arete — Diet Module
 // ══════════════════════════════════════════════════════════════════════════
 
+// ── AI FETCH HELPER ──────────────────────────────────────────────────────
+async function _aiFetch(messages, { timeout = 45000, retries = 2, model = 'openai' } = {}) {
+  let lastErr;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const ac = new AbortController();
+    const to = setTimeout(() => ac.abort(), timeout);
+    try {
+      const res = await fetch('https://text.pollinations.ai/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: ac.signal,
+        body: JSON.stringify({ messages, model, seed: 42, private: true })
+      });
+      clearTimeout(to);
+      if (!res.ok) { lastErr = new Error(`HTTP ${res.status}`); continue; }
+      const text = await res.text();
+      if (!text || text.length < 2) { lastErr = new Error('Empty response'); continue; }
+      return text;
+    } catch (e) {
+      clearTimeout(to);
+      lastErr = e;
+      if (e.name === 'AbortError' && attempt < retries) continue;
+      throw e;
+    }
+  }
+  throw lastErr;
+}
+
 // ── ADAPTIVE NUTRITION HELPERS ────────────────────────────────────────────
 function computeTrend(wl) {
   const entries = Object.entries(wl).sort((a,b) => a[0].localeCompare(b[0]));
@@ -351,25 +379,10 @@ async function calculateMealDescription() {
       'Example input: "bowl of oats with banana and honey" ' +
       'Example output: [{"name":"Oats (80g)","calories":300,"protein":10,"carbs":54,"fat":6},{"name":"Banana","calories":89,"protein":1,"carbs":23,"fat":0},{"name":"Honey (1 tbsp)","calories":64,"protein":0,"carbs":17,"fat":0}]';
 
-    const _ac = new AbortController();
-    const _to = setTimeout(() => _ac.abort(), 30000);
-    const res = await fetch('https://text.pollinations.ai/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal: _ac.signal,
-      body: JSON.stringify({
-        messages: [
-          { role: 'system', content: sysPrompt },
-          { role: 'user', content: text }
-        ],
-        model: 'openai',
-        seed: 42,
-        private: true
-      })
-    });
-    clearTimeout(_to);
-
-    const raw = await res.text();
+    const raw = await _aiFetch([
+      { role: 'system', content: sysPrompt },
+      { role: 'user', content: text }
+    ]);
     // Strip any markdown fences, then use bracket-depth extraction
     const clean = raw.replace(/```[a-z]*\n?/gi, '').replace(/```/g, '').trim();
     const jsonStr = _extractJsonArray(clean);
@@ -467,28 +480,13 @@ async function handleFoodPhoto(input) {
       'If unsure about exact amounts, give your best estimate based on typical portions. ' +
       'Never refuse or add text outside the JSON array.';
 
-    const _ac2 = new AbortController();
-    const _to2 = setTimeout(() => _ac2.abort(), 30000);
-    const res = await fetch('https://text.pollinations.ai/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal: _ac2.signal,
-      body: JSON.stringify({
-        messages: [
-          { role: 'system', content: sysPrompt },
-          { role: 'user', content: [
-            { type: 'image_url', image_url: { url: resized } },
-            { type: 'text', text: 'Analyze this food photo and return the macro breakdown as a JSON array.' }
-          ]}
-        ],
-        model: 'openai',
-        seed: 42,
-        private: true
-      })
-    });
-    clearTimeout(_to2);
-
-    const raw = await res.text();
+    const raw = await _aiFetch([
+      { role: 'system', content: sysPrompt },
+      { role: 'user', content: [
+        { type: 'image_url', image_url: { url: resized } },
+        { type: 'text', text: 'Analyze this food photo and return the macro breakdown as a JSON array.' }
+      ]}
+    ]);
     const clean = raw.replace(/```[a-z]*\n?/gi, '').replace(/```/g, '').trim();
     const jsonStr = _extractJsonArray(clean);
 

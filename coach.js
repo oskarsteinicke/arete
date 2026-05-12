@@ -303,29 +303,14 @@ async function sendCoachMsg() {
   msgsEl.scrollTop = msgsEl.scrollHeight;
 
   try {
-    const _ac = new AbortController();
-    const _to = setTimeout(() => _ac.abort(), 30000);
-    const res = await fetch('https://text.pollinations.ai/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal: _ac.signal,
-      body: JSON.stringify({
-        messages: [
-          { role: 'system', content: buildCoachSystemPrompt() },
-          ..._coachHistory,
-        ],
-        model: 'openai',
-        private: true,
-      }),
-    });
-    clearTimeout(_to);
+    const text = await _aiFetch([
+      { role: 'system', content: buildCoachSystemPrompt() },
+      ..._coachHistory,
+    ]);
 
     typing.remove();
 
-    if (!res.ok) {
-      _coachHistory.push({ role: 'assistant', content: 'Something went wrong. Please try again in a moment.' });
-    } else {
-      const text = await res.text();
+    {
       // Parse and execute any action tags
       const actions = _parseCoachActions(text);
       const cleanText = _stripActionTags(text);
