@@ -92,7 +92,7 @@
 <script>
   if ('serviceWorker' in navigator) {
     // Purge ALL old caches on load to ensure fresh files
-    caches.keys().then(ks => ks.filter(k => k !== 'arete-v8').forEach(k => caches.delete(k)));
+    caches.keys().then(ks => ks.filter(k => k !== 'arete-v9').forEach(k => caches.delete(k)));
     navigator.serviceWorker.register('/arete/service-worker.js').then(reg => {
       reg.update();
     });
