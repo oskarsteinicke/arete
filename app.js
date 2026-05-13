@@ -1166,18 +1166,19 @@ function renderRoutines(toggle) {
     const rows = items.map((item, i) => {
       const done = isRoutineItemDone(period, i);
       const linked = item.habitId ? ' · habit' : '';
-      return `<div class="habit-row ani">
-        <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0">
-          ${!_routineEditMode ? `<button class="h-check${done?' checked':''}" onclick="toggleRoutineItem('${period}',${i})">${done ? '✓' : ''}</button>` : ''}
-          <span class="h-name" style="${done?'opacity:0.5;text-decoration:line-through':''}">${esc(item.name)}<span style="font-size:10px;color:var(--text-dim);opacity:0.5">${linked}</span></span>
-        </div>
-        ${_routineEditMode ? `<div style="display:flex;gap:4px">
-          ${item.habitId ? `<button class="h-edit-btn" style="font-size:9px;opacity:0.5" disabled>linked</button>` : ''}
-          ${i > 0 ? `<button class="h-edit-btn" onclick="moveRoutineItem('${period}',${i},-1)">↑</button>` : ''}
-          ${i < items.length - 1 ? `<button class="h-edit-btn" onclick="moveRoutineItem('${period}',${i},1)">↓</button>` : ''}
-          <button class="h-edit-btn" onclick="deleteRoutineItem('${period}',${i})">✕</button>
-        </div>` : ''}
-      </div>`;
+      if (_routineEditMode) {
+        return `<div class="hi" style="opacity:0.85">
+          <div class="hi-info"><div class="hi-name">${esc(item.name)}<span style="font-size:10px;color:var(--text-dim);opacity:0.5">${linked}</span></div></div>
+          <div style="display:flex;gap:6px;flex-shrink:0;align-items:center">
+            ${item.habitId ? `<span style="font-size:9px;color:var(--text-muted)">linked</span>` : ''}
+            ${i > 0 ? `<button class="habit-move-btn" onclick="event.stopPropagation();moveRoutineItem('${period}',${i},-1)">▲</button>` : ''}
+            ${i < items.length - 1 ? `<button class="habit-move-btn" onclick="event.stopPropagation();moveRoutineItem('${period}',${i},1)">▼</button>` : ''}
+            <button class="habit-del-btn" onclick="event.stopPropagation();deleteRoutineItem('${period}',${i})">&times;</button>
+          </div></div>`;
+      }
+      return `<div class="hi${done?' done':''}" onclick="toggleRoutineItem('${period}',${i})" role="checkbox" aria-checked="${done}" tabindex="0">
+        <div class="hi-info"><div class="hi-name">${esc(item.name)}<span style="font-size:10px;color:var(--text-dim);opacity:0.5">${linked}</span></div></div>
+        <div class="hi-check" aria-hidden="true">✓</div></div>`;
     }).join('');
     return `<div class="sec-lbl" style="padding-top:20px">${icon} ${label}</div>${rows}
       ${_routineEditMode ? `<div style="display:flex;gap:8px;padding:10px 0">
