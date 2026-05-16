@@ -86,8 +86,15 @@
 <script src="app.js?v=41"></script>
 <script src="workout.js?v=41"></script>
 <script src="diet.js?v=41"></script>
-<script src="coach.js?v=41"></script>
-<script src="social.js?v=41"></script>
+<script>
+// Stub coach functions until lazy-loaded
+if(typeof openCoach==='undefined'){window.openCoach=function(){};window.closeCoach=function(){};window.sendCoachMsg=function(){};window.clearCoachHistory=function(){}}
+// Lazy-load coach + social after first paint for faster startup
+(window.requestIdleCallback||function(cb){setTimeout(cb,800)})(function(){
+  var s1=document.createElement('script');s1.src='coach.js?v=41';document.body.appendChild(s1);
+  var s2=document.createElement('script');s2.src='social.js?v=41';document.body.appendChild(s2);
+});
+</script>
 <script src="profile.js?v=41"></script>
 <script>
   if ('serviceWorker' in navigator) {

@@ -559,22 +559,41 @@ function requestNotifications() {
   Notification.requestPermission().then(p => {
     settings.notifications = p === 'granted';
     LS.set('hvi_settings', settings);
-    renderStats();
+    if (p === 'granted') _scheduleReminder();
+    if (typeof renderStats === 'function') renderStats();
   });
 }
 function _scheduleReminder() {
   if (!settings.notifications || Notification.permission !== 'granted') return;
   const now = new Date();
   const hour = now.getHours();
-  // Check at 8pm-9pm if habits remain
-  if (hour >= 20 && hour < 21 && !LS.get('hvi_notif_sent_' + today(), false)) {
+  const key = 'hvi_notif_';
+
+  // Morning motivation (7-8am)
+  if (hour >= 7 && hour < 8 && !LS.get(key + 'am_' + today(), false)) {
+    const morningMsgs = [
+      'New day, new chance to show up. What will you conquer today?',
+      'The obstacle is the way. Time to begin.',
+      'Small daily improvements lead to remarkable results.',
+      'Your future self is watching. Make them proud.',
+    ];
+    const msg = morningMsgs[Math.floor(Math.random() * morningMsgs.length)];
+    new Notification('Good morning ☀️', { body: msg, icon: '/arete/icon-192.png' });
+    LS.set(key + 'am_' + today(), true);
+  }
+
+  // Evening nudge (8-9pm) — only if habits remain
+  if (hour >= 20 && hour < 21 && !LS.get(key + 'pm_' + today(), false)) {
     const {done, total} = totalPct();
     const left = total - done;
     if (left > 0) {
-      new Notification('Arete', { body: `${left} habit${left>1?'s':''} left today — still time to show up.`, icon: '/arete/manifest.json' });
-      LS.set('hvi_notif_sent_' + today(), true);
+      new Notification('Arete', { body: `${left} habit${left>1?'s':''} left today — still time to show up.`, icon: '/arete/icon-192.png' });
+      LS.set(key + 'pm_' + today(), true);
     }
   }
+
+  // Re-check every 30 minutes
+  setTimeout(_scheduleReminder, 30 * 60 * 1000);
 }
 
 // ── SOUND EFFECTS ────────────────────────────────────────────────────────
@@ -875,7 +894,23 @@ function tapHabit(id, suffix) {
     const s = e.streak || 0;
     const bonus = s >= 30 ? 10 : s >= 14 ? 7 : s >= 7 ? 5 : 0;
     awardXP(10 + bonus, pillarId || undefined);
-    if (wasFirst) launchConfetti(0.5);
+    if (wasFirst) {
+      launchConfetti(0.5);
+      // First EVER habit completion — welcome celebration + ask for notifications
+      const totalCompletions = Object.values(log).filter(l => l.lastCompletedDate).length;
+      if (totalCompletions <= 1 && !settings.notifications && 'Notification' in window && Notification.permission === 'default') {
+        setTimeout(() => {
+          const el = document.createElement('div');
+          el.className = 'streak-toast';
+          el.style.cssText = 'bottom:100px;animation-duration:5s';
+          el.innerHTML = '🎉 First habit done! You\'re on your way.';
+          document.body.appendChild(el);
+          setTimeout(() => el.remove(), 4500);
+          // Ask for notifications after the celebration settles
+          setTimeout(() => requestNotifications(), 3000);
+        }, 800);
+      }
+    }
     // Streak milestone celebrations
     if ([7, 14, 30, 60, 100].includes(s)) {
       launchConfetti(1.5);

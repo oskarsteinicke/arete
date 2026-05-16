@@ -4,6 +4,7 @@
 
 // ── AI FETCH HELPER ──────────────────────────────────────────────────────
 async function _aiFetch(messages, { timeout = 60000, retries = 2, model = 'openai', jsonMode = false } = {}) {
+  if (!navigator.onLine) throw new Error('offline');
   let lastErr;
   for (let attempt = 0; attempt <= retries; attempt++) {
     const ac = new AbortController();
@@ -427,10 +428,12 @@ async function calculateMealDescription() {
     }));
     _renderParsedItems(out);
   } catch(e) {
-    if (e.name === 'AbortError') {
-      out.innerHTML = `<p class="dm-hint dm-warn">AI service timed out. Please try again later.</p>`;
+    if (e.message === 'offline') {
+      out.innerHTML = `<p class="dm-hint dm-warn">You're offline. Connect to the internet to use AI macro calculation, or add items manually.</p>`;
+    } else if (e.name === 'AbortError') {
+      out.innerHTML = `<p class="dm-hint dm-warn">AI service timed out. Please try again.</p>`;
     } else {
-      out.innerHTML = `<p class="dm-hint dm-warn">AI service unavailable, please try again later.</p>`;
+      out.innerHTML = `<p class="dm-hint dm-warn">AI service unavailable. Try again, or add items manually.</p>`;
     }
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'CALCULATE MACROS'; }
@@ -536,10 +539,12 @@ async function handleFoodPhoto(input) {
     _renderParsedItems(out);
 
   } catch(e) {
-    if (e.name === 'AbortError') {
-      if (out) out.innerHTML = `<p class="dm-hint dm-warn">AI service timed out. Please try again later.</p>`;
+    if (e.message === 'offline') {
+      if (out) out.innerHTML = `<p class="dm-hint dm-warn">You're offline. Connect to the internet to analyze food photos.</p>`;
+    } else if (e.name === 'AbortError') {
+      if (out) out.innerHTML = `<p class="dm-hint dm-warn">AI service timed out. Please try again.</p>`;
     } else {
-      if (out) out.innerHTML = `<p class="dm-hint dm-warn">AI service unavailable, please try again later.</p>`;
+      if (out) out.innerHTML = `<p class="dm-hint dm-warn">AI service unavailable. Try again or describe your meal instead.</p>`;
     }
   }
 

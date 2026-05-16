@@ -1015,8 +1015,18 @@
   <div style="text-align:center;margin-top:48px">
     <p style="font-size:14px;color:var(--text-dim);margin-bottom:16px">Want to share feedback, request features, or just say hi?</p>
     <a href="https://discord.gg/J7RqdBtR5" class="btn-primary" style="font-size:12px;padding:14px 28px" id="community-btn">Join the Community →</a>
-    <p style="font-size:11px;color:var(--text-muted);margin-top:12px">Early users get a direct line to the developer</p>
+    <p style="font-size:11px;color:var(--text-muted);margin-top:12px" id="discord-count">Early users get a direct line to the developer</p>
   </div>
+  <script>
+    // Show live Discord member count
+    fetch('https://discord.com/api/v9/invites/J7RqdBtR5?with_counts=true')
+      .then(r=>r.json()).then(d=>{
+        if(d.approximate_member_count){
+          const el=document.getElementById('discord-count');
+          if(el) el.textContent=d.approximate_member_count+' member'+(d.approximate_member_count!==1?'s':'')+' · Early users get a direct line to the developer';
+        }
+      }).catch(()=>{});
+  </script>
 </section>
 
 <!-- ── CTA ────────────────────────────────────────────────────────────────── -->
