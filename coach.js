@@ -331,10 +331,12 @@ async function sendCoachMsg() {
     _renderCoachMsgs();
   } catch (err) {
     typing.remove();
-    if (err.name === 'AbortError') {
-      _coachHistory.push({ role: 'assistant', content: 'AI service timed out. Please try again later.' });
+    if (err.message === 'offline') {
+      _coachHistory.push({ role: 'assistant', content: 'You\'re offline right now. I need an internet connection to respond. Try again when you\'re back online!' });
+    } else if (err.name === 'AbortError') {
+      _coachHistory.push({ role: 'assistant', content: 'That took too long — the AI service timed out. Please try again.' });
     } else {
-      _coachHistory.push({ role: 'assistant', content: 'AI service unavailable, please try again later.' });
+      _coachHistory.push({ role: 'assistant', content: 'AI service is temporarily unavailable. This usually resolves within a few minutes — try again shortly.' });
     }
     _renderCoachMsgs();
   } finally {

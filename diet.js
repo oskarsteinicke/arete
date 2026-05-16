@@ -2,35 +2,127 @@
 // Arete — Diet Module
 // ══════════════════════════════════════════════════════════════════════════
 
-// ── AI FETCH HELPER ──────────────────────────────────────────────────────
-async function _aiFetch(messages, { timeout = 60000, retries = 2, model = 'openai', jsonMode = false } = {}) {
+// ── AI FETCH HELPER (multi-provider with fallback) ───────────────────────
+const _AI_ENDPOINTS = [
+  { url: 'https://text.pollinations.ai/', body: (msgs, jm) => ({ messages: msgs, model: 'openai', seed: 42, temperature: 0, private: true, ...(jm ? {jsonMode:true} : {}) }) },
+  { url: 'https://text.pollinations.ai/', body: (msgs, jm) => ({ messages: msgs, model: 'openai-large', seed: 42, temperature: 0, private: true, ...(jm ? {jsonMode:true} : {}) }) },
+];
+
+async function _aiFetch(messages, { timeout = 60000, retries = 1, model = 'openai', jsonMode = false } = {}) {
   if (!navigator.onLine) throw new Error('offline');
   let lastErr;
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    const ac = new AbortController();
-    const to = setTimeout(() => ac.abort(), timeout);
-    try {
-      const body = { messages, model, seed: 42, temperature: 0, private: true };
-      if (jsonMode) body.jsonMode = true;
-      const res = await fetch('https://text.pollinations.ai/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: ac.signal,
-        body: JSON.stringify(body)
-      });
-      clearTimeout(to);
-      if (!res.ok) { lastErr = new Error(`HTTP ${res.status}`); continue; }
-      const text = await res.text();
-      if (!text || text.length < 2) { lastErr = new Error('Empty response'); continue; }
-      return text;
-    } catch (e) {
-      clearTimeout(to);
-      lastErr = e;
-      if (e.name === 'AbortError' && attempt < retries) continue;
-      throw e;
+  for (const endpoint of _AI_ENDPOINTS) {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      const ac = new AbortController();
+      const to = setTimeout(() => ac.abort(), timeout);
+      try {
+        const res = await fetch(endpoint.url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: ac.signal,
+          body: JSON.stringify(endpoint.body(messages, jsonMode))
+        });
+        clearTimeout(to);
+        if (!res.ok) { lastErr = new Error(`HTTP ${res.status}`); continue; }
+        const text = await res.text();
+        if (!text || text.length < 2 || text.includes('"error"')) { lastErr = new Error('Bad response'); continue; }
+        return text;
+      } catch (e) {
+        clearTimeout(to);
+        lastErr = e;
+        if (e.name === 'AbortError' && attempt < retries) continue;
+        break; // try next endpoint
+      }
     }
   }
   throw lastErr;
+}
+
+// ── LOCAL FOOD DATABASE (fallback when AI is unavailable) ────────────────
+const _FOOD_DB = {
+  'egg':        { name:'Egg', calories:78, protein:6, carbs:1, fat:5 },
+  'eggs':       { name:'Egg', calories:78, protein:6, carbs:1, fat:5 },
+  'banana':     { name:'Banana', calories:105, protein:1, carbs:27, fat:0 },
+  'apple':      { name:'Apple', calories:95, protein:0, carbs:25, fat:0 },
+  'rice':       { name:'Rice (1 cup)', calories:206, protein:4, carbs:45, fat:0 },
+  'chicken':    { name:'Chicken breast (150g)', calories:231, protein:43, carbs:0, fat:5 },
+  'chicken breast': { name:'Chicken breast (150g)', calories:231, protein:43, carbs:0, fat:5 },
+  'salmon':     { name:'Salmon (150g)', calories:280, protein:35, carbs:0, fat:15 },
+  'bread':      { name:'Bread (2 slices)', calories:160, protein:6, carbs:30, fat:2 },
+  'toast':      { name:'Toast (2 slices)', calories:160, protein:6, carbs:30, fat:2 },
+  'oats':       { name:'Oats (80g)', calories:300, protein:10, carbs:54, fat:6 },
+  'oatmeal':    { name:'Oatmeal (80g)', calories:300, protein:10, carbs:54, fat:6 },
+  'milk':       { name:'Milk (250ml)', calories:150, protein:8, carbs:12, fat:8 },
+  'yogurt':     { name:'Yogurt (200g)', calories:150, protein:12, carbs:18, fat:4 },
+  'greek yogurt':{ name:'Greek yogurt (200g)', calories:130, protein:20, carbs:8, fat:4 },
+  'pasta':      { name:'Pasta (200g cooked)', calories:280, protein:10, carbs:56, fat:2 },
+  'steak':      { name:'Steak (200g)', calories:460, protein:50, carbs:0, fat:28 },
+  'avocado':    { name:'Avocado', calories:240, protein:3, carbs:12, fat:22 },
+  'peanut butter':{ name:'Peanut butter (2 tbsp)', calories:190, protein:7, carbs:7, fat:16 },
+  'protein shake':{ name:'Protein shake', calories:160, protein:30, carbs:8, fat:2 },
+  'whey':       { name:'Whey protein scoop', calories:120, protein:24, carbs:3, fat:1 },
+  'big mac':    { name:'Big Mac', calories:550, protein:25, carbs:45, fat:30 },
+  'fries':      { name:'Fries (large)', calories:490, protein:7, carbs:66, fat:23 },
+  'pizza':      { name:'Pizza (2 slices)', calories:570, protein:24, carbs:64, fat:22 },
+  'burger':     { name:'Burger', calories:500, protein:28, carbs:40, fat:25 },
+  'sandwich':   { name:'Sandwich', calories:400, protein:20, carbs:45, fat:15 },
+  'salad':      { name:'Salad (mixed)', calories:150, protein:5, carbs:12, fat:10 },
+  'coffee':     { name:'Coffee (black)', calories:5, protein:0, carbs:0, fat:0 },
+  'latte':      { name:'Latte', calories:190, protein:10, carbs:18, fat:8 },
+  'orange juice':{ name:'Orange juice (250ml)', calories:112, protein:2, carbs:26, fat:0 },
+  'almonds':    { name:'Almonds (30g)', calories:170, protein:6, carbs:6, fat:15 },
+  'cheese':     { name:'Cheese (30g)', calories:110, protein:7, carbs:1, fat:9 },
+  'butter':     { name:'Butter (1 tbsp)', calories:100, protein:0, carbs:0, fat:11 },
+  'olive oil':  { name:'Olive oil (1 tbsp)', calories:120, protein:0, carbs:0, fat:14 },
+  'potato':     { name:'Potato (medium)', calories:160, protein:4, carbs:37, fat:0 },
+  'sweet potato':{ name:'Sweet potato', calories:112, protein:2, carbs:26, fat:0 },
+  'broccoli':   { name:'Broccoli (100g)', calories:34, protein:3, carbs:7, fat:0 },
+  'tuna':       { name:'Tuna (can)', calories:180, protein:40, carbs:0, fat:2 },
+  'bacon':      { name:'Bacon (3 strips)', calories:130, protein:9, carbs:0, fat:10 },
+  'honey':      { name:'Honey (1 tbsp)', calories:64, protein:0, carbs:17, fat:0 },
+  'chocolate':  { name:'Chocolate (40g)', calories:210, protein:3, carbs:24, fat:12 },
+  'ice cream':  { name:'Ice cream (1 scoop)', calories:140, protein:2, carbs:16, fat:7 },
+  'beer':       { name:'Beer (330ml)', calories:150, protein:1, carbs:13, fat:0 },
+  'wine':       { name:'Wine (150ml)', calories:125, protein:0, carbs:4, fat:0 },
+  'sushi':      { name:'Sushi (6 pcs)', calories:300, protein:14, carbs:42, fat:7 },
+  'burrito':    { name:'Burrito', calories:650, protein:30, carbs:70, fat:25 },
+  'wrap':       { name:'Wrap', calories:400, protein:22, carbs:40, fat:16 },
+  'smoothie':   { name:'Smoothie', calories:250, protein:8, carbs:45, fat:5 },
+  'cereal':     { name:'Cereal (1 bowl + milk)', calories:280, protein:8, carbs:48, fat:5 },
+  'granola':    { name:'Granola (60g)', calories:270, protein:6, carbs:36, fat:12 },
+  'pancakes':   { name:'Pancakes (3)', calories:350, protein:10, carbs:50, fat:12 },
+};
+
+function _localFoodLookup(text) {
+  const lower = text.toLowerCase();
+  const items = [];
+  // Try to match quantities like "2 eggs", "3 slices of bread"
+  const words = lower.replace(/[,\.!?]/g, ' ').split(/\s+and\s+|\s*,\s*|\s*\+\s*/);
+  for (const phrase of words) {
+    const trimmed = phrase.trim();
+    if (!trimmed) continue;
+    const qMatch = trimmed.match(/^(\d+)\s*x?\s*(.+)/);
+    const qty = qMatch ? parseInt(qMatch[1]) : 1;
+    const foodName = qMatch ? qMatch[2].trim() : trimmed;
+    // Search database
+    let found = _FOOD_DB[foodName];
+    if (!found) {
+      // Fuzzy: check if any key is contained in the phrase or vice versa
+      for (const [key, val] of Object.entries(_FOOD_DB)) {
+        if (foodName.includes(key) || key.includes(foodName)) { found = val; break; }
+      }
+    }
+    if (found) {
+      items.push({
+        name: qty > 1 ? `${qty}x ${found.name}` : found.name,
+        calories: found.calories * qty,
+        protein: found.protein * qty,
+        carbs: found.carbs * qty,
+        fat: found.fat * qty,
+      });
+    }
+  }
+  return items.length ? items : null;
 }
 
 // ── ADAPTIVE NUTRITION HELPERS ────────────────────────────────────────────
@@ -428,12 +520,20 @@ async function calculateMealDescription() {
     }));
     _renderParsedItems(out);
   } catch(e) {
+    // Fallback to local database
+    const localItems = _localFoodLookup(text);
+    if (localItems) {
+      _parsedMealItems = localItems;
+      _renderParsedItems(out);
+      out.insertAdjacentHTML('afterbegin', '<p class="dm-hint" style="font-size:11px;opacity:0.6;margin-bottom:8px">⚡ Estimated from local database (AI unavailable)</p>');
+      return;
+    }
     if (e.message === 'offline') {
-      out.innerHTML = `<p class="dm-hint dm-warn">You're offline. Connect to the internet to use AI macro calculation, or add items manually.</p>`;
+      out.innerHTML = `<p class="dm-hint dm-warn">You're offline. Try common foods like "2 eggs and toast" or add items manually.</p>`;
     } else if (e.name === 'AbortError') {
-      out.innerHTML = `<p class="dm-hint dm-warn">AI service timed out. Please try again.</p>`;
+      out.innerHTML = `<p class="dm-hint dm-warn">AI service timed out. Try again, or use simpler descriptions like "chicken and rice".</p>`;
     } else {
-      out.innerHTML = `<p class="dm-hint dm-warn">AI service unavailable. Try again, or add items manually.</p>`;
+      out.innerHTML = `<p class="dm-hint dm-warn">AI service unavailable. Try simpler foods like "oats with banana" or add items manually.</p>`;
     }
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'CALCULATE MACROS'; }
