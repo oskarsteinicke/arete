@@ -3,17 +3,19 @@
 // ══════════════════════════════════════════════════════════════════════════
 
 // ── AI FETCH HELPER ──────────────────────────────────────────────────────
-async function _aiFetch(messages, { timeout = 45000, retries = 2, model = 'openai' } = {}) {
+async function _aiFetch(messages, { timeout = 60000, retries = 2, model = 'openai', jsonMode = false } = {}) {
   let lastErr;
   for (let attempt = 0; attempt <= retries; attempt++) {
     const ac = new AbortController();
     const to = setTimeout(() => ac.abort(), timeout);
     try {
+      const body = { messages, model, seed: 42, temperature: 0, private: true };
+      if (jsonMode) body.jsonMode = true;
       const res = await fetch('https://text.pollinations.ai/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: ac.signal,
-        body: JSON.stringify({ messages, model, seed: 42, private: true })
+        body: JSON.stringify(body)
       });
       clearTimeout(to);
       if (!res.ok) { lastErr = new Error(`HTTP ${res.status}`); continue; }
@@ -341,6 +343,20 @@ function _parseChunk(chunk) {
 
 // Robustly extract the first complete JSON array using bracket depth matching
 function _extractJsonArray(str) {
+  // Try direct parse first (ideal case: response is pure JSON array)
+  const trimmed = str.trim();
+  if (trimmed.startsWith('[')) {
+    try { JSON.parse(trimmed); return trimmed; } catch(e) {}
+  }
+  // If response is a JSON object with an array value, find it
+  if (trimmed.startsWith('{')) {
+    try {
+      const obj = JSON.parse(trimmed);
+      const arrVal = Object.values(obj).find(v => Array.isArray(v));
+      if (arrVal) return JSON.stringify(arrVal);
+    } catch(e) {}
+  }
+  // Bracket-depth extraction fallback
   const start = str.indexOf('[');
   if (start === -1) return null;
   let depth = 0, inStr = false, esc2 = false;
@@ -369,20 +385,25 @@ async function calculateMealDescription() {
 
   try {
     const sysPrompt =
-      'You are a precise nutrition calculator. ' +
-      'The user will describe any food or meal in any format — vague, detailed, slang, restaurant items, branded foods, anything. ' +
-      'Your job: estimate the macros for everything described and return ONLY a JSON array. No prose, no markdown, no explanations. ' +
-      'Format: [{"name":"<food>","calories":<kcal>,"protein":<g>,"carbs":<g>,"fat":<g>},...] ' +
-      'Rules: calories and all macros must be integers. Use typical serving sizes if not specified. ' +
-      'If the user mentions a quantity (e.g. "2 eggs", "large pizza"), scale accordingly — list it as one item with total macros. ' +
-      'If something is truly unidentifiable, make your best estimate. Never refuse or add text outside the JSON array. ' +
-      'Example input: "bowl of oats with banana and honey" ' +
-      'Example output: [{"name":"Oats (80g)","calories":300,"protein":10,"carbs":54,"fat":6},{"name":"Banana","calories":89,"protein":1,"carbs":23,"fat":0},{"name":"Honey (1 tbsp)","calories":64,"protein":0,"carbs":17,"fat":0}]';
+      'You are a nutrition macro calculator that ONLY outputs JSON. Never output any text, explanation, or markdown — ONLY a raw JSON array.\n\n' +
+      'INPUT: A description of food or a meal (may be vague, slang, brand names, restaurant items, any language).\n' +
+      'OUTPUT: A JSON array where each element has exactly these keys: "name" (string), "calories" (integer), "protein" (integer), "carbs" (integer), "fat" (integer).\n\n' +
+      'RULES:\n' +
+      '- All macro values MUST be integers (no decimals, no strings)\n' +
+      '- Use typical serving sizes when quantity is not specified\n' +
+      '- If quantity is given (e.g. "2 eggs"), combine into ONE item with total macros\n' +
+      '- Include portion size in the name when helpful, e.g. "Oats (80g)"\n' +
+      '- If unidentifiable, estimate anyway — never refuse\n' +
+      '- NEVER wrap in markdown code fences\n' +
+      '- Your ENTIRE response must be parseable by JSON.parse()\n\n' +
+      'EXAMPLE:\n' +
+      'Input: "bowl of oats with banana and honey"\n' +
+      'Output: [{"name":"Oats (80g)","calories":300,"protein":10,"carbs":54,"fat":6},{"name":"Banana","calories":89,"protein":1,"carbs":23,"fat":0},{"name":"Honey (1 tbsp)","calories":64,"protein":0,"carbs":17,"fat":0}]';
 
     const raw = await _aiFetch([
       { role: 'system', content: sysPrompt },
-      { role: 'user', content: text }
-    ]);
+      { role: 'user', content: 'Calculate macros for: ' + text }
+    ], { jsonMode: true });
     // Strip any markdown fences, then use bracket-depth extraction
     const clean = raw.replace(/```[a-z]*\n?/gi, '').replace(/```/g, '').trim();
     const jsonStr = _extractJsonArray(clean);
@@ -472,21 +493,24 @@ async function handleFoodPhoto(input) {
     const resized = await _resizeImage(base64, 800);
 
     const sysPrompt =
-      'You are a precise food nutrition analyzer. ' +
-      'The user will send a photo of food. Identify every food item visible and estimate macros. ' +
-      'Return ONLY a JSON array. No prose, no markdown, no explanations. ' +
-      'Format: [{"name":"<food>","calories":<kcal>,"protein":<g>,"carbs":<g>,"fat":<g>},...] ' +
-      'Rules: calories and all macros must be integers. Estimate portion sizes from visual cues. ' +
-      'If unsure about exact amounts, give your best estimate based on typical portions. ' +
-      'Never refuse or add text outside the JSON array.';
+      'You are a food nutrition analyzer that ONLY outputs JSON. Never output any text, explanation, or markdown — ONLY a raw JSON array.\n\n' +
+      'INPUT: A photo of food.\n' +
+      'OUTPUT: A JSON array where each element has exactly these keys: "name" (string), "calories" (integer), "protein" (integer), "carbs" (integer), "fat" (integer).\n\n' +
+      'RULES:\n' +
+      '- Identify every distinct food item visible in the photo\n' +
+      '- All macro values MUST be integers\n' +
+      '- Estimate portion sizes from visual cues (plate size, utensils, etc.)\n' +
+      '- If unsure, estimate based on typical portions — never refuse\n' +
+      '- NEVER wrap in markdown code fences\n' +
+      '- Your ENTIRE response must be parseable by JSON.parse()';
 
     const raw = await _aiFetch([
       { role: 'system', content: sysPrompt },
       { role: 'user', content: [
         { type: 'image_url', image_url: { url: resized } },
-        { type: 'text', text: 'Analyze this food photo and return the macro breakdown as a JSON array.' }
+        { type: 'text', text: 'Return JSON array of macros for each food item in this photo.' }
       ]}
-    ]);
+    ], { jsonMode: true });
     const clean = raw.replace(/```[a-z]*\n?/gi, '').replace(/```/g, '').trim();
     const jsonStr = _extractJsonArray(clean);
 
