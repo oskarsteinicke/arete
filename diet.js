@@ -2,40 +2,91 @@
 // Arete — Diet Module
 // ══════════════════════════════════════════════════════════════════════════
 
-// ── AI FETCH HELPER (multi-provider with fallback) ───────────────────────
-const _AI_ENDPOINTS = [
-  { url: 'https://text.pollinations.ai/', body: (msgs, jm) => ({ messages: msgs, model: 'openai', seed: 42, temperature: 0, private: true, ...(jm ? {jsonMode:true} : {}) }) },
-  { url: 'https://text.pollinations.ai/', body: (msgs, jm) => ({ messages: msgs, model: 'openai-large', seed: 42, temperature: 0, private: true, ...(jm ? {jsonMode:true} : {}) }) },
-];
+// ── AI FETCH HELPER (Gemini primary, Pollinations fallback) ──────────────
+const _GEMINI_KEY = 'AIzaSyCsZ6WWdWsp7DrjNuPIt6qO7Or_DSz7QNE';
+const _GEMINI_MODEL = 'gemini-2.0-flash-lite';
 
-async function _aiFetch(messages, { timeout = 60000, retries = 1, model = 'openai', jsonMode = false } = {}) {
+async function _aiFetch(messages, { timeout = 30000, retries = 1, model = 'openai', jsonMode = false } = {}) {
   if (!navigator.onLine) throw new Error('offline');
   let lastErr;
-  for (const endpoint of _AI_ENDPOINTS) {
-    for (let attempt = 0; attempt <= retries; attempt++) {
-      const ac = new AbortController();
-      const to = setTimeout(() => ac.abort(), timeout);
-      try {
-        const res = await fetch(endpoint.url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          signal: ac.signal,
-          body: JSON.stringify(endpoint.body(messages, jsonMode))
-        });
-        clearTimeout(to);
-        if (!res.ok) { lastErr = new Error(`HTTP ${res.status}`); continue; }
-        const text = await res.text();
-        if (!text || text.length < 2 || text.includes('"error"')) { lastErr = new Error('Bad response'); continue; }
-        return text;
-      } catch (e) {
-        clearTimeout(to);
-        lastErr = e;
-        if (e.name === 'AbortError' && attempt < retries) continue;
-        break; // try next endpoint
-      }
+
+  // ── Provider 1: Gemini (fast, reliable, free) ──────────────────────────
+  try {
+    const result = await _geminiRequest(messages, { timeout, jsonMode });
+    if (result) return result;
+  } catch (e) { lastErr = e; }
+
+  // ── Provider 2: Pollinations (fallback) ────────────────────────────────
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const ac = new AbortController();
+    const to = setTimeout(() => ac.abort(), timeout);
+    try {
+      const body = { messages, model: 'openai', seed: 42, temperature: 0, private: true };
+      if (jsonMode) body.jsonMode = true;
+      const res = await fetch('https://text.pollinations.ai/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: ac.signal,
+        body: JSON.stringify(body)
+      });
+      clearTimeout(to);
+      if (!res.ok) { lastErr = new Error(`HTTP ${res.status}`); continue; }
+      const text = await res.text();
+      if (!text || text.length < 2 || text.includes('"error"')) { lastErr = new Error('Bad response'); continue; }
+      return text;
+    } catch (e) {
+      clearTimeout(to);
+      lastErr = e;
+      if (e.name === 'AbortError' && attempt < retries) continue;
+      break;
     }
   }
   throw lastErr;
+}
+
+async function _geminiRequest(messages, { timeout = 30000, jsonMode = false } = {}) {
+  // Convert OpenAI-style messages to Gemini format
+  const systemParts = messages.filter(m => m.role === 'system').map(m => m.content).join('\n');
+  const contents = messages.filter(m => m.role !== 'system').map(m => {
+    // Handle multimodal (image) messages
+    if (Array.isArray(m.content)) {
+      const parts = m.content.map(p => {
+        if (p.type === 'text') return { text: p.text };
+        if (p.type === 'image_url') {
+          const url = p.image_url?.url || '';
+          const match = url.match(/^data:(.+?);base64,(.+)$/);
+          if (match) return { inlineData: { mimeType: match[1], data: match[2] } };
+        }
+        return null;
+      }).filter(Boolean);
+      return { role: m.role === 'assistant' ? 'model' : 'user', parts };
+    }
+    return { role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] };
+  });
+
+  const genConfig = { temperature: 0 };
+  if (jsonMode) genConfig.responseMimeType = 'application/json';
+
+  const body = { contents, generationConfig: genConfig };
+  if (systemParts) body.systemInstruction = { parts: [{ text: systemParts }] };
+
+  const ac = new AbortController();
+  const to = setTimeout(() => ac.abort(), timeout);
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${_GEMINI_MODEL}:generateContent?key=${_GEMINI_KEY}`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ac.signal, body: JSON.stringify(body) }
+    );
+    clearTimeout(to);
+    if (!res.ok) return null; // fall through to next provider
+    const data = await res.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text || text.length < 2) return null;
+    return text;
+  } catch (e) {
+    clearTimeout(to);
+    throw e;
+  }
 }
 
 // ── LOCAL FOOD DATABASE (fallback when AI is unavailable) ────────────────
