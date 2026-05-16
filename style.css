@@ -1053,6 +1053,14 @@ nav {
 .hm-share-btn { display: block; width: calc(100% - 48px); margin: 12px 24px; padding: 14px; background: rgba(154,130,86,0.06); border: 1px solid rgba(154,130,86,0.2); border-radius: var(--radius-sm); color: var(--accent-b); font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; text-align: center; cursor: pointer; transition: all 0.2s; }
 .hm-share-btn:active { background: rgba(154,130,86,0.15); transform: scale(0.98); }
 
+/* ═══ WEEK IN REVIEW ══════════════════════════════════════════════════════ */
+.wir-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 24px; }
+.wir-stat { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 14px 12px; text-align: center; }
+.wir-stat-val { font-family: var(--serif); font-size: 22px; color: var(--accent-b); margin-bottom: 4px; }
+.wir-stat-lbl { font-size: 10px; color: var(--text-muted); letter-spacing: 0.5px; text-transform: uppercase; }
+.wir-share-btn { background: none; border: none; color: var(--accent); font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; padding: 8px 16px; }
+.wir-share-btn:active { opacity: 0.7; }
+
 /* ═══ SPARKLINE ════════════════════════════════════════════════════════════ */
 .w-sparkline { flex-shrink: 0; opacity: 0.8; }
 

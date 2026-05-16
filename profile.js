@@ -1234,6 +1234,7 @@ let _obGoalType = 'maintain';
 let _obCalories = 2500;
 let _obProtein = 180;
 let _obName = '', _obGender = 'male';
+let _obProgram = 'ppl';
 
 function injectOnboardingStyles() {
   if (document.getElementById('ob-styles')) return;
@@ -1296,19 +1297,19 @@ function renderOnboarding(step) {
     return;
   }
 
-  const dots = [1,2,3,4].map(i => `<div class="ob-dot${i===step?' active':''}" ></div>`).join('');
+  const dots = [1,2,3,4,5].map(i => `<div class="ob-dot${i===step?' active':''}" ></div>`).join('');
   let content = '';
 
   if (step === 1) {
     content = `
-      <div class="ob-eyebrow">Step 1 of 4</div>
+      <div class="ob-eyebrow">Step 1 of 5</div>
       <div class="ob-title">What is your name?</div>
       <div class="ob-sub">Knowing yourself is the beginning of all wisdom.</div>
       <input class="ob-input" type="text" id="ob-name-input" placeholder="Your first name" maxlength="30" value="${esc(_obName)}" oninput="_obName=this.value.trim()">`;
 
   } else if (step === 2) {
     content = `
-      <div class="ob-eyebrow">Step 2 of 4</div>
+      <div class="ob-eyebrow">Step 2 of 5</div>
       <div class="ob-title">Choose your avatar</div>
       <div class="ob-sub">This shapes your character's appearance. You can always change it later.</div>
       <div class="ob-gender-row">
@@ -1336,18 +1337,37 @@ function renderOnboarding(step) {
         <div class="ob-goal-desc">${g.desc}</div>
       </div>`).join('');
     content = `
-      <div class="ob-eyebrow">Step 3 of 4</div>
+      <div class="ob-eyebrow">Step 3 of 5</div>
       <div class="ob-title">Choose your path.</div>
       <div class="ob-sub">First say to yourself what you would be; and then do what you have to do.</div>
       <div class="ob-goal-grid">${cards}</div>`;
 
   } else if (step === 4) {
+    const programs = [
+      { id: 'ppl', name: 'Push / Pull / Legs', desc: '6-day rotation. High volume.', emoji: '🏋️' },
+      { id: 'ul', name: 'Upper / Lower', desc: '4-day split. Strength focus.', emoji: '💪' },
+      { id: 'fb', name: 'Full Body', desc: '3-day rotation. Efficient.', emoji: '⚡' },
+      { id: 'athlete', name: 'Soccer Athlete', desc: 'Built for sport performance.', emoji: '⚽' },
+    ];
+    const progCards = programs.map(p => `
+      <div class="ob-goal-card${_obProgram===p.id?' active':''}" onclick="_obProgram='${p.id}';renderOnboarding(4)">
+        <div class="ob-goal-emoji">${p.emoji}</div>
+        <div class="ob-goal-name">${p.name}</div>
+        <div class="ob-goal-desc">${p.desc}</div>
+      </div>`).join('');
+    content = `
+      <div class="ob-eyebrow">Step 4 of 5</div>
+      <div class="ob-title">Pick your program.</div>
+      <div class="ob-sub">Choose a training split. You can switch anytime or build your own later.</div>
+      <div class="ob-goal-grid">${progCards}</div>`;
+
+  } else if (step === 5) {
     const nuts = [['cut','Cut','Lose fat'],['maintain','Maintain','Stay lean'],['bulk','Bulk','Build muscle']];
     const nutBtns = nuts.map(([k,l,s]) =>
-      `<button class="ob-nut-btn${_obGoalType===k?' active':''}" onclick="_obGoalType='${k}';_obCalories=${k==='cut'?2000:k==='bulk'?3000:2500};_obProtein=${k==='cut'?160:k==='bulk'?200:180};renderOnboarding(4)">${l}<br><span style="font-weight:400;font-size:10px;text-transform:none">${s}</span></button>`
+      `<button class="ob-nut-btn${_obGoalType===k?' active':''}" onclick="_obGoalType='${k}';_obCalories=${k==='cut'?2000:k==='bulk'?3000:2500};_obProtein=${k==='cut'?160:k==='bulk'?200:180};renderOnboarding(5)">${l}<br><span style="font-weight:400;font-size:10px;text-transform:none">${s}</span></button>`
     ).join('');
     content = `
-      <div class="ob-eyebrow">Step 4 of 4</div>
+      <div class="ob-eyebrow">Step 5 of 5</div>
       <div class="ob-title">Set your measures.</div>
       <div class="ob-sub">Without measure, even the finest things become excess. Set your daily targets.</div>
       <div class="ob-nut-btns">${nutBtns}</div>
@@ -1357,7 +1377,7 @@ function renderOnboarding(step) {
       </div>`;
   }
 
-  const isLast = step === 4;
+  const isLast = step === 5;
   overlay.innerHTML = `
     <div class="ob-wrap">
       <div class="ob-step-dots">${dots}</div>
@@ -1378,7 +1398,13 @@ function obNext(step) {
     tdeeProfile.sex = _obGender;
     LS.set('hvi_tdee_profile', tdeeProfile);
   }
-  if (step < 4) { renderOnboarding(step + 1); return; }
+  if (step === 4) {
+    // Save workout program selection
+    workoutMeta.activeProgram = _obProgram;
+    workoutMeta.currentDayIndex = 0;
+    LS.set('hvi_workout_meta', workoutMeta);
+  }
+  if (step < 5) { renderOnboarding(step + 1); return; }
   obFinish();
 }
 
@@ -1537,9 +1563,9 @@ function generateRecapCard() {
   ctx.font = '700 11px -apple-system,sans-serif';
   ctx.fillText('ARETE', barX, H - 28);
   ctx.fillStyle = 'rgba(184,157,104,0.35)';
-  ctx.font = '600 10px -apple-system,sans-serif';
+  ctx.font = '500 10px -apple-system,sans-serif';
   ctx.textAlign = 'right';
-  ctx.fillText('arete', W - 28, H - 28);
+  ctx.fillText('oskarsteinicke.github.io/arete', W - 28, H - 28);
   ctx.textAlign = 'left';
 
   return canvas;
@@ -1709,10 +1735,15 @@ function generateDailyCard() {
   ctx.font = '700 13px -apple-system,sans-serif';
   ctx.fillText(`Level ${lvl} · ${getLevelTitle(lvl)}`, 28, 425);
 
-  // Branding
+  // Branding + URL
   ctx.fillStyle = 'rgba(228,218,206,0.2)';
   ctx.font = '700 11px -apple-system,sans-serif';
   ctx.fillText('ARETE', 28, H - 28);
+  ctx.fillStyle = 'rgba(184,157,104,0.35)';
+  ctx.font = '500 10px -apple-system,sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('oskarsteinicke.github.io/arete', W - 28, H - 28);
+  ctx.textAlign = 'left';
 
   return canvas;
 }

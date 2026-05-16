@@ -914,6 +914,58 @@ function refreshPillarRing() {
 // ══════════════════════════════════════════════════════════════════════════
 // RENDER: HOME
 // ══════════════════════════════════════════════════════════════════════════
+function renderWeekInReview() {
+  ensureWeeklyStats();
+  const ws = gamification.weeklyStats;
+  const best = Math.max(0, ...habits.map(h => log[h.id]?.streak || 0));
+  const weekAvgCal = computeWeeklyAvgCalories(mealLog);
+
+  // Get this week's date range
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0=Sun
+  const mon = new Date(now);
+  mon.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+  const sun = new Date(mon);
+  sun.setDate(mon.getDate() + 6);
+  const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const weekRange = `${fmt(mon)} – ${fmt(sun)}`;
+
+  // Count habits done this week (from habit history)
+  const hist = LS.get('hvi_habit_history', {});
+  let weekHabitDays = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(mon);
+    d.setDate(mon.getDate() + i);
+    const key = d.toISOString().slice(0, 10);
+    if (key > today()) break;
+    const anyDone = Object.values(hist).some(arr => arr.includes(key));
+    if (anyDone) weekHabitDays++;
+  }
+
+  const stats = [
+    { icon: '🏋️', val: ws.workoutDays.length, lbl: 'workouts' },
+    { icon: '🔥', val: best + 'd', lbl: 'best streak' },
+    { icon: '✅', val: weekHabitDays + '/7', lbl: 'active days' },
+    { icon: '🍽️', val: weekAvgCal !== null ? weekAvgCal.toLocaleString() : '—', lbl: 'avg cal' },
+  ];
+
+  const statsHTML = stats.map(s => `
+    <div class="wir-stat">
+      <div class="wir-stat-val">${s.val}</div>
+      <div class="wir-stat-lbl">${s.icon} ${s.lbl}</div>
+    </div>`).join('');
+
+  return `
+    <div class="hm-sec ani" style="margin-top:20px">
+      <div class="hm-sec-title">Week in Review</div>
+      <div style="font-size:11px;color:var(--text-muted);letter-spacing:0.5px">${weekRange}</div>
+    </div>
+    <div class="wir-grid ani">${statsHTML}</div>
+    <div style="text-align:center;padding:4px 0 0" class="ani">
+      <button class="wir-share-btn" onclick="showWeeklyRecap()">View Full Recap</button>
+    </div>`;
+}
+
 function renderHome() {
   const {done, total, pct} = totalPct();
   const homeLvl = getLevel(gamification.xp || 0);
@@ -1065,6 +1117,8 @@ function renderHome() {
       <div class="hm-sec-title">Weekly Trials</div>
     </div>
     <div class="hm-chal-list ani">${chalHTML}</div>` : ''}
+
+    ${renderWeekInReview()}
 
     <!-- Daily quote -->
     <div class="hm-quote ani" style="margin-top:16px">
