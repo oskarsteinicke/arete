@@ -516,54 +516,48 @@ function buildAvatarSVG(lvl) {
   const gender = (typeof tdeeProfile !== 'undefined' && tdeeProfile?.sex) || 'male';
   const stage = lvl >= 20 ? 6 : lvl >= 12 ? 5 : lvl >= 8 ? 4 : lvl >= 5 ? 3 : lvl >= 3 ? 2 : 1;
   const uid = `av${stage}_${lvl}_${gender[0]}`;
+  return _buildGreekAvatar(stage, gender, uid);
+}
 
-  // Skin palette
-  const sk = '#fbd5b5', skL = '#fce4cc', skS = '#e8a87c', skD = '#d49670';
+function _buildGreekAvatar(stage, gender, uid) {
 
-  // Per-stage colours
+  // Greek-inspired colour palette
+  const sk = '#e8d5bc', skL = '#f0e0cc', skS = '#d4b896', skD = '#c4a07a';
+
+  // Stage colours: hair, eyes, outfit, accents, aura
   const C = [null,
-    { hc:'#2d1b0e', hh:'#5c3a1e', hg:'#3d2814', ec:'#3d2412', em:'#5c3a1e', ep:'#150800', eg:null,     oc:'#374151', om:'#2d3748', oa:'#1f2937', ac:null,     ao:0,    pn:0  },
-    { hc:'#7c3a0e', hh:'#c47a3a', hg:'#5c2a06', ec:'#92400e', em:'#c47a3a', ep:'#3d1500', eg:null,     oc:'#78350f', om:'#612d0c', oa:'#451a03', ac:'#b45309', ao:.09,  pn:0  },
-    { hc:'#b84c00', hh:'#f97316', hg:'#8c3800', ec:'#d97706', em:'#fbbf24', ep:'#7c2d00', eg:'#fb923c', oc:'#7c2d12', om:'#621f0a', oa:'#450a00', ac:'#f97316', ao:.15,  pn:4  },
-    { hc:'#b45309', hh:'#fde68a', hg:'#8a3f06', ec:'#fbbf24', em:'#fef3c7', ep:'#78350f', eg:'#fde68a', oc:'#991b1b', om:'#7f1d1d', oa:'#7c2d12', ac:'#fbbf24', ao:.20,  pn:8  },
-    { hc:'#1e3a8a', hh:'#93c5fd', hg:'#142866', ec:'#60a5fa', em:'#bfdbfe', ep:'#1e3a8a', eg:'#bfdbfe', oc:'#1e3a8a', om:'#152468', oa:'#172554', ac:'#60a5fa', ao:.22,  pn:12 },
-    { hc:'#d97706', hh:'#fef9c3', hg:'#a35b04', ec:'#e0f2fe', em:'#ffffff', ep:'#1e40af', eg:'#ffffff', oc:'#1e3a8a', om:'#152468', oa:'#d97706', ac:'#fbbf24', ao:.35,  pn:16 },
+    { hc:'#3d2814', hh:'#5c3a1e', toga:'#d4cfc6', toga2:'#bfb9ae', sash:null,     metal:null,       ac:null,     ao:0, pn:0  },
+    { hc:'#5c3a1e', hh:'#8a6240', toga:'#c8c0b4', toga2:'#b0a898', sash:'#8b4513', metal:null,       ac:null,     ao:0, pn:0  },
+    { hc:'#6b4423', hh:'#a07850', toga:'#e8e0d4', toga2:'#d4cfc6', sash:'#6b7c3a', metal:'#8a9a6c',  ac:'#8a9a6c',ao:.10, pn:3 },
+    { hc:'#4a3520', hh:'#7a5c3a', toga:'#d4cfc6', toga2:'#b8b0a2', sash:'#8b2020', metal:'#b08d57',  ac:'#b08d57',ao:.15, pn:6 },
+    { hc:'#2d1f14', hh:'#5c4430', toga:'#f0ece4', toga2:'#d8d0c4', sash:'#7b3fa0', metal:'#c4a96c',  ac:'#c4a96c',ao:.22, pn:10 },
+    { hc:'#1a1510', hh:'#3d3020', toga:'#f8f4ee', toga2:'#e8e0d4', sash:'#c4a96c', metal:'#e8c97e',  ac:'#e8c97e',ao:.35, pn:14 },
   ][stage];
 
   // ── GRADIENT DEFS ───────────────────────────────────────────────────────
   const defs = `
-    <filter id="${uid}g" x="-60%" y="-60%" width="220%" height="220%">
-      <feGaussianBlur stdDeviation="2.5" result="b"/>
+    <filter id="${uid}sh" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="1.8"/>
+    </filter>
+    <filter id="${uid}gl" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="b"/>
       <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
-    ${C.eg ? `<filter id="${uid}e" x="-100%" y="-100%" width="300%" height="300%">
-      <feGaussianBlur stdDeviation="3.5" result="b"/>
-      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>` : ''}
     <radialGradient id="${uid}sk" cx="50%" cy="35%" r="60%">
       <stop offset="0%" stop-color="${skL}"/>
       <stop offset="70%" stop-color="${sk}"/>
       <stop offset="100%" stop-color="${skS}"/>
     </radialGradient>
     <linearGradient id="${uid}hr" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="${C.hh}" stop-opacity="0.45"/>
-      <stop offset="50%" stop-color="${C.hc}"/>
-      <stop offset="100%" stop-color="${C.hg}"/>
+      <stop offset="0%" stop-color="${C.hh}"/>
+      <stop offset="100%" stop-color="${C.hc}"/>
     </linearGradient>
-    <radialGradient id="${uid}ir" cx="50%" cy="30%" r="60%">
-      <stop offset="0%" stop-color="${C.em}"/>
-      <stop offset="50%" stop-color="${C.ec}"/>
-      <stop offset="100%" stop-color="${C.ep}"/>
-    </radialGradient>
-    <linearGradient id="${uid}ot" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="${C.oc}"/>
-      <stop offset="100%" stop-color="${C.om}"/>
-    </linearGradient>
-    <filter id="${uid}sh" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="1.8"/>
-    </filter>`;
+    <linearGradient id="${uid}tg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${C.toga}"/>
+      <stop offset="100%" stop-color="${C.toga2}"/>
+    </linearGradient>`;
 
-  // ── AURA ─────────────────────────────────────────────────────────────────
+  // ── AURA (stages 3+) ────────────────────────────────────────────────────
   const auraRx = 36 + stage * 5, auraRy = 24 + stage * 4;
   const aura = C.ac ? `<ellipse cx="50" cy="82" rx="${auraRx}" ry="${auraRy}" fill="${C.ac}" opacity="${C.ao}">
     <animate attributeName="ry" values="${auraRy};${auraRy+6};${auraRy}" dur="3s" repeatCount="indefinite"/>
@@ -589,313 +583,179 @@ function buildAvatarSVG(lvl) {
   }
 
   // ── HAIR ─────────────────────────────────────────────────────────────────
-  let hB = '', hF = '';
-  const hFill = `url(#${uid}hr)`;  // gradient fill for hair
+  const hFill = `url(#${uid}hr)`;
+  let hair = '';
 
   if (gender === 'female') {
-    if (stage === 1) {
-      hB = `<path d="M 23 58 Q 21 22 50 19 Q 79 22 77 58 Q 69 32 50 30 Q 31 32 23 58 Z" fill="${hFill}"/>
-        <path d="M 23 58 Q 18 72 19 86 Q 24 89 26 76 Q 24 66 23 58 Z" fill="${hFill}"/>
-        <path d="M 77 58 Q 82 72 81 86 Q 76 89 74 76 Q 76 66 77 58 Z" fill="${hFill}"/>
-        <path d="M 30 30 Q 38 22 50 22 Q 54 25 46 32 Q 38 28 30 30 Z" fill="${C.hh}" opacity="0.4"/>`;
-      hF = `<path d="M 26 47 Q 32 28 50 28 Q 68 28 74 47 Q 64 38 50 37 Q 36 38 26 47 Z" fill="${hFill}"/>
-        <path d="M 32 42 Q 38 30 50 30 Q 56 34 52 42 Q 50 38 48 42 Q 44 34 32 42 Z" fill="${C.hh}" opacity="0.55"/>
-        <path d="M 35 36 Q 45 28 55 34" stroke="${C.hh}" stroke-width="1.2" fill="none" opacity="0.45" stroke-linecap="round"/>`;
-
-    } else if (stage === 2) {
-      hB = `<path d="M 22 58 Q 21 20 50 17 Q 79 20 78 56 Q 70 30 50 28 Q 30 30 22 58 Z" fill="${hFill}"/>
-        <path d="M 47 19 Q 44 5 50 3 Q 56 5 53 19 Z" fill="${C.hc}"/>
-        <path d="M 22 58 Q 17 72 14 96 Q 18 100 23 86 Q 24 72 22 58 Z" fill="${hFill}"/>
-        <path d="M 78 56 Q 83 68 90 90 Q 87 95 83 80 Q 80 68 78 56 Z" fill="${hFill}"/>
-        <path d="M 68 78 Q 78 72 90 90 Q 80 96 72 88 Q 66 84 68 78 Z" fill="${C.hc}"/>
-        <path d="M 28 28 Q 40 20 52 22" stroke="${C.hh}" stroke-width="1.5" fill="none" opacity="0.4" stroke-linecap="round"/>`;
-      hF = `<path d="M 28 44 Q 34 26 50 27 Q 66 26 72 44 Q 62 36 50 35 Q 38 36 28 44 Z" fill="${hFill}"/>
-        <path d="M 34 40 Q 40 28 53 30 Q 58 36 52 43 Q 50 38 46 43 Q 42 36 34 40 Z" fill="${C.hh}" opacity="0.55"/>
-        <path d="M 36 34 Q 46 26 56 32" stroke="${C.hh}" stroke-width="1.2" fill="none" opacity="0.5" stroke-linecap="round"/>`;
-
-    } else if (stage === 3) {
-      hB = `<path d="M 22 56 Q 21 22 50 19 Q 79 22 78 56 Q 70 31 50 29 Q 30 31 22 56 Z" fill="${hFill}"/>
-        <path d="M 50 24 L 47 12 L 53 12 Z" fill="${C.hc}"/>
-        <path d="M 22 55 Q 9 65 7 88 Q 11 93 18 80 Q 20 66 22 55 Z" fill="${hFill}"/>
-        <path d="M 22 55 Q 11 62 8 78 Q 12 82 18 70 Z" fill="${C.hh}" opacity="0.45"/>
-        <path d="M 78 55 Q 91 65 93 88 Q 89 93 82 80 Q 80 66 78 55 Z" fill="${hFill}"/>
-        <path d="M 78 55 Q 89 62 92 78 Q 88 82 82 70 Z" fill="${C.hh}" opacity="0.45"/>
-        <path d="M 12 72 Q 16 64 20 68" stroke="${C.hh}" stroke-width="1" fill="none" opacity="0.5" stroke-linecap="round"/>
-        <path d="M 88 72 Q 84 64 80 68" stroke="${C.hh}" stroke-width="1" fill="none" opacity="0.5" stroke-linecap="round"/>`;
-      hF = `<path d="M 28 44 Q 34 24 50 25 Q 66 24 72 44 Q 62 34 50 33 Q 38 34 28 44 Z" fill="${hFill}"/>
-        <path d="M 34 38 Q 42 26 56 29 Q 60 36 54 43 Q 52 37 48 43 Q 44 36 34 38 Z" fill="${C.hh}" opacity="0.55"/>
-        <path d="M 36 32 Q 46 24 56 30" stroke="${C.hh}" stroke-width="1.3" fill="none" opacity="0.55" stroke-linecap="round"/>`;
-
-    } else if (stage === 4) {
-      hB = `<path d="M 21 56 Q 20 20 50 17 Q 80 20 79 56 Q 71 29 50 27 Q 29 29 21 56 Z" fill="${hFill}"/>
-        <path d="M 47 19 Q 44 7 50 5 Q 56 7 53 19 Z" fill="${C.hc}"/>
-        <path d="M 21 56 Q 6 70 4 100 Q 8 106 16 92 Q 18 74 21 56 Z" fill="${hFill}"/>
-        <path d="M 21 56 Q 8 68 6 90 Q 10 93 16 80 Z" fill="${C.hh}" opacity="0.4"/>
-        <path d="M 79 56 Q 94 70 96 100 Q 92 106 84 92 Q 82 74 79 56 Z" fill="${hFill}"/>
-        <path d="M 79 56 Q 92 68 94 90 Q 90 93 84 80 Z" fill="${C.hh}" opacity="0.4"/>
-        <ellipse cx="21" cy="54" rx="6" ry="4" fill="${C.hh}" opacity="0.85" transform="rotate(-20 21 54)"/>
-        <ellipse cx="79" cy="54" rx="6" ry="4" fill="${C.hh}" opacity="0.85" transform="rotate(20 79 54)"/>
-        <path d="M 8 78 Q 12 68 16 74" stroke="${C.hh}" stroke-width="1.2" fill="none" opacity="0.5" stroke-linecap="round"/>
-        <path d="M 92 78 Q 88 68 84 74" stroke="${C.hh}" stroke-width="1.2" fill="none" opacity="0.5" stroke-linecap="round"/>`;
-      hF = `<path d="M 27 43 Q 34 22 50 23 Q 66 22 73 43 Q 63 32 50 31 Q 37 32 27 43 Z" fill="${hFill}"/>
-        <path d="M 33 37 Q 42 23 56 27 Q 61 35 55 42 Q 52 36 48 42 Q 43 35 33 37 Z" fill="${C.hh}" opacity="0.55"/>
-        <path d="M 35 30 Q 48 20 60 28" stroke="${C.hh}" stroke-width="1.5" fill="none" opacity="0.5" stroke-linecap="round"/>`;
-
-    } else if (stage === 5) {
-      hB = `<path d="M 21 56 Q 19 22 50 18 Q 81 22 79 56 Q 71 28 50 26 Q 29 28 21 56 Z" fill="${hFill}"/>
-        <path d="M 47 20 Q 44 6 50 4 Q 56 6 53 20 Z" fill="${C.hc}"/>
-        <path d="M 21 56 Q 8 80 5 116 Q 9 122 17 106 Q 19 82 21 56 Z" fill="${hFill}"/>
-        <path d="M 21 56 Q 10 76 8 106 Q 12 108 18 94 Z" fill="${C.hh}" opacity="0.5"/>
-        <path d="M 79 56 Q 92 80 95 116 Q 91 122 83 106 Q 81 82 79 56 Z" fill="${hFill}"/>
-        <path d="M 79 56 Q 90 76 92 106 Q 88 108 82 94 Z" fill="${C.hh}" opacity="0.5"/>
-        <path d="M 12 86 Q 16 74 20 80" stroke="${C.hh}" stroke-width="1.3" fill="none" opacity="0.5" stroke-linecap="round"/>
-        <path d="M 88 86 Q 84 74 80 80" stroke="${C.hh}" stroke-width="1.3" fill="none" opacity="0.5" stroke-linecap="round"/>`;
-      hF = `<path d="M 27 43 Q 33 22 50 22 Q 67 22 73 43 Q 63 31 50 30 Q 37 31 27 43 Z" fill="${hFill}"/>
-        <path d="M 33 36 Q 42 22 56 26 Q 61 34 55 41 Q 52 35 48 41 Q 43 34 33 36 Z" fill="${C.hh}" opacity="0.55"/>
-        <path d="M 35 28 Q 48 18 60 26" stroke="${C.hh}" stroke-width="1.5" fill="none" opacity="0.55" stroke-linecap="round"/>`;
-      if (C.eg) hF += `<ellipse cx="50" cy="40" rx="28" ry="10" fill="${C.eg}" opacity="0.07" filter="url(#${uid}e)"/>`;
-
+    // Classical Greek updo / braided style
+    hair = `<path d="M 24 54 Q 22 26 50 22 Q 78 26 76 54 Q 68 32 50 30 Q 32 32 24 54 Z" fill="${hFill}"/>`;
+    if (stage <= 2) {
+      // Simple gathered style
+      hair += `<path d="M 28 44 Q 34 28 50 28 Q 66 28 72 44 Q 62 36 50 35 Q 38 36 28 44 Z" fill="${C.hh}" opacity="0.6"/>
+        <ellipse cx="50" cy="24" rx="8" ry="5" fill="${C.hc}"/>`;
     } else {
-      hB = `<path d="M 50 -6 L 38 26 L 62 26 Z" fill="${C.hh}"/>
-        <path d="M 50 -6 L 38 26 L 62 26 Z" fill="${C.eg}" opacity="0.45" filter="url(#${uid}e)">
-          <animate attributeName="opacity" values="0.45;0.75;0.45" dur="1.6s" repeatCount="indefinite"/>
-        </path>
-        <path d="M 20 56 Q 18 30 50 22 Q 82 30 80 56 Z" fill="${hFill}"/>
-        <path d="M 20 56 Q 5 82 3 118 Q 7 124 15 108 Q 17 84 20 56 Z" fill="${hFill}"/>
-        <path d="M 20 56 Q 7 80 5 112 Q 9 114 15 100 Z" fill="${C.hh}" opacity="0.55"/>
-        <path d="M 5 112 Q 8 126 14 120 Q 10 116 5 112 Z" fill="${C.hh}" opacity="0.4"/>
-        <path d="M 80 56 Q 95 82 97 118 Q 93 124 85 108 Q 83 84 80 56 Z" fill="${hFill}"/>
-        <path d="M 80 56 Q 93 80 95 112 Q 91 114 85 100 Z" fill="${C.hh}" opacity="0.55"/>
-        <path d="M 95 112 Q 92 126 86 120 Q 90 116 95 112 Z" fill="${C.hh}" opacity="0.4"/>
-        <path d="M 10 92 Q 14 82 18 88" stroke="${C.hh}" stroke-width="1.5" fill="none" opacity="0.5" stroke-linecap="round"/>
-        <path d="M 90 92 Q 86 82 82 88" stroke="${C.hh}" stroke-width="1.5" fill="none" opacity="0.5" stroke-linecap="round"/>`;
-      hF = `<path d="M 27 43 Q 33 20 50 21 Q 67 20 73 43 Q 63 30 50 29 Q 37 30 27 43 Z" fill="${hFill}"/>
-        <path d="M 33 35 Q 42 20 56 25 Q 61 33 55 40 Q 52 34 48 40 Q 43 33 33 35 Z" fill="${C.hh}" opacity="0.7"/>
-        <path d="M 33 35 Q 42 20 56 25 Q 61 33 55 40 Q 52 34 48 40 Q 43 33 33 35 Z" fill="${C.eg}" opacity="0.45" filter="url(#${uid}e)"/>
-        <path d="M 36 26 Q 48 16 58 24" stroke="${C.hh}" stroke-width="1.8" fill="none" opacity="0.6" stroke-linecap="round"/>`;
+      // Elegant updo with bun
+      hair += `<path d="M 28 44 Q 34 26 50 26 Q 66 26 72 44 Q 62 34 50 33 Q 38 34 28 44 Z" fill="${C.hh}" opacity="0.6"/>
+        <ellipse cx="50" cy="20" rx="10" ry="7" fill="${hFill}"/>
+        <ellipse cx="50" cy="20" rx="7" ry="5" fill="${C.hc}" opacity="0.5"/>`;
     }
-
   } else {
-    // ── MALE HAIR ──────────────────────────────────────────────────────────
-    if (stage === 1) {
-      hB = `<path d="M 23 58 Q 22 22 50 19 Q 78 22 77 58 Q 69 34 50 32 Q 31 34 23 58 Z" fill="${hFill}"/>
-        <ellipse cx="23" cy="62" rx="4.5" ry="6.5" fill="${C.hc}"/>
-        <ellipse cx="77" cy="62" rx="4.5" ry="6.5" fill="${C.hc}"/>
-        <path d="M 35 28 Q 45 20 55 26" stroke="${C.hh}" stroke-width="1.3" fill="none" opacity="0.4" stroke-linecap="round"/>`;
-      hF = `<path d="M 30 45 Q 33 30 44 35 Q 41 47 35 49 Z" fill="${hFill}"/>
-        <path d="M 70 45 Q 67 30 56 35 Q 59 47 65 49 Z" fill="${hFill}"/>
-        <path d="M 40 31 Q 50 25 60 31 Q 55 37 50 34 Q 45 37 40 31 Z" fill="${C.hc}"/>
-        <path d="M 42 30 Q 50 26 58 30" stroke="${C.hh}" stroke-width="1" fill="none" opacity="0.5" stroke-linecap="round"/>`;
-
-    } else if (stage === 2) {
-      hB = `<path d="M 22 58 Q 21 20 50 17 Q 79 20 78 58 Q 70 32 50 29 Q 30 32 22 58 Z" fill="${hFill}"/>
-        <path d="M 46 19 Q 43 3 50 1 Q 57 3 54 19 Z" fill="${C.hc}"/>
-        <path d="M 22 58 Q 17 70 19 82 Q 23 84 25 72 Q 24 65 22 58 Z" fill="${hFill}"/>
-        <ellipse cx="78" cy="63" rx="4.5" ry="6" fill="${C.hc}"/>
-        <path d="M 32 26 Q 44 18 54 24" stroke="${C.hh}" stroke-width="1.3" fill="none" opacity="0.4" stroke-linecap="round"/>`;
-      hF = `<path d="M 28 46 Q 31 27 44 33 Q 41 49 33 51 Z" fill="${C.hh}" opacity="0.9"/>
-        <path d="M 72 46 Q 69 30 58 34 Q 61 48 67 50 Z" fill="${hFill}"/>
-        <path d="M 40 29 Q 50 22 60 29 Q 55 36 50 31 Q 45 36 40 29 Z" fill="${C.hc}"/>
-        <path d="M 42 28 Q 50 22 58 28" stroke="${C.hh}" stroke-width="1.2" fill="none" opacity="0.5" stroke-linecap="round"/>`;
-
-    } else if (stage === 3) {
-      hB = `<path d="M 50 7 L 42 32 L 58 32 Z" fill="${hFill}"/>
-        <path d="M 36 11 L 29 36 L 48 36 Z" fill="${hFill}"/>
-        <path d="M 64 11 L 71 36 L 52 36 Z" fill="${hFill}"/>
-        <path d="M 22 28 L 17 52 L 34 47 Z" fill="${C.hc}"/>
-        <path d="M 78 28 L 83 52 L 66 47 Z" fill="${C.hc}"/>
-        <path d="M 22 58 Q 22 38 38 35 Q 50 31 62 35 Q 78 38 78 58 Z" fill="${hFill}"/>
-        <path d="M 22 58 Q 16 71 18 83 Q 22 85 24 73 Q 23 65 22 58 Z" fill="${C.hc}"/>
-        <path d="M 78 58 Q 84 71 82 83 Q 78 85 76 73 Q 77 65 78 58 Z" fill="${C.hc}"/>
-        <path d="M 46 14 L 50 7 L 54 14" stroke="${C.hh}" stroke-width="1.5" fill="none" opacity="0.55" stroke-linecap="round"/>`;
-      hF = `<path d="M 29 46 Q 32 28 44 34 Q 40 50 33 52 Z" fill="${C.hh}" opacity="0.85"/>
-        <path d="M 71 46 Q 68 28 56 34 Q 60 50 67 52 Z" fill="${C.hh}" opacity="0.85"/>
-        <path d="M 40 32 Q 50 24 60 32 Q 55 39 50 35 Q 45 39 40 32 Z" fill="${C.hh}" opacity="0.9"/>
-        <path d="M 42 30 Q 50 24 58 30" stroke="${C.hh}" stroke-width="1.3" fill="none" opacity="0.6" stroke-linecap="round"/>`;
-
-    } else if (stage === 4) {
-      hB = `<path d="M 50 3 L 40 30 L 60 30 Z" fill="${hFill}"/>
-        <path d="M 34 7 L 25 34 L 48 33 Z" fill="${hFill}"/>
-        <path d="M 66 7 L 75 34 L 52 33 Z" fill="${hFill}"/>
-        <path d="M 18 21 L 11 50 L 32 45 Z" fill="${C.hc}"/>
-        <path d="M 82 21 L 89 50 L 68 45 Z" fill="${C.hc}"/>
-        <path d="M 7 34 L 2 62 L 22 56 Z" fill="${C.hc}"/>
-        <path d="M 93 34 L 98 62 L 78 56 Z" fill="${C.hc}"/>
-        <path d="M 20 58 Q 20 36 40 31 Q 50 27 60 31 Q 80 36 80 58 Z" fill="${hFill}"/>
-        <path d="M 20 58 Q 12 74 14 88 Q 18 90 22 78 Q 21 68 20 58 Z" fill="${C.hc}"/>
-        <path d="M 80 58 Q 88 74 86 88 Q 82 90 78 78 Q 79 68 80 58 Z" fill="${C.hc}"/>
-        <path d="M 44 10 L 50 3 L 56 10" stroke="${C.hh}" stroke-width="1.8" fill="none" opacity="0.6" stroke-linecap="round"/>
-        <path d="M 29 14 L 34 7 L 39 14" stroke="${C.hh}" stroke-width="1.3" fill="none" opacity="0.5" stroke-linecap="round"/>
-        <path d="M 61 14 L 66 7 L 71 14" stroke="${C.hh}" stroke-width="1.3" fill="none" opacity="0.5" stroke-linecap="round"/>`;
-      hF = `<path d="M 44 28 Q 50 17 56 28 Q 52 35 50 30 Q 48 35 44 28 Z" fill="${C.hh}" opacity="0.9"/>
-        <path d="M 26 47 Q 28 25 43 32 Q 38 52 30 54 Z" fill="${C.hh}" opacity="0.85"/>
-        <path d="M 74 47 Q 72 25 57 32 Q 62 52 70 54 Z" fill="${C.hh}" opacity="0.85"/>
-        <path d="M 30 38 Q 40 26 50 30" stroke="${C.hh}" stroke-width="1.5" fill="none" opacity="0.55" stroke-linecap="round"/>`;
-
-    } else if (stage === 5) {
-      hB = `<path d="M 22 58 Q 20 26 38 21 Q 50 17 62 21 Q 80 26 78 58 Z" fill="${hFill}"/>
-        <path d="M 47 19 Q 44 5 50 3 Q 56 5 53 19 Z" fill="${C.hc}"/>
-        <path d="M 22 58 Q 13 78 11 106 Q 15 110 19 96 Q 21 82 22 68 Q 22 63 22 58 Z" fill="${hFill}"/>
-        <path d="M 78 58 Q 87 78 89 106 Q 85 110 81 96 Q 79 82 78 68 Q 78 63 78 58 Z" fill="${hFill}"/>
-        <path d="M 18 72 Q 20 64 22 68" stroke="${C.hh}" stroke-width="1.3" fill="none" opacity="0.5" stroke-linecap="round"/>
-        <path d="M 82 72 Q 80 64 78 68" stroke="${C.hh}" stroke-width="1.3" fill="none" opacity="0.5" stroke-linecap="round"/>`;
-      hF = `<path d="M 28 46 Q 30 25 45 32 Q 40 51 32 53 Z" fill="${C.hh}" opacity="0.85"/>
-        <path d="M 72 46 Q 70 25 55 32 Q 60 51 68 53 Z" fill="${C.hh}" opacity="0.85"/>
-        <path d="M 40 29 Q 50 21 60 29 Q 55 36 50 32 Q 45 36 40 29 Z" fill="${C.hh}" opacity="0.9"/>
-        <path d="M 34 36 Q 46 24 58 32" stroke="${C.hh}" stroke-width="1.5" fill="none" opacity="0.55" stroke-linecap="round"/>`;
-      if (C.eg) hF += `<ellipse cx="50" cy="40" rx="28" ry="10" fill="${C.eg}" opacity="0.07" filter="url(#${uid}e)"/>`;
-
+    // Classical Greek male hair — short, curly/wavy
+    if (stage <= 2) {
+      hair = `<path d="M 25 54 Q 24 28 50 24 Q 76 28 75 54 Q 67 34 50 32 Q 33 34 25 54 Z" fill="${hFill}"/>
+        <path d="M 30 44 Q 36 30 50 30 Q 64 30 70 44 Q 60 36 50 35 Q 40 36 30 44 Z" fill="${C.hh}" opacity="0.5"/>`;
+    } else if (stage <= 4) {
+      hair = `<path d="M 24 54 Q 22 26 50 22 Q 78 26 76 54 Q 68 30 50 28 Q 32 30 24 54 Z" fill="${hFill}"/>
+        <path d="M 28 44 Q 34 26 50 26 Q 66 26 72 44 Q 62 34 50 33 Q 38 34 28 44 Z" fill="${C.hh}" opacity="0.55"/>
+        <path d="M 34 36 Q 42 26 50 28 Q 58 26 66 36" stroke="${C.hh}" stroke-width="1.5" fill="none" opacity="0.4" stroke-linecap="round"/>`;
     } else {
-      hB = `<path d="M 50 -6 L 38 26 L 62 26 Z" fill="${C.hh}"/>
-        <path d="M 32 -2 L 21 28 L 50 26 Z" fill="${C.hh}" opacity="0.9"/>
-        <path d="M 68 -2 L 79 28 L 50 26 Z" fill="${C.hh}" opacity="0.9"/>
-        <path d="M 14 14 L 5 46 L 32 41 Z" fill="${hFill}"/>
-        <path d="M 86 14 L 95 46 L 68 41 Z" fill="${hFill}"/>
-        <path d="M 4 30 L -3 60 L 20 55 Z" fill="${C.hc}"/>
-        <path d="M 96 30 L 103 60 L 80 55 Z" fill="${C.hc}"/>
-        <path d="M 18 58 Q 18 33 40 26 Q 50 22 60 26 Q 82 33 82 58 Z" fill="${hFill}"/>
-        <path d="M 18 58 Q 9 78 7 106 Q 11 110 15 96 Q 17 82 18 68 Z" fill="${C.hc}"/>
-        <path d="M 82 58 Q 91 78 93 106 Q 89 110 85 96 Q 83 82 82 68 Z" fill="${C.hc}"/>`;
-      hB += `<path d="M 50 -6 L 38 26 L 62 26 Z" fill="${C.eg}" opacity="0.55" filter="url(#${uid}e)">
-        <animate attributeName="opacity" values="0.55;0.85;0.55" dur="1.6s" repeatCount="indefinite"/>
-      </path>
-      <path d="M 32 -2 L 21 28 L 50 26 Z" fill="${C.eg}" opacity="0.35" filter="url(#${uid}e)"/>
-      <path d="M 68 -2 L 79 28 L 50 26 Z" fill="${C.eg}" opacity="0.35" filter="url(#${uid}e)"/>`;
-      hF = `<path d="M 40 24 Q 50 11 60 24 Q 54 31 50 27 Q 46 31 40 24 Z" fill="${C.hh}" opacity="0.95"/>
-        <path d="M 40 24 Q 50 11 60 24 Q 54 31 50 27 Q 46 31 40 24 Z" fill="${C.eg}" opacity="0.55" filter="url(#${uid}e)"/>
-        <path d="M 44 18 Q 50 11 56 18" stroke="${C.hh}" stroke-width="1.8" fill="none" opacity="0.65" stroke-linecap="round"/>`;
+      // Longer, philosopher-style
+      hair = `<path d="M 23 56 Q 21 24 50 20 Q 79 24 77 56 Q 69 30 50 28 Q 31 30 23 56 Z" fill="${hFill}"/>
+        <path d="M 23 56 Q 18 68 20 78 Q 24 80 26 70 Q 24 63 23 56 Z" fill="${C.hc}" opacity="0.7"/>
+        <path d="M 77 56 Q 82 68 80 78 Q 76 80 74 70 Q 76 63 77 56 Z" fill="${C.hc}" opacity="0.7"/>
+        <path d="M 28 44 Q 34 24 50 24 Q 66 24 72 44 Q 62 32 50 31 Q 38 32 28 44 Z" fill="${C.hh}" opacity="0.55"/>`;
     }
   }
 
-  // ── EYE GLOW ─────────────────────────────────────────────────────────────
-  const eyeGlow = C.eg ? `
-    <ellipse cx="39" cy="55" rx="10" ry="9" fill="${C.eg}" opacity="0.25" filter="url(#${uid}e)"/>
-    <ellipse cx="61" cy="55" rx="10" ry="9" fill="${C.eg}" opacity="0.25" filter="url(#${uid}e)"/>` : '';
+  // ── HEADGEAR (stage-based) ───────────────────────────────────────────────
+  let headgear = '';
+  if (stage === 2 && C.sash) {
+    // Headband
+    headgear = `<path d="M 26 44 Q 50 38 74 44" stroke="${C.sash}" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M 26 44 Q 50 40 74 44" stroke="${C.sash}" stroke-width="1.5" fill="none" opacity="0.5" stroke-linecap="round" transform="translate(0,-2)"/>`;
+  } else if (stage === 3 && C.metal) {
+    // Olive wreath
+    headgear = `<path d="M 26 40 Q 34 32 50 30 Q 66 32 74 40" stroke="${C.metal}" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <ellipse cx="30" cy="38" rx="4" ry="2.5" fill="${C.metal}" opacity="0.8" transform="rotate(-30 30 38)"/>
+      <ellipse cx="38" cy="34" rx="4" ry="2.5" fill="${C.metal}" opacity="0.7" transform="rotate(-15 38 34)"/>
+      <ellipse cx="50" cy="32" rx="4" ry="2.5" fill="${C.metal}" opacity="0.8"/>
+      <ellipse cx="62" cy="34" rx="4" ry="2.5" fill="${C.metal}" opacity="0.7" transform="rotate(15 62 34)"/>
+      <ellipse cx="70" cy="38" rx="4" ry="2.5" fill="${C.metal}" opacity="0.8" transform="rotate(30 70 38)"/>`;
+  } else if (stage === 4 && C.metal) {
+    // Spartan helmet crest
+    headgear = `<path d="M 24 52 Q 24 28 50 22 Q 76 28 76 52" stroke="${C.metal}" stroke-width="2.5" fill="none"/>
+      <path d="M 24 52 L 22 56" stroke="${C.metal}" stroke-width="2" stroke-linecap="round"/>
+      <path d="M 76 52 L 78 56" stroke="${C.metal}" stroke-width="2" stroke-linecap="round"/>
+      <path d="M 50 22 Q 50 8 50 4" stroke="${C.sash}" stroke-width="3" stroke-linecap="round"/>
+      <path d="M 48 4 Q 50 2 52 4 Q 54 10 56 18" stroke="${C.sash}" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <path d="M 44 18 Q 46 10 48 4" stroke="${C.sash}" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <path d="M 30 48 Q 50 42 70 48" stroke="${C.metal}" stroke-width="1.5" fill="none" opacity="0.6"/>`;
+  } else if (stage === 5 && C.metal) {
+    // Golden laurel wreath
+    headgear = `<path d="M 26 42 Q 38 30 50 28 Q 62 30 74 42" stroke="${C.metal}" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <ellipse cx="28" cy="40" rx="5" ry="3" fill="${C.metal}" opacity="0.85" transform="rotate(-35 28 40)"/>
+      <ellipse cx="35" cy="35" rx="5" ry="3" fill="${C.metal}" opacity="0.75" transform="rotate(-20 35 35)"/>
+      <ellipse cx="43" cy="31" rx="5" ry="3" fill="${C.metal}" opacity="0.85" transform="rotate(-8 43 31)"/>
+      <ellipse cx="50" cy="29" rx="5" ry="3" fill="${C.metal}" opacity="0.9"/>
+      <ellipse cx="57" cy="31" rx="5" ry="3" fill="${C.metal}" opacity="0.85" transform="rotate(8 57 31)"/>
+      <ellipse cx="65" cy="35" rx="5" ry="3" fill="${C.metal}" opacity="0.75" transform="rotate(20 65 35)"/>
+      <ellipse cx="72" cy="40" rx="5" ry="3" fill="${C.metal}" opacity="0.85" transform="rotate(35 72 40)"/>`;
+  } else if (stage === 6 && C.metal) {
+    // Radiant golden crown with glow
+    headgear = `<path d="M 24 42 Q 38 28 50 26 Q 62 28 76 42" stroke="${C.metal}" stroke-width="2.5" fill="none" stroke-linecap="round" filter="url(#${uid}gl)"/>
+      <ellipse cx="28" cy="40" rx="5" ry="3" fill="${C.metal}" transform="rotate(-35 28 40)"/>
+      <ellipse cx="35" cy="34" rx="5.5" ry="3" fill="${C.metal}" transform="rotate(-20 35 34)"/>
+      <ellipse cx="43" cy="30" rx="5.5" ry="3" fill="${C.metal}" transform="rotate(-8 43 30)"/>
+      <ellipse cx="50" cy="28" rx="5.5" ry="3.5" fill="${C.metal}"/>
+      <ellipse cx="57" cy="30" rx="5.5" ry="3" fill="${C.metal}" transform="rotate(8 57 30)"/>
+      <ellipse cx="65" cy="34" rx="5.5" ry="3" fill="${C.metal}" transform="rotate(20 65 34)"/>
+      <ellipse cx="72" cy="40" rx="5" ry="3" fill="${C.metal}" transform="rotate(35 72 40)"/>
+      <circle cx="50" cy="27" r="3" fill="${C.metal}" opacity="0.9">
+        <animate attributeName="opacity" values="0.9;0.5;0.9" dur="2s" repeatCount="indefinite"/>
+      </circle>
+      <line x1="50" y1="24" x2="50" y2="18" stroke="${C.metal}" stroke-width="1.5" opacity="0.7" stroke-linecap="round">
+        <animate attributeName="opacity" values="0.7;0.3;0.7" dur="1.8s" repeatCount="indefinite"/>
+      </line>
+      <line x1="43" y1="26" x2="40" y2="20" stroke="${C.metal}" stroke-width="1.2" opacity="0.5" stroke-linecap="round"/>
+      <line x1="57" y1="26" x2="60" y2="20" stroke="${C.metal}" stroke-width="1.2" opacity="0.5" stroke-linecap="round"/>`;
+  }
 
-  // ── BODY ─────────────────────────────────────────────────────────────────
-  const neckShadow = `<ellipse cx="50" cy="84" rx="12" ry="4" fill="${skD}" opacity="0.35" filter="url(#${uid}sh)"/>`;
-  const neck = `<path d="M 44 82 L 44 91 Q 50 93 56 91 L 56 82 Z" fill="url(#${uid}sk)"/>`;
-  const torso = `<path d="M 19 95 Q 14 102 13 130 L 87 130 Q 86 102 81 95 Q 65 85 50 85 Q 35 85 19 95 Z" fill="url(#${uid}ot)"/>`;
+  // ── BODY & TOGA ──────────────────────────────────────────────────────────
+  const neckShadow = `<ellipse cx="50" cy="82" rx="12" ry="4" fill="${skD}" opacity="0.35" filter="url(#${uid}sh)"/>`;
+  const neck = `<path d="M 44 80 L 44 89 Q 50 91 56 89 L 56 80 Z" fill="url(#${uid}sk)"/>`;
 
-  // Collar / shoulder highlights
-  const shoulderHL = `<path d="M 22 96 Q 35 88 50 87 Q 65 88 78 96" stroke="${C.oc}" stroke-width="1.5" fill="none" opacity="0.3" stroke-linecap="round"/>`;
+  // Toga / chiton body
+  const torso = `<path d="M 19 95 Q 14 102 13 130 L 87 130 Q 86 102 81 95 Q 65 85 50 85 Q 35 85 19 95 Z" fill="url(#${uid}tg)"/>`;
 
-  let outfitDetail = '';
+  // Toga drape detail
+  let togaDetail = '';
   if (gender === 'female') {
-    if (stage <= 2) {
-      outfitDetail = `<path d="M 40 91 Q 50 100 60 91 Q 56 96 50 94 Q 44 96 40 91 Z" fill="${C.oa}"/>
-        <path d="M 46 89 Q 50 86 54 89 Q 52 92 50 90 Q 48 92 46 89 Z" fill="${C.hh}" opacity="0.5"/>`;
-    } else if (stage === 3) {
-      outfitDetail = `<path d="M 38 91 Q 50 102 62 91" stroke="${C.oa}" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-        <path d="M 46 89 Q 50 86 54 89 Q 52 93 50 91 Q 48 93 46 89 Z" fill="${C.hh}" opacity="0.65"/>
-        <line x1="50" y1="91" x2="50" y2="114" stroke="${C.oa}" stroke-width="1.5" opacity="0.55"/>`;
-    } else {
-      outfitDetail = `<path d="M 27 100 Q 50 105 73 100 Q 71 113 50 116 Q 29 113 27 100 Z" fill="${C.oa}" opacity="0.88"/>
-        <path d="M 44 91 Q 50 97 56 91 Q 54 97 50 95 Q 46 97 44 91 Z" fill="${C.oa}"/>
-        <path d="M 46 89 Q 50 86 54 89 Q 52 92 50 90 Q 48 92 46 89 Z" fill="${C.hh}" opacity="0.5"/>`;
-      if (stage >= 5) outfitDetail += `<ellipse cx="21" cy="97" rx="10" ry="6.5" fill="${C.oa}" transform="rotate(-18 21 97)"/>
-        <ellipse cx="79" cy="97" rx="10" ry="6.5" fill="${C.oa}" transform="rotate(18 79 97)"/>`;
-      if (stage === 6) outfitDetail += `<path d="M 27 100 Q 50 105 73 100" stroke="#fbbf24" stroke-width="1.3" fill="none"/>
-        <ellipse cx="21" cy="97" rx="10" ry="6.5" fill="none" stroke="#fbbf24" stroke-width="1" transform="rotate(-18 21 97)"/>
-        <ellipse cx="79" cy="97" rx="10" ry="6.5" fill="none" stroke="#fbbf24" stroke-width="1" transform="rotate(18 79 97)"/>`;
+    // Feminine chiton with gathered neckline
+    togaDetail = `<path d="M 36 89 Q 50 96 64 89" stroke="${C.toga2}" stroke-width="1.5" fill="none" opacity="0.6" stroke-linecap="round"/>
+      <path d="M 30 100 Q 35 95 40 100 Q 45 105 50 100 Q 55 95 60 100 Q 65 105 70 100" stroke="${C.toga2}" stroke-width="1" fill="none" opacity="0.35"/>`;
+    if (C.sash && stage >= 3) {
+      togaDetail += `<path d="M 62 89 Q 70 95 74 110 Q 72 115 68 105 Q 64 95 62 89 Z" fill="${C.sash}" opacity="0.75"/>`;
     }
   } else {
-    if (stage <= 2) {
-      outfitDetail = `<path d="M 40 91 Q 50 100 60 91 Q 56 95 50 93 Q 44 95 40 91 Z" fill="${C.oa}"/>`;
-    } else if (stage === 3) {
-      outfitDetail = `<path d="M 38 91 Q 50 102 62 91" stroke="${C.oa}" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-        <line x1="50" y1="91" x2="50" y2="114" stroke="${C.oa}" stroke-width="1.5" opacity="0.55"/>
-        <line x1="32" y1="100" x2="68" y2="100" stroke="${C.oa}" stroke-width="1" opacity="0.4"/>`;
-    } else {
-      outfitDetail = `<path d="M 27 100 Q 50 105 73 100 Q 71 113 50 116 Q 29 113 27 100 Z" fill="${C.oa}" opacity="0.88"/>
-        <path d="M 44 91 Q 50 97 56 91 Q 54 97 50 95 Q 46 97 44 91 Z" fill="${C.oa}"/>`;
-      if (stage >= 5) outfitDetail += `<ellipse cx="21" cy="97" rx="10" ry="6.5" fill="${C.oa}" transform="rotate(-18 21 97)"/>
-        <ellipse cx="79" cy="97" rx="10" ry="6.5" fill="${C.oa}" transform="rotate(18 79 97)"/>`;
-      if (stage === 6) outfitDetail += `<path d="M 27 100 Q 50 105 73 100" stroke="#fbbf24" stroke-width="1.3" fill="none"/>
-        <ellipse cx="21" cy="97" rx="10" ry="6.5" fill="none" stroke="#fbbf24" stroke-width="1" transform="rotate(-18 21 97)"/>
-        <ellipse cx="79" cy="97" rx="10" ry="6.5" fill="none" stroke="#fbbf24" stroke-width="1" transform="rotate(18 79 97)"/>`;
+    // Male toga with shoulder drape
+    togaDetail = `<path d="M 38 89 Q 50 94 62 89" stroke="${C.toga2}" stroke-width="1.5" fill="none" opacity="0.5" stroke-linecap="round"/>
+      <path d="M 22 96 Q 28 92 35 100 Q 40 110 38 120" stroke="${C.toga2}" stroke-width="1.2" fill="none" opacity="0.3"/>
+      <path d="M 60 100 Q 65 95 72 96 Q 78 100 80 110" stroke="${C.toga2}" stroke-width="1.2" fill="none" opacity="0.3"/>`;
+    if (C.sash && stage >= 2) {
+      togaDetail += `<path d="M 22 95 Q 30 88 38 89 Q 34 100 28 108 Q 22 112 20 108 Q 20 102 22 95 Z" fill="${C.sash}" opacity="0.7"/>`;
     }
   }
 
-  // ── FACE ─────────────────────────────────────────────────────────────────
-  const eyeRx = gender === 'female' ? 9 : 8.5;
-  const eyeRy = gender === 'female' ? 8.5 : 8;
-  const irisR = gender === 'female' ? 7 : 6.5;
+  // Metal brooch/pin for higher stages
+  let brooch = '';
+  if (C.metal && stage >= 3) {
+    brooch = `<circle cx="${gender === 'female' ? 50 : 30}" cy="${gender === 'female' ? 89 : 92}" r="3" fill="${C.metal}" opacity="0.9"/>
+      <circle cx="${gender === 'female' ? 50 : 30}" cy="${gender === 'female' ? 89 : 92}" r="1.5" fill="${C.toga}" opacity="0.5"/>`;
+  }
 
-  // Anime lashes (female gets outer lash flicks)
-  const lashes = gender === 'female' ? `
-    <path d="M 29.5 52 Q 32 48 35 50" stroke="#1a1008" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-    <path d="M 43 49.5 Q 46 47 48.5 48.5" stroke="#1a1008" stroke-width="1.3" fill="none" stroke-linecap="round"/>
-    <path d="M 51.5 48.5 Q 54 47 57 49.5" stroke="#1a1008" stroke-width="1.3" fill="none" stroke-linecap="round"/>
-    <path d="M 65 50 Q 68 48 70.5 52" stroke="#1a1008" stroke-width="1.5" fill="none" stroke-linecap="round"/>` : '';
-
-  const browW = gender === 'female' ? 1.7 : 2.2;
+  // ── FACE (classical proportions, not anime) ──────────────────────────────
+  const eyeRx = gender === 'female' ? 5.5 : 5;
+  const eyeRy = gender === 'female' ? 4.5 : 4;
+  const browW = gender === 'female' ? 1.5 : 2;
+  const irisC = '#5a4830';  // warm brown iris
+  const irisH = '#3d2814';  // darker pupil
 
   const face = `
-    <!-- Face base with gradient -->
-    <circle cx="50" cy="58" r="27" fill="url(#${uid}sk)"/>
-    <!-- Chin highlight -->
-    <ellipse cx="50" cy="76" rx="10" ry="4" fill="${skL}" opacity="0.15"/>
+    <!-- Head -->
+    <circle cx="50" cy="56" r="26" fill="url(#${uid}sk)"/>
+    <!-- Jaw definition -->
+    <path d="M 28 62 Q 50 82 72 62" stroke="${skS}" stroke-width="0.6" fill="none" opacity="0.2"/>
     <!-- Ears -->
-    <ellipse cx="23" cy="60" rx="4" ry="5.5" fill="url(#${uid}sk)"/>
-    <ellipse cx="77" cy="60" rx="4" ry="5.5" fill="url(#${uid}sk)"/>
-    <ellipse cx="23" cy="61" rx="2.5" ry="3.2" fill="${skS}" opacity="0.6"/>
-    <ellipse cx="77" cy="61" rx="2.5" ry="3.2" fill="${skS}" opacity="0.6"/>
-    <!-- Eye glow (higher stages) -->
-    ${eyeGlow}
-    <!-- Eye whites -->
-    <ellipse cx="39" cy="56" rx="${eyeRx}" ry="${eyeRy}" fill="white"/>
-    <ellipse cx="61" cy="56" rx="${eyeRx}" ry="${eyeRy}" fill="white"/>
-    <!-- Upper eyelid shadow -->
-    <ellipse cx="39" cy="52" rx="${eyeRx-1}" ry="3" fill="#00000008"/>
-    <ellipse cx="61" cy="52" rx="${eyeRx-1}" ry="3" fill="#00000008"/>
-    <!-- Iris (gradient) -->
-    <ellipse cx="39" cy="57" rx="${irisR}" ry="${irisR}" fill="url(#${uid}ir)"/>
-    <ellipse cx="61" cy="57" rx="${irisR}" ry="${irisR}" fill="url(#${uid}ir)"/>
-    <!-- Pupil -->
-    <circle cx="39" cy="58" r="3.2" fill="${C.ep}"/>
-    <circle cx="61" cy="58" r="3.2" fill="${C.ep}"/>
-    <!-- Bottom iris reflection -->
-    <ellipse cx="39" cy="61" rx="4" ry="2" fill="${C.em}" opacity="0.18"/>
-    <ellipse cx="61" cy="61" rx="4" ry="2" fill="${C.em}" opacity="0.18"/>
-    <!-- Primary catchlight -->
-    <circle cx="35.5" cy="53" r="2.5" fill="white"/>
-    <circle cx="57.5" cy="53" r="2.5" fill="white"/>
-    <!-- Secondary catchlight -->
-    <circle cx="42" cy="59.5" r="1.3" fill="white" opacity="0.7"/>
-    <circle cx="64" cy="59.5" r="1.3" fill="white" opacity="0.7"/>
-    <!-- Tiny sparkle -->
-    <circle cx="36.5" cy="56" r="0.7" fill="white" opacity="0.6"/>
-    <circle cx="58.5" cy="56" r="0.7" fill="white" opacity="0.6"/>
-    <!-- Upper eyelid line -->
-    <path d="M ${30.5} ${53} Q 39 ${48.5} ${47.5} ${53}" stroke="#1a1008" stroke-width="2" fill="none" stroke-linecap="round"/>
-    <path d="M ${52.5} ${53} Q 61 ${48.5} ${69.5} ${53}" stroke="#1a1008" stroke-width="2" fill="none" stroke-linecap="round"/>
-    <!-- Lower eyelid hint -->
-    <path d="M 33 60.5 Q 39 63 45 60.5" stroke="${skS}" stroke-width="0.8" fill="none" opacity="0.4" stroke-linecap="round"/>
-    <path d="M 55 60.5 Q 61 63 67 60.5" stroke="${skS}" stroke-width="0.8" fill="none" opacity="0.4" stroke-linecap="round"/>
-    <!-- Lashes -->
-    ${lashes}
+    <ellipse cx="24" cy="58" rx="3.5" ry="5" fill="url(#${uid}sk)"/>
+    <ellipse cx="76" cy="58" rx="3.5" ry="5" fill="url(#${uid}sk)"/>
+    <ellipse cx="24" cy="59" rx="2" ry="3" fill="${skS}" opacity="0.4"/>
+    <ellipse cx="76" cy="59" rx="2" ry="3" fill="${skS}" opacity="0.4"/>
     <!-- Eyebrows -->
-    <path d="M 31 47 Q 39 43 47 45.5" stroke="${C.hc}" stroke-width="${browW}" fill="none" stroke-linecap="round"/>
-    <path d="M 53 45.5 Q 61 43 69 47" stroke="${C.hc}" stroke-width="${browW}" fill="none" stroke-linecap="round"/>
+    <path d="M 34 48 Q 40 45 46 47" stroke="${C.hc}" stroke-width="${browW}" fill="none" stroke-linecap="round"/>
+    <path d="M 54 47 Q 60 45 66 48" stroke="${C.hc}" stroke-width="${browW}" fill="none" stroke-linecap="round"/>
+    <!-- Eyes -->
+    <ellipse cx="40" cy="54" rx="${eyeRx}" ry="${eyeRy}" fill="white"/>
+    <ellipse cx="60" cy="54" rx="${eyeRx}" ry="${eyeRy}" fill="white"/>
+    <!-- Upper lid line -->
+    <path d="M ${40-eyeRx} 53 Q 40 ${50} ${40+eyeRx} 53" stroke="#2a1a0a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <path d="M ${60-eyeRx} 53 Q 60 ${50} ${60+eyeRx} 53" stroke="#2a1a0a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <!-- Iris -->
+    <circle cx="40" cy="55" r="3.5" fill="${irisC}"/>
+    <circle cx="60" cy="55" r="3.5" fill="${irisC}"/>
+    <!-- Pupil -->
+    <circle cx="40" cy="55" r="1.8" fill="${irisH}"/>
+    <circle cx="60" cy="55" r="1.8" fill="${irisH}"/>
+    <!-- Catchlight -->
+    <circle cx="38.5" cy="53.5" r="1.2" fill="white"/>
+    <circle cx="58.5" cy="53.5" r="1.2" fill="white"/>
+    ${gender === 'female' ? `<path d="M ${40-eyeRx-0.5} 52 Q ${40-eyeRx+1} 50 ${40-eyeRx+3} 51" stroke="#2a1a0a" stroke-width="1" fill="none" stroke-linecap="round"/>
+    <path d="M ${60+eyeRx-3} 51 Q ${60+eyeRx-1} 50 ${60+eyeRx+0.5} 52" stroke="#2a1a0a" stroke-width="1" fill="none" stroke-linecap="round"/>` : ''}
     <!-- Nose -->
-    <path d="M 47 65 Q 50 68 53 65" stroke="${skS}" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-    <circle cx="48" cy="66" r="0.6" fill="${skS}" opacity="0.4"/>
+    <path d="M 48 62 Q 50 64 52 62" stroke="${skS}" stroke-width="1.2" fill="none" stroke-linecap="round"/>
     <!-- Mouth -->
-    <path d="M 44 73 Q 50 78 56 73" stroke="#d4826a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
-    <path d="M 46 73.5 Q 50 75 54 73.5" fill="#e89880" opacity="0.25"/>
-    <!-- Blush -->
-    <ellipse cx="31" cy="66" rx="6.5" ry="3.5" fill="#ffaabb" opacity="0.22"/>
-    <ellipse cx="69" cy="66" rx="6.5" ry="3.5" fill="#ffaabb" opacity="0.22"/>`;
+    <path d="M 44 70 Q 50 74 56 70" stroke="#c4756a" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+    <!-- Subtle cheek shading -->
+    <ellipse cx="33" cy="63" rx="5" ry="3" fill="#dba898" opacity="0.15"/>
+    <ellipse cx="67" cy="63" rx="5" ry="3" fill="#dba898" opacity="0.15"/>`;
 
   return `<svg viewBox="5 -10 90 140" xmlns="http://www.w3.org/2000/svg"
       style="width:100%;height:100%" aria-hidden="true">
     <defs>${defs}</defs>
     ${aura}${parts}
-    ${hB}
-    ${neckShadow}${neck}${torso}${shoulderHL}${outfitDetail}
+    ${hair}
+    ${neckShadow}${neck}${torso}${togaDetail}${brooch}
     ${face}
-    ${hF}
+    ${headgear}
   </svg>`;
 }
 

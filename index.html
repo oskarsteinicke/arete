@@ -21,7 +21,7 @@
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=40">
+  <link rel="stylesheet" href="style.css?v=41">
 </head>
 <body>
 <div id="app" role="application" aria-label="Arete lifestyle tracker">
@@ -82,17 +82,17 @@
     </button>
   </nav>
 </div>
-<script src="data.js?v=40"></script>
-<script src="app.js?v=40"></script>
-<script src="workout.js?v=40"></script>
-<script src="diet.js?v=40"></script>
-<script src="coach.js?v=40"></script>
-<script src="social.js?v=40"></script>
-<script src="profile.js?v=40"></script>
+<script src="data.js?v=41"></script>
+<script src="app.js?v=41"></script>
+<script src="workout.js?v=41"></script>
+<script src="diet.js?v=41"></script>
+<script src="coach.js?v=41"></script>
+<script src="social.js?v=41"></script>
+<script src="profile.js?v=41"></script>
 <script>
   if ('serviceWorker' in navigator) {
     // Purge ALL old caches on load to ensure fresh files
-    caches.keys().then(ks => ks.filter(k => k !== 'arete-v10').forEach(k => caches.delete(k)));
+    caches.keys().then(ks => ks.filter(k => k !== 'arete-v11').forEach(k => caches.delete(k)));
     navigator.serviceWorker.register('/arete/service-worker.js').then(reg => {
       reg.update();
     });
