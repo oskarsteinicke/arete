@@ -3,8 +3,8 @@
 // ══════════════════════════════════════════════════════════════════════════
 
 // ── AI FETCH HELPER (Gemini primary, Pollinations fallback) ──────────────
-const _GEMINI_KEY = 'AIzaSyCsZ6WWdWsp7DrjNuPIt6qO7Or_DSz7QNE';
-const _GEMINI_MODEL = 'gemini-2.0-flash-lite';
+const _GEMINI_KEY = 'AIzaSyDt5Fj09Z2yVpdD2jm0NWPwu7pgdICa67s';
+const _GEMINI_MODEL = 'gemini-2.5-flash';
 
 async function _aiFetch(messages, { timeout = 30000, retries = 1, model = 'openai', jsonMode = false } = {}) {
   if (!navigator.onLine) throw new Error('offline');
