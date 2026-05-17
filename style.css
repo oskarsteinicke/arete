@@ -408,6 +408,18 @@ nav {
 .w-add-set:hover { color: var(--accent-b); }
 .w-set-actions { display: flex; gap: 4px; }
 
+/* Warmup sets */
+.w-set-warmup { opacity: 0.55; }
+.w-set-warmup .w-set-num { background: var(--surface2); color: var(--text-muted); font-size: 9px; font-weight: 700; }
+
+/* Exercise action buttons (reorder, swap) */
+.w-ex-actions { display: flex; gap: 6px; padding: 4px 0 6px; }
+.w-ex-act-btn { background: var(--surface2); border: 1px solid var(--border2); border-radius: 6px; color: var(--text-dim); font-size: 13px; padding: 4px 10px; cursor: pointer; transition: all 0.2s; }
+.w-ex-act-btn:hover { border-color: var(--accent); color: var(--accent-b); }
+
+/* Workout notes */
+.w-notes-wrap { padding: 8px 24px 0; }
+
 .w-finish, .w-action-btn {
   display: block;
   width: calc(100% - 48px);

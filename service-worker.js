@@ -1,4 +1,4 @@
-const CACHE = 'arete-v15';
+const CACHE = 'arete-v16';
 const ASSETS = [
   '/arete/',
   '/arete/index.html',
@@ -21,7 +21,7 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== 'arete-v15').map(k => caches.delete(k))))
+      .then(keys => Promise.all(keys.filter(k => k !== 'arete-v16').map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });

@@ -171,7 +171,7 @@ function _workoutStats() {
     const wl = workoutLog[d];
     if (!wl?.exercises) return sum;
     return sum + wl.exercises.reduce((es, ex) =>
-      es + (ex.sets || []).filter(s => s.completed).reduce((ss, s) => ss + (s.weight || 0) * (s.reps || 0), 0), 0);
+      es + (ex.sets || []).filter(s => s.completed && !s.warmup).reduce((ss, s) => ss + (s.weight || 0) * (s.reps || 0), 0), 0);
   }, 0);
   const prCount = Object.keys(prs).length;
   return { thisWeek, totalSessions, totalVolume, prCount };
@@ -313,9 +313,10 @@ function renderWorkoutActive() {
     const tipHTML = tip ? `<div class="w-ex-tip w-ex-tip-${tip.type}">${tip.msg}</div>` : '';
     const setsHTML = we.sets.map((s, si) => {
       const showPR = window._prJustSet && window._prJustSet.ei === ei && window._prJustSet.si === si;
+      const isWarmup = s.warmup;
       return `
-      <div class="w-set">
-        <span class="w-set-num">${si+1}</span>
+      <div class="w-set${isWarmup ? ' w-set-warmup' : ''}">
+        <span class="w-set-num" onclick="toggleWarmup(${ei},${si})" title="${isWarmup ? 'Warmup set — tap to make working' : 'Tap to mark as warmup'}" style="cursor:pointer">${isWarmup ? 'W' : si+1}</span>
         <input class="w-input" type="number" inputmode="decimal" value="${s.weight||''}" placeholder="${wtUnit()}" aria-label="Weight set ${si+1}" onfocus="this.select()" oninput="updateSet(${ei},${si},'weight',this.value)">
         <span class="w-input-label" aria-hidden="true">×</span>
         <input class="w-input" type="number" inputmode="decimal" value="${s.reps||''}" placeholder="reps" aria-label="Reps set ${si+1}" onfocus="this.select()" oninput="updateSet(${ei},${si},'reps',this.value)">
@@ -332,8 +333,15 @@ function renderWorkoutActive() {
       ${desc ? `<div style="font-size:11px;color:var(--text-dim);line-height:1.4">${esc(desc)}</div>` : ''}
       ${img}
     </div>` : '';
+    const canMoveUp = ei > 0;
+    const canMoveDown = ei < wl.exercises.length - 1;
     return `<div class="w-ex ani">
       <div class="w-ex-head" onclick="toggleExInfo(${ei})"><div><div class="w-ex-name">${esc(name)}</div><div class="w-ex-muscle">${esc(muscle)}${muscles || desc ? ' <span style=&quot;font-size:9px;opacity:0.5&quot;>ⓘ</span>' : ''}</div></div>${buildExerciseSparkline(we.exerciseId)}</div>
+      <div class="w-ex-actions">
+        ${canMoveUp ? `<button class="w-ex-act-btn" onclick="reorderExercise(${ei},-1)" title="Move up">↑</button>` : ''}
+        ${canMoveDown ? `<button class="w-ex-act-btn" onclick="reorderExercise(${ei},1)" title="Move down">↓</button>` : ''}
+        <button class="w-ex-act-btn" onclick="swapExercise(${ei})" title="Swap exercise">⇄</button>
+      </div>
       ${infoHTML}
       ${tipHTML}
       ${setsHTML}
@@ -358,6 +366,13 @@ function renderWorkoutActive() {
       <button class="rt-preset-btn" onclick="startRestTimer(120)">2:00</button>
       <button class="rt-preset-btn" onclick="startRestTimer(180)">3:00</button>
       <button class="rt-preset-btn" onclick="showPlateCalc()" style="margin-left:auto;background:var(--surface2);border:1px solid var(--border2)">🍽 Plates</button>
+    </div>
+    <div class="rt-presets" style="padding-top:0">
+      <button class="rt-preset-btn" onclick="show1RMCalc()" style="background:var(--surface2);border:1px solid var(--border2)">🧮 1RM</button>
+    </div>
+    <div class="w-notes-wrap">
+      <div class="j-lbl" style="padding:0 0 8px">Workout Notes</div>
+      <textarea class="j-ta" id="w-notes" placeholder="How did it feel? Any pain or PRs to note…" rows="2" oninput="_saveWorkoutNotes()">${esc(wl.notes||'')}</textarea>
     </div>
     <button class="w-finish" onclick="finishWorkout()">Finish Workout</button>`;
   startWorkoutTimer();
@@ -388,7 +403,7 @@ function toggleSet(ei, si) {
   haptic(set.completed ? 12 : 6);
 
   if (set.completed) checkDailyQuests();
-  if (set.completed && set.weight > 0 && set.reps > 0) {
+  if (set.completed && !set.warmup && set.weight > 0 && set.reps > 0) {
     const eid = wl.exercises[ei].exerciseId;
     const ex = lookupExercise(eid);
     const cur = prs[eid];
@@ -434,6 +449,98 @@ function removeSet(ei, si) {
   sets.splice(si, 1);
   LS.set('hvi_workout_log', workoutLog);
   go('workoutActive');
+}
+
+// ── WARMUP SET TOGGLE ───────────────────────────────────────────────────
+function toggleWarmup(ei, si) {
+  const t = today(), wl = workoutLog[t];
+  if (!wl) return;
+  wl.exercises[ei].sets[si].warmup = !wl.exercises[ei].sets[si].warmup;
+  LS.set('hvi_workout_log', workoutLog);
+  go('workoutActive');
+}
+
+// ── EXERCISE REORDER ────────────────────────────────────────────────────
+function reorderExercise(ei, dir) {
+  const t = today(), wl = workoutLog[t];
+  if (!wl) return;
+  const newIdx = ei + dir;
+  if (newIdx < 0 || newIdx >= wl.exercises.length) return;
+  const tmp = wl.exercises[ei];
+  wl.exercises[ei] = wl.exercises[newIdx];
+  wl.exercises[newIdx] = tmp;
+  LS.set('hvi_workout_log', workoutLog);
+  go('workoutActive');
+}
+
+// ── EXERCISE SWAP ───────────────────────────────────────────────────────
+let _swapExIdx = null;
+function swapExercise(ei) {
+  _swapExIdx = ei;
+  browserContext = 'swap';
+  go('exerciseBrowser');
+}
+function confirmSwapExercise(eid) {
+  const t = today(), wl = workoutLog[t];
+  if (!wl || _swapExIdx === null) return;
+  const ex = lookupExercise(eid);
+  const old = wl.exercises[_swapExIdx];
+  wl.exercises[_swapExIdx] = {
+    exerciseId: eid,
+    sets: old.sets.map(s => ({ weight: 0, reps: ex ? ex.dr : 10, completed: false }))
+  };
+  LS.set('hvi_workout_log', workoutLog);
+  _swapExIdx = null;
+  browserContext = null;
+  go('workoutActive');
+}
+
+// ── WORKOUT NOTES ───────────────────────────────────────────────────────
+function _saveWorkoutNotes() {
+  const t = today(), wl = workoutLog[t];
+  if (!wl) return;
+  wl.notes = (document.getElementById('w-notes')?.value || '').trim();
+  LS.set('hvi_workout_log', workoutLog);
+}
+
+// ── 1RM CALCULATOR ─────────────────────────────────────────────────────
+function show1RMCalc() {
+  let modal = document.getElementById('orm-calc-modal');
+  if (!modal) { modal = document.createElement('div'); modal.id = 'orm-calc-modal'; document.body.appendChild(modal); }
+  modal.innerHTML = `
+    <div class="edit-habit-backdrop" onclick="close1RMCalc()"></div>
+    <div class="edit-habit-sheet">
+      <div class="edit-habit-title">1RM Calculator</div>
+      <div class="d-goals-row" style="margin-bottom:12px"><div class="d-goals-label">Weight (${wtUnit()})</div><input class="d-input" type="number" id="orm-weight" placeholder="e.g. 100" inputmode="decimal" oninput="calc1RM()"></div>
+      <div class="d-goals-row" style="margin-bottom:16px"><div class="d-goals-label">Reps</div><input class="d-input" type="number" id="orm-reps" placeholder="e.g. 5" inputmode="numeric" oninput="calc1RM()"></div>
+      <div id="orm-result" style="min-height:40px"></div>
+      <button class="w-action-btn" style="margin:16px 0 0;width:100%" onclick="close1RMCalc()">Done</button>
+    </div>`;
+  modal.style.display = 'block';
+  setTimeout(() => document.getElementById('orm-weight')?.focus(), 100);
+}
+
+function close1RMCalc() {
+  const m = document.getElementById('orm-calc-modal');
+  if (m) m.style.display = 'none';
+}
+
+function calc1RM() {
+  const w = parseFloat(document.getElementById('orm-weight')?.value) || 0;
+  const r = parseInt(document.getElementById('orm-reps')?.value) || 0;
+  const out = document.getElementById('orm-result');
+  if (!out || !w || !r) { if (out) out.innerHTML = ''; return; }
+  // Epley formula
+  const orm = r === 1 ? w : Math.round(w * (1 + r / 30));
+  const pcts = [100, 95, 90, 85, 80, 75, 70, 65];
+  const rows = pcts.map(p => {
+    const pw = Math.round(orm * p / 100);
+    const approxReps = p === 100 ? 1 : p >= 95 ? 2 : p >= 90 ? 4 : p >= 85 ? 6 : p >= 80 ? 8 : p >= 75 ? 10 : p >= 70 ? 12 : 15;
+    return `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;${p===100?'color:var(--accent-b);font-weight:700':'color:var(--text-dim)'}">
+      <span>${p}%</span><span>${pw} ${wtUnit()}</span><span>~${approxReps} reps</span>
+    </div>`;
+  }).join('');
+  out.innerHTML = `<div style="font-size:13px;color:var(--accent-b);font-weight:600;margin-bottom:8px">Estimated 1RM: ${orm} ${wtUnit()}</div>${rows}`;
 }
 
 // ── PLATE CALCULATOR ────────────────────────────────────────────────────
@@ -543,8 +650,29 @@ function _updateRestTimer() {
 }
 
 function finishWorkout() {
+  const t = today();
+  const wl = workoutLog[t];
+  // Save duration
+  if (wl && _workoutStartTime) {
+    wl.duration = Math.floor((Date.now() - _workoutStartTime) / 1000);
+    LS.set('hvi_workout_log', workoutLog);
+  }
+  // Check for volume PR
+  if (wl) {
+    const totalVol = wl.exercises.reduce((sum, we) =>
+      sum + we.sets.filter(s => s.completed && !s.warmup).reduce((s2, st) => s2 + (st.weight || 0) * (st.reps || 0), 0), 0);
+    const prevBest = LS.get('hvi_volume_pr', 0);
+    if (totalVol > prevBest) {
+      LS.set('hvi_volume_pr', totalVol);
+      wl.volumePR = true;
+      LS.set('hvi_workout_log', workoutLog);
+    }
+  }
   stopWorkoutTimer();
   workoutMeta.lastWorkoutDate = today();
+  // Auto-advance to next day
+  const prog = findProgram(workoutMeta.activeProgram) || WORKOUT_PROGRAMS[0];
+  workoutMeta.currentDayIndex = (workoutMeta.currentDayIndex + 1) % prog.days.length;
   LS.set('hvi_workout_meta', workoutMeta);
   playSound('complete');
   haptic([40, 30, 40, 30, 80]);
@@ -739,11 +867,15 @@ function renderWorkoutHistory() {
     const wl = workoutLog[d];
     const prog = findProgram(wl.programId);
     const dayInfo = prog ? prog.days[wl.dayIndex % prog.days.length] : null;
-    const totalVol = wl.exercises.reduce((sum, we) => sum + we.sets.reduce((s2, st) => s2 + (st.completed ? st.weight * st.reps : 0), 0), 0);
-    const totalSets = wl.exercises.reduce((sum, we) => sum + we.sets.filter(s => s.completed).length, 0);
+    const totalVol = wl.exercises.reduce((sum, we) => sum + we.sets.reduce((s2, st) => s2 + (st.completed && !st.warmup ? st.weight * st.reps : 0), 0), 0);
+    const totalSets = wl.exercises.reduce((sum, we) => sum + we.sets.filter(s => s.completed && !s.warmup).length, 0);
+    const durSecs = wl.duration || 0;
+    const durStr = durSecs > 0 ? `${Math.floor(durSecs/60)}m` : '';
+    const noteSnip = wl.notes ? ` · "${wl.notes.slice(0,40)}${wl.notes.length>40?'…':''}"` : '';
+    const volPRBadge = wl.volumePR ? ' <span class="pr-badge" style="animation:none">🏆 Vol PR</span>' : '';
     return `<div class="w-hist-item" style="position:relative"><div class="w-hist-date">${fmtDate(d)}</div>
-      <div class="w-hist-prog">${dayInfo ? dayInfo.name : 'Workout'} ${prog ? '· ' + prog.name : ''}</div>
-      <div class="w-hist-vol">${totalSets} sets · ${totalVol.toLocaleString()} ${wtUnit()} volume</div>
+      <div class="w-hist-prog">${dayInfo ? dayInfo.name : 'Workout'} ${prog ? '· ' + prog.name : ''}${volPRBadge}</div>
+      <div class="w-hist-vol">${totalSets} sets · ${totalVol.toLocaleString()} ${wtUnit()} vol${durStr ? ' · ' + durStr : ''}${noteSnip}</div>
       <button class="w-repeat-btn" onclick="event.stopPropagation();repeatWorkout('${d}')" title="Repeat this workout">↻</button></div>`;
   }).join('') : '<div class="empty-state"><div class="empty-state-icon">🏋️</div><div class="empty-state-title">No workouts yet</div><div class="empty-state-sub">Start your first workout to see your history here.</div><button class="empty-state-btn" onclick="go(\'workoutActive\')">Start Workout</button></div>';
 
@@ -835,7 +967,7 @@ function renderExerciseBrowser() {
     `<button class="ex-filter-pill${bs.equipment===e.id?' active':''}" onclick="setBrowserEquipment(${e.id===null?'null':e.id})">${e.name}</button>`
   ).join('');
 
-  const backTarget = browserContext ? 'workoutBuilder' : 'workout';
+  const backTarget = browserContext === 'swap' ? 'workoutActive' : browserContext ? 'workoutBuilder' : 'workout';
 
   document.getElementById('view').innerHTML = `
     <button class="back" onclick="go('${backTarget}')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
@@ -876,7 +1008,9 @@ function renderBrowserCard(ex) {
   const isExpanded = bs.expanded === ex.id;
   const pr = prs[ex.id];
 
-  const actionBtn = browserContext
+  const actionBtn = browserContext === 'swap'
+    ? `<button class="ex-add-btn" onclick="event.stopPropagation();confirmSwapExercise(${ex.id})">SWAP</button>`
+    : browserContext
     ? `<button class="ex-add-btn" onclick="event.stopPropagation();addExerciseToDay(${ex.id}, ${JSON.stringify(name).replace(/"/g,'&quot;')}, ${JSON.stringify(cat).replace(/"/g,'&quot;')})">+ ADD</button>`
     : `<button class="ex-log-btn" onclick="event.stopPropagation();logBrowserExercise(${ex.id})">LOG</button>`;
 
