@@ -106,6 +106,21 @@ nav {
 .back svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .back:hover { color: var(--text); }
 
+/* PULL-TO-REFRESH */
+.ptr-indicator { position: fixed; top: -50px; left: 50%; transform: translateX(-50%); width: 36px; height: 36px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; z-index: 9999; transition: top 0.2s ease, transform 0.2s ease; box-shadow: 0 2px 12px rgba(0,0,0,0.3); }
+.ptr-indicator.ptr-visible { top: 12px; }
+.ptr-indicator.ptr-refreshing { top: 12px; }
+.ptr-indicator svg { width: 18px; height: 18px; stroke: var(--accent-b); fill: none; stroke-width: 2; transition: transform 0.2s ease; }
+.ptr-indicator.ptr-ready svg { transform: rotate(180deg); }
+.ptr-indicator.ptr-refreshing svg { animation: ptrSpin 0.8s linear infinite; }
+@keyframes ptrSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* RECOVERY BADGE */
+.hm-card-recovery { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; letter-spacing: 0.5px; padding: 3px 8px; border-radius: 10px; margin-top: 4px; font-weight: 500; }
+.recovery-fresh { background: rgba(111,212,142,0.12); color: #6fd48e; }
+.recovery-moderate { background: rgba(184,157,104,0.12); color: #b89d68; }
+.recovery-fatigued { background: rgba(212,111,111,0.12); color: #d46f6f; }
+
 /* SYNC DOT */
 #sync-dot { position:fixed; top:14px; left:14px; width:6px; height:6px; border-radius:50%; z-index:9998; transition:background 0.4s; }
 #sync-dot.sync-ok      { background:#6fd48e; }

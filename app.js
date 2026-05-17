@@ -1133,6 +1133,7 @@ function renderHome() {
         <div class="hm-card-val">${wDay.name}</div>
         <div class="hm-card-sub">${wProg.name}</div>
         <div class="hm-card-status" style="${wLogged ? 'color:var(--accent-b)' : 'color:var(--fg3)'}">${wLogged ? '✓ Done' : '→ Start'}</div>
+        ${!wLogged ? recoveryBadgeHTML() : ''}
       </div>
       <div class="hm-card" onclick="go('diet')">
         <div class="hm-card-icon">🥗</div>
@@ -1624,8 +1625,96 @@ window.addEventListener('unhandledrejection', e => {
   console.error('[arete] Unhandled rejection:', e.reason);
 });
 
+// ── PULL-TO-REFRESH ──────────────────────────────────────────────────────
+function initPullToRefresh() {
+  const view = document.getElementById('view');
+  if (!view) return;
+  let startY = 0, pulling = false, dist = 0;
+  const threshold = 70;
+  let indicator = document.getElementById('ptr-indicator');
+  if (!indicator) {
+    indicator = document.createElement('div');
+    indicator.id = 'ptr-indicator';
+    indicator.className = 'ptr-indicator';
+    indicator.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>';
+    document.body.appendChild(indicator);
+  }
+
+  view.addEventListener('touchstart', e => {
+    if (view.scrollTop <= 0) { startY = e.touches[0].clientY; pulling = true; dist = 0; }
+  }, { passive: true });
+
+  view.addEventListener('touchmove', e => {
+    if (!pulling) return;
+    dist = e.touches[0].clientY - startY;
+    if (dist < 0) { pulling = false; return; }
+    if (dist > 10) {
+      indicator.classList.add('ptr-visible');
+      indicator.classList.toggle('ptr-ready', dist > threshold);
+    }
+  }, { passive: true });
+
+  view.addEventListener('touchend', () => {
+    if (!pulling) return;
+    pulling = false;
+    if (dist > threshold) {
+      indicator.classList.add('ptr-refreshing');
+      indicator.classList.remove('ptr-ready');
+      haptic(15);
+      const renders = { home: renderHome, habits: renderHabits, workout: renderWorkout, diet: renderDiet, library: renderLibrary, stats: renderStats };
+      setTimeout(() => {
+        (renders[curView] || renderHome)();
+        indicator.classList.remove('ptr-visible', 'ptr-refreshing');
+      }, 400);
+    } else {
+      indicator.classList.remove('ptr-visible', 'ptr-ready');
+    }
+    dist = 0;
+  }, { passive: true });
+}
+
+// ── RECOVERY / TRAINING LOAD ─────────────────────────────────────────────
+function getRecoveryStatus() {
+  const dates = Object.keys(workoutLog || {}).sort().reverse();
+  const now = new Date(today() + 'T12:00');
+  let workoutsLast7 = 0, totalVolume = 0, consecutiveDays = 0;
+
+  for (const d of dates) {
+    const diff = Math.floor((now - new Date(d + 'T12:00')) / 86400000);
+    if (diff > 7) break;
+    workoutsLast7++;
+    const w = workoutLog[d];
+    if (w && w.exercises) {
+      w.exercises.forEach(ex => {
+        (ex.sets || []).forEach(s => {
+          if (!s.warmup && s.kg && s.reps) totalVolume += s.kg * s.reps;
+        });
+      });
+    }
+  }
+
+  // Consecutive training days ending today/yesterday
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(now); d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    if (workoutLog[key]) consecutiveDays++;
+    else break;
+  }
+
+  if (consecutiveDays >= 4 || workoutsLast7 >= 6) return { status: 'fatigued', label: 'Consider rest', days: workoutsLast7, consecutive: consecutiveDays };
+  if (consecutiveDays >= 3 || workoutsLast7 >= 4) return { status: 'moderate', label: 'Moderate load', days: workoutsLast7, consecutive: consecutiveDays };
+  return { status: 'fresh', label: 'Well recovered', days: workoutsLast7, consecutive: consecutiveDays };
+}
+
+function recoveryBadgeHTML() {
+  const r = getRecoveryStatus();
+  if (r.status === 'fresh' && r.days === 0) return '';
+  return `<div class="hm-card-recovery recovery-${r.status}">${r.status === 'fatigued' ? '⚠️' : r.status === 'moderate' ? '⚡' : '✓'} ${r.label} (${r.days}× this week)</div>`;
+}
+
 // ── START ─────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   init();
   initSwipeNav();
+  initPullToRefresh();
 });

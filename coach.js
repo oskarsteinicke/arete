@@ -77,6 +77,20 @@ HABITS TODAY: ${todayDone}/${totalH} completed (${pct}%) | 7-day avg: ${weekAvg}
 ${habitsList}
 
 WORKOUT: Program — ${progName} | Today — ${todayWorkout}
+${(() => {
+  const r = typeof getRecoveryStatus === 'function' ? getRecoveryStatus() : null;
+  if (!r) return '';
+  const recentDates = Object.keys(workoutLog || {}).sort().reverse().slice(0, 7);
+  const recent = recentDates.map(d => {
+    const w = workoutLog[d];
+    const vol = w?.exercises ? w.exercises.reduce((s, ex) => s + (ex.sets || []).reduce((ss, set) => ss + (!set.warmup && set.kg && set.reps ? set.kg * set.reps : 0), 0), 0) : 0;
+    const dur = w?.duration ? `${w.duration}min` : '';
+    return `  ${d}: ${w?.dayName || 'Unknown'} ${dur ? '(' + dur + ')' : ''} | ${vol.toLocaleString()} kg volume`;
+  }).join('\n');
+  return `Recovery: ${r.label} — ${r.days} sessions in 7 days, ${r.consecutive} consecutive
+Recent workouts:
+${recent || '  (none)'}`;
+})()}
 Available programs:
 ${progList}
 
@@ -86,6 +100,14 @@ NUTRITION TODAY:
   Carbs     ${dm.c}g / ${goals.carbs || '—'}g target
   Fat       ${dm.f}g / ${goals.fat || '—'}g target
 ${latestWt ? `  Weight: ${latestWt} kg (${latestWtDate})` : '  Weight: not logged'}
+
+SLEEP:
+${(() => {
+  const sl = typeof sleepLog !== 'undefined' ? sleepLog : {};
+  const slDates = Object.keys(sl).sort().reverse().slice(0, 5);
+  if (!slDates.length) return '  No sleep data logged';
+  return slDates.map(d => `  ${d}: ${sl[d].hours || '?'}h | quality ${sl[d].quality || '?'}/5`).join('\n');
+})()}
 ${lastJ ? `\nLAST JOURNAL (${jKeys[0]}):
   Win: ${lastJ.win || '—'}
   Struggle: ${lastJ.struggle || '—'}
