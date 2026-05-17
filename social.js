@@ -34,23 +34,35 @@ function renderLibraryBooks(tabs) {
 }
 
 let _journalSearch = '';
+let _journalEditing = false;
+
+const _DEFAULT_JOURNAL_QS = [
+  { key: 'wins', label: 'Wins Today', placeholder: 'What went well?' },
+  { key: 'lessons', label: 'Lessons Learned', placeholder: 'What did you learn?' },
+  { key: 'intentions', label: 'Intentions for Tomorrow', placeholder: 'What will you focus on?' },
+];
+
+function _getJournalQs() { return settings.journalQuestions || _DEFAULT_JOURNAL_QS; }
+
 function renderLibraryJournal(tabs) {
   const t = today();
-  const e = journal[t] || { wins:'', lessons:'', intentions:'' };
+  const e = journal[t] || {};
+  const qs = _getJournalQs();
+
+  const fieldsHTML = qs.map(q =>
+    `<div class="j-lbl">${esc(q.label)}</div><textarea class="j-ta" id="j-${q.key}" placeholder="${esc(q.placeholder)}" rows="3">${esc(e[q.key]||'')}</textarea>`
+  ).join('');
+
   let pastDates = Object.keys(journal).filter(d => d !== t && Object.values(journal[d]).some(Boolean)).sort().reverse();
   if (_journalSearch) {
-    const q = _journalSearch.toLowerCase();
-    pastDates = pastDates.filter(d => {
-      const je = journal[d];
-      return `${je.wins||''} ${je.lessons||''} ${je.intentions||''}`.toLowerCase().includes(q);
-    });
+    const sq = _journalSearch.toLowerCase();
+    pastDates = pastDates.filter(d => Object.values(journal[d]).join(' ').toLowerCase().includes(sq));
   }
   pastDates = pastDates.slice(0, 30);
   const pastHTML = pastDates.length ? pastDates.map(d => {
     const je = journal[d]; let parts = '';
-    if (je.wins) parts += `<div class="jp-field">Wins</div><div class="jp-text">${esc(je.wins)}</div>`;
-    if (je.lessons) parts += `<div class="jp-field">Lessons</div><div class="jp-text">${esc(je.lessons)}</div>`;
-    if (je.intentions) parts += `<div class="jp-field">Intentions</div><div class="jp-text">${esc(je.intentions)}</div>`;
+    qs.forEach(q => { if (je[q.key]) parts += `<div class="jp-field">${esc(q.label)}</div><div class="jp-text">${esc(je[q.key])}</div>`; });
+    Object.keys(je).forEach(k => { if (!qs.find(q => q.key === k) && je[k]) parts += `<div class="jp-field">${esc(k)}</div><div class="jp-text">${esc(je[k])}</div>`; });
     return `<div class="jp-item"><div class="jp-date">${fmtDate(d)}</div>${parts}</div>`;
   }).join('') : '<div class="empty-state" style="padding:16px 0"><div class="empty-state-icon">📝</div><div class="empty-state-title">No past entries</div><div class="empty-state-sub">Write your first journal entry above to start reflecting.</div></div>';
 
@@ -58,10 +70,14 @@ function renderLibraryJournal(tabs) {
     <div class="jh ani"><div class="jh-title">Library</div><div class="jh-sub">Reflect on your day. Recalibrate for tomorrow.</div></div>
     ${tabs}
     <div class="j-body ani">
-      <div class="j-lbl">Wins Today</div><textarea class="j-ta" id="j-wins" placeholder="What went well?" rows="3">${esc(e.wins||'')}</textarea>
-      <div class="j-lbl">Lessons Learned</div><textarea class="j-ta" id="j-lessons" placeholder="What did you learn?" rows="3">${esc(e.lessons||'')}</textarea>
-      <div class="j-lbl">Intentions for Tomorrow</div><textarea class="j-ta" id="j-intentions" placeholder="What will you focus on?" rows="3">${esc(e.intentions||'')}</textarea>
-      <div class="j-status" id="j-status">Auto-saving</div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:4px">
+        <button class="j-edit-btn" onclick="_journalEditing=!_journalEditing;renderLibrary()" title="Edit questions">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          <span style="margin-left:4px">${_journalEditing ? 'Done' : 'Edit questions'}</span>
+        </button>
+      </div>
+      ${_journalEditing ? _renderJournalEditor(qs) : fieldsHTML}
+      ${_journalEditing ? '' : '<div class="j-status" id="j-status">Auto-saving</div>'}
       <button class="j-tog" onclick="togglePast()">Past Entries</button>
       <div class="j-past" id="j-past">
         <input class="search-input" type="text" placeholder="Search entries…" value="${esc(_journalSearch)}" oninput="_journalSearch=this.value;renderLibrary()" style="margin-bottom:12px">
@@ -69,24 +85,94 @@ function renderLibraryJournal(tabs) {
       </div>
     </div>`;
 
-  ['wins','lessons','intentions'].forEach(f => {
-    const el = document.getElementById(`j-${f}`);
-    if (el) el.addEventListener('input', () => {
-      clearTimeout(jDebounce);
-      const s = document.getElementById('j-status');
-      if (s) { s.textContent = 'Saving\u2026'; s.classList.remove('saved'); }
-      jDebounce = setTimeout(saveJournal, 800);
+  if (!_journalEditing) {
+    qs.forEach(q => {
+      const el = document.getElementById('j-' + q.key);
+      if (el) el.addEventListener('input', () => {
+        clearTimeout(jDebounce);
+        const s = document.getElementById('j-status');
+        if (s) { s.textContent = 'Saving…'; s.classList.remove('saved'); }
+        jDebounce = setTimeout(saveJournal, 800);
+      });
     });
-  });
+  }
 }
+
+function _renderJournalEditor(qs) {
+  const rows = qs.map((q, i) => `
+    <div class="jq-edit-row">
+      <div class="jq-edit-fields">
+        <input class="jq-edit-input" placeholder="Label (e.g. Gratitude)" value="${esc(q.label)}" data-field="label" data-idx="${i}">
+        <input class="jq-edit-input jq-edit-ph" placeholder="Placeholder text" value="${esc(q.placeholder)}" data-field="placeholder" data-idx="${i}">
+      </div>
+      <button class="jq-edit-del" onclick="_removeJournalQ(${i})" title="Remove">×</button>
+    </div>
+  `).join('');
+
+  return `
+    <div class="jq-editor">
+      <div class="jq-edit-list">${rows}</div>
+      <button class="jq-add-btn" onclick="_addJournalQ()">+ Add question</button>
+      <button class="jq-reset-btn" onclick="_resetJournalQs()">Reset to defaults</button>
+    </div>
+  `;
+}
+
+function _addJournalQ() {
+  const qs = _getJournalQs().slice();
+  qs.push({ key: 'q' + Date.now(), label: 'New Question', placeholder: 'Your answer...' });
+  settings.journalQuestions = qs;
+  LS.set('hvi_settings', settings);
+  renderLibrary();
+}
+
+function _removeJournalQ(idx) {
+  const qs = _getJournalQs().slice();
+  if (qs.length <= 1) return;
+  qs.splice(idx, 1);
+  settings.journalQuestions = qs;
+  LS.set('hvi_settings', settings);
+  renderLibrary();
+}
+
+function _resetJournalQs() {
+  delete settings.journalQuestions;
+  LS.set('hvi_settings', settings);
+  _journalEditing = false;
+  renderLibrary();
+}
+
+function _saveJournalQEdits() {
+  const rows = document.querySelectorAll('.jq-edit-row');
+  if (!rows.length) return;
+  const qs = _getJournalQs().slice();
+  rows.forEach((row, i) => {
+    if (!qs[i]) return;
+    const labelEl = row.querySelector('[data-field="label"]');
+    const phEl = row.querySelector('[data-field="placeholder"]');
+    if (labelEl) qs[i].label = labelEl.value.trim() || qs[i].label;
+    if (phEl) qs[i].placeholder = phEl.value.trim() || qs[i].placeholder;
+  });
+  settings.journalQuestions = qs;
+  LS.set('hvi_settings', settings);
+}
+
+document.addEventListener('input', e => {
+  if (e.target.classList.contains('jq-edit-input')) {
+    clearTimeout(jDebounce);
+    jDebounce = setTimeout(_saveJournalQEdits, 500);
+  }
+});
+
 
 function saveJournal() {
   const t = today();
-  journal[t] = {
-    wins: (document.getElementById('j-wins')?.value || '').trim(),
-    lessons: (document.getElementById('j-lessons')?.value || '').trim(),
-    intentions: (document.getElementById('j-intentions')?.value || '').trim(),
-  };
+  const qs = _getJournalQs();
+  const entry = {};
+  qs.forEach(q => { entry[q.key] = (document.getElementById('j-' + q.key)?.value || '').trim(); });
+  // Preserve any fields from other question sets
+  if (journal[t]) Object.keys(journal[t]).forEach(k => { if (!(k in entry)) entry[k] = journal[t][k]; });
+  journal[t] = entry;
   LS.set('hvi_journal3', journal);
   if (gamification.journalXPDate !== t && Object.values(journal[t] || {}).some(Boolean)) {
     gamification.journalXPDate = t;

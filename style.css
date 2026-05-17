@@ -223,6 +223,22 @@ nav {
 .jp-field { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); margin: 6px 0 2px; }
 .jp-text { font-size: 13px; color: var(--text-dim); line-height: 1.6; white-space: pre-wrap; }
 
+/* JOURNAL EDITOR */
+.j-edit-btn { display: flex; align-items: center; background: none; border: 1px solid var(--border2); border-radius: 8px; color: var(--text-muted); font-size: 11px; letter-spacing: 0.5px; padding: 6px 12px; cursor: pointer; transition: all 0.2s; }
+.j-edit-btn:hover { border-color: var(--accent); color: var(--accent); }
+.jq-editor { padding: 8px 0 16px; }
+.jq-edit-row { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--border2); }
+.jq-edit-fields { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.jq-edit-input { width: 100%; background: var(--surface); border: 1px solid var(--border2); border-radius: 8px; color: var(--text); font-family: inherit; font-size: 13px; padding: 10px 12px; outline: none; transition: border-color 0.2s; }
+.jq-edit-input:focus { border-color: rgba(154,130,86,0.4); }
+.jq-edit-ph { font-size: 12px; color: var(--text-dim); }
+.jq-edit-del { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 8px; font-size: 18px; line-height: 1; border-radius: 6px; transition: all 0.2s; }
+.jq-edit-del:hover { color: var(--fat); background: rgba(255,100,100,0.1); }
+.jq-add-btn { width: 100%; background: none; border: 1px dashed var(--border2); border-radius: 10px; color: var(--accent); font-size: 12px; letter-spacing: 1px; padding: 12px; cursor: pointer; margin-top: 12px; transition: all 0.2s; }
+.jq-add-btn:hover { border-color: var(--accent); background: rgba(154,130,86,0.05); }
+.jq-reset-btn { width: 100%; background: none; border: none; color: var(--text-muted); font-size: 11px; letter-spacing: 0.5px; padding: 10px; cursor: pointer; margin-top: 4px; transition: color 0.2s; }
+.jq-reset-btn:hover { color: var(--text-dim); }
+
 /* STATS */
 .sh { padding: 52px 24px 24px; }
 .sh-title { font-family: var(--display); font-size: 26px; color: var(--text); margin-bottom: 4px; font-weight: 400; letter-spacing: 0.5px; }
