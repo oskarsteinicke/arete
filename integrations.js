@@ -197,7 +197,7 @@ async function _authedFetch(service, url, opts = {}) {
 // ── CLIENT IDS ───────────────────────────────────────────────────────────
 const _CLIENT_IDS = {
   strava: '246559',
-  googlefit: '',
+  googlefit: '681305896160-s020jd287h1kdj7lh79k3m3keeis9q4p.apps.googleusercontent.com',
   fitbit: '',
   whoop: ''
 };
