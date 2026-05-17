@@ -3,8 +3,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 
 // ── AI FETCH HELPER (Gemini primary, Pollinations fallback) ──────────────
-const _GEMINI_KEY = 'AIzaSyC689KanoIqZAUdJ-p4kQXHKVO7jsW22cc';
-const _GEMINI_MODEL = 'gemini-2.5-flash';
+const _GEMINI_PROXY = 'https://arete-ai.oskarsteinicke.workers.dev';
 
 async function _aiFetch(messages, { timeout = 30000, retries = 1, model = 'openai', jsonMode = false } = {}) {
   if (!navigator.onLine) throw new Error('offline');
@@ -73,10 +72,9 @@ async function _geminiRequest(messages, { timeout = 30000, jsonMode = false } = 
   const ac = new AbortController();
   const to = setTimeout(() => ac.abort(), timeout);
   try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${_GEMINI_MODEL}:generateContent?key=${_GEMINI_KEY}`,
-      { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ac.signal, body: JSON.stringify(body) }
-    );
+    const res = await fetch(_GEMINI_PROXY, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ac.signal, body: JSON.stringify(body)
+    });
     clearTimeout(to);
     if (!res.ok) return null; // fall through to next provider
     const data = await res.json();
