@@ -64,7 +64,7 @@ async function _geminiRequest(messages, { timeout = 30000, jsonMode = false } = 
     return { role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] };
   });
 
-  const genConfig = { temperature: 0 };
+  const genConfig = { temperature: 0, thinkingConfig: { thinkingBudget: 0 } };
   if (jsonMode) genConfig.responseMimeType = 'application/json';
 
   const body = { contents, generationConfig: genConfig };
