@@ -9,6 +9,7 @@ const ASSETS = [
   '/arete/diet.js',
   '/arete/coach.js',
   '/arete/social.js',
+  '/arete/integrations.js',
   '/arete/profile.js',
   '/arete/manifest.json'
 ];

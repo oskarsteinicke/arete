@@ -1001,6 +1001,7 @@ function renderStats() {
         </div>
       </div>
     </div>
+    ${typeof renderIntegrationsSection === 'function' ? renderIntegrationsSection() : ''}
     <div class="s-grid ani">
       <div class="s-card"><div class="s-val">${done}</div><div class="s-lbl">Today</div></div>
       <div class="s-card"><div class="s-val">${best}</div><div class="s-lbl">Best Streak</div></div>
