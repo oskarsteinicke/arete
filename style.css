@@ -684,9 +684,9 @@ nav {
 .hm-pc:active { background: rgba(255,255,255,.03); }
 .hm-pc-active { border-color: rgba(154,130,86,.20); background: rgba(154,130,86,.04); }
 .hm-pc-ring { position: relative; width: 44px; height: 44px; }
-.hm-pc-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.hm-pc-ring > svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
 .hm-pc-icon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 16px; }
-.hm-pc-icon svg { width: 17px; height: 17px; stroke: var(--accent-b); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.7; }
+.hm-pc-icon svg { width: 17px; height: 17px; stroke: var(--accent-b); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.7; position: static; transform: none; }
 .hm-pc-name { font-size: 9px; color: var(--text-dim); text-align: center; text-transform: uppercase; letter-spacing: .3px; font-weight: 500; }
 .hm-pc-streak { font-size: 9px; color: var(--accent-b); font-weight: 600; }
 
