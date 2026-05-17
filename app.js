@@ -257,6 +257,20 @@ async function cloudPull() {
           const merged = { ...local, ...cloud[k] };
           localStorage.setItem(k, JSON.stringify(merged));
         } catch { localStorage.setItem(k, JSON.stringify(cloud[k])); }
+      } else if (k === 'hvi_gamification') {
+        // Never downgrade XP — keep whichever has more progress
+        try {
+          const local = JSON.parse(localStorage.getItem(k) || '{}');
+          const cloudG = cloud[k] || {};
+          const merged = { ...cloudG, ...local };
+          merged.xp = Math.max(local.xp || 0, cloudG.xp || 0);
+          // Keep highest pillar XP too
+          const pxp = {};
+          const allPillars = new Set([...Object.keys(local.pillarXP || {}), ...Object.keys(cloudG.pillarXP || {})]);
+          allPillars.forEach(p => { pxp[p] = Math.max((local.pillarXP || {})[p] || 0, (cloudG.pillarXP || {})[p] || 0); });
+          merged.pillarXP = pxp;
+          localStorage.setItem(k, JSON.stringify(merged));
+        } catch { localStorage.setItem(k, JSON.stringify(cloud[k])); }
       } else {
         localStorage.setItem(k, JSON.stringify(cloud[k]));
       }
