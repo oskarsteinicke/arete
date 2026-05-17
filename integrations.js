@@ -469,7 +469,7 @@ function _whoopSportName(id) {
 // ── UI RENDERING ─────────────────────────────────────────────────────────
 function renderIntegrationsSection() {
   const int = _getIntegrations();
-  const rows = Object.entries(INTEGRATIONS).filter(([key]) => _CLIENT_IDS[key] || int[key]).map(([key, cfg]) => {
+  const rows = Object.entries(INTEGRATIONS).filter(([key]) => (_CLIENT_IDS[key] && _CLIENT_IDS[key] !== '') || int[key]).map(([key, cfg]) => {
     const connected = !!int[key];
     const lastSync = int[key]?.lastSync;
     const syncAge = lastSync ? _timeAgo(lastSync) : null;
