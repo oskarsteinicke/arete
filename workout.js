@@ -1008,11 +1008,12 @@ function renderBrowserCard(ex) {
   const isExpanded = bs.expanded === ex.id;
   const pr = prs[ex.id];
 
+  const eid = typeof ex.id === 'number' ? ex.id : `'${ex.id}'`;
   const actionBtn = browserContext === 'swap'
-    ? `<button class="ex-add-btn" onclick="event.stopPropagation();confirmSwapExercise(${ex.id})">SWAP</button>`
+    ? `<button class="ex-add-btn" onclick="event.stopPropagation();confirmSwapExercise(${eid})">SWAP</button>`
     : browserContext
-    ? `<button class="ex-add-btn" onclick="event.stopPropagation();addExerciseToDay(${ex.id}, ${JSON.stringify(name).replace(/"/g,'&quot;')}, ${JSON.stringify(cat).replace(/"/g,'&quot;')})">+ ADD</button>`
-    : `<button class="ex-log-btn" onclick="event.stopPropagation();logBrowserExercise(${ex.id})">LOG</button>`;
+    ? `<button class="ex-add-btn" onclick="event.stopPropagation();addExerciseToDay(${eid}, ${JSON.stringify(name).replace(/"/g,'&quot;')}, ${JSON.stringify(cat).replace(/"/g,'&quot;')})">+ ADD</button>`
+    : `<button class="ex-log-btn" onclick="event.stopPropagation();logBrowserExercise(${eid})">LOG</button>`;
 
   let detailHTML = '';
   if (isExpanded) {
@@ -1020,11 +1021,11 @@ function renderBrowserCard(ex) {
     const musclesFull = ex.muscles && ex.muscles.length ? `<div><strong>Muscles:</strong> ${esc(ex.muscles.join(', '))}</div>` : '';
     const prLine = pr ? `<div class="ex-detail-pr">Your PR: ${pr.weight} ${wtUnit()} × ${pr.reps} reps (${pr.date})</div>` : '';
     const desc = ex.description ? `<div style="margin:6px 0">${esc(ex.description)}</div>` : '';
-    const addToProgBtn = browserContext ? `<button class="ex-add-btn" style="margin-top:8px" onclick="addExerciseToDay(${ex.id}, ${JSON.stringify(name).replace(/"/g,'&quot;')}, ${JSON.stringify(cat).replace(/"/g,'&quot;')})">+ ADD TO PROGRAM</button>` : '';
+    const addToProgBtn = browserContext ? `<button class="ex-add-btn" style="margin-top:8px" onclick="addExerciseToDay(${eid}, ${JSON.stringify(name).replace(/"/g,'&quot;')}, ${JSON.stringify(cat).replace(/"/g,'&quot;')})">+ ADD TO PROGRAM</button>` : '';
     detailHTML = `<div class="ex-detail">${prLine}${desc}${musclesFull}${img}${addToProgBtn}</div>`;
   }
 
-  return `<div class="ex-card" onclick="toggleBrowserExpand(${ex.id})">
+  return `<div class="ex-card" onclick="toggleBrowserExpand(${eid})">
     <div class="ex-card-head">
       <div class="ex-card-main">
         <div class="ex-card-name">${esc(name)}</div>
@@ -1076,22 +1077,17 @@ async function loadBrowserResults(showSkeleton) {
   let nextUrl = null;
 
   if (bs.search && bs.search.length >= 2) {
-    // Search local exercises first
-    const localResults = wgerSearch(bs.search);
-    // Also search wger API
-    let apiResults = [];
-    try {
-      const res = await fetch(`https://wger.de/api/v2/exercise/search/?term=${encodeURIComponent(bs.search)}&language=english&format=json`);
-      if (res.ok) {
-        const data = await res.json();
-        const ids = (data.suggestions || []).map(s => s.data?.id).filter(Boolean).slice(0, 10);
-        const infos = await Promise.all(ids.map(id => wgerFetchExercise(id)));
-        apiResults = infos.filter(Boolean);
+    // Search local exercise database (80+ exercises, instant)
+    exercises = wgerSearch(bs.search);
+    // Also include any cached wger exercises
+    const q = bs.search.toLowerCase();
+    const seen = new Set(exercises.map(e => e.name.toLowerCase()));
+    Object.values(wgerCache).forEach(ex => {
+      if (ex && ex.name && (ex.name.toLowerCase().includes(q) || (ex.muscle||'').toLowerCase().includes(q)) && !seen.has(ex.name.toLowerCase())) {
+        exercises.push(ex);
+        seen.add(ex.name.toLowerCase());
       }
-    } catch {}
-    // Merge: local first, then API (dedupe by name)
-    const seen = new Set(localResults.map(e => e.name.toLowerCase()));
-    exercises = [...localResults, ...apiResults.filter(e => !seen.has(e.name.toLowerCase()))];
+    });
     nextUrl = null;
   } else {
     const data = await wgerBrowse(bs.category, bs.equipment, 0);
@@ -1130,7 +1126,7 @@ function logBrowserExercise(id) {
   if (!workoutLog[t]) {
     workoutLog[t] = { programId: 'adhoc', dayIndex: 0, exercises: [] };
   }
-  const ex = wgerCache[id];
+  const ex = lookupExercise(id);
   const ds = ex ? ex.ds : 3;
   const dr = ex ? ex.dr : 10;
   workoutLog[t].exercises.push({ exerciseId: id, sets: Array.from({length: ds}, () => ({weight: 0, reps: dr, completed: false})) });
