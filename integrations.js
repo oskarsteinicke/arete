@@ -194,10 +194,15 @@ async function _authedFetch(service, url, opts = {}) {
   return res;
 }
 
-// ── CLIENT IDS (stored in settings) ─────────────────────────────────────
+// ── CLIENT IDS ───────────────────────────────────────────────────────────
+const _CLIENT_IDS = {
+  strava: '246559',
+  googlefit: '',
+  fitbit: '',
+  whoop: ''
+};
 function _getClientId(service) {
-  const ids = settings.integrationClientIds || {};
-  return ids[service] || null;
+  return _CLIENT_IDS[service] || (settings.integrationClientIds || {})[service] || null;
 }
 
 // ── SYNC FUNCTIONS ───────────────────────────────────────────────────────
