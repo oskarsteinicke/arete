@@ -3,7 +3,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 
 // ── AI FETCH HELPER (Gemini primary, Pollinations fallback) ──────────────
-const _GEMINI_KEY = 'AIzaSyDt5Fj09Z2yVpdD2jm0NWPwu7pgdICa67s';
+const _GEMINI_KEY = 'AIzaSyC689KanoIqZAUdJ-p4kQXHKVO7jsW22cc';
 const _GEMINI_MODEL = 'gemini-2.5-flash';
 
 async function _aiFetch(messages, { timeout = 30000, retries = 1, model = 'openai', jsonMode = false } = {}) {
@@ -64,7 +64,7 @@ async function _geminiRequest(messages, { timeout = 30000, jsonMode = false } = 
     return { role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] };
   });
 
-  const genConfig = { temperature: 0, thinkingConfig: { thinkingBudget: 0 } };
+  const genConfig = { temperature: 0 };
   if (jsonMode) genConfig.responseMimeType = 'application/json';
 
   const body = { contents, generationConfig: genConfig };
