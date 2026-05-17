@@ -45,7 +45,7 @@ function wgerSearch(term) {
   const q = term.toLowerCase();
   return Object.entries(EXERCISES)
     .filter(([, ex]) => ex.name.toLowerCase().includes(q) || ex.muscle.toLowerCase().includes(q))
-    .map(([id, ex]) => ({ base_id: id, name: ex.name, category: ex.muscle }));
+    .map(([id, ex]) => ({ id, name: ex.name, muscle: ex.muscle, equipment: '', ds: ex.ds, dr: ex.dr, _local: true }));
 }
 
 async function wgerBrowse(catId, eqId, offset = 0) {
@@ -1076,11 +1076,22 @@ async function loadBrowserResults(showSkeleton) {
   let nextUrl = null;
 
   if (bs.search && bs.search.length >= 2) {
-    const sugg = await wgerSearch(bs.search);
-    // Need to fetch full info for each result — but that's expensive. Fetch in parallel, limit to 20.
-    const top = sugg.slice(0, 20);
-    const infos = await Promise.all(top.map(s => wgerFetchExercise(s.base_id)));
-    exercises = infos.filter(Boolean);
+    // Search local exercises first
+    const localResults = wgerSearch(bs.search);
+    // Also search wger API
+    let apiResults = [];
+    try {
+      const res = await fetch(`https://wger.de/api/v2/exercise/search/?term=${encodeURIComponent(bs.search)}&language=english&format=json`);
+      if (res.ok) {
+        const data = await res.json();
+        const ids = (data.suggestions || []).map(s => s.data?.id).filter(Boolean).slice(0, 10);
+        const infos = await Promise.all(ids.map(id => wgerFetchExercise(id)));
+        apiResults = infos.filter(Boolean);
+      }
+    } catch {}
+    // Merge: local first, then API (dedupe by name)
+    const seen = new Set(localResults.map(e => e.name.toLowerCase()));
+    exercises = [...localResults, ...apiResults.filter(e => !seen.has(e.name.toLowerCase()))];
     nextUrl = null;
   } else {
     const data = await wgerBrowse(bs.category, bs.equipment, 0);
