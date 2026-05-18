@@ -16,6 +16,8 @@
 //   HEALTH_KV           — KV namespace for Apple Health data
 
 const ALLOWED_ORIGINS = [
+  'https://get-arete.com',
+  'https://www.get-arete.com',
   'https://oskarsteinicke.github.io',
   'http://localhost:3000',
   'http://localhost:8080',
