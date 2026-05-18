@@ -738,6 +738,7 @@ nav {
 .hm-card-lbl { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 5px; font-weight: 500; }
 .hm-card-val { font-family: var(--serif); font-size: 17px; color: var(--text); line-height: 1.25; }
 .hm-card-sub { font-size: 10.5px; color: var(--text-dim); margin-top: 3px; line-height: 1.4; }
+.hm-card-badges { font-size: 10px; color: var(--fg3); margin-top: 6px; line-height: 1.6; letter-spacing: .02em; }
 .hm-card-status { font-size: 11px; font-weight: 600; margin-top: 10px; }
 .hm-card-bar { height: 3px; background: rgba(255,255,255,.06); border-radius: 2px; overflow: hidden; margin-top: 10px; }
 .hm-card-fill { height: 100%; border-radius: 2px; }

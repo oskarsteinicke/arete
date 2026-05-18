@@ -1057,6 +1057,14 @@ function renderHome() {
   const wProg = findProgram(workoutMeta.activeProgram) || WORKOUT_PROGRAMS[0];
   const wDay = wProg.days[workoutMeta.currentDayIndex % wProg.days.length];
   const wLogged = !!workoutLog[today()];
+  const wEntry = workoutLog[today()];
+  const wExternal = wEntry?.source;
+  const wExtraBadges = wExternal ? [
+    wEntry.distance ? `📏 ${wEntry.distance}` : '',
+    wEntry.avgHr ? `💓 ${wEntry.avgHr} bpm` : '',
+    wEntry.calories ? `🔥 ${wEntry.calories} cal` : '',
+    wEntry.duration ? `⏱ ${wEntry.duration}m` : ''
+  ].filter(Boolean).join('  ') : '';
 
   // Sleep data
   const slp = sleepLog[today()] || {};
@@ -1144,8 +1152,9 @@ function renderHome() {
         ${wLogged ? '<div class="hm-card-glow"></div>' : ''}
         <div class="hm-card-icon">🏋️</div>
         <div class="hm-card-lbl">Workout</div>
-        <div class="hm-card-val">${wDay.name}</div>
-        <div class="hm-card-sub">${wProg.name}</div>
+        <div class="hm-card-val">${wLogged && wExternal ? wEntry.dayName : wDay.name}</div>
+        <div class="hm-card-sub">${wLogged && wExternal ? (wEntry.source === 'strava' ? 'Strava' : wEntry.source === 'googlefit' ? 'Google Fit' : wEntry.source) : wProg.name}</div>
+        ${wLogged && wExtraBadges ? `<div class="hm-card-badges">${wExtraBadges}</div>` : ''}
         <div class="hm-card-status" style="${wLogged ? 'color:var(--accent-b)' : 'color:var(--fg3)'}">${wLogged ? '✓ Done' : '→ Start'}</div>
         ${!wLogged ? recoveryBadgeHTML() : ''}
       </div>
