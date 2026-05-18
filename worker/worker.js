@@ -2,6 +2,7 @@
 // Deploy: npx wrangler deploy
 // Secrets needed:
 //   GEMINI_KEY          — Google Gemini API key
+//   GROQ_KEY            — Groq API key (free tier, fallback for diet AI)
 //   GOOGLE_CLIENT_ID    — Google OAuth client ID
 //   GOOGLE_SECRET       — Google OAuth client secret
 //   STRAVA_CLIENT_ID    — Strava OAuth client ID
@@ -19,6 +20,7 @@ const ALLOWED_ORIGINS = [
 ];
 
 const MODEL = 'gemini-2.5-flash';
+const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 function cors(origin) {
   const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
@@ -160,6 +162,25 @@ export default {
       if (path === '/oauth/refresh') {
         const body = await request.json();
         return handleOAuthRefresh(body, env, origin);
+      }
+
+      // Groq proxy
+      if (path === '/groq') {
+        if (!env.GROQ_KEY) return jsonResponse({ error: 'Groq not configured' }, 500, origin);
+        const body = await request.text();
+        const res = await fetch(GROQ_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${env.GROQ_KEY}`
+          },
+          body
+        });
+        const data = await res.text();
+        return new Response(data, {
+          status: res.status,
+          headers: { 'Content-Type': 'application/json', ...cors(origin) }
+        });
       }
 
       // Default: Gemini proxy (root path)

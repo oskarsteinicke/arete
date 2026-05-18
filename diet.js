@@ -5,17 +5,46 @@
 // ── AI FETCH HELPER (Gemini primary, Pollinations fallback) ──────────────
 const _GEMINI_PROXY = 'https://arete-ai.oskarsteinicke.workers.dev';
 
+// ── MEAL CACHE (skip AI for repeated meals) ─────────────────────────────
+const _mealCache = (() => {
+  try { return JSON.parse(localStorage.getItem('hvi_meal_cache') || '{}'); } catch { return {}; }
+})();
+function _cacheMeal(key, items) {
+  _mealCache[key] = { items, ts: Date.now() };
+  // Keep cache under 200 entries
+  const entries = Object.entries(_mealCache).sort((a, b) => b[1].ts - a[1].ts);
+  const pruned = Object.fromEntries(entries.slice(0, 200));
+  localStorage.setItem('hvi_meal_cache', JSON.stringify(pruned));
+}
+function _getCachedMeal(text) {
+  const key = text.toLowerCase().trim();
+  const cached = _mealCache[key];
+  if (cached && Date.now() - cached.ts < 7 * 86400000) return cached.items;
+  return null;
+}
+
 async function _aiFetch(messages, { timeout = 30000, retries = 1, model = 'openai', jsonMode = false } = {}) {
   if (!navigator.onLine) throw new Error('offline');
   let lastErr;
 
-  // ── Provider 1: Gemini (fast, reliable, free) ──────────────────────────
+  // ── Provider 1: Gemini via proxy (fast, reliable) ─────────────────────
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const result = await _geminiRequest(messages, { timeout, jsonMode });
+      if (result) return result;
+    } catch (e) {
+      lastErr = e;
+      if (attempt === 0) await new Promise(r => setTimeout(r, 1000));
+    }
+  }
+
+  // ── Provider 2: Groq (Llama 3, fast, free tier) ───────────────────────
   try {
-    const result = await _geminiRequest(messages, { timeout, jsonMode });
+    const result = await _groqRequest(messages, { timeout, jsonMode });
     if (result) return result;
   } catch (e) { lastErr = e; }
 
-  // ── Provider 2: Pollinations (fallback) ────────────────────────────────
+  // ── Provider 3: Pollinations (OpenAI-compatible, free) ────────────────
   for (let attempt = 0; attempt <= retries; attempt++) {
     const ac = new AbortController();
     const to = setTimeout(() => ac.abort(), timeout);
@@ -41,6 +70,30 @@ async function _aiFetch(messages, { timeout = 30000, retries = 1, model = 'opena
     }
   }
   throw lastErr;
+}
+
+async function _groqRequest(messages, { timeout = 20000, jsonMode = false } = {}) {
+  const ac = new AbortController();
+  const to = setTimeout(() => ac.abort(), timeout);
+  try {
+    const body = { messages, model: 'llama-3.3-70b-versatile', temperature: 0, max_tokens: 1024 };
+    if (jsonMode) body.response_format = { type: 'json_object' };
+    const res = await fetch(_GEMINI_PROXY + '/groq', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: ac.signal,
+      body: JSON.stringify(body)
+    });
+    clearTimeout(to);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const text = data?.choices?.[0]?.message?.content;
+    if (!text || text.length < 2) return null;
+    return text;
+  } catch (e) {
+    clearTimeout(to);
+    throw e;
+  }
 }
 
 async function _geminiRequest(messages, { timeout = 30000, jsonMode = false } = {}) {
@@ -140,6 +193,129 @@ const _FOOD_DB = {
   'cereal':     { name:'Cereal (1 bowl + milk)', calories:280, protein:8, carbs:48, fat:5 },
   'granola':    { name:'Granola (60g)', calories:270, protein:6, carbs:36, fat:12 },
   'pancakes':   { name:'Pancakes (3)', calories:350, protein:10, carbs:50, fat:12 },
+  'waffle':     { name:'Waffle', calories:220, protein:6, carbs:33, fat:8 },
+  'waffles':    { name:'Waffles (2)', calories:440, protein:12, carbs:66, fat:16 },
+  'french toast':{ name:'French toast (2 slices)', calories:350, protein:12, carbs:40, fat:16 },
+  'bagel':      { name:'Bagel', calories:270, protein:10, carbs:53, fat:2 },
+  'croissant':  { name:'Croissant', calories:230, protein:5, carbs:26, fat:12 },
+  'muffin':     { name:'Muffin', calories:340, protein:5, carbs:50, fat:14 },
+  'donut':      { name:'Donut', calories:270, protein:4, carbs:31, fat:14 },
+  'cottage cheese':{ name:'Cottage cheese (200g)', calories:180, protein:24, carbs:8, fat:5 },
+  'cream cheese':{ name:'Cream cheese (2 tbsp)', calories:100, protein:2, carbs:2, fat:9 },
+  'hummus':     { name:'Hummus (60g)', calories:100, protein:5, carbs:9, fat:6 },
+  'trail mix':  { name:'Trail mix (40g)', calories:200, protein:5, carbs:18, fat:13 },
+  'protein bar':{ name:'Protein bar', calories:220, protein:20, carbs:24, fat:8 },
+  'energy bar': { name:'Energy bar', calories:250, protein:8, carbs:40, fat:8 },
+  'jerky':      { name:'Beef jerky (30g)', calories:80, protein:13, carbs:3, fat:1 },
+  'popcorn':    { name:'Popcorn (large)', calories:370, protein:7, carbs:53, fat:16 },
+  'chips':      { name:'Chips (small bag)', calories:270, protein:3, carbs:28, fat:17 },
+  'crackers':   { name:'Crackers (8)', calories:140, protein:3, carbs:22, fat:5 },
+  'rice cake':  { name:'Rice cake', calories:35, protein:1, carbs:7, fat:0 },
+  'rice cakes':  { name:'Rice cakes (2)', calories:70, protein:2, carbs:14, fat:0 },
+  'pork':       { name:'Pork chop (200g)', calories:350, protein:40, carbs:0, fat:20 },
+  'lamb':       { name:'Lamb (200g)', calories:420, protein:40, carbs:0, fat:28 },
+  'turkey':     { name:'Turkey breast (150g)', calories:200, protein:38, carbs:0, fat:4 },
+  'shrimp':     { name:'Shrimp (150g)', calories:140, protein:28, carbs:2, fat:2 },
+  'prawns':     { name:'Prawns (150g)', calories:140, protein:28, carbs:2, fat:2 },
+  'cod':        { name:'Cod (150g)', calories:140, protein:30, carbs:0, fat:1 },
+  'tilapia':    { name:'Tilapia (150g)', calories:165, protein:34, carbs:0, fat:3 },
+  'tofu':       { name:'Tofu (200g)', calories:180, protein:20, carbs:4, fat:10 },
+  'tempeh':     { name:'Tempeh (100g)', calories:190, protein:20, carbs:8, fat:11 },
+  'lentils':    { name:'Lentils (1 cup cooked)', calories:230, protein:18, carbs:40, fat:1 },
+  'chickpeas':  { name:'Chickpeas (1 cup)', calories:270, protein:15, carbs:45, fat:4 },
+  'black beans':{ name:'Black beans (1 cup)', calories:230, protein:15, carbs:41, fat:1 },
+  'beans':      { name:'Beans (1 cup cooked)', calories:230, protein:15, carbs:41, fat:1 },
+  'quinoa':     { name:'Quinoa (1 cup cooked)', calories:220, protein:8, carbs:39, fat:4 },
+  'couscous':   { name:'Couscous (1 cup)', calories:176, protein:6, carbs:36, fat:0 },
+  'noodles':    { name:'Noodles (200g cooked)', calories:280, protein:8, carbs:56, fat:2 },
+  'ramen':      { name:'Ramen', calories:450, protein:16, carbs:60, fat:16 },
+  'pho':        { name:'Pho', calories:400, protein:22, carbs:48, fat:12 },
+  'soup':       { name:'Soup (1 bowl)', calories:200, protein:10, carbs:20, fat:8 },
+  'chili':      { name:'Chili (1 bowl)', calories:380, protein:28, carbs:30, fat:16 },
+  'curry':      { name:'Curry with rice', calories:550, protein:22, carbs:60, fat:24 },
+  'stir fry':   { name:'Stir fry with rice', calories:450, protein:25, carbs:50, fat:16 },
+  'fried rice':  { name:'Fried rice', calories:400, protein:12, carbs:52, fat:16 },
+  'pad thai':   { name:'Pad Thai', calories:500, protein:20, carbs:60, fat:20 },
+  'tacos':      { name:'Tacos (3)', calories:540, protein:24, carbs:48, fat:26 },
+  'taco':       { name:'Taco', calories:180, protein:8, carbs:16, fat:9 },
+  'quesadilla': { name:'Quesadilla', calories:470, protein:22, carbs:40, fat:24 },
+  'nachos':     { name:'Nachos', calories:550, protein:18, carbs:52, fat:30 },
+  'hot dog':    { name:'Hot dog', calories:310, protein:11, carbs:26, fat:18 },
+  'chicken wings':{ name:'Chicken wings (6)', calories:480, protein:36, carbs:12, fat:32 },
+  'wings':      { name:'Wings (6)', calories:480, protein:36, carbs:12, fat:32 },
+  'nuggets':    { name:'Chicken nuggets (8)', calories:360, protein:20, carbs:24, fat:20 },
+  'chicken nuggets':{ name:'Chicken nuggets (8)', calories:360, protein:20, carbs:24, fat:20 },
+  'fish and chips':{ name:'Fish and chips', calories:750, protein:30, carbs:65, fat:40 },
+  'kebab':      { name:'Kebab', calories:600, protein:35, carbs:50, fat:28 },
+  'doner':      { name:'Doner kebab', calories:600, protein:35, carbs:50, fat:28 },
+  'shawarma':   { name:'Shawarma wrap', calories:550, protein:30, carbs:48, fat:26 },
+  'falafel':    { name:'Falafel wrap', calories:480, protein:16, carbs:54, fat:22 },
+  'fried chicken':{ name:'Fried chicken (2 pcs)', calories:480, protein:36, carbs:18, fat:30 },
+  'mac and cheese':{ name:'Mac and cheese', calories:450, protein:18, carbs:48, fat:22 },
+  'lasagna':    { name:'Lasagna (1 serving)', calories:480, protein:26, carbs:40, fat:24 },
+  'risotto':    { name:'Risotto', calories:420, protein:12, carbs:56, fat:16 },
+  'spaghetti':  { name:'Spaghetti with sauce', calories:400, protein:16, carbs:58, fat:12 },
+  'bolognese':  { name:'Spaghetti bolognese', calories:500, protein:24, carbs:58, fat:18 },
+  'carbonara':  { name:'Pasta carbonara', calories:550, protein:22, carbs:52, fat:28 },
+  'poke bowl':  { name:'Poke bowl', calories:500, protein:28, carbs:55, fat:16 },
+  'acai bowl':  { name:'Acai bowl', calories:400, protein:8, carbs:64, fat:14 },
+  'caesar salad':{ name:'Caesar salad', calories:350, protein:18, carbs:14, fat:26 },
+  'cobb salad': { name:'Cobb salad', calories:500, protein:32, carbs:12, fat:36 },
+  'greek salad':{ name:'Greek salad', calories:220, protein:8, carbs:10, fat:18 },
+  'grilled cheese':{ name:'Grilled cheese', calories:400, protein:14, carbs:36, fat:22 },
+  'blt':        { name:'BLT sandwich', calories:400, protein:18, carbs:36, fat:22 },
+  'club sandwich':{ name:'Club sandwich', calories:500, protein:28, carbs:42, fat:24 },
+  'sub':        { name:'Sub sandwich', calories:500, protein:24, carbs:50, fat:22 },
+  'panini':     { name:'Panini', calories:450, protein:22, carbs:44, fat:20 },
+  'croissant sandwich':{ name:'Croissant sandwich', calories:420, protein:18, carbs:34, fat:24 },
+  'dim sum':    { name:'Dim sum (6 pcs)', calories:320, protein:16, carbs:32, fat:14 },
+  'spring roll':{ name:'Spring rolls (2)', calories:200, protein:6, carbs:24, fat:10 },
+  'dumplings':  { name:'Dumplings (6)', calories:300, protein:14, carbs:36, fat:10 },
+  'edamame':    { name:'Edamame (100g)', calories:120, protein:12, carbs:9, fat:5 },
+  'miso soup':  { name:'Miso soup', calories:60, protein:4, carbs:6, fat:2 },
+  'orange':     { name:'Orange', calories:62, protein:1, carbs:15, fat:0 },
+  'strawberries':{ name:'Strawberries (150g)', calories:48, protein:1, carbs:12, fat:0 },
+  'blueberries':{ name:'Blueberries (100g)', calories:57, protein:1, carbs:14, fat:0 },
+  'grapes':     { name:'Grapes (150g)', calories:104, protein:1, carbs:27, fat:0 },
+  'mango':      { name:'Mango', calories:135, protein:1, carbs:35, fat:1 },
+  'pineapple':  { name:'Pineapple (150g)', calories:75, protein:1, carbs:20, fat:0 },
+  'watermelon': { name:'Watermelon (200g)', calories:60, protein:1, carbs:15, fat:0 },
+  'pear':       { name:'Pear', calories:100, protein:1, carbs:27, fat:0 },
+  'peach':      { name:'Peach', calories:60, protein:1, carbs:15, fat:0 },
+  'dates':      { name:'Dates (3)', calories:200, protein:2, carbs:54, fat:0 },
+  'raisins':    { name:'Raisins (40g)', calories:120, protein:1, carbs:32, fat:0 },
+  'spinach':    { name:'Spinach (100g)', calories:23, protein:3, carbs:4, fat:0 },
+  'kale':       { name:'Kale (100g)', calories:35, protein:3, carbs:6, fat:1 },
+  'carrots':    { name:'Carrots (100g)', calories:41, protein:1, carbs:10, fat:0 },
+  'tomato':     { name:'Tomato', calories:22, protein:1, carbs:5, fat:0 },
+  'cucumber':   { name:'Cucumber', calories:16, protein:1, carbs:4, fat:0 },
+  'corn':       { name:'Corn on the cob', calories:90, protein:3, carbs:19, fat:1 },
+  'mushrooms':  { name:'Mushrooms (100g)', calories:22, protein:3, carbs:3, fat:0 },
+  'peppers':    { name:'Bell pepper', calories:30, protein:1, carbs:7, fat:0 },
+  'onion':      { name:'Onion', calories:44, protein:1, carbs:10, fat:0 },
+  'garlic bread':{ name:'Garlic bread (2 slices)', calories:280, protein:6, carbs:32, fat:14 },
+  'naan':       { name:'Naan bread', calories:260, protein:9, carbs:45, fat:5 },
+  'pita':       { name:'Pita bread', calories:170, protein:6, carbs:33, fat:1 },
+  'tortilla':   { name:'Tortilla', calories:140, protein:4, carbs:24, fat:4 },
+  'rice bowl':  { name:'Rice bowl', calories:400, protein:15, carbs:60, fat:10 },
+  'acai':       { name:'Acai bowl', calories:400, protein:8, carbs:64, fat:14 },
+  'cappuccino': { name:'Cappuccino', calories:120, protein:6, carbs:10, fat:6 },
+  'espresso':   { name:'Espresso', calories:5, protein:0, carbs:0, fat:0 },
+  'mocha':      { name:'Mocha', calories:290, protein:10, carbs:36, fat:12 },
+  'hot chocolate':{ name:'Hot chocolate', calories:240, protein:8, carbs:36, fat:8 },
+  'tea':        { name:'Tea', calories:2, protein:0, carbs:0, fat:0 },
+  'green tea':  { name:'Green tea', calories:2, protein:0, carbs:0, fat:0 },
+  'cola':       { name:'Cola (330ml)', calories:140, protein:0, carbs:39, fat:0 },
+  'soda':       { name:'Soda (330ml)', calories:140, protein:0, carbs:39, fat:0 },
+  'juice':      { name:'Juice (250ml)', calories:112, protein:1, carbs:26, fat:0 },
+  'milkshake':  { name:'Milkshake', calories:420, protein:12, carbs:60, fat:16 },
+  'water':      { name:'Water', calories:0, protein:0, carbs:0, fat:0 },
+  'coconut water':{ name:'Coconut water (330ml)', calories:60, protein:0, carbs:15, fat:0 },
+  'whiskey':    { name:'Whiskey (45ml)', calories:105, protein:0, carbs:0, fat:0 },
+  'vodka':      { name:'Vodka (45ml)', calories:97, protein:0, carbs:0, fat:0 },
+  'gin':        { name:'Gin & tonic', calories:170, protein:0, carbs:14, fat:0 },
+  'cocktail':   { name:'Cocktail', calories:220, protein:0, carbs:24, fat:0 },
+  'margarita':  { name:'Margarita', calories:270, protein:0, carbs:20, fat:0 },
 };
 
 function _localFoodLookup(text) {
@@ -525,6 +701,16 @@ async function calculateMealDescription() {
   out.innerHTML = '<p class="dm-hint" style="text-align:center">‣ Calculating macros…</p>';
   if (btn) { btn.disabled = true; btn.textContent = 'Calculating…'; }
 
+  // Check cache first
+  const cached = _getCachedMeal(text);
+  if (cached) {
+    _parsedMealItems = cached;
+    _renderParsedItems(out);
+    out.insertAdjacentHTML('afterbegin', '<p class="dm-hint" style="font-size:11px;opacity:0.6;margin-bottom:8px">⚡ Loaded from cache</p>');
+    if (btn) { btn.disabled = false; btn.textContent = 'CALCULATE MACROS'; }
+    return;
+  }
+
   try {
     const sysPrompt =
       'You are a nutrition macro calculator that ONLY outputs JSON. Never output any text, explanation, or markdown — ONLY a raw JSON array.\n\n' +
@@ -567,6 +753,7 @@ async function calculateMealDescription() {
       carbs:    Math.round(Number(it.carbs)     || 0),
       fat:      Math.round(Number(it.fat)       || 0),
     }));
+    _cacheMeal(text.toLowerCase().trim(), _parsedMealItems);
     _renderParsedItems(out);
   } catch(e) {
     // Fallback to local database
