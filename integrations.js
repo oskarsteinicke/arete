@@ -39,6 +39,85 @@ const INTEGRATIONS = {
 
 const _OAUTH_PROXY = 'https://arete-ai.oskarsteinicke.workers.dev';
 
+// ── APPLE HEALTH (via iOS Shortcut → Worker KV) ────────────────────────
+const APPLE_HEALTH_CFG = {
+  name: 'Apple Health',
+  icon: '<svg viewBox="0 0 24 24" width="20" height="20"><path d="M16.5 3C14.76 3 13.09 3.81 12 5.09 10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3z" fill="#FF2D55"/></svg>',
+  provides: ['steps', 'sleep', 'heart_rate', 'workouts', 'active_energy']
+};
+
+function _getHealthToken() {
+  return localStorage.getItem('hvi_health_token') || '';
+}
+
+async function syncAppleHealth() {
+  const token = _getHealthToken();
+  if (!token) return;
+  try {
+    const res = await fetch(_OAUTH_PROXY + '/health?days=7', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    Object.entries(data).forEach(([dateKey, d]) => {
+      if (d.sleep && (!sleepLog[dateKey] || !sleepLog[dateKey].hours)) {
+        sleepLog[dateKey] = {
+          ...sleepLog[dateKey],
+          hours: parseFloat(d.sleep),
+          source: 'applehealth'
+        };
+      }
+      if (d.sleepQuality && !sleepLog[dateKey]?.quality) {
+        sleepLog[dateKey] = { ...sleepLog[dateKey], quality: d.sleepQuality };
+      }
+      if (d.restingHR) {
+        sleepLog[dateKey] = { ...sleepLog[dateKey], restingHR: d.restingHR };
+      }
+      if (d.steps) {
+        const existing = JSON.parse(localStorage.getItem('hvi_steps_log') || '{}');
+        existing[dateKey] = d.steps;
+        localStorage.setItem('hvi_steps_log', JSON.stringify(existing));
+      }
+      if (d.activeEnergy) {
+        const existing = JSON.parse(localStorage.getItem('hvi_energy_log') || '{}');
+        existing[dateKey] = d.activeEnergy;
+        localStorage.setItem('hvi_energy_log', JSON.stringify(existing));
+      }
+      if (d.weight) {
+        if (!weightLog[dateKey]) {
+          weightLog[dateKey] = d.weight;
+        }
+      }
+      if (d.workouts && Array.isArray(d.workouts)) {
+        d.workouts.forEach(w => {
+          if (!workoutLog[dateKey]) {
+            workoutLog[dateKey] = {
+              dayName: w.type || 'Apple Health Activity',
+              duration: w.duration || 0,
+              exercises: [],
+              source: 'applehealth',
+              distance: w.distance ? w.distance.toFixed(1) + ' km' : null,
+              avgHr: w.avgHR || null,
+              calories: w.calories || null
+            };
+          }
+        });
+      }
+    });
+
+    LS.set('hvi_sleep_log', sleepLog);
+    LS.set('hvi_workout_log', workoutLog);
+    LS.set('hvi_weight_log', weightLog);
+
+    const int = _getIntegrations();
+    int.applehealth = { ...(int.applehealth || {}), lastSync: Date.now(), connectedAt: int.applehealth?.connectedAt || Date.now() };
+    _saveIntegrations(int);
+  } catch (err) {
+    console.error('[integrations] Apple Health sync failed:', err);
+  }
+}
+
 // ── TOKEN STORAGE ────────────────────────────────────────────────────────
 function _getIntegrations() { return LS.get('hvi_integrations', {}); }
 function _saveIntegrations(data) { LS.set('hvi_integrations', data); }
@@ -467,8 +546,47 @@ function _whoopSportName(id) {
 }
 
 // ── UI RENDERING ─────────────────────────────────────────────────────────
+function connectAppleHealth() {
+  const token = prompt('Enter your Health sync token.\n\nThis is the HEALTH_TOKEN secret you set in your Cloudflare Worker. The same token goes in your Apple Shortcut.');
+  if (!token || !token.trim()) return;
+  localStorage.setItem('hvi_health_token', token.trim());
+  const int = _getIntegrations();
+  int.applehealth = { connectedAt: Date.now() };
+  _saveIntegrations(int);
+  syncAppleHealth();
+  if (typeof renderStats === 'function') renderStats();
+}
+
+function disconnectAppleHealth() {
+  localStorage.removeItem('hvi_health_token');
+  const int = _getIntegrations();
+  delete int.applehealth;
+  _saveIntegrations(int);
+  if (typeof renderStats === 'function') renderStats();
+}
+
 function renderIntegrationsSection() {
   const int = _getIntegrations();
+
+  // Apple Health row
+  const ahConnected = !!int.applehealth && !!_getHealthToken();
+  const ahSync = int.applehealth?.lastSync;
+  const ahAge = ahSync ? _timeAgo(ahSync) : null;
+  const appleRow = `<div class="intg-row">
+    <div class="intg-icon">${APPLE_HEALTH_CFG.icon}</div>
+    <div class="intg-info">
+      <div class="intg-name">${APPLE_HEALTH_CFG.name}</div>
+      <div class="intg-status">${ahConnected ? `Connected · synced ${ahAge || 'never'}` : 'steps, sleep, heart rate, workouts'}</div>
+    </div>
+    <div class="intg-action">
+      ${ahConnected
+        ? `<button class="intg-btn intg-btn-sync" onclick="syncAppleHealth();this.textContent='Syncing…'" title="Sync now">↻</button>
+           <button class="intg-btn intg-btn-disc" onclick="disconnectAppleHealth()" title="Disconnect">×</button>`
+        : `<button class="intg-btn intg-btn-conn" onclick="connectAppleHealth()">Connect</button>`}
+    </div>
+  </div>`;
+
+  // Other integrations
   const rows = Object.entries(INTEGRATIONS).filter(([key]) => (_CLIENT_IDS[key] && _CLIENT_IDS[key] !== '') || int[key]).map(([key, cfg]) => {
     const connected = !!int[key];
     const lastSync = int[key]?.lastSync;
@@ -488,11 +606,12 @@ function renderIntegrationsSection() {
     </div>`;
   }).join('');
 
+  const allConnected = Object.keys(int).length > 0;
   return `
     <div class="da-section ani" style="margin:0 24px 16px;padding:16px">
       <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Connected Devices</div>
-      <div class="intg-list">${rows}</div>
-      ${Object.keys(int).length > 0 ? `<button class="intg-sync-all" onclick="syncAllIntegrations();this.textContent='Syncing all…'">Sync All Now</button>` : ''}
+      <div class="intg-list">${appleRow}${rows}</div>
+      ${allConnected ? `<button class="intg-sync-all" onclick="syncAllIntegrations();syncAppleHealth();this.textContent='Syncing all…'">Sync All Now</button>` : ''}
     </div>`;
 }
 
@@ -507,12 +626,20 @@ function _timeAgo(ts) {
 // ── AUTO-SYNC ON LOAD ────────────────────────────────────────────────────
 function _initIntegrations() {
   _handleOAuthCallback();
-  // Auto-sync connected services every 2 hours
   const int = _getIntegrations();
+  // Auto-sync Apple Health
+  if (int.applehealth && _getHealthToken()) {
+    const lastSync = int.applehealth?.lastSync || 0;
+    if (Date.now() - lastSync > 2 * 3600000) {
+      setTimeout(() => syncAppleHealth(), 2500);
+    }
+  }
+  // Auto-sync connected OAuth services every 2 hours
   Object.keys(int).forEach(service => {
+    if (service === 'applehealth') return;
     const lastSync = int[service]?.lastSync || 0;
     if (Date.now() - lastSync > 2 * 3600000) {
-      setTimeout(() => syncIntegration(service), 3000); // Delay to not block initial render
+      setTimeout(() => syncIntegration(service), 3000);
     }
   });
 }

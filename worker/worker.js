@@ -1,8 +1,9 @@
-// Cloudflare Worker — Arete API Proxy (Gemini + OAuth)
+// Cloudflare Worker — Arete API Proxy (Gemini + OAuth + Health)
 // Deploy: npx wrangler deploy
 // Secrets needed:
 //   GEMINI_KEY          — Google Gemini API key
 //   GROQ_KEY            — Groq API key (free tier, fallback for diet AI)
+//   HEALTH_TOKEN        — Bearer token for Apple Health Shortcut
 //   GOOGLE_CLIENT_ID    — Google OAuth client ID
 //   GOOGLE_SECRET       — Google OAuth client secret
 //   STRAVA_CLIENT_ID    — Strava OAuth client ID
@@ -11,6 +12,8 @@
 //   FITBIT_SECRET       — Fitbit OAuth client secret
 //   WHOOP_CLIENT_ID     — Whoop OAuth client ID
 //   WHOOP_SECRET        — Whoop OAuth client secret
+// KV binding needed:
+//   HEALTH_KV           — KV namespace for Apple Health data
 
 const ALLOWED_ORIGINS = [
   'https://oskarsteinicke.github.io',
@@ -26,8 +29,8 @@ function cors(origin) {
   const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
 }
 
@@ -135,6 +138,38 @@ async function handleOAuthRefresh(body, env, origin) {
   }, 200, origin);
 }
 
+async function handleHealth(request, env, origin) {
+  if (!env.HEALTH_TOKEN) return jsonResponse({ error: 'Health not configured' }, 500, origin);
+  if (!env.HEALTH_KV) return jsonResponse({ error: 'KV not bound' }, 500, origin);
+
+  const auth = (request.headers.get('Authorization') || '').replace('Bearer ', '');
+  if (auth !== env.HEALTH_TOKEN) return jsonResponse({ error: 'Unauthorized' }, 401, origin);
+
+  if (request.method === 'POST') {
+    const body = await request.json();
+    const date = body.date;
+    if (!date) return jsonResponse({ error: 'Missing date' }, 400, origin);
+    await env.HEALTH_KV.put(`health:${date}`, JSON.stringify(body), { expirationTtl: 30 * 86400 });
+    return jsonResponse({ ok: true, date }, 200, origin);
+  }
+
+  if (request.method === 'GET') {
+    const days = parseInt(new URL(request.url).searchParams.get('days') || '7');
+    const results = {};
+    const now = new Date();
+    for (let i = 0; i < days; i++) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      const val = await env.HEALTH_KV.get(`health:${key}`);
+      if (val) results[key] = JSON.parse(val);
+    }
+    return jsonResponse(results, 200, origin);
+  }
+
+  return jsonResponse({ error: 'Method not allowed' }, 405, origin);
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get('Origin') || '';
@@ -144,12 +179,17 @@ export default {
       return new Response(null, { headers: { ...cors(origin), 'Access-Control-Max-Age': '86400' } });
     }
 
+    const url = new URL(request.url);
+    const path = url.pathname;
+
+    // Health endpoints accept GET and POST
+    if (path === '/health') {
+      return handleHealth(request, env, origin);
+    }
+
     if (request.method !== 'POST') {
       return new Response('Method not allowed', { status: 405 });
     }
-
-    const url = new URL(request.url);
-    const path = url.pathname;
 
     try {
       // OAuth token exchange
