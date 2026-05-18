@@ -991,11 +991,48 @@ function renderWeekInReview() {
     if (anyDone) weekHabitDays++;
   }
 
+  // Sleep average this week
+  let sleepTotal = 0, sleepCount = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(mon);
+    d.setDate(mon.getDate() + i);
+    const key = d.toISOString().slice(0, 10);
+    if (key > today()) break;
+    const s = sleepLog[key];
+    if (s && s.hours) { sleepTotal += s.hours; sleepCount++; }
+  }
+  const avgSleep = sleepCount ? (sleepTotal / sleepCount).toFixed(1) : null;
+
+  // Weight change this week
+  const weekWeights = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(mon);
+    d.setDate(mon.getDate() + i);
+    const key = d.toISOString().slice(0, 10);
+    if (weightLog[key]) weekWeights.push(weightLog[key]);
+  }
+  const weightDelta = weekWeights.length >= 2 ? (weekWeights[weekWeights.length - 1] - weekWeights[0]).toFixed(1) : null;
+
+  // Steps average
+  const _sLog = JSON.parse(localStorage.getItem('hvi_steps_log') || '{}');
+  let stepsTotal = 0, stepsCount = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(mon);
+    d.setDate(mon.getDate() + i);
+    const key = d.toISOString().slice(0, 10);
+    if (key > today()) break;
+    if (_sLog[key]) { stepsTotal += _sLog[key]; stepsCount++; }
+  }
+  const avgSteps = stepsCount ? Math.round(stepsTotal / stepsCount) : null;
+
   const stats = [
     { icon: '🏋️', val: ws.workoutDays.length, lbl: 'workouts' },
     { icon: '🔥', val: best + 'd', lbl: 'best streak' },
     { icon: '✅', val: weekHabitDays + '/7', lbl: 'active days' },
     { icon: '🍽️', val: weekAvgCal !== null ? weekAvgCal.toLocaleString() : '—', lbl: 'avg cal' },
+    ...(avgSleep ? [{ icon: '😴', val: avgSleep + 'h', lbl: 'avg sleep' }] : []),
+    ...(avgSteps ? [{ icon: '👟', val: avgSteps.toLocaleString(), lbl: 'avg steps' }] : []),
+    ...(weightDelta !== null ? [{ icon: '⚖️', val: (weightDelta > 0 ? '+' : '') + weightDelta + 'kg', lbl: 'weight' }] : []),
   ];
 
   const statsHTML = stats.map(s => `
@@ -1070,6 +1107,12 @@ function renderHome() {
   const slp = sleepLog[today()] || {};
   const slpHours = slp.hours || 0;
   const slpQuality = slp.quality || 0;
+
+  // Steps & energy
+  const _stepsLog = JSON.parse(localStorage.getItem('hvi_steps_log') || '{}');
+  const _energyLog = JSON.parse(localStorage.getItem('hvi_energy_log') || '{}');
+  const todaySteps = _stepsLog[today()] || 0;
+  const todayEnergy = _energyLog[today()] || 0;
 
   // Time since last workout
   const _lastWD = workoutMeta.lastWorkoutDate;
@@ -1167,6 +1210,13 @@ function renderHome() {
         <div class="hm-card-status" style="color:var(--fg3)">${dm.p}p · ${dm.c}c · ${dm.f}f</div>
       </div>
     </div>
+
+    ${todaySteps || slpHours ? `<div class="hm-vitals ani">
+      ${todaySteps ? `<div class="hm-vital"><span class="hm-vital-icon">👟</span><span class="hm-vital-val">${todaySteps.toLocaleString()}</span><span class="hm-vital-lbl">steps</span></div>` : ''}
+      ${slpHours ? `<div class="hm-vital"><span class="hm-vital-icon">😴</span><span class="hm-vital-val">${slpHours}h</span><span class="hm-vital-lbl">sleep</span></div>` : ''}
+      ${todayEnergy ? `<div class="hm-vital"><span class="hm-vital-icon">⚡</span><span class="hm-vital-val">${todayEnergy}</span><span class="hm-vital-lbl">kcal active</span></div>` : ''}
+      ${slp.restingHR ? `<div class="hm-vital"><span class="hm-vital-icon">💓</span><span class="hm-vital-val">${slp.restingHR}</span><span class="hm-vital-lbl">resting HR</span></div>` : ''}
+    </div>` : ''}
 
     <div class="hm-sec ani">
       <div class="hm-sec-title">Daily Quests</div>

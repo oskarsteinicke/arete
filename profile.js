@@ -1480,6 +1480,37 @@ function showWeeklyRecap() {
   const weekAvgCal = computeWeeklyAvgCalories(mealLog);
   const xp = gamification.xp || 0;
 
+  // Sleep average
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const mon = new Date(now);
+  mon.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+  let sleepT = 0, sleepC = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(mon); d.setDate(mon.getDate() + i);
+    const k = d.toISOString().slice(0, 10);
+    if (k > today()) break;
+    const s = sleepLog[k];
+    if (s && s.hours) { sleepT += s.hours; sleepC++; }
+  }
+  const avgSlp = sleepC ? (sleepT / sleepC).toFixed(1) : null;
+
+  // Steps average
+  const sLog = JSON.parse(localStorage.getItem('hvi_steps_log') || '{}');
+  let stpT = 0, stpC = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(mon); d.setDate(mon.getDate() + i);
+    const k = d.toISOString().slice(0, 10);
+    if (k > today()) break;
+    if (sLog[k]) { stpT += sLog[k]; stpC++; }
+  }
+  const avgStp = stpC ? Math.round(stpT / stpC) : null;
+
+  const _recapCell = (val, lbl) => `<div style="background:var(--surface);border-radius:14px;padding:14px">
+    <div style="font-family:var(--serif);font-size:26px;color:var(--accent-b)">${val}</div>
+    <div style="font-size:10px;color:var(--text-muted);letter-spacing:1px">${lbl}</div>
+  </div>`;
+
   const modal = document.createElement('div');
   modal.id = 'weekly-recap-modal';
   modal.innerHTML = `
@@ -1489,22 +1520,12 @@ function showWeeklyRecap() {
         <div style="font-family:var(--serif);font-size:28px;color:var(--text);margin-bottom:4px">Great week!</div>
         <div style="font-size:13px;color:var(--text-dim);margin-bottom:24px">Here's how you showed up.</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
-          <div style="background:var(--surface);border-radius:14px;padding:14px">
-            <div style="font-family:var(--serif);font-size:26px;color:var(--accent-b)">${ws.workoutDays.length}</div>
-            <div style="font-size:10px;color:var(--text-muted);letter-spacing:1px">WORKOUTS</div>
-          </div>
-          <div style="background:var(--surface);border-radius:14px;padding:14px">
-            <div style="font-family:var(--serif);font-size:26px;color:var(--accent-b)">${best}d</div>
-            <div style="font-size:10px;color:var(--text-muted);letter-spacing:1px">BEST STREAK</div>
-          </div>
-          <div style="background:var(--surface);border-radius:14px;padding:14px">
-            <div style="font-family:var(--serif);font-size:26px;color:var(--accent-b)">${ws.journalDays.length}</div>
-            <div style="font-size:10px;color:var(--text-muted);letter-spacing:1px">JOURNALED</div>
-          </div>
-          <div style="background:var(--surface);border-radius:14px;padding:14px">
-            <div style="font-family:var(--serif);font-size:26px;color:var(--accent-b)">${weekAvgCal !== null ? weekAvgCal.toLocaleString() : '—'}</div>
-            <div style="font-size:10px;color:var(--text-muted);letter-spacing:1px">AVG CAL</div>
-          </div>
+          ${_recapCell(ws.workoutDays.length, 'WORKOUTS')}
+          ${_recapCell(best + 'd', 'BEST STREAK')}
+          ${_recapCell(ws.journalDays.length, 'JOURNALED')}
+          ${_recapCell(weekAvgCal !== null ? weekAvgCal.toLocaleString() : '—', 'AVG CAL')}
+          ${avgSlp ? _recapCell(avgSlp + 'h', 'AVG SLEEP') : ''}
+          ${avgStp ? _recapCell(avgStp.toLocaleString(), 'AVG STEPS') : ''}
         </div>
         <div style="font-size:13px;color:var(--accent);font-weight:600;margin-bottom:20px">Level ${lvl} · ${xp.toLocaleString()} XP</div>
         <div style="display:flex;gap:10px">
