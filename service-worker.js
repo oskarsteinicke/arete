@@ -1,17 +1,17 @@
-const CACHE = 'arete-v23';
+const CACHE = 'arete-v24';
 const ASSETS = [
-  '/arete/',
-  '/arete/index.html',
-  '/arete/style.css',
-  '/arete/data.js',
-  '/arete/app.js',
-  '/arete/workout.js',
-  '/arete/diet.js',
-  '/arete/coach.js',
-  '/arete/social.js',
-  '/arete/integrations.js',
-  '/arete/profile.js',
-  '/arete/manifest.json'
+  '/',
+  '/index.html',
+  '/style.css',
+  '/data.js',
+  '/app.js',
+  '/workout.js',
+  '/diet.js',
+  '/coach.js',
+  '/social.js',
+  '/integrations.js',
+  '/profile.js',
+  '/manifest.json'
 ];
 
 self.addEventListener('install', e => {
@@ -22,7 +22,7 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== 'arete-v19').map(k => caches.delete(k))))
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });

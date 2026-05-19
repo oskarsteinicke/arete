@@ -2,8 +2,8 @@
   "name": "Arete",
   "short_name": "Arete",
   "description": "Pursue daily excellence — habits, workouts, diet, and growth.",
-  "start_url": "/arete/",
-  "scope": "/arete/",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0a0908",
   "theme_color": "#0a0908",
@@ -26,25 +26,25 @@
     {
       "name": "Start Workout",
       "short_name": "Workout",
-      "url": "/arete/#workoutActive",
+      "url": "/#workoutActive",
       "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Log Meal",
       "short_name": "Meal",
-      "url": "/arete/#dietAddMeal",
+      "url": "/#dietAddMeal",
       "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Check Habits",
       "short_name": "Habits",
-      "url": "/arete/#habits",
+      "url": "/#habits",
       "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "AI Coach",
       "short_name": "Coach",
-      "url": "/arete/#home",
+      "url": "/#home",
       "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     }
   ]

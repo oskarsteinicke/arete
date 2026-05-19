@@ -100,8 +100,8 @@ if(typeof openCoach==='undefined'){window.openCoach=function(){};window.closeCoa
 <script>
   if ('serviceWorker' in navigator) {
     // Purge ALL old caches on load to ensure fresh files
-    caches.keys().then(ks => ks.filter(k => k !== 'arete-v19').forEach(k => caches.delete(k)));
-    navigator.serviceWorker.register('/arete/service-worker.js').then(reg => {
+    caches.keys().then(ks => ks.filter(k => k !== 'arete-v24').forEach(k => caches.delete(k)));
+    navigator.serviceWorker.register('/service-worker.js').then(reg => {
       reg.update();
     });
     navigator.serviceWorker.addEventListener('controllerchange', () => {
