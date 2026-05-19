@@ -1506,6 +1506,29 @@ nav {
 }
 .hm-streak-lbl { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
 
+/* Welcome back banner */
+.hm-wb-banner {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 20px; margin: 6px 16px 4px; border-radius: 16px;
+  background: linear-gradient(135deg, rgba(74,222,128,0.08), rgba(74,222,128,0.02));
+  border: 1px solid rgba(74,222,128,0.12);
+}
+.hm-wb-icon { font-size: 24px; flex-shrink: 0; }
+.hm-wb-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+.hm-wb-text { font-size: 12px; color: var(--text-dim); line-height: 1.4; }
+
+/* Streak at risk banner */
+.hm-risk-banner {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 20px; margin: 6px 16px 4px; border-radius: 16px;
+  background: linear-gradient(135deg, rgba(248,113,113,0.08), rgba(248,113,113,0.02));
+  border: 1px solid rgba(248,113,113,0.12);
+  cursor: pointer;
+}
+.hm-risk-icon { font-size: 20px; flex-shrink: 0; }
+.hm-risk-title { font-size: 13px; font-weight: 600; color: #f87171; margin-bottom: 2px; }
+.hm-risk-text { font-size: 12px; color: var(--text-dim); line-height: 1.4; }
+
 /* ═══ ANIMATED RINGS ═══════════════════════════════════════════════ */
 @keyframes ring-fill {
   from { stroke-dashoffset: var(--ring-c); }

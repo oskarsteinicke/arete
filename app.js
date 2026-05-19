@@ -592,8 +592,17 @@ function _scheduleReminder() {
       'Your future self is watching. Make them proud.',
     ];
     const msg = morningMsgs[Math.floor(Math.random() * morningMsgs.length)];
-    new Notification('Good morning ☀️', { body: msg, icon: '/arete/icon-192.png' });
+    new Notification('Good morning ☀️', { body: msg, icon: '/icon-192.png' });
     LS.set(key + 'am_' + today(), true);
+  }
+
+  // Lunch nutrition nudge (12-1pm) — only if no meals logged yet
+  if (hour >= 12 && hour < 13 && !LS.get(key + 'lunch_' + today(), false)) {
+    const dm = getDayMacros();
+    if (dm.cal === 0) {
+      new Notification('Log your meals 🥗', { body: 'No meals logged yet today. A few seconds to track keeps you on target.', icon: '/icon-192.png' });
+      LS.set(key + 'lunch_' + today(), true);
+    }
   }
 
   // Evening nudge (8-9pm) — only if habits remain
@@ -601,7 +610,14 @@ function _scheduleReminder() {
     const {done, total} = totalPct();
     const left = total - done;
     if (left > 0) {
-      new Notification('Arete', { body: `${left} habit${left>1?'s':''} left today — still time to show up.`, icon: '/arete/icon-192.png' });
+      // Check for streaks at risk first — more urgent
+      const atRisk = getStreaksAtRisk();
+      if (atRisk.length > 0) {
+        const top = atRisk.sort((a,b) => b.streak - a.streak)[0];
+        new Notification('Streak at risk 🔥', { body: `${top.name} (${top.streak} day streak) — don't let it break.`, icon: '/icon-192.png' });
+      } else {
+        new Notification('Arete', { body: `${left} habit${left>1?'s':''} left today — still time to show up.`, icon: '/icon-192.png' });
+      }
       LS.set(key + 'pm_' + today(), true);
     }
   }
@@ -1052,6 +1068,27 @@ function renderWeekInReview() {
     </div>`;
 }
 
+// ── STREAK-AT-RISK DETECTION ─────────────────────────────────────────────
+function getStreaksAtRisk() {
+  const hour = new Date().getHours();
+  if (hour < 18) return []; // only warn in the evening
+  return habits.filter(h => {
+    const e = log[h.id];
+    if (!e || e.completedToday) return false;
+    if (e.streak >= 3 && isHabitDueToday(h)) return true;
+    return false;
+  }).map(h => ({ name: h.name, streak: log[h.id].streak }));
+}
+
+// ── WELCOME BACK DETECTION ──────────────────────────────────────────────
+function getWelcomeBack() {
+  const lastDate = meta.lastOpenedDate;
+  if (!lastDate || lastDate === today()) return null;
+  const diff = Math.floor((new Date(today() + 'T12:00') - new Date(lastDate + 'T12:00')) / 86400000);
+  if (diff < 2) return null;
+  return diff;
+}
+
 function renderHome() {
   const {done, total, pct} = totalPct();
   const homeLvl = getLevel(gamification.xp || 0);
@@ -1186,6 +1223,37 @@ function renderHome() {
       <div class="hm-streak-num">${_overallStreak}</div>
       <div class="hm-streak-lbl">day streak</div>
     </div>` : ''}
+
+    ${(() => {
+      const wb = getWelcomeBack();
+      if (!wb) return '';
+      const msgs = [
+        'The best time to start again is now.',
+        'Every master was once a beginner who came back.',
+        'Consistency beats perfection. You showed up today.',
+        'The gap doesn\\'t matter. The return does.',
+      ];
+      return `<div class="hm-wb-banner ani">
+        <div class="hm-wb-icon">👋</div>
+        <div class="hm-wb-body">
+          <div class="hm-wb-title">Welcome back</div>
+          <div class="hm-wb-text">${msgs[Math.floor(Math.random() * msgs.length)]}</div>
+        </div>
+      </div>`;
+    })()}
+
+    ${(() => {
+      const atRisk = getStreaksAtRisk();
+      if (!atRisk.length) return '';
+      const top = atRisk.sort((a,b) => b.streak - a.streak).slice(0, 3);
+      return `<div class="hm-risk-banner ani" onclick="go('habits')">
+        <div class="hm-risk-icon">⚠️</div>
+        <div class="hm-risk-body">
+          <div class="hm-risk-title">Streaks at risk</div>
+          <div class="hm-risk-text">${top.map(h => `${h.name} (${h.streak}d)`).join(', ')}</div>
+        </div>
+      </div>`;
+    })()}
 
     <div class="hm-sec ani">
       <div class="hm-sec-title">Today's Labours</div>
