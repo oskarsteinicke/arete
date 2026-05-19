@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0a0908">
+  <title>Free Self-Improvement App — Habits, Fitness, Nutrition & AI Coach | Arete</title>
+  <meta name="description" content="Arete is a free all-in-one self-improvement app. Track habits, log workouts, monitor nutrition, journal, and get AI coaching. No subscription. Built around 5 pillars of personal development.">
+  <meta name="keywords" content="self improvement app, personal development app, free self improvement, daily routine tracker, life improvement app, stoic app, all in one self improvement, personal growth app, discipline app, no subscription self improvement">
+  <link rel="canonical" href="https://get-arete.com/self-improvement-app">
+  <meta property="og:title" content="Free Self-Improvement App | Arete">
+  <meta property="og:description" content="One app for habits, workouts, nutrition, journaling, and AI coaching. Free, private, no subscription.">
+  <meta property="og:image" content="https://get-arete.com/og-image.png">
+  <meta property="og:url" content="https://get-arete.com/self-improvement-app">
+  <meta property="og:type" content="website">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0908; --surface: #141210; --border: rgba(255,255,255,0.07);
+      --accent: #9a8256; --accent-b: #c8a96e; --accent-c: #e8c97e;
+      --text: #f0ece4; --text-dim: #a09880; --text-muted: #5c5648;
+      --serif: 'Playfair Display', Georgia, serif;
+      --display: 'Cinzel', 'Playfair Display', Georgia, serif;
+      --sans: 'Inter', system-ui, sans-serif;
+    }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.7; }
+    nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 20px 40px; background: rgba(10,9,8,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .nav-logo { font-family: var(--display); font-size: 20px; color: var(--accent-b); letter-spacing: 0.12em; text-decoration: none; }
+    .nav-cta { background: var(--accent); color: #0a0908; font-family: var(--sans); font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 10px 22px; border-radius: 100px; border: none; cursor: pointer; text-decoration: none; }
+    .content { max-width: 720px; margin: 0 auto; padding: 120px 24px 80px; }
+    h1 { font-family: var(--display); font-size: clamp(30px, 5vw, 48px); line-height: 1.15; margin-bottom: 20px; letter-spacing: 0.5px; }
+    h1 em { font-style: italic; font-family: var(--serif); color: var(--accent-b); }
+    h2 { font-family: var(--display); font-size: 22px; margin: 48px 0 16px; letter-spacing: 0.3px; }
+    h3 { font-family: var(--display); font-size: 17px; margin: 0 0 8px; }
+    p { color: var(--text-dim); margin-bottom: 20px; }
+    .hero-note { font-size: 12px; color: var(--text-muted); letter-spacing: 1px; margin: 32px 0; }
+    .btn-primary { display: inline-block; background: var(--accent); color: #0a0908; font-family: var(--sans); font-size: 14px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 16px 36px; border-radius: 100px; text-decoration: none; box-shadow: 0 0 40px rgba(154,130,86,0.25); margin: 8px 0; }
+    .pillar-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin: 24px 0 40px; }
+    .pillar-card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 20px 24px; display: flex; align-items: flex-start; gap: 16px; }
+    .pillar-icon { font-size: 24px; flex-shrink: 0; margin-top: 2px; }
+    .pillar-name { font-family: var(--display); font-size: 15px; color: var(--text); margin-bottom: 4px; letter-spacing: 0.3px; }
+    .pillar-desc { font-size: 13px; color: var(--text-dim); line-height: 1.6; }
+    .module-list { list-style: none; margin: 24px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .module-list li { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
+    .module-list li span { font-size: 22px; display: block; margin-bottom: 8px; }
+    .module-list li strong { font-family: var(--display); font-size: 14px; display: block; margin-bottom: 6px; letter-spacing: 0.2px; }
+    .module-list li p { font-size: 12px; color: var(--text-dim); margin: 0; line-height: 1.5; }
+    .cta-box { background: var(--surface); border: 1px solid var(--border); border-radius: 24px; padding: 40px 32px; text-align: center; margin: 48px 0; }
+    .cta-box h3 { font-family: var(--display); font-size: 24px; margin-bottom: 12px; }
+    .cta-box p { max-width: 420px; margin: 0 auto 24px; }
+    footer { border-top: 1px solid var(--border); padding: 40px; display: flex; align-items: center; justify-content: space-between; }
+    .footer-logo { font-family: var(--display); font-size: 17px; color: var(--accent-b); letter-spacing: 0.12em; }
+    .footer-link { font-size: 12px; color: var(--text-muted); text-decoration: none; }
+    @media (max-width: 700px) { nav { padding: 16px 20px; } .module-list { grid-template-columns: 1fr; } footer { flex-direction: column; gap: 12px; text-align: center; padding: 32px 20px; } }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Arete",
+    "applicationCategory": "LifestyleApplication",
+    "operatingSystem": "iOS, Android, Web",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "description": "Free all-in-one self-improvement app with habit tracking, workout logging, nutrition tracking, and AI coaching.",
+    "url": "https://get-arete.com"
+  }
+  </script>
+</head>
+<body>
+<nav>
+  <a class="nav-logo" href="/">Arete</a>
+  <a class="nav-cta" href="/" onclick="localStorage.setItem('hvi_onboarded','1')">Open App</a>
+</nav>
+
+<div class="content">
+  <h1>One app for <em>everything</em> you're working on.</h1>
+  <p>Habits. Training. Nutrition. Journaling. Growth. Most people use five different apps for this. Arete puts it all in one place. Free, private, and built for people who are serious about getting better.</p>
+
+  <a class="btn-primary" href="/" onclick="localStorage.setItem('hvi_onboarded','1')">Try Arete for free</a>
+  <p class="hero-note">No account. No subscription. Your data stays on your device.</p>
+
+  <h2>Built around five pillars</h2>
+  <p>Arete is structured around five areas of a well-lived life. Every habit, goal, and metric maps to one of them. You see your progress across all five at a glance.</p>
+
+  <div class="pillar-grid">
+    <div class="pillar-card">
+      <div class="pillar-icon">🧠</div>
+      <div><div class="pillar-name">Mindset</div><div class="pillar-desc">Meditation, journaling, reading, gratitude. The mental habits that shape everything else.</div></div>
+    </div>
+    <div class="pillar-card">
+      <div class="pillar-icon">💪</div>
+      <div><div class="pillar-name">Body</div><div class="pillar-desc">Workouts, nutrition, sleep, and physical health. Track it all with real data.</div></div>
+    </div>
+    <div class="pillar-card">
+      <div class="pillar-icon">🎯</div>
+      <div><div class="pillar-name">Mastery</div><div class="pillar-desc">Skills, deep work, learning. Deliberate practice toward what matters to you.</div></div>
+    </div>
+    <div class="pillar-card">
+      <div class="pillar-icon">🤝</div>
+      <div><div class="pillar-name">Social</div><div class="pillar-desc">Relationships, communication, community. The people side of a good life.</div></div>
+    </div>
+    <div class="pillar-card">
+      <div class="pillar-icon">💰</div>
+      <div><div class="pillar-name">Wealth</div><div class="pillar-desc">Financial habits, career goals, side projects. Building resources and security.</div></div>
+    </div>
+  </div>
+
+  <h2>What's inside</h2>
+  <ul class="module-list">
+    <li><span>✅</span><strong>Habits</strong><p>Daily tracking with streaks, pillar rings, and custom schedules.</p></li>
+    <li><span>🏋️</span><strong>Workouts</strong><p>Built-in programs, 100+ exercises, PR detection, auto-advance.</p></li>
+    <li><span>🥗</span><strong>Nutrition</strong><p>AI-powered macro tracking. Describe your meal, get the numbers.</p></li>
+    <li><span>🤖</span><strong>AI Coach</strong><p>Ask anything. Gets advice based on your actual data and goals.</p></li>
+    <li><span>⚔️</span><strong>Gamification</strong><p>XP, levels, daily quests, weekly challenges. Progress feels rewarding.</p></li>
+    <li><span>📖</span><strong>Library</strong><p>Book recommendations, journal, and a curated reading list per pillar.</p></li>
+  </ul>
+
+  <h2>Why not just use separate apps?</h2>
+  <p>You could use one app for habits, another for the gym, another for food, and another for journaling. But then your data is scattered, nothing talks to each other, and you're paying $30+/month in subscriptions.</p>
+  <p>Arete brings it all together. Your AI coach can reference your workout history when giving nutrition advice. Your habit streaks feed into your XP and level. Your weekly recap shows the full picture. It all connects.</p>
+
+  <h2>Free means free</h2>
+  <p>No trial period. No "premium" tier. No features locked behind a paywall. Arete is free because self-improvement shouldn't have a monthly fee. Your data stays on your device by default. No account required.</p>
+
+  <div class="cta-box">
+    <h3>Start improving today.</h3>
+    <p>Opens in your browser. Installs as an app on iPhone, Android, or desktop. Takes 10 seconds.</p>
+    <a class="btn-primary" href="/" onclick="localStorage.setItem('hvi_onboarded','1')">Open Arete</a>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-logo">Arete</div>
+  <div style="display:flex;gap:16px;flex-wrap:wrap">
+    <a class="footer-link" href="/landing.html">Home</a>
+    <a class="footer-link" href="/free-habit-tracker">Free Habit Tracker</a>
+    <a class="footer-link" href="/workout-nutrition-tracker">Workout & Nutrition</a>
+    <a class="footer-link" href="/" onclick="localStorage.setItem('hvi_onboarded','1')">Open App</a>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0a0908">
+  <title>Free Workout & Nutrition Tracker — All-in-One Fitness App | Arete</title>
+  <meta name="description" content="Log workouts, track nutrition with AI, and follow structured programs. Free, no subscription. Includes PPL, Upper/Lower, custom programs, macro tracking, and an AI coach.">
+  <meta name="keywords" content="workout tracker app, nutrition tracker, free fitness app, workout logger, macro tracker, all in one fitness app, gym tracker free, workout and diet tracker, PPL program app, AI nutrition tracker">
+  <link rel="canonical" href="https://get-arete.com/workout-nutrition-tracker">
+  <meta property="og:title" content="Free Workout & Nutrition Tracker | Arete">
+  <meta property="og:description" content="Log workouts, track macros with AI, follow built-in programs. All free, all in one app.">
+  <meta property="og:image" content="https://get-arete.com/og-image.png">
+  <meta property="og:url" content="https://get-arete.com/workout-nutrition-tracker">
+  <meta property="og:type" content="website">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0908; --surface: #141210; --border: rgba(255,255,255,0.07);
+      --accent: #9a8256; --accent-b: #c8a96e; --accent-c: #e8c97e;
+      --text: #f0ece4; --text-dim: #a09880; --text-muted: #5c5648;
+      --serif: 'Playfair Display', Georgia, serif;
+      --display: 'Cinzel', 'Playfair Display', Georgia, serif;
+      --sans: 'Inter', system-ui, sans-serif;
+    }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.7; }
+    nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 20px 40px; background: rgba(10,9,8,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .nav-logo { font-family: var(--display); font-size: 20px; color: var(--accent-b); letter-spacing: 0.12em; text-decoration: none; }
+    .nav-cta { background: var(--accent); color: #0a0908; font-family: var(--sans); font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 10px 22px; border-radius: 100px; border: none; cursor: pointer; text-decoration: none; }
+    .content { max-width: 720px; margin: 0 auto; padding: 120px 24px 80px; }
+    h1 { font-family: var(--display); font-size: clamp(30px, 5vw, 48px); line-height: 1.15; margin-bottom: 20px; letter-spacing: 0.5px; }
+    h1 em { font-style: italic; font-family: var(--serif); color: var(--accent-b); }
+    h2 { font-family: var(--display); font-size: 22px; margin: 48px 0 16px; letter-spacing: 0.3px; }
+    p { color: var(--text-dim); margin-bottom: 20px; }
+    .hero-note { font-size: 12px; color: var(--text-muted); letter-spacing: 1px; margin: 32px 0; }
+    .btn-primary { display: inline-block; background: var(--accent); color: #0a0908; font-family: var(--sans); font-size: 14px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 16px 36px; border-radius: 100px; text-decoration: none; box-shadow: 0 0 40px rgba(154,130,86,0.25); margin: 8px 0; }
+    .feature-list { list-style: none; margin: 24px 0; }
+    .feature-list li { padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.04); color: var(--text-dim); font-size: 15px; display: flex; align-items: flex-start; gap: 12px; }
+    .feature-list li::before { content: '✓'; color: var(--accent-b); font-weight: 600; flex-shrink: 0; margin-top: 1px; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
+    .col-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 24px; }
+    .col-card h3 { font-family: var(--display); font-size: 16px; margin-bottom: 12px; letter-spacing: 0.3px; }
+    .col-card ul { list-style: none; }
+    .col-card li { font-size: 13px; color: var(--text-dim); padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+    .col-card li:last-child { border-bottom: none; }
+    .cta-box { background: var(--surface); border: 1px solid var(--border); border-radius: 24px; padding: 40px 32px; text-align: center; margin: 48px 0; }
+    .cta-box h3 { font-family: var(--display); font-size: 24px; margin-bottom: 12px; }
+    .cta-box p { max-width: 400px; margin: 0 auto 24px; }
+    footer { border-top: 1px solid var(--border); padding: 40px; display: flex; align-items: center; justify-content: space-between; }
+    .footer-logo { font-family: var(--display); font-size: 17px; color: var(--accent-b); letter-spacing: 0.12em; }
+    .footer-link { font-size: 12px; color: var(--text-muted); text-decoration: none; }
+    @media (max-width: 700px) { nav { padding: 16px 20px; } .two-col { grid-template-columns: 1fr; } footer { flex-direction: column; gap: 12px; text-align: center; padding: 32px 20px; } }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Arete",
+    "applicationCategory": "HealthApplication",
+    "operatingSystem": "iOS, Android, Web",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "description": "Free workout logger and AI nutrition tracker with built-in training programs. No subscription.",
+    "url": "https://get-arete.com"
+  }
+  </script>
+</head>
+<body>
+<nav>
+  <a class="nav-logo" href="/">Arete</a>
+  <a class="nav-cta" href="/" onclick="localStorage.setItem('hvi_onboarded','1')">Open App</a>
+</nav>
+
+<div class="content">
+  <h1>Your workouts and nutrition. <em>One app. Zero cost.</em></h1>
+  <p>Stop switching between a gym app and a food tracker. Arete handles both. Log your sets, follow a program, track your meals, and hit your macros. All in one free app.</p>
+
+  <a class="btn-primary" href="/" onclick="localStorage.setItem('hvi_onboarded','1')">Start logging for free</a>
+  <p class="hero-note">No account needed. Works offline. Installs on any phone.</p>
+
+  <h2>Workout logging</h2>
+  <p>Choose from built-in training programs or create your own. The app remembers your last weights, auto-advances to the next workout day, and flags personal records when you hit them.</p>
+  <ul class="feature-list">
+    <li>Built-in programs: Push/Pull/Legs, Upper/Lower, Full Body</li>
+    <li>Create fully custom programs with any exercises you want</li>
+    <li>100+ exercises in the library with search</li>
+    <li>Auto-fills your last weight and reps for each exercise</li>
+    <li>Personal record detection with notifications</li>
+    <li>Workout history and volume tracking</li>
+    <li>Connects to Strava and Google Fit for external workouts</li>
+  </ul>
+
+  <h2>AI nutrition tracking</h2>
+  <p>Describe what you ate in plain English. "Chicken breast with rice and broccoli." The AI calculates your calories, protein, carbs, and fat instantly. No barcode scanning, no searching databases manually.</p>
+  <ul class="feature-list">
+    <li>Describe meals in your own words. The AI figures out the macros.</li>
+    <li>Set your own calorie and macro goals</li>
+    <li>Built-in TDEE calculator to find your targets</li>
+    <li>Daily and per-meal breakdown with visual progress bars</li>
+    <li>Weight tracking with trend monitoring</li>
+    <li>170+ common foods in the local database as backup</li>
+  </ul>
+
+  <div class="two-col">
+    <div class="col-card">
+      <h3>Built-in Programs</h3>
+      <ul>
+        <li>Push / Pull / Legs (6 day)</li>
+        <li>Upper / Lower (4 day)</li>
+        <li>Full Body (3 day)</li>
+        <li>Custom (build your own)</li>
+      </ul>
+    </div>
+    <div class="col-card">
+      <h3>Nutrition Features</h3>
+      <ul>
+        <li>AI macro calculation</li>
+        <li>Calorie and macro goals</li>
+        <li>TDEE calculator</li>
+        <li>Weight trend tracking</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>Plus an AI coach</h2>
+  <p>The AI coach knows your workout history, your nutrition data, and your goals. Ask it anything. "Should I deload this week?" "What should I eat before training?" "How do I break through a bench plateau?" It gives advice based on your actual data, not generic tips.</p>
+
+  <h2>Everything else included</h2>
+  <p>Arete also tracks your daily habits, sleep, steps, and personal growth. It has a gamification system with XP and levels to keep you motivated. All of it free. No subscriptions, no premium tier, no ads.</p>
+
+  <div class="cta-box">
+    <h3>Train smarter. Eat better. Track everything.</h3>
+    <p>One app for your entire fitness journey. Free and private.</p>
+    <a class="btn-primary" href="/" onclick="localStorage.setItem('hvi_onboarded','1')">Open Arete</a>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-logo">Arete</div>
+  <div style="display:flex;gap:16px;flex-wrap:wrap">
+    <a class="footer-link" href="/landing.html">Home</a>
+    <a class="footer-link" href="/free-habit-tracker">Free Habit Tracker</a>
+    <a class="footer-link" href="/self-improvement-app">Self-Improvement App</a>
+    <a class="footer-link" href="/" onclick="localStorage.setItem('hvi_onboarded','1')">Open App</a>
+  </div>
+</footer>
+</body>
+</html>
