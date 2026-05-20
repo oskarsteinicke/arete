@@ -679,6 +679,19 @@ function finishWorkout() {
   awardXP(50, 'body');
   trackWeeklyWorkout();
   checkDailyQuests();
+
+  // Workout count milestones
+  const wCount = Object.keys(workoutLog).filter(k => workoutLog[k]?.exercises?.length > 0).length;
+  const wMilestones = { 1: 'First workout in the books. This is where it starts.', 10: 'Ten sessions deep. You\'re building a real habit.', 25: 'Twenty-five workouts. Consistency is your superpower.', 50: 'Fifty workouts logged. You\'re not the same person who started.', 100: 'One hundred workouts. Elite dedication.', 200: 'Two hundred sessions. Absolute machine.' };
+  if (wMilestones[wCount]) {
+    setTimeout(() => showMilestone({
+      icon: wCount >= 100 ? '🏆' : wCount >= 50 ? '💪' : '🏋️',
+      title: `${wCount} Workouts!`,
+      message: wMilestones[wCount],
+      xp: wCount >= 100 ? 200 : wCount >= 50 ? 100 : 50,
+    }), 500);
+  }
+
   go('workout');
 }
 

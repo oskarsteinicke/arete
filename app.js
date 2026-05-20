@@ -626,6 +626,27 @@ function _scheduleReminder() {
   setTimeout(_scheduleReminder, 30 * 60 * 1000);
 }
 
+// ── MILESTONE CELEBRATIONS ──────────────────────────────────────────────
+function showMilestone({ icon, title, subtitle, message, xp }) {
+  launchConfetti(2);
+  haptic([50, 30, 50, 30, 80]);
+  playSound('levelup');
+  const el = document.createElement('div');
+  el.className = 'milestone-overlay';
+  el.innerHTML = `
+    <div class="milestone-card">
+      <div class="milestone-icon">${icon}</div>
+      <div class="milestone-title">${title}</div>
+      ${subtitle ? `<div class="milestone-sub">${esc(subtitle)}</div>` : ''}
+      <div class="milestone-msg">${message}</div>
+      ${xp ? `<div class="milestone-xp">+${xp} XP</div>` : ''}
+      <button class="milestone-btn" onclick="this.closest('.milestone-overlay').remove()">Continue</button>
+    </div>`;
+  document.body.appendChild(el);
+  // Auto-dismiss after 8 seconds
+  setTimeout(() => el.remove(), 8000);
+}
+
 // ── SOUND EFFECTS ────────────────────────────────────────────────────────
 const _audioCtx = typeof AudioContext !== 'undefined' ? new AudioContext() : null;
 function playSound(type) {
@@ -942,14 +963,20 @@ function tapHabit(id, suffix) {
       }
     }
     // Streak milestone celebrations
-    if ([7, 14, 30, 60, 100].includes(s)) {
-      launchConfetti(1.5);
-      haptic([50, 30, 50, 30, 80]);
-      const el = document.createElement('div');
-      el.className = 'streak-toast';
-      el.innerHTML = `🔥 ${s}-day streak!`;
-      document.body.appendChild(el);
-      setTimeout(() => el.remove(), 3000);
+    if ([7, 14, 30, 60, 100, 365].includes(s)) {
+      showMilestone({
+        icon: s >= 100 ? '👑' : s >= 30 ? '⚡' : '🔥',
+        title: `${s}-Day Streak!`,
+        subtitle: habit.name,
+        message: s >= 365 ? 'A full year. Legendary discipline.'
+          : s >= 100 ? 'Triple digits. You are relentless.'
+          : s >= 60 ? 'Two months strong. This is who you are now.'
+          : s >= 30 ? 'One month of consistency. Most people never get here.'
+          : s >= 14 ? 'Two weeks in. The habit is taking root.'
+          : 'One full week. The hardest part is behind you.',
+        xp: s >= 100 ? 200 : s >= 30 ? 100 : 50,
+      });
+      awardXP(s >= 100 ? 200 : s >= 30 ? 100 : 50, pillarId || undefined);
     } else {
       haptic(10);
     }

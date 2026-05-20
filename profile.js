@@ -1295,6 +1295,9 @@ function obFinish() {
 
   launchConfetti(0.4);
   go('home', {}, false);
+
+  // Show feature tour after a short delay
+  setTimeout(() => showFeatureTour(), 1200);
 }
 
 function obSkip() {
@@ -1302,6 +1305,71 @@ function obSkip() {
   const overlay = document.getElementById('ob-overlay');
   if (overlay) overlay.remove();
   go('home', {}, false);
+}
+
+// ── FEATURE TOUR (shown once after onboarding) ─────────────────────────
+function showFeatureTour() {
+  if (LS.get('hvi_tour_done', false)) return;
+  const steps = [
+    { icon: '✅', title: 'Track your habits', desc: 'Tap the Habits tab to add daily habits. Check them off each day to build streaks.', tab: 'habits' },
+    { icon: '🏋️', title: 'Log your workouts', desc: 'Hit the Workout tab to start your training program. The app tracks your weights and flags PRs.', tab: 'workout' },
+    { icon: '🥗', title: 'Track what you eat', desc: 'Go to Diet to log meals. Describe food in plain English or snap a photo. The AI calculates macros.', tab: 'diet' },
+    { icon: '🤖', title: 'Ask the AI Coach', desc: 'Tap the chat bubble in the bottom right corner anytime. It knows your data and gives personalized advice.', tab: null },
+  ];
+  let step = 0;
+
+  function render() {
+    const s = steps[step];
+    let overlay = document.getElementById('tour-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'tour-overlay';
+      overlay.className = 'tour-overlay';
+      document.body.appendChild(overlay);
+    }
+    overlay.innerHTML = `
+      <div class="tour-card">
+        <div class="tour-step">${step + 1} of ${steps.length}</div>
+        <div class="tour-icon">${s.icon}</div>
+        <div class="tour-title">${s.title}</div>
+        <div class="tour-desc">${s.desc}</div>
+        <div class="tour-btns">
+          <button class="tour-skip" onclick="dismissTour()">Skip tour</button>
+          <button class="tour-next" onclick="nextTourStep()">${step === steps.length - 1 ? 'Got it!' : 'Next →'}</button>
+        </div>
+      </div>`;
+  }
+
+  window._tourStep = step;
+  window._tourSteps = steps;
+  window._tourRender = render;
+  render();
+}
+
+function nextTourStep() {
+  window._tourStep++;
+  if (window._tourStep >= window._tourSteps.length) {
+    dismissTour();
+    return;
+  }
+  const s = window._tourSteps[window._tourStep];
+  if (s.tab) go(s.tab, {}, false);
+  window._tourRender();
+}
+
+function dismissTour() {
+  LS.set('hvi_tour_done', true);
+  const overlay = document.getElementById('tour-overlay');
+  if (overlay) {
+    overlay.style.transition = 'opacity .3s';
+    overlay.style.opacity = '0';
+    setTimeout(() => overlay.remove(), 300);
+  }
+  go('home', {}, false);
+  // Ask for notifications after tour
+  if (!settings.notifications && 'Notification' in window && Notification.permission === 'default') {
+    setTimeout(() => requestNotifications(), 1000);
+  }
 }
 
 // WEEKLY RECAP CARD

@@ -1527,6 +1527,95 @@ nav {
 }
 .hm-risk-icon { font-size: 20px; flex-shrink: 0; }
 .hm-risk-title { font-size: 13px; font-weight: 600; color: #f87171; margin-bottom: 2px; }
+
+/* ═══ MILESTONE CELEBRATION ═══════════════════════════════════════════ */
+.milestone-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9999;
+  background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  display: flex; align-items: center; justify-content: center;
+  animation: milestone-in 0.4s ease-out;
+}
+@keyframes milestone-in { from { opacity: 0; } to { opacity: 1; } }
+.milestone-card {
+  text-align: center; padding: 48px 36px; max-width: 340px; width: 90%;
+  background: var(--surface); border: 1px solid rgba(196,169,108,0.2);
+  border-radius: 28px; position: relative; overflow: hidden;
+}
+.milestone-card::before {
+  content: ''; position: absolute; top: -60px; left: 50%; transform: translateX(-50%);
+  width: 200px; height: 200px; border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(196,169,108,0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+.milestone-icon {
+  font-size: 56px; margin-bottom: 16px; position: relative;
+  animation: milestone-bounce 0.6s ease-out;
+}
+@keyframes milestone-bounce {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.milestone-title {
+  font-family: var(--display); font-size: 26px; color: var(--accent-b);
+  margin-bottom: 6px; letter-spacing: 0.5px;
+}
+.milestone-sub {
+  font-size: 13px; color: var(--text-dim); margin-bottom: 12px;
+}
+.milestone-msg {
+  font-family: var(--serif); font-size: 15px; color: var(--text);
+  line-height: 1.6; font-style: italic; margin-bottom: 20px;
+}
+.milestone-xp {
+  font-size: 14px; font-weight: 600; color: var(--accent-b);
+  background: rgba(196,169,108,0.1); border: 1px solid rgba(196,169,108,0.15);
+  display: inline-block; padding: 6px 20px; border-radius: 100px;
+  margin-bottom: 24px; letter-spacing: 0.5px;
+}
+.milestone-btn {
+  background: var(--accent); color: #0a0908; border: none; border-radius: 100px;
+  font-family: var(--sans); font-size: 13px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 14px 36px; cursor: pointer; width: 100%;
+}
+
+/* ═══ FEATURE TOUR ════════════════════════════════════════════════════ */
+.tour-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9998;
+  background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  animation: milestone-in 0.3s ease-out;
+}
+.tour-card {
+  text-align: center; padding: 40px 32px; max-width: 340px; width: 90%;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 24px;
+}
+.tour-step {
+  font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--text-muted); margin-bottom: 20px;
+}
+.tour-icon { font-size: 48px; margin-bottom: 16px; }
+.tour-title {
+  font-family: var(--display); font-size: 20px; color: var(--text);
+  margin-bottom: 10px; letter-spacing: 0.3px;
+}
+.tour-desc {
+  font-size: 14px; color: var(--text-dim); line-height: 1.65;
+  margin-bottom: 28px;
+}
+.tour-btns { display: flex; gap: 10px; }
+.tour-skip {
+  flex: 1; background: none; border: 1px solid var(--border); border-radius: 100px;
+  color: var(--text-muted); font-size: 12px; padding: 12px 0; cursor: pointer;
+  font-family: var(--sans);
+}
+.tour-next {
+  flex: 1; background: var(--accent); color: #0a0908; border: none; border-radius: 100px;
+  font-family: var(--sans); font-size: 12px; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase; padding: 12px 0; cursor: pointer;
+}
 .hm-risk-text { font-size: 12px; color: var(--text-dim); line-height: 1.4; }
 
 /* ═══ ANIMATED RINGS ═══════════════════════════════════════════════ */
