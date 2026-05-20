@@ -1258,7 +1258,7 @@ function renderHome() {
         'The best time to start again is now.',
         'Every master was once a beginner who came back.',
         'Consistency beats perfection. You showed up today.',
-        'The gap doesn\\'t matter. The return does.',
+        'The gap doesn\'t matter. The return does.',
       ];
       return `<div class="hm-wb-banner ani">
         <div class="hm-wb-icon">👋</div>
