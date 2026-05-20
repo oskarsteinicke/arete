@@ -27,20 +27,20 @@ async function _aiFetch(messages, { timeout = 30000, retries = 1, model = 'opena
   if (!navigator.onLine) throw new Error('offline');
   let lastErr;
 
-  // ── Provider 1: Gemini via proxy (fast, reliable) ─────────────────────
+  // ── Provider 1: Groq (Llama 3, fast, free tier) ────────────────────────
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const result = await _geminiRequest(messages, { timeout, jsonMode });
+      const result = await _groqRequest(messages, { timeout, jsonMode });
       if (result) return result;
     } catch (e) {
       lastErr = e;
-      if (attempt === 0) await new Promise(r => setTimeout(r, 1000));
+      if (attempt === 0) await new Promise(r => setTimeout(r, 500));
     }
   }
 
-  // ── Provider 2: Groq (Llama 3, fast, free tier) ───────────────────────
+  // ── Provider 2: Gemini via proxy (fallback) ───────────────────────────
   try {
-    const result = await _groqRequest(messages, { timeout, jsonMode });
+    const result = await _geminiRequest(messages, { timeout, jsonMode });
     if (result) return result;
   } catch (e) { lastErr = e; }
 
