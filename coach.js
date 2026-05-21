@@ -60,10 +60,10 @@ function buildCoachSystemPrompt() {
   const lastJ = jKeys[0] ? journal[jKeys[0]] : null;
 
   // Current habits list
-  const habitsList = habits.map(h => `  - [${h.id}] "${h.name}" (${h.category})${log[h.id]?.completedToday ? ' ✓' : ''} | streak: ${log[h.id]?.streak || 0}d`).join('\n');
+  const habitsList = habits.map(h => `  - "${h.name}" (${h.category})${log[h.id]?.completedToday ? ' ✓' : ''} | streak: ${log[h.id]?.streak || 0}d`).join('\n');
 
   // Available programs
-  const progList = allPrograms().map(p => `  - id="${p.id}" | ${p.name} (${p.days.length}-day)`).join('\n');
+  const progList = allPrograms().map(p => `  - ${p.name} (${p.days.length}-day)`).join('\n');
 
   return `You are Arete Coach — ${name}'s personal guide inside the Arete app. You blend Stoic philosophy with modern performance science. Be direct, warm, and practical — like a mentor who genuinely knows them.
 
@@ -115,6 +115,7 @@ ${lastJ ? `\nLAST JOURNAL (${jKeys[0]}):
 
 RULES:
 - ONLY reference data shown above — never invent context about the user
+- Never show internal IDs, codes, or technical data to the user — use habit names and plain language only
 - If you don't know something, ask
 - Reference their actual numbers to make advice feel personal
 - Be honest about gaps but solution-focused
