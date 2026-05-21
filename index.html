@@ -27,7 +27,7 @@
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=56">
+  <link rel="stylesheet" href="style.css?v=57">
 </head>
 <body>
 <div id="app" role="application" aria-label="Arete lifestyle tracker">
@@ -36,7 +36,7 @@
   <div id="coach-overlay" class="coach-overlay coach-hidden" role="dialog" aria-label="AI Coach" aria-modal="true">
     <div class="coach-panel">
       <div class="coach-hdr">
-        <div class="coach-hdr-title"><span class="coach-star"><svg viewBox="0 0 100 80" width="16" height="13" xmlns="http://www.w3.org/2000/svg"><path d="M50 2 L92 72 C88 72 82 72 78 72 L72 60 L28 60 L22 72 C18 72 12 72 8 72 Z" fill="none" stroke="#c4a96c" stroke-width="4"/><path d="M50 22 L68 56 L32 56 Z" fill="none" stroke="#c4a96c" stroke-width="3"/><line x1="20" y1="72" x2="2" y2="72" stroke="#c4a96c" stroke-width="3" stroke-linecap="round"/><line x1="80" y1="72" x2="98" y2="72" stroke="#c4a96c" stroke-width="3" stroke-linecap="round"/></svg></span> Arete Coach</div>
+        <div class="coach-hdr-title"><span class="coach-star"><img src="icon-192.png" alt="" style="width:18px;height:18px;border-radius:4px;vertical-align:-3px"></span> Arete Coach</div>
         <div style="display:flex;gap:6px;align-items:center">
           <button class="coach-hdr-btn" onclick="clearCoachHistory()" title="New conversation" aria-label="Clear conversation">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
@@ -88,25 +88,25 @@
     </button>
   </nav>
 </div>
-<script src="data.js?v=56"></script>
-<script src="app.js?v=56"></script>
-<script src="workout.js?v=56"></script>
-<script src="diet.js?v=56"></script>
+<script src="data.js?v=57"></script>
+<script src="app.js?v=57"></script>
+<script src="workout.js?v=57"></script>
+<script src="diet.js?v=57"></script>
 <script>
 // Stub coach functions until lazy-loaded
 if(typeof openCoach==='undefined'){window.openCoach=function(){};window.closeCoach=function(){};window.sendCoachMsg=function(){};window.clearCoachHistory=function(){}}
 // Lazy-load coach + social after first paint for faster startup
 (window.requestIdleCallback||function(cb){setTimeout(cb,800)})(function(){
-  var s1=document.createElement('script');s1.src='coach.js?v=56';document.body.appendChild(s1);
-  var s2=document.createElement('script');s2.src='social.js?v=56';document.body.appendChild(s2);
+  var s1=document.createElement('script');s1.src='coach.js?v=57';document.body.appendChild(s1);
+  var s2=document.createElement('script');s2.src='social.js?v=57';document.body.appendChild(s2);
 });
 </script>
-<script src="integrations.js?v=56"></script>
-<script src="profile.js?v=56"></script>
+<script src="integrations.js?v=57"></script>
+<script src="profile.js?v=57"></script>
 <script>
   if ('serviceWorker' in navigator) {
     // Purge ALL old caches on load to ensure fresh files
-    caches.keys().then(ks => ks.filter(k => k !== 'arete-v27').forEach(k => caches.delete(k)));
+    caches.keys().then(ks => ks.filter(k => k !== 'arete-v28').forEach(k => caches.delete(k)));
     navigator.serviceWorker.register('/service-worker.js').then(reg => {
       reg.update();
     });
