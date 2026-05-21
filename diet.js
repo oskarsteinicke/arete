@@ -26,12 +26,40 @@ function _getCachedMeal(text) {
 async function _aiFetch(messages, { timeout = 30000, retries = 1, model = 'openai', jsonMode = false } = {}) {
   if (!navigator.onLine) throw new Error('offline');
   let lastErr;
-
-  // ── Provider 1: Groq ────────────────────────────────────────────────
   const _hasImages = messages.some(m => Array.isArray(m.content) && m.content.some(p => p.type === 'image_url'));
+
+  // ── Vision requests go straight to Pollinations (GPT-4o-mini, free) ──
+  if (_hasImages) {
+    for (let attempt = 0; attempt <= 1; attempt++) {
+      const ac = new AbortController();
+      const to = setTimeout(() => ac.abort(), 45000);
+      try {
+        const body = { messages, model: 'openai', seed: 42, temperature: 0, private: true };
+        const res = await fetch('https://text.pollinations.ai/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: ac.signal,
+          body: JSON.stringify(body)
+        });
+        clearTimeout(to);
+        if (!res.ok) { lastErr = new Error(`HTTP ${res.status}`); continue; }
+        const text = await res.text();
+        if (!text || text.length < 2 || text.includes('"error"')) { lastErr = new Error('Bad response'); continue; }
+        return text;
+      } catch (e) {
+        clearTimeout(to);
+        lastErr = e;
+        if (attempt === 0) await new Promise(r => setTimeout(r, 1000));
+        else break;
+      }
+    }
+    throw lastErr;
+  }
+
+  // ── Text requests: Groq first ────────────────────────────────────────
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const result = await _groqRequest(messages, { timeout, jsonMode, vision: _hasImages });
+      const result = await _groqRequest(messages, { timeout, jsonMode });
       if (result) return result;
     } catch (e) {
       lastErr = e;
@@ -39,13 +67,13 @@ async function _aiFetch(messages, { timeout = 30000, retries = 1, model = 'opena
     }
   }
 
-  // ── Provider 2: Gemini via proxy (fallback) ───────────────────────────
+  // ── Fallback: Gemini via proxy ───────────────────────────────────────
   try {
     const result = await _geminiRequest(messages, { timeout, jsonMode });
     if (result) return result;
   } catch (e) { lastErr = e; }
 
-  // ── Provider 3: Pollinations (OpenAI-compatible, free) ────────────────
+  // ── Last resort: Pollinations ────────────────────────────────────────
   for (let attempt = 0; attempt <= retries; attempt++) {
     const ac = new AbortController();
     const to = setTimeout(() => ac.abort(), timeout);
