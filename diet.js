@@ -27,18 +27,15 @@ async function _aiFetch(messages, { timeout = 30000, retries = 1, model = 'opena
   if (!navigator.onLine) throw new Error('offline');
   let lastErr;
 
-  // ── Provider 1: Groq (Llama 3, fast, free tier — text only) ─────────
-  // Skip Groq for image/multimodal messages (it can't see images)
+  // ── Provider 1: Groq ────────────────────────────────────────────────
   const _hasImages = messages.some(m => Array.isArray(m.content) && m.content.some(p => p.type === 'image_url'));
-  if (!_hasImages) {
-    for (let attempt = 0; attempt < 2; attempt++) {
-      try {
-        const result = await _groqRequest(messages, { timeout, jsonMode });
-        if (result) return result;
-      } catch (e) {
-        lastErr = e;
-        if (attempt === 0) await new Promise(r => setTimeout(r, 500));
-      }
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const result = await _groqRequest(messages, { timeout, jsonMode, vision: _hasImages });
+      if (result) return result;
+    } catch (e) {
+      lastErr = e;
+      if (attempt === 0) await new Promise(r => setTimeout(r, 500));
     }
   }
 
@@ -76,12 +73,13 @@ async function _aiFetch(messages, { timeout = 30000, retries = 1, model = 'opena
   throw lastErr;
 }
 
-async function _groqRequest(messages, { timeout = 20000, jsonMode = false } = {}) {
+async function _groqRequest(messages, { timeout = 20000, jsonMode = false, vision = false } = {}) {
   const ac = new AbortController();
   const to = setTimeout(() => ac.abort(), timeout);
   try {
-    const body = { messages, model: 'llama-3.3-70b-versatile', temperature: 0, max_tokens: 1024 };
-    if (jsonMode) body.response_format = { type: 'json_object' };
+    const model = vision ? 'llama-3.2-90b-vision-preview' : 'llama-3.3-70b-versatile';
+    const body = { messages, model, temperature: 0, max_tokens: 1024 };
+    if (jsonMode && !vision) body.response_format = { type: 'json_object' };
     const res = await fetch(_GEMINI_PROXY + '/groq', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
