@@ -28,28 +28,18 @@ async function _aiFetch(messages, { timeout = 30000, retries = 1, model = 'opena
   let lastErr;
   const _hasImages = messages.some(m => Array.isArray(m.content) && m.content.some(p => p.type === 'image_url'));
 
-  // ── Vision requests go straight to Pollinations (GPT-4o-mini, free) ──
+  // ── Vision requests: Gemini (native vision support) ──────────────────
   if (_hasImages) {
     for (let attempt = 0; attempt <= 1; attempt++) {
-      const ac = new AbortController();
-      const to = setTimeout(() => ac.abort(), 45000);
       try {
-        const body = { messages, model: 'openai', seed: 42, temperature: 0, private: true };
-        const res = await fetch('https://text.pollinations.ai/', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          signal: ac.signal,
-          body: JSON.stringify(body)
-        });
-        clearTimeout(to);
-        if (!res.ok) { lastErr = new Error(`HTTP ${res.status}`); continue; }
-        const text = await res.text();
-        if (!text || text.length < 2 || text.includes('"error"')) { lastErr = new Error('Bad response'); continue; }
-        return text;
+        const result = await _geminiRequest(messages, { timeout: 45000, jsonMode: false });
+        if (result && result.length > 2) return result;
+        console.warn('[vision] Gemini empty response');
+        lastErr = new Error('Empty response');
       } catch (e) {
-        clearTimeout(to);
+        console.warn('[vision] Gemini error:', e.message);
         lastErr = e;
-        if (attempt === 0) await new Promise(r => setTimeout(r, 1000));
+        if (attempt === 0) await new Promise(r => setTimeout(r, 1500));
         else break;
       }
     }
