@@ -1188,9 +1188,11 @@ function _buildFavoritesSection() {
 
   let html = '<div class="dm-section"><div class="dm-header"><span class="dm-icon">⭐</span><span class="dm-header-text">Quick Re-log</span><span class="dm-header-sub">Favorites & recent meals</span></div>';
 
+  const SHOW_LIMIT = 3;
+
   if (favs.length) {
     html += '<div class="sec-lbl" style="padding:8px 0 4px;font-size:9px">FAVORITES</div>';
-    html += favs.map((f, i) => {
+    html += favs.slice(0, SHOW_LIMIT).map((f, i) => {
       const cal = f.items.reduce((s, it) => s + (it.calories||0), 0);
       return `<div class="food-result" style="position:relative" onclick="logFavorite(${i})">
         <div class="food-result-name">${esc(f.name)} — ${f.items.map(it=>esc(it.name)).join(', ')}</div>
@@ -1198,17 +1200,40 @@ function _buildFavoritesSection() {
         <button class="d-del-btn" style="position:absolute;right:8px;top:8px" onclick="event.stopPropagation();deleteFavorite(${i})">×</button>
       </div>`;
     }).join('');
+    if (favs.length > SHOW_LIMIT) {
+      html += `<div id="favs-extra" style="display:none">` + favs.slice(SHOW_LIMIT).map((f, i) => {
+        const idx = i + SHOW_LIMIT;
+        const cal = f.items.reduce((s, it) => s + (it.calories||0), 0);
+        return `<div class="food-result" style="position:relative" onclick="logFavorite(${idx})">
+          <div class="food-result-name">${esc(f.name)} — ${f.items.map(it=>esc(it.name)).join(', ')}</div>
+          <div class="food-result-macros">${cal} cal · tap to log</div>
+          <button class="d-del-btn" style="position:absolute;right:8px;top:8px" onclick="event.stopPropagation();deleteFavorite(${idx})">×</button>
+        </div>`;
+      }).join('') + `</div>`;
+      html += `<div class="food-result" style="text-align:center;color:var(--accent);font-size:12px;cursor:pointer" onclick="document.getElementById('favs-extra').style.display='block';this.remove()">Show ${favs.length - SHOW_LIMIT} more ▾</div>`;
+    }
   }
 
   if (recent.length) {
     html += '<div class="sec-lbl" style="padding:8px 0 4px;font-size:9px">RECENT MEALS</div>';
-    html += recent.map((m, i) => {
+    html += recent.slice(0, SHOW_LIMIT).map((m, i) => {
       const cal = m.items.reduce((s, it) => s + (it.calories||0), 0);
       return `<div class="food-result" onclick="logRecentMeal(${i})">
         <div class="food-result-name">${esc(m.name)} — ${m.items.map(it=>esc(it.name)).join(', ')}</div>
         <div class="food-result-macros">${cal} cal · tap to log again</div>
       </div>`;
     }).join('');
+    if (recent.length > SHOW_LIMIT) {
+      html += `<div id="recent-extra" style="display:none">` + recent.slice(SHOW_LIMIT).map((m, i) => {
+        const idx = i + SHOW_LIMIT;
+        const cal = m.items.reduce((s, it) => s + (it.calories||0), 0);
+        return `<div class="food-result" onclick="logRecentMeal(${idx})">
+          <div class="food-result-name">${esc(m.name)} — ${m.items.map(it=>esc(it.name)).join(', ')}</div>
+          <div class="food-result-macros">${cal} cal · tap to log again</div>
+        </div>`;
+      }).join('') + `</div>`;
+      html += `<div class="food-result" style="text-align:center;color:var(--accent);font-size:12px;cursor:pointer" onclick="document.getElementById('recent-extra').style.display='block';this.remove()">Show ${recent.length - SHOW_LIMIT} more ▾</div>`;
+    }
   }
 
   html += '</div>';
