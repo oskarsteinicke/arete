@@ -1304,6 +1304,15 @@ function renderHome() {
       </div>`;
     })()}
 
+    ${!localStorage.getItem('hvi_feedback_dismissed') ? `<div class="hm-feedback-banner ani" style="display:flex;align-items:center;gap:12px;padding:14px 16px;margin:0 16px 12px;background:linear-gradient(135deg,rgba(212,175,55,.12),rgba(212,175,55,.04));border:1px solid rgba(212,175,55,.25);border-radius:14px;cursor:pointer" onclick="window.open('https://forms.gle/QMHZaYy2grUNmCpJ7','_blank');track('feedback_click')">
+      <div style="font-size:24px;flex-shrink:0">💬</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:14px;color:var(--fg1)">Help shape Arete</div>
+        <div style="font-size:12px;color:var(--fg3);margin-top:2px">Take 30 seconds to share your feedback</div>
+      </div>
+      <button onclick="event.stopPropagation();localStorage.setItem('hvi_feedback_dismissed','1');this.closest('.hm-feedback-banner').remove()" style="background:none;border:none;color:var(--fg3);font-size:18px;padding:4px;cursor:pointer">✕</button>
+    </div>` : ''}
+
     <div class="hm-sec ani">
       <div class="hm-sec-title">Today's Labours</div>
     </div>
