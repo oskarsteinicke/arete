@@ -27,14 +27,18 @@ async function _aiFetch(messages, { timeout = 30000, retries = 1, model = 'opena
   if (!navigator.onLine) throw new Error('offline');
   let lastErr;
 
-  // ── Provider 1: Groq (Llama 3, fast, free tier) ────────────────────────
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      const result = await _groqRequest(messages, { timeout, jsonMode });
-      if (result) return result;
-    } catch (e) {
-      lastErr = e;
-      if (attempt === 0) await new Promise(r => setTimeout(r, 500));
+  // ── Provider 1: Groq (Llama 3, fast, free tier — text only) ─────────
+  // Skip Groq for image/multimodal messages (it can't see images)
+  const _hasImages = messages.some(m => Array.isArray(m.content) && m.content.some(p => p.type === 'image_url'));
+  if (!_hasImages) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const result = await _groqRequest(messages, { timeout, jsonMode });
+        if (result) return result;
+      } catch (e) {
+        lastErr = e;
+        if (attempt === 0) await new Promise(r => setTimeout(r, 500));
+      }
     }
   }
 
@@ -834,13 +838,16 @@ async function handleFoodPhoto(input) {
     const resized = await _resizeImage(base64, 800);
 
     const sysPrompt =
-      'You are a food nutrition analyzer that ONLY outputs JSON. Never output any text, explanation, or markdown — ONLY a raw JSON array.\n\n' +
+      'You are a food nutrition analyzer with computer vision. You ONLY output JSON. Never output any text, explanation, or markdown — ONLY a raw JSON array.\n\n' +
       'INPUT: A photo of food.\n' +
       'OUTPUT: A JSON array where each element has exactly these keys: "name" (string), "calories" (integer), "protein" (integer), "carbs" (integer), "fat" (integer).\n\n' +
       'RULES:\n' +
+      '- LOOK CAREFULLY at the actual image — identify foods by their color, texture, and shape\n' +
+      '- Common visual cues: white/creamy = yoghurt/cream, yellow slices = banana, red = strawberry/tomato, brown = meat/bread, green = vegetables\n' +
+      '- Bowls often contain yoghurt, oatmeal, or cereal — not grilled meat\n' +
       '- Identify every distinct food item visible in the photo\n' +
       '- All macro values MUST be integers\n' +
-      '- Estimate portion sizes from visual cues (plate size, utensils, etc.)\n' +
+      '- Estimate portion sizes from visual cues (plate size, bowl size, utensils, etc.)\n' +
       '- If unsure, estimate based on typical portions — never refuse\n' +
       '- NEVER wrap in markdown code fences\n' +
       '- Your ENTIRE response must be parseable by JSON.parse()';
