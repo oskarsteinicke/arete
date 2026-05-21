@@ -6,6 +6,20 @@
 function track(event, params) {
   if (typeof gtag === 'function') gtag('event', event, params || {});
 }
+// Capture UTM params on first visit
+(function() {
+  const p = new URLSearchParams(location.search);
+  const src = p.get('utm_source');
+  if (src) {
+    const utm = { source: src, medium: p.get('utm_medium') || '', campaign: p.get('utm_campaign') || '' };
+    localStorage.setItem('hvi_utm', JSON.stringify(utm));
+    if (typeof gtag === 'function') {
+      gtag('set', 'user_properties', { traffic_source: src, traffic_medium: utm.medium, traffic_campaign: utm.campaign });
+    }
+    // Clean URL without reloading
+    if (history.replaceState) history.replaceState(null, '', location.pathname);
+  }
+})();
 
 // ── STATE ─────────────────────────────────────────────────────────────────
 let habits, log, journal, meta;

@@ -8,6 +8,16 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Arete">
   <title>Arete</title>
+  <meta name="description" content="Free habit tracker, workout logger, nutrition tracker & AI coach — all in one app. No subscriptions.">
+  <meta property="og:title" content="Arete — Build the life you actually want">
+  <meta property="og:description" content="Habits, workouts, nutrition & AI coaching in one distraction-free app. Free, no account required.">
+  <meta property="og:image" content="https://get-arete.com/og-image.png">
+  <meta property="og:url" content="https://get-arete.com">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Arete — Build the life you actually want">
+  <meta name="twitter:description" content="Habits, workouts, nutrition & AI coaching. Free forever.">
+  <meta name="twitter:image" content="https://get-arete.com/og-image.png">
   <script>
     // New visitors see landing page; existing users go straight to app
     if (!localStorage.getItem('hvi_habits') && !localStorage.getItem('hvi_onboarded') && !navigator.standalone && !window.matchMedia('(display-mode: standalone)').matches) {
@@ -27,7 +37,7 @@
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=67">
+  <link rel="stylesheet" href="style.css?v=68">
 </head>
 <body>
 <div id="app" role="application" aria-label="Arete lifestyle tracker">
@@ -88,25 +98,25 @@
     </button>
   </nav>
 </div>
-<script src="data.js?v=67"></script>
-<script src="app.js?v=67"></script>
-<script src="workout.js?v=67"></script>
-<script src="diet.js?v=67"></script>
+<script src="data.js?v=68"></script>
+<script src="app.js?v=68"></script>
+<script src="workout.js?v=68"></script>
+<script src="diet.js?v=68"></script>
 <script>
 // Stub coach functions until lazy-loaded
 if(typeof openCoach==='undefined'){window.openCoach=function(){};window.closeCoach=function(){};window.sendCoachMsg=function(){};window.clearCoachHistory=function(){}}
 // Lazy-load coach + social after first paint for faster startup
 (window.requestIdleCallback||function(cb){setTimeout(cb,800)})(function(){
-  var s1=document.createElement('script');s1.src='coach.js?v=67';document.body.appendChild(s1);
-  var s2=document.createElement('script');s2.src='social.js?v=67';document.body.appendChild(s2);
+  var s1=document.createElement('script');s1.src='coach.js?v=68';document.body.appendChild(s1);
+  var s2=document.createElement('script');s2.src='social.js?v=68';document.body.appendChild(s2);
 });
 </script>
-<script src="integrations.js?v=67"></script>
-<script src="profile.js?v=67"></script>
+<script src="integrations.js?v=68"></script>
+<script src="profile.js?v=68"></script>
 <script>
   if ('serviceWorker' in navigator) {
     // Purge ALL old caches on load to ensure fresh files
-    caches.keys().then(ks => ks.filter(k => k !== 'arete-v38').forEach(k => caches.delete(k)));
+    caches.keys().then(ks => ks.filter(k => k !== 'arete-v39').forEach(k => caches.delete(k)));
     navigator.serviceWorker.register('/service-worker.js').then(reg => {
       reg.update();
     });
