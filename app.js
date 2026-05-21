@@ -395,6 +395,7 @@ async function submitAuth() {
     const res = await authSignUp(email, password);
     if (res.error) { errEl.textContent = res.error.message || 'Sign up failed.'; btn.disabled = false; btn.textContent = 'CREATE ACCOUNT'; return; }
     localStorage.setItem('hvi_user_name', firstName);
+    track('sign_up', { method: 'email' });
     // Auto sign in after signup
     _authMode = 'signin';
   }
@@ -412,6 +413,7 @@ async function submitAuth() {
   }
 
   // Signed in — remove overlay and boot app normally
+  track('login', { method: 'email' });
   document.getElementById('auth-overlay')?.remove();
   init();
 }
@@ -752,6 +754,17 @@ async function init() {
     routines[p] = (routines[p] || []).map(item => typeof item === 'string' ? { name: item } : item);
   });
   routineLog = LS.get('hvi_routine_log', {});
+
+  // ── Identify user in GA4 ───────────────────────────────────────────────
+  const _sid = getSession();
+  if (_sid?.user?.id && typeof gtag === 'function') {
+    gtag('config', 'G-4NQYVJR5S2', { user_id: _sid.user.id });
+    gtag('set', 'user_properties', {
+      user_name: userName() || undefined,
+      user_email: _sid.user.email || undefined,
+      sign_up_date: _sid.user.created_at?.slice(0, 10) || undefined
+    });
+  }
 
   applyTheme();
   injectAdaptiveStyles();
