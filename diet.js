@@ -666,12 +666,14 @@ function _extractJsonArray(str) {
   if (trimmed.startsWith('[')) {
     try { JSON.parse(trimmed); return trimmed; } catch(e) {}
   }
-  // If response is a JSON object with an array value, find it
+  // If response is a JSON object, check for array value or wrap single item
   if (trimmed.startsWith('{')) {
     try {
       const obj = JSON.parse(trimmed);
       const arrVal = Object.values(obj).find(v => Array.isArray(v));
       if (arrVal) return JSON.stringify(arrVal);
+      // Single food object with calories — wrap in array
+      if (obj.calories !== undefined || obj.name) return JSON.stringify([obj]);
     } catch(e) {}
   }
   // Bracket-depth extraction fallback
