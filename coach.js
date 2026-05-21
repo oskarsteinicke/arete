@@ -308,6 +308,7 @@ async function sendCoachMsg() {
   if (!input || !msgsEl) return;
 
   const text = input.value.trim();
+  if (text && typeof track === 'function') track('coach_message');
   if (!text) return;
 
   // Add user message

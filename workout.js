@@ -650,6 +650,7 @@ function _updateRestTimer() {
 }
 
 function finishWorkout() {
+  if (typeof track === 'function') track('workout_complete', { program: workoutMeta?.activeProgram || 'custom' });
   const t = today();
   const wl = workoutLog[t];
   // Save duration

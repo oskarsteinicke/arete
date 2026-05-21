@@ -1284,6 +1284,7 @@ function obFinish() {
 
   // Mark onboarded
   LS.set('hvi_onboarded', true);
+  if (typeof track === 'function') track('onboarding_complete');
 
   // Remove overlay
   const overlay = document.getElementById('ob-overlay');

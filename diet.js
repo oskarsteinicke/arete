@@ -1255,6 +1255,7 @@ function logRecentMeal(i) {
 
 function saveMeal() {
   if (!curMealItems.length) return;
+  if (typeof track === 'function') track('meal_logged', { meal_type: curMealType, items: curMealItems.length });
   saveMealAsFavorite();
   const t = today();
   if (!mealLog[t]) mealLog[t] = { meals: [] };

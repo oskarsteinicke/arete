@@ -2,6 +2,11 @@
 // Arete — Application Logic
 // ══════════════════════════════════════════════════════════════════════════
 
+// ── ANALYTICS HELPER ──────────────────────────────────────────────────────
+function track(event, params) {
+  if (typeof gtag === 'function') gtag('event', event, params || {});
+}
+
 // ── STATE ─────────────────────────────────────────────────────────────────
 let habits, log, journal, meta;
 let workoutLog, workoutMeta, mealLog, dietMeta;
@@ -855,6 +860,7 @@ function go(view, params = {}, pushState = true) {
   curView = view;
   curPillar = params.pillar || null;
   curRecipeId = params.recipeId || null;
+  track('page_view', { page_title: view });
 
   if (pushState) {
     const qs = Object.keys(params).length ? '?' + new URLSearchParams(params).toString() : '';
@@ -942,6 +948,7 @@ function tapHabit(id, suffix) {
   const pillarId = habit ? PILLARS.find(p => p.cats.includes(habit.category))?.id : null;
   if (e.completedToday) {
     playSound('check');
+    track('habit_complete', { habit_name: habit?.name, streak: e.streak || 0 });
     const s = e.streak || 0;
     const bonus = s >= 30 ? 10 : s >= 14 ? 7 : s >= 7 ? 5 : 0;
     awardXP(10 + bonus, pillarId || undefined);
