@@ -259,7 +259,8 @@ async function cloudPull() {
       if (MERGE_KEYS.includes(k)) {
         try {
           const local = JSON.parse(localStorage.getItem(k) || '{}');
-          const merged = { ...local, ...cloud[k] };
+          // Local wins — cloud fills in missing keys only
+          const merged = { ...cloud[k], ...local };
           localStorage.setItem(k, JSON.stringify(merged));
         } catch { localStorage.setItem(k, JSON.stringify(cloud[k])); }
       } else if (k === 'hvi_gamification') {
