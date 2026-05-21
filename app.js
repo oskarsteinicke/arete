@@ -763,7 +763,8 @@ async function init() {
     gtag('set', 'user_properties', {
       user_name: userName() || undefined,
       user_email: _sid.user.email || undefined,
-      sign_up_date: _sid.user.created_at?.slice(0, 10) || undefined
+      sign_up_date: _sid.user.created_at?.slice(0, 10) || undefined,
+      last_active: new Date().toISOString().slice(0, 10)
     });
   }
 
