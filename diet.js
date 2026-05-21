@@ -75,9 +75,10 @@ async function _aiFetch(messages, { timeout = 30000, retries = 1, model = 'opena
 
 async function _groqRequest(messages, { timeout = 20000, jsonMode = false, vision = false } = {}) {
   const ac = new AbortController();
-  const to = setTimeout(() => ac.abort(), timeout);
+  const actualTimeout = vision ? 45000 : timeout;
+  const to = setTimeout(() => ac.abort(), actualTimeout);
   try {
-    const model = vision ? 'llama-3.2-90b-vision-preview' : 'llama-3.3-70b-versatile';
+    const model = vision ? 'llama-3.2-11b-vision-preview' : 'llama-3.3-70b-versatile';
     const body = { messages, model, temperature: 0, max_tokens: 1024 };
     if (jsonMode && !vision) body.response_format = { type: 'json_object' };
     const res = await fetch(_GEMINI_PROXY + '/groq', {
@@ -87,7 +88,10 @@ async function _groqRequest(messages, { timeout = 20000, jsonMode = false, visio
       body: JSON.stringify(body)
     });
     clearTimeout(to);
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.warn('[groq] vision request failed:', res.status);
+      return null;
+    }
     const data = await res.json();
     const text = data?.choices?.[0]?.message?.content;
     if (!text || text.length < 2) return null;
@@ -832,8 +836,8 @@ async function handleFoodPhoto(input) {
       reader.readAsDataURL(file);
     });
 
-    // Resize if too large (max ~800px) to reduce payload
-    const resized = await _resizeImage(base64, 800);
+    // Resize to reduce payload — keep small for vision API
+    const resized = await _resizeImage(base64, 512);
 
     const sysPrompt =
       'You are a food nutrition analyzer with computer vision. You ONLY output JSON. Never output any text, explanation, or markdown — ONLY a raw JSON array.\n\n' +

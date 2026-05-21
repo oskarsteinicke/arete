@@ -1,4 +1,4 @@
-const CACHE = 'arete-v35';
+const CACHE = 'arete-v36';
 const ASSETS = [
   '/',
   '/index.html',
