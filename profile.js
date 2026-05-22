@@ -1495,7 +1495,7 @@ function generateRecapCard() {
   ctx.fillStyle = 'rgba(184,157,104,0.35)';
   ctx.font = '500 10px -apple-system,sans-serif';
   ctx.textAlign = 'right';
-  ctx.fillText('oskarsteinicke.github.io/arete', W - 28, H - 28);
+  ctx.fillText('get-arete.com', W - 28, H - 28);
   ctx.textAlign = 'left';
 
   return canvas;
@@ -1693,7 +1693,7 @@ function generateDailyCard() {
   ctx.fillStyle = 'rgba(184,157,104,0.35)';
   ctx.font = '500 10px -apple-system,sans-serif';
   ctx.textAlign = 'right';
-  ctx.fillText('oskarsteinicke.github.io/arete', W - 28, H - 28);
+  ctx.fillText('get-arete.com', W - 28, H - 28);
   ctx.textAlign = 'left';
 
   return canvas;
@@ -1716,14 +1716,14 @@ function shareDailyCard() {
 function shareRecap() {
   const canvas = generateRecapCard();
   canvas.toBlob(async blob => {
-    const file = new File([blob], 'hvi-recap.png', { type: 'image/png' });
+    const file = new File([blob], 'arete-recap.png', { type: 'image/png' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       try { await navigator.share({ files: [file], title: 'My Arete Weekly Recap' }); return; } catch {}
     }
     // Fallback: download
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'hvi-recap.png';
+    a.download = 'arete-recap.png';
     a.click();
   }, 'image/png');
 }

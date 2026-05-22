@@ -277,6 +277,23 @@ async function cloudPull() {
           const merged = { ...cloud[k], ...local };
           localStorage.setItem(k, JSON.stringify(merged));
         } catch { localStorage.setItem(k, JSON.stringify(cloud[k])); }
+      } else if (k === 'hvi_log') {
+        // Merge habit log: local completedToday always wins, cloud fills gaps
+        try {
+          const local = JSON.parse(localStorage.getItem(k) || '{}');
+          const cloudLog = cloud[k] || {};
+          const merged = { ...cloudLog };
+          Object.keys(local).forEach(hid => {
+            if (!merged[hid]) { merged[hid] = local[hid]; return; }
+            // If local has completedToday, keep local state entirely for this habit
+            if (local[hid].completedToday) { merged[hid] = local[hid]; return; }
+            // Keep higher streak
+            if ((local[hid].streak || 0) > (merged[hid].streak || 0)) {
+              merged[hid] = local[hid];
+            }
+          });
+          localStorage.setItem(k, JSON.stringify(merged));
+        } catch { localStorage.setItem(k, JSON.stringify(cloud[k])); }
       } else if (k === 'hvi_gamification') {
         // Never downgrade XP — keep whichever has more progress
         try {
@@ -1761,7 +1778,7 @@ function haptic(pattern) {
 // ── INVITE / REFERRAL ────────────────────────────────────────────────────
 function shareInvite() {
   const text = "I've been using Arete to track my habits, workouts, and nutrition all in one app. It's free — check it out!";
-  const url = 'https://oskarsteinicke.github.io/arete/';
+  const url = 'https://get-arete.com';
   if (navigator.share) {
     navigator.share({ title: 'Arete', text, url }).catch(() => {});
   } else {
