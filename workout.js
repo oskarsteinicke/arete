@@ -246,7 +246,10 @@ function renderWorkoutPicker() {
       <div class="w-card-name">${esc(p.name)}</div>
       <div class="w-card-desc">${esc(p.desc)}</div>
       <div class="w-card-days">${p.days.length}-day rotation: ${p.days.map(d=>esc(d.name)).join(', ')}</div>
-      <button class="d-del-btn" style="position:absolute;top:12px;right:12px;font-size:18px" onclick="event.stopPropagation();deleteCustomProgram('${p.id}')">×</button>
+      <div style="position:absolute;top:12px;right:12px;display:flex;gap:6px">
+        <button class="d-del-btn" style="font-size:14px;padding:4px 8px" onclick="event.stopPropagation();editCustomProgram('${p.id}')">✎</button>
+        <button class="d-del-btn" style="font-size:18px" onclick="event.stopPropagation();deleteCustomProgram('${p.id}')">×</button>
+      </div>
     </div>`).join('');
 
   document.getElementById('view').innerHTML = `
@@ -742,6 +745,16 @@ function initBuilder() {
   builderSearch = '';
 }
 
+function editCustomProgram(id) {
+  const progs = LS.get('hvi_custom_programs', []);
+  const prog = progs.find(p => p.id === id);
+  if (!prog) return;
+  builderProg = JSON.parse(JSON.stringify(prog));
+  builderDayIdx = 0;
+  builderSearch = '';
+  go('workoutBuilder');
+}
+
 function renderWorkoutBuilder() {
   if (!builderProg) { initBuilder(); }
   const day = builderProg.days[builderDayIdx];
@@ -775,7 +788,7 @@ function renderWorkoutBuilder() {
 
   document.getElementById('view').innerHTML = `
     <button class="back" onclick="go('workoutPicker')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
-    <div class="page-head ani"><div class="page-title">Build Program</div><div class="page-sub">Create your custom training split.</div></div>
+    <div class="page-head ani"><div class="page-title">${builderProg.name && LS.get('hvi_custom_programs',[]).some(p=>p.id===builderProg.id) ? 'Edit Program' : 'Build Program'}</div><div class="page-sub">${builderProg.name && LS.get('hvi_custom_programs',[]).some(p=>p.id===builderProg.id) ? 'Edit your training split.' : 'Create your custom training split.'}</div></div>
     <div style="padding:0 24px" class="ani">
       <div class="d-goals-row"><div class="d-goals-label">Name</div><input class="d-input" type="text" id="bp-name" value="${esc(builderProg.name)}" placeholder="e.g. My PPL" style="flex:1" onchange="builderProg.name=this.value"></div>
       <div class="d-goals-row"><div class="d-goals-label">Description</div><input class="d-input" type="text" id="bp-desc" value="${esc(builderProg.desc)}" placeholder="e.g. 4-day upper/lower split" style="flex:1" onchange="builderProg.desc=this.value"></div>
@@ -785,6 +798,7 @@ function renderWorkoutBuilder() {
 
       <div class="d-goals-row"><div class="d-goals-label">Day Name</div><input class="d-input" type="text" id="bp-dn" value="${esc(day.name)}" placeholder="e.g. Push A" style="flex:1" onchange="builderProg.days[builderDayIdx].name=this.value"></div>
       <div class="d-goals-row"><div class="d-goals-label">Focus</div><input class="d-input" type="text" id="bp-df" value="${esc(day.focus)}" placeholder="e.g. Chest, Shoulders" style="flex:1" onchange="builderProg.days[builderDayIdx].focus=this.value"></div>
+      ${builderProg.days.length > 1 ? `<button class="d-del-btn" style="font-size:12px;color:var(--text-muted);padding:6px 0" onclick="builderRemoveDay(${builderDayIdx})">Remove this day</button>` : ''}
 
       <div class="sec-lbl" style="padding:16px 0 8px">Exercises (${day.ex.length})</div>
       ${addedEx || '<p style="font-size:12px;color:var(--text-muted);padding:4px 0">No exercises added yet.</p>'}
@@ -795,6 +809,13 @@ function renderWorkoutBuilder() {
       <button class="w-action-btn" style="margin-top:12px;width:100%" onclick="browserContext={dayIndex:builderDayIdx};go('exerciseBrowser')">BROWSE FULL LIBRARY</button>
     </div>
     <button class="w-finish" onclick="saveCustomProgram()">SAVE PROGRAM</button>`;
+}
+
+function builderRemoveDay(i) {
+  if (builderProg.days.length <= 1) return;
+  builderProg.days.splice(i, 1);
+  if (builderDayIdx >= builderProg.days.length) builderDayIdx = builderProg.days.length - 1;
+  go('workoutBuilder');
 }
 
 function builderAddDay() {
@@ -858,7 +879,9 @@ function saveCustomProgram() {
   if (!valid) return;
 
   const progs = LS.get('hvi_custom_programs', []);
-  progs.push(builderProg);
+  const idx = progs.findIndex(p => p.id === builderProg.id);
+  if (idx >= 0) progs[idx] = builderProg;
+  else progs.push(builderProg);
   LS.set('hvi_custom_programs', progs);
   selectProgram(builderProg.id);
   builderProg = null;
