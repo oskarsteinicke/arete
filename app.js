@@ -1321,10 +1321,10 @@ function renderHome() {
     ${!localStorage.getItem('hvi_feedback_dismissed') ? `<div class="hm-feedback-banner ani" style="display:flex;align-items:center;gap:12px;padding:14px 16px;margin:0 16px 12px;background:linear-gradient(135deg,rgba(212,175,55,.12),rgba(212,175,55,.04));border:1px solid rgba(212,175,55,.25);border-radius:14px;cursor:pointer" onclick="window.open('https://forms.gle/QMHZaYy2grUNmCpJ7','_blank');track('feedback_click')">
       <div style="font-size:24px;flex-shrink:0">💬</div>
       <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:14px;color:var(--fg1)">Help shape Arete</div>
-        <div style="font-size:12px;color:var(--fg3);margin-top:2px">Take 30 seconds to share your feedback</div>
+        <div style="font-weight:600;font-size:14px;color:var(--text)">Help shape Arete</div>
+        <div style="font-size:12px;color:var(--text-dim);margin-top:2px">Take 30 seconds to share your feedback</div>
       </div>
-      <button onclick="event.stopPropagation();localStorage.setItem('hvi_feedback_dismissed','1');this.closest('.hm-feedback-banner').remove()" style="background:none;border:none;color:var(--fg3);font-size:18px;padding:4px;cursor:pointer">✕</button>
+      <button onclick="event.stopPropagation();localStorage.setItem('hvi_feedback_dismissed','1');this.closest('.hm-feedback-banner').remove()" style="background:none;border:none;color:var(--text-dim);font-size:18px;padding:4px;cursor:pointer">✕</button>
     </div>` : ''}
 
     <div class="hm-sec ani">
@@ -1338,7 +1338,7 @@ function renderHome() {
         <div class="hm-card-val">${wLogged && wExternal ? wEntry.dayName : wDay.name}</div>
         <div class="hm-card-sub">${wLogged && wExternal ? (wEntry.source === 'strava' ? 'Strava' : wEntry.source === 'googlefit' ? 'Google Fit' : wEntry.source) : wProg.name}</div>
         ${wLogged && wExtraBadges ? `<div class="hm-card-badges">${wExtraBadges}</div>` : ''}
-        <div class="hm-card-status" style="${wLogged ? 'color:var(--accent-b)' : 'color:var(--fg3)'}">${wLogged ? '✓ Done' : '→ Start'}</div>
+        <div class="hm-card-status" style="${wLogged ? 'color:var(--accent-b)' : 'color:var(--text-dim)'}">${wLogged ? '✓ Done' : '→ Start'}</div>
         ${!wLogged ? recoveryBadgeHTML() : ''}
       </div>
       <div class="hm-card" onclick="go('diet')">
@@ -1347,7 +1347,7 @@ function renderHome() {
         <div class="hm-card-val">${dm.cal.toLocaleString()} cal</div>
         <div class="hm-card-sub">${dGoal.toLocaleString()} goal</div>
         <div class="hm-card-bar"><div class="hm-card-fill" style="width:${(dPct*100).toFixed(0)}%;background:var(--cal)"></div></div>
-        <div class="hm-card-status" style="color:var(--fg3)">${dm.p}p · ${dm.c}c · ${dm.f}f</div>
+        <div class="hm-card-status" style="color:var(--text-dim)">${dm.p}p · ${dm.c}c · ${dm.f}f</div>
       </div>
     </div>
 
