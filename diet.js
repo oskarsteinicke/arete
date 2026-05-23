@@ -901,6 +901,7 @@ async function handleFoodPhoto(input) {
       carbs:    Math.round(Number(it.carbs)     || 0),
       fat:      Math.round(Number(it.fat)       || 0),
     }));
+    if (typeof track === 'function') track('food_photo_scan', { items_detected: _parsedMealItems.length });
     _renderParsedItems(out);
 
   } catch(e) {

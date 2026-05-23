@@ -1054,5 +1054,31 @@
   </div>
 </footer>
 
+<script>
+// PWA Install prompt for mobile visitors
+let _landingInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  _landingInstallPrompt = e;
+  // Show install banner after 5 seconds on mobile
+  if (window.innerWidth <= 768) {
+    setTimeout(() => {
+      if (!_landingInstallPrompt) return;
+      const b = document.createElement('div');
+      b.id = 'install-bar';
+      b.innerHTML = `<div style="position:fixed;bottom:0;left:0;right:0;z-index:9000;padding:12px;background:rgba(10,9,8,.95);backdrop-filter:blur(16px);border-top:1px solid rgba(196,169,108,.2);display:flex;align-items:center;gap:12px;animation:slideUp .35s ease">
+        <img src="icon-192.png" alt="" style="width:40px;height:40px;border-radius:10px;flex-shrink:0">
+        <div style="flex:1"><div style="font-size:14px;color:#e8e0d0;font-weight:600">Install Arete</div><div style="font-size:11px;color:#8a7e6b;margin-top:2px">Full app experience, works offline</div></div>
+        <button onclick="_landingInstallPrompt.prompt();_landingInstallPrompt.userChoice.then(()=>{_landingInstallPrompt=null});this.closest('#install-bar').remove()" style="padding:8px 18px;border:none;border-radius:10px;background:#c4a96c;color:#fff;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Install</button>
+        <button onclick="this.closest('#install-bar').remove()" style="background:none;border:none;color:#8a7e6b;font-size:16px;padding:4px;cursor:pointer">✕</button>
+      </div>`;
+      document.body.appendChild(b);
+    }, 5000);
+  }
+});
+window.addEventListener('appinstalled', () => { _landingInstallPrompt = null; const b = document.getElementById('install-bar'); if (b) b.remove(); });
+</script>
+<style>@keyframes slideUp{from{transform:translateY(100px);opacity:0}to{transform:translateY(0);opacity:1}}</style>
+
 </body>
 </html>

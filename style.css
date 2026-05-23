@@ -1763,3 +1763,11 @@ nav {
   text-transform: uppercase;
   color: var(--text-muted);
 }
+
+/* ── Install Banner ─────────────────────────────────────────────────────── */
+#install-banner { position: fixed; bottom: 80px; left: 0; right: 0; z-index: 2500; padding: 0 12px; animation: slideUp .35s ease; }
+.install-banner { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--border2); border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,.4); }
+.install-btn { padding: 8px 18px; border: none; border-radius: 10px; background: var(--accent); color: #fff; font-size: 13px; font-weight: 700; letter-spacing: .5px; cursor: pointer; white-space: nowrap; }
+.install-btn:active { transform: scale(.96); }
+.install-dismiss { background: none; border: none; color: var(--text-dim); font-size: 16px; padding: 4px 2px; cursor: pointer; }
+@keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }

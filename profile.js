@@ -248,6 +248,7 @@ function checkAchievements() {
     if (!unlocked.has(ach.id) && checks[ach.id]) {
       achievements.push(ach.id);
       LS.set('hvi_achievements', achievements);
+      if (typeof track === 'function') track('achievement_unlock', { achievement_id: ach.id, achievement_name: ach.name, total_unlocked: achievements.length });
       showAchievementToast(ach);
     }
   });
@@ -1714,6 +1715,7 @@ function shareDailyCard() {
 }
 
 function shareRecap() {
+  if (typeof track === 'function') track('share_recap', { method: navigator.canShare ? 'native' : 'download' });
   const canvas = generateRecapCard();
   canvas.toBlob(async blob => {
     const file = new File([blob], 'arete-recap.png', { type: 'image/png' });

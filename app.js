@@ -1486,6 +1486,24 @@ function renderHome() {
 
     ${done > 0 ? `<button class="hm-share-btn ani" onclick="shareDailyCard()">📤 Share Today's Progress</button>` : ''}
 
+    ${(() => {
+      // Show invite card every 3 days if user has 3+ day streak, dismissable for a week
+      const dismissedAt = parseInt(localStorage.getItem('hvi_invite_dismissed') || '0');
+      const daysSinceDismiss = (Date.now() - dismissedAt) / 86400000;
+      const dayNum = Math.floor(Date.now() / 86400000);
+      if (_overallStreak >= 3 && dayNum % 3 === 0 && daysSinceDismiss > 7) {
+        return `<div class="hm-feedback-banner ani" style="display:flex;align-items:center;gap:12px;padding:14px 16px;margin:0 16px 12px;background:linear-gradient(135deg,rgba(196,169,108,.12),rgba(196,169,108,.04));border:1px solid rgba(196,169,108,.2);border-radius:14px;cursor:pointer" onclick="shareInvite()">
+          <div style="font-size:24px;flex-shrink:0">🔗</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:14px;color:var(--text)">Enjoying Arete?</div>
+            <div style="font-size:12px;color:var(--text-dim);margin-top:2px">Share it with someone who'd benefit</div>
+          </div>
+          <button onclick="event.stopPropagation();localStorage.setItem('hvi_invite_dismissed',Date.now().toString());this.closest('.hm-feedback-banner').remove()" style="background:none;border:none;color:var(--text-dim);font-size:18px;padding:4px;cursor:pointer">✕</button>
+        </div>`;
+      }
+      return '';
+    })()}
+
     ${getEveningReminder()}
   `;
 }
@@ -1869,15 +1887,118 @@ function haptic(pattern) {
 
 // ── INVITE / REFERRAL ────────────────────────────────────────────────────
 function shareInvite() {
-  const text = "I've been using Arete to track my habits, workouts, and nutrition all in one app. It's free — check it out!";
-  const url = 'https://get-arete.com';
+  const lvl = getLevel(gamification.xp || 0);
+  const best = Math.max(0, ...habits.map(h => log[h.id]?.streak || 0));
+  const wCount = Object.keys(workoutLog).length;
+  const lines = [];
+  if (best > 0) lines.push(`🔥 ${best}-day habit streak`);
+  if (wCount > 0) lines.push(`💪 ${wCount} workouts logged`);
+  if (lvl > 1) lines.push(`⚡ Level ${lvl} ${getLevelTitle(lvl)}`);
+  const statsLine = lines.length ? '\n' + lines.join(' · ') + '\n' : '';
+  const text = `I've been using Arete to build better habits, track workouts, and stay on top of nutrition.${statsLine}\nFree, no account needed.`;
+  const url = 'https://get-arete.com?utm_source=share&utm_medium=invite';
+  track('share_invite', { method: navigator.share ? 'native' : 'clipboard', level: lvl });
   if (navigator.share) {
     navigator.share({ title: 'Arete', text, url }).catch(() => {});
   } else {
     navigator.clipboard.writeText(text + '\n' + url).then(() => {
-      alert('Link copied to clipboard!');
+      _showToast('Link copied!');
     }).catch(() => {});
   }
+}
+
+function _showToast(msg, duration = 2500) {
+  const el = document.createElement('div');
+  el.className = 'streak-toast';
+  el.style.cssText = `bottom:100px;animation-duration:${(duration/1000).toFixed(1)}s`;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), duration);
+}
+
+// ── PWA INSTALL PROMPT ──────────────────────────────────────────────────
+let _deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  _deferredInstallPrompt = e;
+  track('install_prompt_available');
+  // Show install banner after a delay if user has used the app
+  if (localStorage.getItem('hvi_onboarded') && !localStorage.getItem('hvi_install_dismissed')) {
+    setTimeout(() => _showInstallBanner(), 3000);
+  }
+});
+
+// iOS doesn't fire beforeinstallprompt — show install hint on mobile Safari
+if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream && !navigator.standalone) {
+  if (localStorage.getItem('hvi_onboarded') && !localStorage.getItem('hvi_install_dismissed')) {
+    setTimeout(() => _showInstallBanner(), 5000);
+  }
+}
+
+window.addEventListener('appinstalled', () => {
+  track('app_installed');
+  _deferredInstallPrompt = null;
+  const banner = document.getElementById('install-banner');
+  if (banner) banner.remove();
+});
+
+function _showInstallBanner() {
+  if (navigator.standalone || window.matchMedia('(display-mode: standalone)').matches) return;
+  if (document.getElementById('install-banner')) return;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  // For iOS (no beforeinstallprompt), show instructions instead
+  if (isIOS && !_deferredInstallPrompt) {
+    if (localStorage.getItem('hvi_install_dismissed')) return;
+    const banner = document.createElement('div');
+    banner.id = 'install-banner';
+    banner.innerHTML = `
+      <div class="install-banner">
+        <img src="icon-192.png" alt="" style="width:40px;height:40px;border-radius:10px;flex-shrink:0">
+        <div style="flex:1;min-width:0">
+          <div style="font-family:var(--serif);font-size:15px;color:var(--text);font-weight:600">Install Arete</div>
+          <div style="font-size:12px;color:var(--text-dim);margin-top:2px">Tap <span style="font-size:16px;vertical-align:-2px">⎙</span> Share then "Add to Home Screen"</div>
+        </div>
+        <button class="install-dismiss" onclick="dismissInstall()" aria-label="Dismiss">✕</button>
+      </div>`;
+    document.body.appendChild(banner);
+    track('install_banner_shown', { type: 'ios' });
+    return;
+  }
+  if (!_deferredInstallPrompt) return;
+  const banner = document.createElement('div');
+  banner.id = 'install-banner';
+  banner.innerHTML = `
+    <div class="install-banner">
+      <img src="icon-192.png" alt="" style="width:40px;height:40px;border-radius:10px;flex-shrink:0">
+      <div style="flex:1;min-width:0">
+        <div style="font-family:var(--serif);font-size:15px;color:var(--text);font-weight:600">Install Arete</div>
+        <div style="font-size:12px;color:var(--text-dim);margin-top:2px">Get the full app experience</div>
+      </div>
+      <button class="install-btn" onclick="triggerInstall()">Install</button>
+      <button class="install-dismiss" onclick="dismissInstall()" aria-label="Dismiss">✕</button>
+    </div>`;
+  document.body.appendChild(banner);
+  track('install_banner_shown', { type: 'android' });
+}
+
+function triggerInstall() {
+  track('install_banner_click');
+  if (_deferredInstallPrompt) {
+    _deferredInstallPrompt.prompt();
+    _deferredInstallPrompt.userChoice.then(result => {
+      track('install_choice', { outcome: result.outcome });
+      _deferredInstallPrompt = null;
+    });
+  }
+  const banner = document.getElementById('install-banner');
+  if (banner) banner.remove();
+}
+
+function dismissInstall() {
+  track('install_banner_dismiss');
+  localStorage.setItem('hvi_install_dismissed', Date.now().toString());
+  const banner = document.getElementById('install-banner');
+  if (banner) banner.remove();
 }
 
 // ── PRO UPGRADE PROMPT ───────────────────────────────────────────────────
