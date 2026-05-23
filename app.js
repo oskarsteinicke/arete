@@ -200,6 +200,7 @@ async function cloudPush() {
       const rows = await pullRes.json();
       if (rows.length) {
         const cloud = rows[0].data || {};
+        // Merge date-keyed objects (workouts, meals, journal, etc.)
         MERGE_KEYS.forEach(k => {
           if (cloud[k]) {
             try {
@@ -209,6 +210,38 @@ async function cloudPush() {
             } catch {}
           }
         });
+        // Merge habit log — keep completedToday from either side, higher streaks
+        if (cloud.hvi_log) {
+          try {
+            const local = JSON.parse(localStorage.getItem('hvi_log') || '{}');
+            const cloudLog = cloud.hvi_log;
+            const merged = { ...cloudLog };
+            Object.keys(local).forEach(hid => {
+              if (!merged[hid]) { merged[hid] = local[hid]; return; }
+              if (local[hid].completedToday) { merged[hid] = local[hid]; return; }
+              if ((local[hid].streak || 0) > (merged[hid].streak || 0)) { merged[hid] = local[hid]; }
+            });
+            // Also pull in cloud completions that local doesn't have
+            Object.keys(cloudLog).forEach(hid => {
+              if (cloudLog[hid].completedToday && !local[hid]?.completedToday) { merged[hid] = cloudLog[hid]; }
+            });
+            localStorage.setItem('hvi_log', JSON.stringify(merged));
+          } catch {}
+        }
+        // Merge gamification — never downgrade XP
+        if (cloud.hvi_gamification) {
+          try {
+            const local = JSON.parse(localStorage.getItem('hvi_gamification') || '{}');
+            const cloudG = cloud.hvi_gamification;
+            const merged = { ...cloudG, ...local };
+            merged.xp = Math.max(local.xp || 0, cloudG.xp || 0);
+            const pxp = {};
+            const allP = new Set([...Object.keys(local.pillarXP || {}), ...Object.keys(cloudG.pillarXP || {})]);
+            allP.forEach(p => { pxp[p] = Math.max((local.pillarXP || {})[p] || 0, (cloudG.pillarXP || {})[p] || 0); });
+            merged.pillarXP = pxp;
+            localStorage.setItem('hvi_gamification', JSON.stringify(merged));
+          } catch {}
+        }
       }
     }
   } catch {}
@@ -319,6 +352,32 @@ async function cloudPull() {
 function schedulePush() {
   clearTimeout(_syncDebounce);
   _syncDebounce = setTimeout(cloudPush, 2500);
+}
+
+// Fire-and-forget push using sendBeacon (survives tab close / mobile sleep)
+function _beaconPush() {
+  const uid = getCurrentUserId();
+  const token = getAccessToken();
+  if (!uid || !token) return;
+  const data = {};
+  SYNC_KEYS.forEach(k => { const v = localStorage.getItem(k); if (v !== null) { try { data[k] = JSON.parse(v); } catch {} } });
+  const body = JSON.stringify({ user_id: uid, data, updated_at: new Date().toISOString() });
+  // sendBeacon is the only reliable way to push data when a mobile tab goes to sleep
+  if (navigator.sendBeacon) {
+    const blob = new Blob([body], { type: 'application/json' });
+    // sendBeacon doesn't support custom headers, so we use the REST endpoint with apikey in query
+    // Instead, try a keepalive fetch which DOES support headers
+    try {
+      fetch(`${SUPABASE_URL}/rest/v1/hvi_data`, {
+        method: 'POST',
+        headers: authHeaders({ 'Prefer': 'resolution=merge-duplicates' }),
+        body,
+        keepalive: true
+      }).catch(() => {});
+    } catch {
+      // Last resort: skip auth header, won't work but at least we tried
+    }
+  }
 }
 
 async function forceSync() {
@@ -807,8 +866,25 @@ async function init() {
   checkReset();
   // Initial sync status
   setSyncStatus('ok');
-  // Push once on load so new devices register themselves
-  cloudPush();
+  // Sync on load: pull cloud data, merge, push, then reload in-memory state
+  cloudPush().then(() => {
+    habits = LS.get('hvi_habits', habits);
+    log = LS.get('hvi_log', log);
+    habits.forEach(h => { if (!log[h.id]) log[h.id] = { streak: 0, lastCompletedDate: '', completedToday: false }; });
+    journal = LS.get('hvi_journal3', journal);
+    meta = LS.get('hvi_meta', meta);
+    workoutLog = LS.get('hvi_workout_log', workoutLog);
+    workoutMeta = LS.get('hvi_workout_meta', workoutMeta);
+    mealLog = LS.get('hvi_meal_log', mealLog);
+    dietMeta = LS.get('hvi_diet_meta', dietMeta);
+    weightLog = LS.get('hvi_weight_log', weightLog);
+    sleepLog = LS.get('hvi_sleep_log', sleepLog);
+    prs = LS.get('hvi_prs', prs);
+    gamification = LS.get('hvi_gamification', gamification);
+    achievements = LS.get('hvi_achievements', achievements);
+    settings = LS.get('hvi_settings', settings);
+    go(curView, {}, false);
+  }).catch(() => {});
 
   // Re-sync when user returns to the app (tab becomes visible again)
   document.addEventListener('visibilitychange', async () => {
@@ -838,8 +914,24 @@ async function init() {
         go(curView, {}, false);
       }
       setSyncStatus('ok');
+    } else if (document.visibilityState === 'hidden' && getAccessToken()) {
+      // Push to cloud BEFORE the tab goes to sleep (critical on mobile)
+      clearTimeout(_syncDebounce);
+      _beaconPush();
     }
   });
+
+  // Push to cloud when the page is being closed / navigated away
+  window.addEventListener('beforeunload', () => {
+    if (getAccessToken()) { clearTimeout(_syncDebounce); _beaconPush(); }
+  });
+
+  // Also push when the PWA is being frozen (iOS/Android)
+  if ('onfreeze' in document) {
+    document.addEventListener('freeze', () => {
+      if (getAccessToken()) { clearTimeout(_syncDebounce); _beaconPush(); }
+    });
+  }
 
   // Quick-log FAB removed — actions accessible from nav tabs and home cards
   initPullToRefresh();
