@@ -992,3 +992,450 @@ function _checkChallengeParam() {
 }
 // Run on load
 _checkChallengeParam();
+
+// ══════════════════════════════════════════════════════════════════════════
+// LEADERBOARD — Group competition with friends
+// ══════════════════════════════════════════════════════════════════════════
+// Uses Supabase tables: leaderboard_groups, leaderboard_members
+// Each group has a short join code. Members push stats automatically.
+
+let _lbView = 'list'; // 'list' | 'group' | 'create' | 'join'
+let _lbActiveGroup = null;
+let _lbGroupCache = {}; // group_id -> { group, members }
+let _lbLoading = false;
+
+// ── Supabase helpers ─────────────────────────────────────────────────────
+function _lbHeaders() {
+  const token = getAccessToken();
+  return { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+}
+
+function _genGroupCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+// ── Build local stats snapshot ───────────────────────────────────────────
+function _buildMyStats() {
+  const xp = gamification.xp || 0;
+  const lvl = getLevel(xp);
+  const maxStreak = Math.max(0, ...habits.map(h => log[h.id]?.streak || 0));
+  const totalWorkouts = Object.values(workoutLog).filter(wl => wl.exercises?.some(e => e.sets?.some(s => s.completed))).length;
+  const totalPRs = Object.keys(prs || {}).length;
+  const totalJournalDays = Object.keys(journal).filter(d => Object.values(journal[d]).some(Boolean)).length;
+  const habitsToday = habits.filter(h => log[h.id]?.completedToday).length;
+
+  // This week's workouts
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  const weekKey = weekStart.toLocaleDateString('en-CA');
+  const weekWorkouts = Object.keys(workoutLog).filter(d => d >= weekKey && workoutLog[d]?.exercises?.some(e => e.sets?.some(s => s.completed))).length;
+
+  return {
+    xp, lvl, title: getLevelTitle(lvl),
+    maxStreak, totalWorkouts, weekWorkouts,
+    totalPRs, totalJournalDays, habitsToday,
+    totalHabits: habits.length,
+    achievementCount: (achievements || []).length,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+// ── API calls ────────────────────────────────────────────────────────────
+async function _lbCreateGroup(name) {
+  const uid = getCurrentUserId();
+  if (!uid) return null;
+  await _ensureFreshToken();
+  const code = _genGroupCode();
+
+  // Create group
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard_groups`, {
+    method: 'POST',
+    headers: { ..._lbHeaders(), 'Prefer': 'return=representation' },
+    body: JSON.stringify({ name, code, created_by: uid }),
+  });
+  if (!res.ok) {
+    // Code collision — retry once
+    if (res.status === 409) return _lbCreateGroup(name);
+    console.warn('[lb] create group failed:', res.status);
+    return null;
+  }
+  const [group] = await res.json();
+
+  // Auto-join as creator
+  await _lbJoinGroupById(group.id);
+  return group;
+}
+
+async function _lbJoinGroupByCode(code) {
+  const uid = getCurrentUserId();
+  if (!uid) return { error: 'Not signed in' };
+  await _ensureFreshToken();
+
+  // Look up group by code
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard_groups?code=eq.${code.toUpperCase()}&select=*`, {
+    headers: _lbHeaders(),
+  });
+  if (!res.ok) return { error: 'Network error' };
+  const groups = await res.json();
+  if (!groups.length) return { error: 'Group not found. Check the code and try again.' };
+
+  const group = groups[0];
+  const joined = await _lbJoinGroupById(group.id);
+  if (joined?.error) return joined;
+  return { group };
+}
+
+async function _lbJoinGroupById(groupId) {
+  const uid = getCurrentUserId();
+  const name = userName() || 'Anonymous';
+  const stats = _buildMyStats();
+
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard_members`, {
+    method: 'POST',
+    headers: { ..._lbHeaders(), 'Prefer': 'resolution=merge-duplicates,return=representation' },
+    body: JSON.stringify({ group_id: groupId, user_id: uid, display_name: name, stats, updated_at: new Date().toISOString() }),
+  });
+  if (!res.ok) {
+    const err = await res.text().catch(() => '');
+    console.warn('[lb] join failed:', res.status, err);
+    return { error: 'Failed to join group' };
+  }
+  return { ok: true };
+}
+
+async function _lbFetchMyGroups() {
+  const uid = getCurrentUserId();
+  if (!uid) return [];
+  await _ensureFreshToken();
+
+  // Get my memberships
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard_members?user_id=eq.${uid}&select=group_id`, {
+    headers: _lbHeaders(),
+  });
+  if (!res.ok) return [];
+  const memberships = await res.json();
+  if (!memberships.length) return [];
+
+  // Get group details
+  const ids = memberships.map(m => m.group_id);
+  const gRes = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard_groups?id=in.(${ids.join(',')})&select=*`, {
+    headers: _lbHeaders(),
+  });
+  if (!gRes.ok) return [];
+  return gRes.json();
+}
+
+async function _lbFetchGroupMembers(groupId) {
+  await _ensureFreshToken();
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard_members?group_id=eq.${groupId}&select=*&order=stats->>xp.desc`, {
+    headers: _lbHeaders(),
+  });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+async function _lbPushMyStats(groupId) {
+  const uid = getCurrentUserId();
+  if (!uid) return;
+  await _ensureFreshToken();
+  const stats = _buildMyStats();
+  const name = userName() || 'Anonymous';
+
+  await fetch(`${SUPABASE_URL}/rest/v1/leaderboard_members?group_id=eq.${groupId}&user_id=eq.${uid}`, {
+    method: 'PATCH',
+    headers: { ..._lbHeaders(), 'Prefer': 'return=minimal' },
+    body: JSON.stringify({ display_name: name, stats, updated_at: new Date().toISOString() }),
+  });
+}
+
+async function _lbLeaveGroup(groupId) {
+  const uid = getCurrentUserId();
+  if (!uid) return;
+  await _ensureFreshToken();
+  await fetch(`${SUPABASE_URL}/rest/v1/leaderboard_members?group_id=eq.${groupId}&user_id=eq.${uid}`, {
+    method: 'DELETE',
+    headers: _lbHeaders(),
+  });
+}
+
+// ── Push stats to all groups (called from sync) ──────────────────────────
+async function lbSyncStats() {
+  const uid = getCurrentUserId();
+  if (!uid) return;
+  try {
+    const groups = await _lbFetchMyGroups();
+    for (const g of groups) await _lbPushMyStats(g.id);
+  } catch (e) { console.warn('[lb] sync stats failed:', e); }
+}
+
+// ── Rendering ────────────────────────────────────────────────────────────
+async function renderLeaderboard() {
+  const uid = getCurrentUserId();
+  if (!uid) {
+    document.getElementById('view').innerHTML = `
+      <button class="back" onclick="go('home')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
+      <div class="page-head ani"><div class="page-title">Leaderboard</div><div class="page-sub">Sign in to compete with friends.</div></div>`;
+    return;
+  }
+
+  if (_lbView === 'group' && _lbActiveGroup) {
+    await _renderGroupLeaderboard(_lbActiveGroup);
+    return;
+  }
+
+  // List view
+  document.getElementById('view').innerHTML = `
+    <button class="back" onclick="go('home')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
+    <div class="page-head ani"><div class="page-title">Leaderboard</div><div class="page-sub">Create groups. Compete with friends.</div></div>
+    <div class="lb-loading ani" id="lb-content"><div class="lb-loader">Loading groups…</div></div>`;
+
+  try {
+    const groups = await _lbFetchMyGroups();
+    const el = document.getElementById('lb-content');
+    if (!el) return;
+
+    if (!groups.length) {
+      el.innerHTML = `
+        <div class="empty-state" style="padding:32px 0">
+          <div class="empty-state-icon">🏆</div>
+          <div class="empty-state-title">No groups yet</div>
+          <div class="empty-state-sub">Create a group and invite friends to compete.</div>
+        </div>`;
+    } else {
+      el.innerHTML = groups.map(g => `
+        <div class="lb-group-card" onclick="_lbView='group';_lbActiveGroup='${g.id}';renderLeaderboard()">
+          <div class="lb-group-info">
+            <div class="lb-group-name">${esc(g.name)}</div>
+            <div class="lb-group-code">Code: ${g.code}</div>
+          </div>
+          <div class="lb-group-arrow">→</div>
+        </div>`).join('');
+    }
+
+    el.innerHTML += `
+      <div class="lb-actions">
+        <button class="lb-action-btn lb-create-btn" onclick="_showCreateGroup()">+ Create Group</button>
+        <button class="lb-action-btn lb-join-btn" onclick="_showJoinGroup()">🔗 Join Group</button>
+      </div>`;
+  } catch (e) {
+    console.warn('[lb] load failed:', e);
+    const el = document.getElementById('lb-content');
+    if (el) el.innerHTML = '<div class="lb-error">Failed to load groups. Check your connection.</div>';
+  }
+}
+
+function _showCreateGroup() {
+  let modal = document.getElementById('lb-modal');
+  if (!modal) { modal = document.createElement('div'); modal.id = 'lb-modal'; document.body.appendChild(modal); }
+  modal.innerHTML = `
+    <div class="edit-habit-backdrop" onclick="_closeLbModal()"></div>
+    <div class="edit-habit-sheet">
+      <div class="edit-habit-title">Create Group</div>
+      <input class="d-input" id="lb-group-name" type="text" placeholder="Group name (e.g. Gym Bros)" maxlength="30" style="margin-bottom:16px">
+      <div id="lb-modal-error" style="color:#d46f6f;font-size:12px;min-height:18px;margin-bottom:8px"></div>
+      <div style="display:flex;gap:10px">
+        <button class="w-action-btn" style="flex:1;margin:0" onclick="_closeLbModal()">Cancel</button>
+        <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:#fff" id="lb-create-submit" onclick="_submitCreateGroup()">Create</button>
+      </div>
+    </div>`;
+  modal.style.display = 'block';
+  setTimeout(() => document.getElementById('lb-group-name')?.focus(), 100);
+}
+
+async function _submitCreateGroup() {
+  const nameEl = document.getElementById('lb-group-name');
+  const name = nameEl?.value?.trim();
+  if (!name) { document.getElementById('lb-modal-error').textContent = 'Enter a group name'; return; }
+
+  const btn = document.getElementById('lb-create-submit');
+  if (btn) { btn.disabled = true; btn.textContent = 'Creating…'; }
+
+  const group = await _lbCreateGroup(name);
+  if (!group) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Create'; }
+    document.getElementById('lb-modal-error').textContent = 'Failed to create group. Try again.';
+    return;
+  }
+
+  _closeLbModal();
+  track('leaderboard_group_created', { name });
+
+  // Show the code to share
+  _lbView = 'group';
+  _lbActiveGroup = group.id;
+  renderLeaderboard();
+  setTimeout(() => {
+    if (typeof _showToast === 'function') _showToast(`Group created! Code: ${group.code}`);
+  }, 300);
+}
+
+function _showJoinGroup() {
+  let modal = document.getElementById('lb-modal');
+  if (!modal) { modal = document.createElement('div'); modal.id = 'lb-modal'; document.body.appendChild(modal); }
+  modal.innerHTML = `
+    <div class="edit-habit-backdrop" onclick="_closeLbModal()"></div>
+    <div class="edit-habit-sheet">
+      <div class="edit-habit-title">Join Group</div>
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px">Enter the 6-character code from your friend.</div>
+      <input class="d-input lb-code-input" id="lb-join-code" type="text" placeholder="ABC123" maxlength="6" style="margin-bottom:16px;text-align:center;letter-spacing:4px;font-size:20px;text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
+      <div id="lb-modal-error" style="color:#d46f6f;font-size:12px;min-height:18px;margin-bottom:8px"></div>
+      <div style="display:flex;gap:10px">
+        <button class="w-action-btn" style="flex:1;margin:0" onclick="_closeLbModal()">Cancel</button>
+        <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:#fff" id="lb-join-submit" onclick="_submitJoinGroup()">Join</button>
+      </div>
+    </div>`;
+  modal.style.display = 'block';
+  setTimeout(() => document.getElementById('lb-join-code')?.focus(), 100);
+}
+
+async function _submitJoinGroup() {
+  const code = document.getElementById('lb-join-code')?.value?.trim();
+  if (!code || code.length < 4) { document.getElementById('lb-modal-error').textContent = 'Enter the group code'; return; }
+
+  const btn = document.getElementById('lb-join-submit');
+  if (btn) { btn.disabled = true; btn.textContent = 'Joining…'; }
+
+  const result = await _lbJoinGroupByCode(code);
+  if (result.error) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Join'; }
+    document.getElementById('lb-modal-error').textContent = result.error;
+    return;
+  }
+
+  _closeLbModal();
+  track('leaderboard_group_joined', { code });
+  if (typeof _showToast === 'function') _showToast('Joined group!');
+
+  _lbView = 'group';
+  _lbActiveGroup = result.group.id;
+  renderLeaderboard();
+}
+
+function _closeLbModal() {
+  const m = document.getElementById('lb-modal');
+  if (m) m.style.display = 'none';
+}
+
+async function _renderGroupLeaderboard(groupId) {
+  document.getElementById('view').innerHTML = `
+    <button class="back" onclick="_lbView='list';_lbActiveGroup=null;renderLeaderboard()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
+    <div class="page-head ani"><div class="page-title">Leaderboard</div><div class="page-sub">Loading…</div></div>
+    <div id="lb-board" class="ani"><div class="lb-loader">Loading leaderboard…</div></div>`;
+
+  try {
+    // Push my latest stats first
+    await _lbPushMyStats(groupId);
+
+    // Fetch group info and members in parallel
+    const [groups, members] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/leaderboard_groups?id=eq.${groupId}&select=*`, { headers: _lbHeaders() }).then(r => r.json()),
+      _lbFetchGroupMembers(groupId),
+    ]);
+
+    const group = groups[0];
+    if (!group) { _lbView = 'list'; renderLeaderboard(); return; }
+
+    const uid = getCurrentUserId();
+    // Sort by XP descending
+    members.sort((a, b) => (b.stats?.xp || 0) - (a.stats?.xp || 0));
+
+    const pageTitle = document.querySelector('.page-title');
+    const pageSub = document.querySelector('.page-sub');
+    if (pageTitle) pageTitle.textContent = group.name;
+    if (pageSub) pageSub.textContent = `${members.length} member${members.length !== 1 ? 's' : ''} · Code: ${group.code}`;
+
+    const boardEl = document.getElementById('lb-board');
+    if (!boardEl) return;
+
+    // Podium for top 3
+    const podiumHTML = members.length >= 1 ? _buildPodium(members.slice(0, 3), uid) : '';
+
+    // Full list
+    const listHTML = members.map((m, i) => {
+      const rank = i + 1;
+      const isMe = m.user_id === uid;
+      const s = m.stats || {};
+      const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
+      const stale = _isStale(s.updatedAt);
+      return `<div class="lb-row${isMe ? ' lb-row-me' : ''}">
+        <div class="lb-rank">${medal}</div>
+        <div class="lb-member-info">
+          <div class="lb-member-name">${esc(m.display_name)}${isMe ? ' <span class="lb-you">(you)</span>' : ''}${stale ? ' <span class="lb-stale">inactive</span>' : ''}</div>
+          <div class="lb-member-stats">Lv.${s.lvl || 1} ${esc(s.title || 'Neophyte')} · 🔥 ${s.maxStreak || 0} streak · 💪 ${s.weekWorkouts || 0} this week</div>
+        </div>
+        <div class="lb-xp">${(s.xp || 0).toLocaleString()} <span class="lb-xp-label">XP</span></div>
+      </div>`;
+    }).join('');
+
+    boardEl.innerHTML = `
+      ${podiumHTML}
+      <div class="lb-list">${listHTML}</div>
+      <div class="lb-group-actions">
+        <button class="lb-action-btn" onclick="_shareGroupCode('${group.code}','${esc(group.name)}')">📤 Share Code</button>
+        <button class="lb-action-btn" onclick="_lbRefresh('${groupId}')">🔄 Refresh</button>
+        <button class="lb-action-btn lb-leave-btn" onclick="if(confirm('Leave this group?')){_lbDoLeave('${groupId}')}">Leave Group</button>
+      </div>`;
+
+  } catch (e) {
+    console.warn('[lb] render group failed:', e);
+    const el = document.getElementById('lb-board');
+    if (el) el.innerHTML = '<div class="lb-error">Failed to load leaderboard. Check your connection.</div>';
+  }
+}
+
+function _buildPodium(top3, uid) {
+  if (!top3.length) return '';
+  // Reorder for visual podium: [2nd, 1st, 3rd]
+  const order = top3.length >= 3 ? [top3[1], top3[0], top3[2]] : top3.length === 2 ? [top3[1], top3[0]] : [top3[0]];
+  const heights = top3.length >= 3 ? [70, 100, 55] : top3.length === 2 ? [70, 100] : [100];
+  const medals = top3.length >= 3 ? ['🥈', '🥇', '🥉'] : top3.length === 2 ? ['🥈', '🥇'] : ['🥇'];
+
+  const cols = order.map((m, i) => {
+    const isMe = m.user_id === uid;
+    const s = m.stats || {};
+    return `<div class="lb-podium-col">
+      <div class="lb-podium-medal">${medals[i]}</div>
+      <div class="lb-podium-name${isMe ? ' lb-podium-me' : ''}">${esc(m.display_name.split(' ')[0])}</div>
+      <div class="lb-podium-xp">${(s.xp || 0).toLocaleString()}</div>
+      <div class="lb-podium-bar" style="height:${heights[i]}px"></div>
+    </div>`;
+  }).join('');
+
+  return `<div class="lb-podium">${cols}</div>`;
+}
+
+function _isStale(updatedAt) {
+  if (!updatedAt) return true;
+  return (Date.now() - new Date(updatedAt).getTime()) > 3 * 24 * 60 * 60 * 1000; // 3 days
+}
+
+function _shareGroupCode(code, name) {
+  const text = `Join my Arete group "${name}"! Use code: ${code}\n\nDownload Arete: https://get-arete.com`;
+  if (navigator.share) {
+    navigator.share({ title: `Join ${name} on Arete`, text }).catch(() => {
+      navigator.clipboard.writeText(text).then(() => {
+        if (typeof _showToast === 'function') _showToast('Invite copied!');
+      });
+    });
+  } else {
+    navigator.clipboard.writeText(text).then(() => {
+      if (typeof _showToast === 'function') _showToast('Invite copied!');
+    });
+  }
+  track('leaderboard_share', { code });
+}
+
+function _lbRefresh(groupId) {
+  _renderGroupLeaderboard(groupId);
+}
+
+async function _lbDoLeave(groupId) {
+  await _lbLeaveGroup(groupId);
+  track('leaderboard_leave');
+  _lbView = 'list';
+  _lbActiveGroup = null;
+  renderLeaderboard();
+}

@@ -266,6 +266,8 @@ async function cloudPush() {
       console.log('[sync] push OK, keys:', Object.keys(data).length);
       _syncToast('✓ Synced to cloud');
       setSyncStatus('ok');
+      // Silently push stats to leaderboard groups in background
+      if (typeof lbSyncStats === 'function') setTimeout(() => lbSyncStats().catch(() => {}), 500);
     }
   } catch(e) { console.warn('[sync] push error:', e); setSyncStatus('offline'); _scheduleRetry(); }
 }
@@ -801,7 +803,7 @@ const NAV_PARENT = {
   habitCreate: 'habits',
   workoutPicker: 'workout', workoutActive: 'workout', workoutHistory: 'workout', workoutBuilder: 'workout', exerciseBrowser: 'workout', prHistory: 'workout',
   dietAddMeal: 'diet', dietRecipes: 'diet', dietRecipeDetail: 'diet', dietGoals: 'diet', dietTrend: 'diet', dietTDEE: 'diet',
-  calendar: 'stats', progressPhotos: 'stats', challenges: 'home',
+  calendar: 'stats', progressPhotos: 'stats', challenges: 'home', leaderboard: 'home',
 };
 
 // ── INIT ──────────────────────────────────────────────────────────────────
@@ -1032,7 +1034,7 @@ function go(view, params = {}, pushState = true) {
     workout: renderWorkout, workoutPicker: renderWorkoutPicker, workoutActive: renderWorkoutActive, workoutHistory: renderWorkoutHistory, workoutBuilder: renderWorkoutBuilder, exerciseBrowser: renderExerciseBrowser, prHistory: renderPRHistory,
     diet: renderDiet, dietAddMeal: renderDietAddMeal, dietRecipes: renderDietRecipes, dietRecipeDetail: renderDietRecipeDetail, dietGoals: renderDietGoals, dietTrend: renderDietTrend, dietTDEE: renderDietTDEE,
     library: renderLibrary,
-    sleep: renderSleep, progressPhotos: renderProgressPhotos, challenges: renderChallenges,
+    sleep: renderSleep, progressPhotos: renderProgressPhotos, challenges: renderChallenges, leaderboard: renderLeaderboard,
     calendar: () => { window._statsSubView = 'calendar'; renderStats(); },
   };
   (renders[view] || renderHome)();

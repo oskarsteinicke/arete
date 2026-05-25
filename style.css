@@ -1824,3 +1824,46 @@ nav {
 .dm-edit-actions { display: flex; gap: 8px; }
 .dm-edit-save { flex: 1; padding: 8px; border: none; border-radius: 8px; background: var(--accent); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; }
 .dm-edit-cancel { flex: 1; padding: 8px; border: 1px solid var(--border2); border-radius: 8px; background: var(--surface); color: var(--text-dim); font-size: 13px; cursor: pointer; }
+
+/* ── Leaderboard ───────────────────────────────────────────────────────── */
+.lb-loading { padding: 0 24px; }
+.lb-loader { text-align: center; padding: 40px 0; color: var(--text-dim); font-size: 13px; }
+.lb-error { text-align: center; padding: 32px 24px; color: #d46f6f; font-size: 13px; }
+.lb-group-card { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; margin: 0 24px 8px; background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); cursor: pointer; transition: border-color .2s; }
+.lb-group-card:active { border-color: var(--accent); }
+.lb-group-info { flex: 1; }
+.lb-group-name { font-family: var(--serif); font-size: 17px; color: var(--text); margin-bottom: 2px; }
+.lb-group-code { font-size: 11px; color: var(--text-dim); letter-spacing: 1px; }
+.lb-group-arrow { font-size: 18px; color: var(--text-muted); margin-left: 12px; }
+.lb-actions { display: flex; gap: 10px; padding: 16px 24px; }
+.lb-action-btn { flex: 1; padding: 14px; border: 1px solid var(--border2); border-radius: var(--radius); background: var(--surface); color: var(--text); font-size: 13px; font-weight: 600; text-align: center; cursor: pointer; transition: all .2s; }
+.lb-action-btn:active { transform: scale(0.97); }
+.lb-create-btn { background: var(--accent); color: #fff; border-color: var(--accent); }
+.lb-code-input { font-family: monospace; }
+
+/* Podium */
+.lb-podium { display: flex; align-items: flex-end; justify-content: center; gap: 12px; padding: 24px 24px 0; margin-bottom: 20px; }
+.lb-podium-col { display: flex; flex-direction: column; align-items: center; flex: 1; max-width: 110px; }
+.lb-podium-medal { font-size: 28px; margin-bottom: 4px; }
+.lb-podium-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; }
+.lb-podium-me { color: var(--accent-b); }
+.lb-podium-xp { font-size: 11px; color: var(--text-dim); margin-bottom: 6px; }
+.lb-podium-bar { width: 100%; background: linear-gradient(180deg, var(--accent) 0%, rgba(154,130,86,0.2) 100%); border-radius: 8px 8px 0 0; min-height: 40px; }
+
+/* Member list */
+.lb-list { padding: 0 24px; }
+.lb-row { display: flex; align-items: center; gap: 12px; padding: 14px 16px; margin-bottom: 6px; background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-sm); }
+.lb-row-me { border-color: var(--accent); background: rgba(196,169,108,0.06); }
+.lb-rank { font-size: 18px; min-width: 32px; text-align: center; }
+.lb-member-info { flex: 1; min-width: 0; }
+.lb-member-name { font-size: 14px; color: var(--text); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lb-you { font-size: 11px; color: var(--accent-b); font-weight: 400; }
+.lb-stale { font-size: 10px; color: var(--text-muted); font-weight: 400; opacity: .6; }
+.lb-member-stats { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+.lb-xp { text-align: right; font-family: var(--serif); font-size: 18px; color: var(--accent-b); font-weight: 700; white-space: nowrap; }
+.lb-xp-label { font-size: 10px; font-weight: 400; color: var(--text-dim); font-family: -apple-system, system-ui, sans-serif; }
+
+/* Group actions */
+.lb-group-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 20px 24px; }
+.lb-group-actions .lb-action-btn { flex: 1; min-width: calc(50% - 4px); padding: 12px; font-size: 12px; }
+.lb-leave-btn { color: var(--fat) !important; border-color: rgba(239,68,68,0.2) !important; }
