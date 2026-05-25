@@ -1812,3 +1812,15 @@ nav {
 .chal-tmpl-desc { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
 .chal-tmpl-go { font-size: 16px; color: var(--accent); flex-shrink: 0; }
 @keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* ── Meal Item Edit ────────────────────────────────────────────────────── */
+.dm-row-editing { flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--accent); border-radius: var(--radius); background: rgba(196,169,108,0.04); }
+.dm-edit-input { width: 100%; padding: 8px 10px; border: 1px solid var(--border2); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 14px; }
+.dm-edit-macros { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.dm-edit-field { display: flex; flex-direction: column; gap: 2px; }
+.dm-edit-field span { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+.dm-edit-field input { width: 100%; padding: 6px 8px; border: 1px solid var(--border2); border-radius: 6px; background: var(--surface); color: var(--text); font-size: 14px; text-align: center; }
+.dm-edit-field input:focus { border-color: var(--accent); outline: none; }
+.dm-edit-actions { display: flex; gap: 8px; }
+.dm-edit-save { flex: 1; padding: 8px; border: none; border-radius: 8px; background: var(--accent); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; }
+.dm-edit-cancel { flex: 1; padding: 8px; border: 1px solid var(--border2); border-radius: 8px; background: var(--surface); color: var(--text-dim); font-size: 13px; cursor: pointer; }

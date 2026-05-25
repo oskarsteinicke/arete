@@ -806,16 +806,54 @@ function _renderParsedItems(out) {
   if (!out) out = document.getElementById('describe-output');
   if (!out) return;
   if (!_parsedMealItems.length) { out.innerHTML = ''; return; }
-  const rows = _parsedMealItems.map((it, i) => `
-    <div class="dm-row">
+  const rows = _parsedMealItems.map((it, i) => {
+    const editing = _editingParsedIdx === i;
+    if (editing) {
+      return `<div class="dm-row dm-row-editing">
+        <input class="dm-edit-input dm-edit-name" value="${esc(it.name)}" placeholder="Name" id="pei-name-${i}">
+        <div class="dm-edit-macros">
+          <label class="dm-edit-field"><span>Cal</span><input type="number" value="${it.calories}" id="pei-cal-${i}"></label>
+          <label class="dm-edit-field"><span>P</span><input type="number" value="${it.protein}" id="pei-p-${i}"></label>
+          <label class="dm-edit-field"><span>C</span><input type="number" value="${it.carbs}" id="pei-c-${i}"></label>
+          <label class="dm-edit-field"><span>F</span><input type="number" value="${it.fat}" id="pei-f-${i}"></label>
+        </div>
+        <div class="dm-edit-actions">
+          <button class="dm-edit-save" onclick="_saveParsedEdit(${i})">Save</button>
+          <button class="dm-edit-cancel" onclick="_editingParsedIdx=-1;_renderParsedItems()">Cancel</button>
+        </div>
+      </div>`;
+    }
+    return `<div class="dm-row" onclick="_editParsedItem(${i})" style="cursor:pointer">
       <div class="dm-row-name">${esc(it.name)}</div>
       <div class="dm-row-macros">${it.calories} cal · ${it.protein}P · ${it.carbs}C · ${it.fat}F</div>
-      <button class="dm-remove" onclick="_parsedMealItems.splice(${i},1);_renderParsedItems()">×</button>
-    </div>`).join('');
+      <button class="dm-remove" onclick="event.stopPropagation();_parsedMealItems.splice(${i},1);_renderParsedItems()">×</button>
+    </div>`;
+  }).join('');
   const total = _parsedMealItems.reduce((s,i) => s + i.calories, 0);
   out.innerHTML = `${rows}
     <div class="dm-total">${total} cal total</div>
+    <div class="dm-hint" style="text-align:center;font-size:11px;margin-top:4px;opacity:0.5">Tap any item to edit</div>
     <button class="w-action-btn" style="width:100%;margin-top:10px" onclick="addAllDescribed()">ADD ALL TO MEAL</button>`;
+}
+
+let _editingParsedIdx = -1;
+
+function _editParsedItem(idx) {
+  _editingParsedIdx = idx;
+  _renderParsedItems();
+}
+
+function _saveParsedEdit(idx) {
+  const it = _parsedMealItems[idx];
+  if (!it) return;
+  const name = document.getElementById('pei-name-' + idx)?.value?.trim();
+  if (name) it.name = name;
+  it.calories = Math.round(Number(document.getElementById('pei-cal-' + idx)?.value) || 0);
+  it.protein = Math.round(Number(document.getElementById('pei-p-' + idx)?.value) || 0);
+  it.carbs = Math.round(Number(document.getElementById('pei-c-' + idx)?.value) || 0);
+  it.fat = Math.round(Number(document.getElementById('pei-f-' + idx)?.value) || 0);
+  _editingParsedIdx = -1;
+  _renderParsedItems();
 }
 
 function addAllDescribed() {
