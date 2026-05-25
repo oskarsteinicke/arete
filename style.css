@@ -1770,4 +1770,45 @@ nav {
 .install-btn { padding: 8px 18px; border: none; border-radius: 10px; background: var(--accent); color: #fff; font-size: 13px; font-weight: 700; letter-spacing: .5px; cursor: pointer; white-space: nowrap; }
 .install-btn:active { transform: scale(.96); }
 .install-dismiss { background: none; border: none; color: var(--text-dim); font-size: 16px; padding: 4px 2px; cursor: pointer; }
+
+/* ── Challenges ────────────────────────────────────────────────────────── */
+.chal-list, .chal-tmpl-list { padding: 0 16px; }
+.chal-card {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 10px;
+}
+.chal-card-past { opacity: 0.6; }
+.chal-card-head { display: flex; gap: 12px; align-items: flex-start; }
+.chal-card-icon { font-size: 28px; flex-shrink: 0; margin-top: 2px; }
+.chal-card-info { flex: 1; min-width: 0; }
+.chal-card-name { font-family: var(--serif); font-size: 16px; color: var(--text); font-weight: 600; }
+.chal-card-desc { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+.chal-card-from { font-size: 11px; color: var(--accent); margin-top: 4px; }
+.chal-prog { margin-top: 14px; }
+.chal-prog-bar { height: 8px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden; }
+.chal-prog-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.3s ease; }
+.chal-prog-fill.chal-prog-done { background: var(--accent-b); }
+.chal-prog-label { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11px; color: var(--text-dim); }
+.chal-actions { display: flex; gap: 8px; margin-top: 12px; }
+.chal-action-btn {
+  flex: 1; padding: 8px; border: 1px solid var(--border2); border-radius: 8px;
+  background: var(--surface2); color: var(--text-dim); font-size: 12px;
+  cursor: pointer; text-align: center;
+}
+.chal-action-btn:active { transform: scale(0.97); }
+.chal-action-remove { color: var(--fat); border-color: rgba(212,111,111,0.2); }
+.chal-tmpl {
+  display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+  background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius);
+  margin-bottom: 8px; cursor: pointer; transition: transform 0.15s;
+}
+.chal-tmpl:active { transform: scale(0.98); }
+.chal-tmpl-icon { font-size: 24px; flex-shrink: 0; }
+.chal-tmpl-info { flex: 1; min-width: 0; }
+.chal-tmpl-name { font-size: 14px; color: var(--text); font-weight: 600; }
+.chal-tmpl-desc { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+.chal-tmpl-go { font-size: 16px; color: var(--accent); flex-shrink: 0; }
 @keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }

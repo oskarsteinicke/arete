@@ -1,0 +1,65 @@
+{
+  "packageId": "com.getarete.app",
+  "host": "get-arete.com",
+  "name": "Arete",
+  "launcherName": "Arete",
+  "display": "standalone",
+  "themeColor": "#0a0908",
+  "themeColorDark": "#0a0908",
+  "navigationColor": "#0a0908",
+  "navigationColorDark": "#0a0908",
+  "navigationDividerColor": "#0a0908",
+  "navigationDividerColorDark": "#0a0908",
+  "backgroundColor": "#0a0908",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://get-arete.com/icon-512.png",
+  "maskableIconUrl": "https://get-arete.com/icon-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./arete-keystore.jks",
+    "alias": "arete"
+  },
+  "appVersionCode": 1,
+  "appVersionName": "1.0.0",
+  "shortcuts": [
+    {
+      "name": "Start Workout",
+      "shortName": "Workout",
+      "url": "/#workoutActive",
+      "chosenIconUrl": "https://get-arete.com/icon-192.png"
+    },
+    {
+      "name": "Log Meal",
+      "shortName": "Meal",
+      "url": "/#dietAddMeal",
+      "chosenIconUrl": "https://get-arete.com/icon-192.png"
+    },
+    {
+      "name": "Check Habits",
+      "shortName": "Habits",
+      "url": "/#habits",
+      "chosenIconUrl": "https://get-arete.com/icon-192.png"
+    },
+    {
+      "name": "AI Coach",
+      "shortName": "Coach",
+      "url": "/#home",
+      "chosenIconUrl": "https://get-arete.com/icon-192.png"
+    }
+  ],
+  "generatorApp": "PWABuilder",
+  "webManifestUrl": "https://get-arete.com/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {
+    "locationDelegation": {
+      "enabled": false
+    },
+    "playBilling": {
+      "enabled": false
+    }
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "orientation": "portrait"
+}

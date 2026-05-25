@@ -1033,6 +1033,7 @@ function renderStats() {
     </div>
     <button class="w-action-btn" style="margin:16px 24px 8px" onclick="go('progressPhotos')">📸 Progress Photos</button>
     <button class="w-action-btn" style="margin:0 24px 8px" onclick="shareRecap()">📤 Share Weekly Recap</button>
+    <button class="w-action-btn" style="margin:0 24px 8px" onclick="go('challenges')">⚔️ Challenge a Friend</button>
     <button class="w-action-btn" style="margin:0 24px 8px" onclick="shareInvite()">🔗 Invite a Friend</button>
     <button class="w-action-btn" style="margin:0 24px 8px" onclick="forceSync()" id="force-sync-btn">🔄 Force Sync Now</button>
     <div id="sync-log" style="margin:0 24px 8px;font-size:11px;color:var(--text-dim);max-height:120px;overflow:auto;font-family:monospace;white-space:pre-wrap"></div>

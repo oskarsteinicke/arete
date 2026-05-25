@@ -743,3 +743,252 @@ function renderCalendar() {
   else if (calView === 'daily') renderCalDaily();
   else renderCalMonthly();
 }
+
+// ══════════════════════════════════════════════════════════════════════════
+// CHALLENGE A FRIEND
+// ══════════════════════════════════════════════════════════════════════════
+// Challenges are local-first: encoded in a shareable URL, tracked in localStorage.
+// No backend needed. Each user tracks their own progress independently.
+
+const CHALLENGE_TEMPLATES = [
+  { id: '7day_habits',   icon: '🔥', name: '7-Day Streak',        desc: 'Complete all habits for 7 days straight', duration: 7,  metric: 'perfect_days', goal: 7 },
+  { id: '5day_workout',  icon: '💪', name: '5 Workouts in 7 Days', desc: 'Log 5 workouts within a week',           duration: 7,  metric: 'workouts',     goal: 5 },
+  { id: '7day_journal',  icon: '📖', name: 'Journal Every Day',    desc: 'Write a journal entry 7 days in a row',  duration: 7,  metric: 'journal_days', goal: 7 },
+  { id: '10day_habits',  icon: '⚡', name: '10-Day Grind',         desc: 'Complete all habits for 10 days',         duration: 10, metric: 'perfect_days', goal: 10 },
+  { id: '30day_streak',  icon: '👑', name: '30-Day Challenge',     desc: 'Maintain a streak on any habit for 30 days', duration: 30, metric: 'best_streak', goal: 30 },
+  { id: 'meal_tracker',  icon: '🥗', name: 'Track Every Meal',     desc: 'Log at least one meal every day for 7 days', duration: 7, metric: 'meal_days', goal: 7 },
+];
+
+function _getChallenges() { return JSON.parse(localStorage.getItem('hvi_challenges') || '[]'); }
+function _saveChallenges(c) { localStorage.setItem('hvi_challenges', JSON.stringify(c)); if (typeof schedulePush === 'function') schedulePush(); }
+
+function _challengeProgress(challenge) {
+  const start = challenge.startDate;
+  const end = challenge.endDate;
+  const t = today();
+  let count = 0;
+
+  for (let i = 0; i < challenge.duration; i++) {
+    const d = new Date(start + 'T00:00:00');
+    d.setDate(d.getDate() + i);
+    const date = d.toLocaleDateString('en-CA');
+    if (date > t) break;
+
+    switch (challenge.metric) {
+      case 'perfect_days': {
+        const isToday = date === t;
+        const allDone = isToday
+          ? habits.every(h => log[h.id]?.completedToday)
+          : habits.every(h => {
+              const hist = LS.get('hvi_habit_history', {});
+              return Object.values(hist).some(arr => arr.includes(date));
+            });
+        if (allDone) count++;
+        break;
+      }
+      case 'workouts':
+        if (workoutLog[date]?.exercises?.some(e => e.sets?.some(s => s.completed))) count++;
+        break;
+      case 'journal_days':
+        if (Object.values(journal[date] || {}).some(Boolean)) count++;
+        break;
+      case 'best_streak':
+        count = Math.max(0, ...habits.map(h => log[h.id]?.streak || 0));
+        return { count, pct: Math.min(1, count / challenge.goal), done: count >= challenge.goal };
+      case 'meal_days':
+        if ((mealLog[date]?.meals || []).length > 0) count++;
+        break;
+    }
+  }
+  return { count, pct: Math.min(1, count / challenge.goal), done: count >= challenge.goal };
+}
+
+function _daysLeft(challenge) {
+  const end = new Date(challenge.endDate + 'T23:59:59');
+  const now = new Date();
+  return Math.max(0, Math.ceil((end - now) / 86400000));
+}
+
+function createChallenge(templateId) {
+  const tmpl = CHALLENGE_TEMPLATES.find(t => t.id === templateId);
+  if (!tmpl) return;
+
+  const startDate = today();
+  const endD = new Date(); endD.setDate(endD.getDate() + tmpl.duration - 1);
+  const endDate = endD.toLocaleDateString('en-CA');
+  const challenge = {
+    id: 'ch_' + Date.now(),
+    templateId: tmpl.id,
+    icon: tmpl.icon,
+    name: tmpl.name,
+    desc: tmpl.desc,
+    duration: tmpl.duration,
+    metric: tmpl.metric,
+    goal: tmpl.goal,
+    startDate,
+    endDate,
+    createdBy: userName() || 'A friend',
+  };
+
+  const challenges = _getChallenges();
+  challenges.push(challenge);
+  _saveChallenges(challenges);
+  track('challenge_created', { template: templateId });
+  _shareChallengeLink(challenge);
+  renderChallenges();
+}
+
+function _shareChallengeLink(challenge) {
+  const payload = btoa(JSON.stringify({
+    t: challenge.templateId,
+    s: challenge.startDate,
+    e: challenge.endDate,
+    n: challenge.createdBy,
+  }));
+  const url = `https://get-arete.com/?challenge=${payload}`;
+  const text = `${challenge.createdBy} challenged you: ${challenge.icon} ${challenge.name}. ${challenge.desc}. Can you keep up?`;
+
+  if (navigator.share) {
+    navigator.share({ title: `Arete Challenge: ${challenge.name}`, text, url }).catch(() => {
+      _copyChallengeLink(url);
+    });
+  } else {
+    _copyChallengeLink(url);
+  }
+}
+
+function _copyChallengeLink(url) {
+  navigator.clipboard.writeText(url).then(() => {
+    if (typeof _showToast === 'function') _showToast('Challenge link copied!');
+  }).catch(() => {});
+}
+
+function acceptChallenge(payload) {
+  try {
+    const data = JSON.parse(atob(payload));
+    const tmpl = CHALLENGE_TEMPLATES.find(t => t.id === data.t);
+    if (!tmpl) return;
+
+    const challenges = _getChallenges();
+    // Don't add duplicate
+    if (challenges.some(c => c.templateId === data.t && c.startDate === data.s)) {
+      if (typeof _showToast === 'function') _showToast('You already joined this challenge!');
+      return;
+    }
+
+    const challenge = {
+      id: 'ch_' + Date.now(),
+      templateId: tmpl.id,
+      icon: tmpl.icon,
+      name: tmpl.name,
+      desc: tmpl.desc,
+      duration: tmpl.duration,
+      metric: tmpl.metric,
+      goal: tmpl.goal,
+      startDate: data.s,
+      endDate: data.e,
+      createdBy: data.n || 'A friend',
+      accepted: true,
+    };
+    challenges.push(challenge);
+    _saveChallenges(challenges);
+    track('challenge_accepted', { template: data.t, from: data.n });
+    if (typeof _showToast === 'function') _showToast(`Challenge accepted! ${tmpl.icon} ${tmpl.name}`);
+    go('challenges');
+  } catch (e) {
+    console.warn('[challenge] failed to accept:', e);
+  }
+}
+
+function removeChallenge(id) {
+  let challenges = _getChallenges();
+  challenges = challenges.filter(c => c.id !== id);
+  _saveChallenges(challenges);
+  renderChallenges();
+}
+
+function reshareChallenge(id) {
+  const challenges = _getChallenges();
+  const ch = challenges.find(c => c.id === id);
+  if (ch) _shareChallengeLink(ch);
+}
+
+function renderChallenges() {
+  const challenges = _getChallenges();
+  const active = challenges.filter(c => c.endDate >= today());
+  const completed = challenges.filter(c => c.endDate < today());
+
+  const activeHTML = active.length ? active.map(ch => {
+    const prog = _challengeProgress(ch);
+    const left = _daysLeft(ch);
+    return `<div class="chal-card">
+      <div class="chal-card-head">
+        <div class="chal-card-icon">${ch.icon}</div>
+        <div class="chal-card-info">
+          <div class="chal-card-name">${esc(ch.name)}</div>
+          <div class="chal-card-desc">${esc(ch.desc)}</div>
+          <div class="chal-card-from">${ch.accepted ? 'From ' + esc(ch.createdBy) : 'Started by you'}</div>
+        </div>
+      </div>
+      <div class="chal-prog">
+        <div class="chal-prog-bar"><div class="chal-prog-fill${prog.done ? ' chal-prog-done' : ''}" style="width:${(prog.pct * 100).toFixed(0)}%"></div></div>
+        <div class="chal-prog-label">
+          <span>${prog.count}/${ch.goal}</span>
+          <span>${prog.done ? '✓ Complete!' : left + 'd left'}</span>
+        </div>
+      </div>
+      <div class="chal-actions">
+        <button class="chal-action-btn" onclick="reshareChallenge('${ch.id}')">📤 Share</button>
+        <button class="chal-action-btn chal-action-remove" onclick="if(confirm('Remove this challenge?'))removeChallenge('${ch.id}')">Remove</button>
+      </div>
+    </div>`;
+  }).join('') : '<div class="empty-state" style="padding:24px 0"><div class="empty-state-icon">⚔️</div><div class="empty-state-title">No active challenges</div><div class="empty-state-sub">Start one below and send it to a friend.</div></div>';
+
+  const completedHTML = completed.length ? `
+    <div class="sec-lbl" style="padding:20px 24px 8px">Past Challenges</div>
+    ${completed.slice(0, 5).map(ch => {
+      const prog = _challengeProgress(ch);
+      return `<div class="chal-card chal-card-past">
+        <div class="chal-card-head">
+          <div class="chal-card-icon">${ch.icon}</div>
+          <div class="chal-card-info">
+            <div class="chal-card-name">${esc(ch.name)} ${prog.done ? '✓' : ''}</div>
+            <div class="chal-card-desc">${prog.count}/${ch.goal} · ${prog.done ? 'Completed' : 'Not completed'}</div>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}` : '';
+
+  const templateHTML = CHALLENGE_TEMPLATES.map(t => `
+    <div class="chal-tmpl" onclick="createChallenge('${t.id}')">
+      <div class="chal-tmpl-icon">${t.icon}</div>
+      <div class="chal-tmpl-info">
+        <div class="chal-tmpl-name">${t.name}</div>
+        <div class="chal-tmpl-desc">${t.desc} · ${t.duration} days</div>
+      </div>
+      <div class="chal-tmpl-go">→</div>
+    </div>`).join('');
+
+  document.getElementById('view').innerHTML = `
+    <button class="back" onclick="go('home')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
+    <div class="page-head ani"><div class="page-title">Challenges</div><div class="page-sub">Compete with friends. Stay accountable.</div></div>
+    <div class="sec-lbl" style="padding:4px 24px 8px">Active</div>
+    <div class="chal-list ani">${activeHTML}</div>
+    ${completedHTML}
+    <div class="sec-lbl" style="padding:20px 24px 8px">Start a Challenge</div>
+    <div class="chal-tmpl-list ani">${templateHTML}</div>`;
+}
+
+// Check for challenge param on load
+function _checkChallengeParam() {
+  const p = new URLSearchParams(location.search);
+  const ch = p.get('challenge');
+  if (ch) {
+    // Remove param from URL
+    if (history.replaceState) history.replaceState(null, '', location.pathname + location.hash);
+    // Accept after a small delay so the app has initialized
+    setTimeout(() => acceptChallenge(ch), 500);
+  }
+}
+// Run on load
+_checkChallengeParam();

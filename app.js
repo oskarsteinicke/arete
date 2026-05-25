@@ -67,7 +67,7 @@ function setUnits(u) {
 // ── SUPABASE AUTH + CLOUD SYNC ────────────────────────────────────────────
 const SUPABASE_URL = 'https://socflncohsenjptgkkax.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_J2qJ8iTfCESrML5Hm6NGbQ_mz9uPeug';
-const SYNC_KEYS = ['hvi_habits','hvi_log','hvi_journal3','hvi_meta','hvi_workout_log','hvi_workout_meta','hvi_meal_log','hvi_diet_meta','hvi_weight_log','hvi_prs','hvi_gamification','hvi_achievements','hvi_tdee_profile','hvi_custom_programs','hvi_onboarded','hvi_sleep_log','hvi_settings','hvi_habit_history','hvi_meal_favorites','hvi_progress_photos','hvi_routines','hvi_routine_log','hvi_integrations'];
+const SYNC_KEYS = ['hvi_habits','hvi_log','hvi_journal3','hvi_meta','hvi_workout_log','hvi_workout_meta','hvi_meal_log','hvi_diet_meta','hvi_weight_log','hvi_prs','hvi_gamification','hvi_achievements','hvi_tdee_profile','hvi_custom_programs','hvi_onboarded','hvi_sleep_log','hvi_settings','hvi_habit_history','hvi_meal_favorites','hvi_progress_photos','hvi_routines','hvi_routine_log','hvi_integrations','hvi_challenges'];
 // Keys that are date-keyed objects — these get merged instead of overwritten
 const MERGE_KEYS = ['hvi_workout_log','hvi_meal_log','hvi_journal3','hvi_weight_log','hvi_sleep_log','hvi_habit_history'];
 
@@ -787,7 +787,7 @@ const NAV_PARENT = {
   habitCreate: 'habits',
   workoutPicker: 'workout', workoutActive: 'workout', workoutHistory: 'workout', workoutBuilder: 'workout', exerciseBrowser: 'workout', prHistory: 'workout',
   dietAddMeal: 'diet', dietRecipes: 'diet', dietRecipeDetail: 'diet', dietGoals: 'diet', dietTrend: 'diet', dietTDEE: 'diet',
-  calendar: 'stats', progressPhotos: 'stats',
+  calendar: 'stats', progressPhotos: 'stats', challenges: 'home',
 };
 
 // ── INIT ──────────────────────────────────────────────────────────────────
@@ -942,7 +942,7 @@ async function init() {
     renderOnboarding(0);
   } else {
     (() => {
-      const validViews = ['home','pillar','habits','habitCreate','stats','progressPhotos','workout','workoutPicker','workoutActive','workoutHistory','workoutBuilder','exerciseBrowser','diet','dietAddMeal','dietRecipes','dietRecipeDetail','dietGoals','dietTrend','dietTDEE','library','calendar','sleep'];
+      const validViews = ['home','pillar','habits','habitCreate','stats','progressPhotos','workout','workoutPicker','workoutActive','workoutHistory','workoutBuilder','exerciseBrowser','diet','dietAddMeal','dietRecipes','dietRecipeDetail','dietGoals','dietTrend','dietTDEE','library','calendar','sleep','challenges'];
       const hash = location.hash.replace(/^#/, '');
       const view = validViews.includes(hash) ? hash : 'home';
       go(view, {}, false);
@@ -1018,7 +1018,7 @@ function go(view, params = {}, pushState = true) {
     workout: renderWorkout, workoutPicker: renderWorkoutPicker, workoutActive: renderWorkoutActive, workoutHistory: renderWorkoutHistory, workoutBuilder: renderWorkoutBuilder, exerciseBrowser: renderExerciseBrowser, prHistory: renderPRHistory,
     diet: renderDiet, dietAddMeal: renderDietAddMeal, dietRecipes: renderDietRecipes, dietRecipeDetail: renderDietRecipeDetail, dietGoals: renderDietGoals, dietTrend: renderDietTrend, dietTDEE: renderDietTDEE,
     library: renderLibrary,
-    sleep: renderSleep, progressPhotos: renderProgressPhotos,
+    sleep: renderSleep, progressPhotos: renderProgressPhotos, challenges: renderChallenges,
     calendar: () => { window._statsSubView = 'calendar'; renderStats(); },
   };
   (renders[view] || renderHome)();
@@ -1487,21 +1487,43 @@ function renderHome() {
     ${done > 0 ? `<button class="hm-share-btn ani" onclick="shareDailyCard()">📤 Share Today's Progress</button>` : ''}
 
     ${(() => {
-      // Show invite card every 3 days if user has 3+ day streak, dismissable for a week
-      const dismissedAt = parseInt(localStorage.getItem('hvi_invite_dismissed') || '0');
-      const daysSinceDismiss = (Date.now() - dismissedAt) / 86400000;
-      const dayNum = Math.floor(Date.now() / 86400000);
-      if (_overallStreak >= 3 && dayNum % 3 === 0 && daysSinceDismiss > 7) {
-        return `<div class="hm-feedback-banner ani" style="display:flex;align-items:center;gap:12px;padding:14px 16px;margin:0 16px 12px;background:linear-gradient(135deg,rgba(196,169,108,.12),rgba(196,169,108,.04));border:1px solid rgba(196,169,108,.2);border-radius:14px;cursor:pointer" onclick="shareInvite()">
-          <div style="font-size:24px;flex-shrink:0">🔗</div>
-          <div style="flex:1;min-width:0">
-            <div style="font-weight:600;font-size:14px;color:var(--text)">Enjoying Arete?</div>
-            <div style="font-size:12px;color:var(--text-dim);margin-top:2px">Share it with someone who'd benefit</div>
-          </div>
-          <button onclick="event.stopPropagation();localStorage.setItem('hvi_invite_dismissed',Date.now().toString());this.closest('.hm-feedback-banner').remove()" style="background:none;border:none;color:var(--text-dim);font-size:18px;padding:4px;cursor:pointer">✕</button>
-        </div>`;
+      // Show active challenges on home screen
+      if (typeof _getChallenges !== 'function') return '';
+      const active = _getChallenges().filter(c => c.endDate >= today());
+      if (!active.length) {
+        // No active challenges — show invite/challenge prompt
+        const dismissedAt = parseInt(localStorage.getItem('hvi_invite_dismissed') || '0');
+        const daysSinceDismiss = (Date.now() - dismissedAt) / 86400000;
+        if (_overallStreak >= 3 && daysSinceDismiss > 7) {
+          return `<div class="hm-feedback-banner ani" style="display:flex;align-items:center;gap:12px;padding:14px 16px;margin:0 16px 12px;background:linear-gradient(135deg,rgba(196,169,108,.12),rgba(196,169,108,.04));border:1px solid rgba(196,169,108,.2);border-radius:14px;cursor:pointer" onclick="go('challenges')">
+            <div style="font-size:24px;flex-shrink:0">⚔️</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:600;font-size:14px;color:var(--text)">Challenge a friend</div>
+              <div style="font-size:12px;color:var(--text-dim);margin-top:2px">Compete on streaks, workouts, or journaling</div>
+            </div>
+            <button onclick="event.stopPropagation();localStorage.setItem('hvi_invite_dismissed',Date.now().toString());this.closest('.hm-feedback-banner').remove()" style="background:none;border:none;color:var(--text-dim);font-size:18px;padding:4px;cursor:pointer">✕</button>
+          </div>`;
+        }
+        return '';
       }
-      return '';
+      // Show top active challenge
+      const ch = active[0];
+      const prog = _challengeProgress(ch);
+      const left = _daysLeft(ch);
+      return `<div class="hm-feedback-banner ani" style="padding:14px 16px;margin:0 16px 12px;background:linear-gradient(135deg,rgba(196,169,108,.08),rgba(196,169,108,.02));border:1px solid rgba(196,169,108,.15);border-radius:14px;cursor:pointer" onclick="go('challenges')">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <span style="font-size:20px">${ch.icon}</span>
+          <span style="font-weight:600;font-size:14px;color:var(--text)">${esc(ch.name)}</span>
+          <span style="margin-left:auto;font-size:11px;color:var(--text-dim)">${prog.done ? '✓ Done' : left + 'd left'}</span>
+        </div>
+        <div style="height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${(prog.pct*100).toFixed(0)}%;background:${prog.done ? 'var(--accent-b)' : 'var(--accent)'};border-radius:3px;transition:width .3s"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:11px;color:var(--text-dim)">
+          <span>${prog.count}/${ch.goal}</span>
+          ${active.length > 1 ? `<span>+${active.length - 1} more</span>` : ''}
+        </div>
+      </div>`;
     })()}
 
     ${getEveningReminder()}
