@@ -222,8 +222,10 @@ async function cloudPush() {
               if ((local[hid].streak || 0) > (merged[hid].streak || 0)) { merged[hid] = local[hid]; }
             });
             // Also pull in cloud completions that local doesn't have
+            // BUT only if cloud's lastCompletedDate is today (prevents restoring yesterday's stale completedToday after checkReset)
+            const _today = new Date().toLocaleDateString('en-CA');
             Object.keys(cloudLog).forEach(hid => {
-              if (cloudLog[hid].completedToday && !local[hid]?.completedToday) { merged[hid] = cloudLog[hid]; }
+              if (cloudLog[hid].completedToday && !local[hid]?.completedToday && cloudLog[hid].lastCompletedDate === _today) { merged[hid] = cloudLog[hid]; }
             });
             localStorage.setItem('hvi_log', JSON.stringify(merged));
           } catch {}
@@ -315,15 +317,27 @@ async function cloudPull() {
         try {
           const local = JSON.parse(localStorage.getItem(k) || '{}');
           const cloudLog = cloud[k] || {};
-          const merged = { ...cloudLog };
-          Object.keys(local).forEach(hid => {
-            if (!merged[hid]) { merged[hid] = local[hid]; return; }
-            // If local has completedToday, keep local state entirely for this habit
-            if (local[hid].completedToday) { merged[hid] = local[hid]; return; }
-            // Keep higher streak
-            if ((local[hid].streak || 0) > (merged[hid].streak || 0)) {
-              merged[hid] = local[hid];
+          const _today = new Date().toLocaleDateString('en-CA');
+          const merged = {};
+          // Start with all habits from both sides
+          const allIds = new Set([...Object.keys(cloudLog), ...Object.keys(local)]);
+          allIds.forEach(hid => {
+            const l = local[hid];
+            const c = cloudLog[hid];
+            if (!c) { merged[hid] = l; return; }
+            if (!l) {
+              // Cloud only: accept but strip stale completedToday
+              merged[hid] = { ...c };
+              if (c.completedToday && c.lastCompletedDate !== _today) merged[hid].completedToday = false;
+              return;
             }
+            // Both exist: local completedToday wins if true
+            if (l.completedToday) { merged[hid] = l; return; }
+            // Cloud completedToday only valid if from today
+            if (c.completedToday && c.lastCompletedDate === _today) { merged[hid] = c; return; }
+            // Neither has valid completedToday: keep higher streak
+            if ((l.streak || 0) >= (c.streak || 0)) { merged[hid] = l; }
+            else { merged[hid] = { ...c, completedToday: false }; }
           });
           localStorage.setItem(k, JSON.stringify(merged));
         } catch { localStorage.setItem(k, JSON.stringify(cloud[k])); }
