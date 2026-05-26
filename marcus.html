@@ -776,8 +776,12 @@
       const habitH  = safeJSON('hvi_habit_history', {});
       const prs     = safeJSON('hvi_prs', {});
 
-      // Habits today
-      const done  = habits.filter(h => log[h.id]?.completedToday).length;
+      // Habits today — use habit_history (actual dates) not completedToday (stale flag)
+      function habitDoneToday(h) {
+        const hist = habitH[h.id];
+        return Array.isArray(hist) && hist.includes(td);
+      }
+      const done  = habits.filter(habitDoneToday).length;
       const total = habits.length;
       const pct   = total ? Math.round(done / total * 100) : 0;
 
@@ -787,14 +791,13 @@
         return d.toISOString().slice(0, 10);
       });
       const wTotal = week.reduce((s, d) => {
-        if (d === td) return s + done;
         return s + Object.values(habitH).filter(a => Array.isArray(a) && a.includes(d)).length;
       }, 0);
       const wAvg = total ? Math.round(wTotal / 7 / total * 100) : 0;
       const maxStreak = habits.reduce((m, h) => Math.max(m, log[h.id]?.streak || 0), 0);
 
       const habitsStr = habits.map(h =>
-        `  - "${h.name}" [${h.category}]${log[h.id]?.completedToday ? ' ✓' : ' ✗'} streak:${log[h.id]?.streak || 0}d`
+        `  - "${h.name}" [${h.category}]${habitDoneToday(h) ? ' ✓' : ' ✗'} streak:${log[h.id]?.streak || 0}d`
       ).join('\n');
 
       // Workout
