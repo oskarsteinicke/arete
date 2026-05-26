@@ -210,22 +210,34 @@ async function cloudPush() {
             } catch {}
           }
         });
-        // Merge habit log — keep completedToday from either side, higher streaks
+        // Merge habit log — local wins for completedToday, cloud wins for higher streaks
         if (cloud.hvi_log) {
           try {
             const local = JSON.parse(localStorage.getItem('hvi_log') || '{}');
             const cloudLog = cloud.hvi_log;
-            const merged = { ...cloudLog };
-            Object.keys(local).forEach(hid => {
-              if (!merged[hid]) { merged[hid] = local[hid]; return; }
-              if (local[hid].completedToday) { merged[hid] = local[hid]; return; }
-              if ((local[hid].streak || 0) > (merged[hid].streak || 0)) { merged[hid] = local[hid]; }
-            });
-            // Also pull in cloud completions that local doesn't have
-            // BUT only if cloud's lastCompletedDate is today (prevents restoring yesterday's stale completedToday after checkReset)
             const _today = new Date().toLocaleDateString('en-CA');
+            // Start with LOCAL as base (preserves checkReset clearing completedToday)
+            const merged = { ...local };
             Object.keys(cloudLog).forEach(hid => {
-              if (cloudLog[hid].completedToday && !local[hid]?.completedToday && cloudLog[hid].lastCompletedDate === _today) { merged[hid] = cloudLog[hid]; }
+              if (!merged[hid]) {
+                // Cloud-only habit: bring it in but clear stale completedToday
+                merged[hid] = { ...cloudLog[hid] };
+                if (merged[hid].completedToday && merged[hid].lastCompletedDate !== _today) {
+                  merged[hid].completedToday = false;
+                }
+                return;
+              }
+              // Cloud says completed today AND it's actually today — restore it
+              if (cloudLog[hid].completedToday && cloudLog[hid].lastCompletedDate === _today && !local[hid].completedToday) {
+                merged[hid] = cloudLog[hid];
+                return;
+              }
+              // Local says completed — keep local
+              if (local[hid].completedToday) return;
+              // Neither completed today — take higher streak but keep local completedToday (false)
+              if ((cloudLog[hid].streak || 0) > (local[hid].streak || 0)) {
+                merged[hid] = { ...cloudLog[hid], completedToday: false };
+              }
             });
             localStorage.setItem('hvi_log', JSON.stringify(merged));
           } catch {}
@@ -905,6 +917,8 @@ async function init() {
   // Re-sync when user returns to the app (tab becomes visible again)
   document.addEventListener('visibilitychange', async () => {
     if (document.visibilityState === 'visible' && getAccessToken()) {
+      // Re-run checkReset in case the day changed while app was backgrounded
+      checkReset();
       setSyncStatus('pending');
       const pulled = await cloudPull();
       if (pulled) {
