@@ -1867,3 +1867,42 @@ nav {
 .lb-group-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 20px 24px; }
 .lb-group-actions .lb-action-btn { flex: 1; min-width: calc(50% - 4px); padding: 12px; font-size: 12px; }
 .lb-leave-btn { color: var(--fat) !important; border-color: rgba(239,68,68,0.2) !important; }
+
+/* ── Home Stats Mini Bar ───────────────────────────────────────────────── */
+.hm-stats-mini { display: flex; justify-content: space-around; margin: 0 16px 12px; padding: 10px 8px; background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); cursor: pointer; transition: border-color .2s; }
+.hm-stats-mini:active { border-color: var(--accent); }
+.hm-sm-stat { text-align: center; flex: 1; }
+.hm-sm-val { font-family: var(--serif); font-size: 20px; font-weight: 700; line-height: 1.2; }
+.hm-sm-lbl { font-size: 9px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+
+/* ── Character Profile Page ────────────────────────────────────────────── */
+.char-hero { text-align: center; padding: 0 24px 20px; }
+.char-avatar { width: 120px; height: 180px; margin: 0 auto 12px; position: relative; }
+.char-name { font-family: var(--display); font-size: 28px; color: var(--text); margin-bottom: 4px; letter-spacing: 0.5px; }
+.char-title { font-size: 16px; color: var(--accent-b); font-weight: 600; margin-bottom: 4px; }
+.char-stage { font-size: 11px; color: var(--text-dim); margin-bottom: 14px; }
+.char-xp-row { max-width: 260px; margin: 0 auto; }
+.char-xp-track { height: 8px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden; margin-bottom: 4px; }
+.char-xp-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-b)); border-radius: 4px; transition: width .4s; }
+.char-xp-label { font-size: 11px; color: var(--text-dim); }
+.char-power { font-family: var(--serif); font-size: 18px; color: var(--accent-b); font-weight: 700; margin-top: 10px; }
+
+.char-sec-title { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
+
+/* Stat bars */
+.char-stat-list { display: flex; flex-direction: column; gap: 10px; }
+.char-stat-row { display: flex; align-items: center; gap: 10px; }
+.char-stat-icon { font-size: 16px; width: 24px; text-align: center; flex-shrink: 0; }
+.char-stat-info { flex: 1; min-width: 0; }
+.char-stat-name { font-size: 12px; color: var(--text-dim); margin-bottom: 3px; }
+.char-stat-bar { height: 8px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden; }
+.char-stat-fill { height: 100%; border-radius: 4px; transition: width .4s; }
+.char-stat-val { font-family: var(--serif); font-size: 16px; font-weight: 700; color: var(--text); min-width: 28px; text-align: right; }
+
+/* Gear */
+.char-gear-list { display: flex; flex-direction: column; gap: 6px; }
+.char-gear-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--border2); border-radius: var(--radius-sm); }
+.char-gear-icon { font-size: 20px; flex-shrink: 0; }
+.char-gear-info { flex: 1; min-width: 0; }
+.char-gear-name { font-size: 13px; color: var(--text); font-weight: 600; }
+.char-gear-desc { font-size: 11px; color: var(--text-dim); }

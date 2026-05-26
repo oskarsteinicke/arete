@@ -803,7 +803,7 @@ const NAV_PARENT = {
   habitCreate: 'habits',
   workoutPicker: 'workout', workoutActive: 'workout', workoutHistory: 'workout', workoutBuilder: 'workout', exerciseBrowser: 'workout', prHistory: 'workout',
   dietAddMeal: 'diet', dietRecipes: 'diet', dietRecipeDetail: 'diet', dietGoals: 'diet', dietTrend: 'diet', dietTDEE: 'diet',
-  calendar: 'stats', progressPhotos: 'stats', challenges: 'home', leaderboard: 'home',
+  calendar: 'stats', progressPhotos: 'stats', challenges: 'home', leaderboard: 'home', character: 'home',
 };
 
 // ── INIT ──────────────────────────────────────────────────────────────────
@@ -1034,7 +1034,7 @@ function go(view, params = {}, pushState = true) {
     workout: renderWorkout, workoutPicker: renderWorkoutPicker, workoutActive: renderWorkoutActive, workoutHistory: renderWorkoutHistory, workoutBuilder: renderWorkoutBuilder, exerciseBrowser: renderExerciseBrowser, prHistory: renderPRHistory,
     diet: renderDiet, dietAddMeal: renderDietAddMeal, dietRecipes: renderDietRecipes, dietRecipeDetail: renderDietRecipeDetail, dietGoals: renderDietGoals, dietTrend: renderDietTrend, dietTDEE: renderDietTDEE,
     library: renderLibrary,
-    sleep: renderSleep, progressPhotos: renderProgressPhotos, challenges: renderChallenges, leaderboard: renderLeaderboard,
+    sleep: renderSleep, progressPhotos: renderProgressPhotos, challenges: renderChallenges, leaderboard: renderLeaderboard, character: renderCharacter,
     calendar: () => { window._statsSubView = 'calendar'; renderStats(); },
   };
   (renders[view] || renderHome)();
@@ -1388,7 +1388,7 @@ function renderHome() {
       <div class="hm-hero-card" onclick="go('stats')">
         <div class="hm-hero-glow"></div>
         <div class="hm-hero-row">
-          <div style="width:64px;height:100px;flex-shrink:0">${buildAvatarSVG(homeLvl)}</div>
+          <div style="width:64px;height:100px;flex-shrink:0;cursor:pointer" onclick="event.stopPropagation();go('character')">${buildAvatarSVG(homeLvl)}</div>
           <div class="hm-hero-info">
             <div class="hm-hero-date">${dateStr}</div>
             <div class="hm-hero-name">${greeting()}${userName() ? ', ' + userName() : ''}.</div>
@@ -1405,6 +1405,15 @@ function renderHome() {
     </div>
 
     <div class="hm-pillars ani">${pillarStrip}</div>
+
+    <div class="hm-stats-mini ani" onclick="go('character')">
+      ${(() => {
+        const rpg = _computeRPGStats();
+        return rpg.map(s =>
+          `<div class="hm-sm-stat"><div class="hm-sm-val" style="color:${s.color}">${s.val}</div><div class="hm-sm-lbl">${s.key}</div></div>`
+        ).join('');
+      })()}
+    </div>
 
     ${_overallStreak >= 2 ? `<div class="hm-streak-banner ani">
       <div class="hm-streak-fire">🔥</div>

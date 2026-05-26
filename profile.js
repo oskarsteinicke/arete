@@ -510,6 +510,409 @@ function initSwipeGestures() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
+// RPG CHARACTER STATS + CHARACTER PAGE
+// ══════════════════════════════════════════════════════════════════════════
+
+// 5 RPG stats derived from real activity
+function _computeRPGStats() {
+  const maxStreak = Math.max(0, ...habits.map(h => log[h.id]?.streak || 0));
+  const totalWorkouts = Object.values(workoutLog).filter(wl => wl.exercises?.some(e => e.sets?.some(s => s.completed))).length;
+  const totalPRs = Object.keys(prs || {}).length;
+  const totalJournalDays = Object.keys(journal).filter(d => Object.values(journal[d]).some(Boolean)).length;
+  const mealDays = Object.keys(mealLog).filter(d => (mealLog[d]?.meals || []).length > 0).length;
+  const sleepDays = Object.keys(sleepLog || {}).filter(d => sleepLog[d]?.hours > 0).length;
+  const perfectDays = meta.totalPerfectDays || 0;
+  const lvl = getLevel(gamification.xp || 0);
+
+  // Each stat 0-100, scaled to feel rewarding early but requiring effort to max
+  const strength = Math.min(100, Math.round(
+    Math.min(40, totalWorkouts * 2) +
+    Math.min(30, totalPRs * 3) +
+    Math.min(30, lvl * 3)
+  ));
+  const wisdom = Math.min(100, Math.round(
+    Math.min(40, totalJournalDays * 2) +
+    Math.min(30, (achievements || []).length * 3) +
+    Math.min(30, lvl * 3)
+  ));
+  const discipline = Math.min(100, Math.round(
+    Math.min(40, maxStreak * 2) +
+    Math.min(30, perfectDays * 2) +
+    Math.min(30, lvl * 3)
+  ));
+  const vitality = Math.min(100, Math.round(
+    Math.min(40, mealDays * 1.5) +
+    Math.min(30, sleepDays * 1.5) +
+    Math.min(30, lvl * 3)
+  ));
+  const spirit = Math.min(100, Math.round(
+    Math.min(30, (gamification.xp || 0) / 100) +
+    Math.min(30, maxStreak * 1.5) +
+    Math.min(20, totalWorkouts) +
+    Math.min(20, totalJournalDays)
+  ));
+
+  return [
+    { key: 'STR', name: 'Strength', val: strength, icon: '⚔️', color: '#ef4444' },
+    { key: 'WIS', name: 'Wisdom',   val: wisdom,   icon: '📖', color: '#a78bfa' },
+    { key: 'DIS', name: 'Discipline', val: discipline, icon: '🛡️', color: '#c4a96c' },
+    { key: 'VIT', name: 'Vitality', val: vitality, icon: '💚', color: '#4ade80' },
+    { key: 'SPI', name: 'Spirit',   val: spirit,   icon: '🔥', color: '#f59e0b' },
+  ];
+}
+
+// Radar chart SVG (pentagon)
+function _buildRadarChart(stats, size) {
+  size = size || 140;
+  const cx = size / 2, cy = size / 2;
+  const r = size * 0.38;
+  const n = stats.length;
+  const angleOff = -Math.PI / 2; // start from top
+
+  function point(i, scale) {
+    const a = angleOff + (2 * Math.PI * i) / n;
+    return [cx + Math.cos(a) * r * scale, cy + Math.sin(a) * r * scale];
+  }
+
+  // Grid rings
+  let grid = '';
+  [0.25, 0.5, 0.75, 1].forEach(s => {
+    const pts = Array.from({length: n}, (_, i) => point(i, s).join(',')).join(' ');
+    grid += `<polygon points="${pts}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="0.8"/>`;
+  });
+
+  // Grid lines from center
+  for (let i = 0; i < n; i++) {
+    const [x, y] = point(i, 1);
+    grid += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="rgba(255,255,255,0.06)" stroke-width="0.6"/>`;
+  }
+
+  // Data polygon
+  const dataPts = stats.map((s, i) => point(i, s.val / 100).join(',')).join(' ');
+
+  // Labels
+  let labels = '';
+  stats.forEach((s, i) => {
+    const [x, y] = point(i, 1.25);
+    labels += `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-size="10" fill="var(--text-dim)" font-weight="600">${s.key}</text>`;
+    const [vx, vy] = point(i, 1.08);
+    labels += `<text x="${vx}" y="${vy + 10}" text-anchor="middle" font-size="8" fill="var(--accent-b)">${s.val}</text>`;
+  });
+
+  return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" style="display:block;margin:0 auto" xmlns="http://www.w3.org/2000/svg">
+    ${grid}
+    <polygon points="${dataPts}" fill="rgba(196,169,108,0.15)" stroke="var(--accent-b)" stroke-width="1.5" stroke-linejoin="round"/>
+    ${stats.map((s, i) => {
+      const [x, y] = point(i, s.val / 100);
+      return `<circle cx="${x}" cy="${y}" r="3" fill="${s.color}" stroke="var(--bg)" stroke-width="1"/>`;
+    }).join('')}
+    ${labels}
+  </svg>`;
+}
+
+// ── Character Profile Page ───────────────────────────────────────────────
+function renderCharacter() {
+  const xp = gamification.xp || 0;
+  const lvl = getLevel(xp);
+  const { progress, needed } = xpToNextLevel(xp);
+  const xpPct = needed > 0 ? (progress / needed * 100).toFixed(1) : 100;
+  const title = getLevelTitle(lvl);
+  const stats = _computeRPGStats();
+  const totalPower = Math.round(stats.reduce((s, st) => s + st.val, 0) / stats.length);
+
+  // Avatar stage info
+  const stage = lvl >= 20 ? 6 : lvl >= 12 ? 5 : lvl >= 8 ? 4 : lvl >= 5 ? 3 : lvl >= 3 ? 2 : 1;
+  const stageNames = ['', 'Recruit', 'Initiate', 'Warrior', 'Champion', 'Philosopher', 'Arete'];
+  const nextStage = stage < 6 ? stageNames[stage + 1] : null;
+  const nextStageLevel = [0, 3, 5, 8, 12, 20, 999][stage];
+
+  // Gear/equipment based on achievements
+  const gear = [];
+  if ((achievements || []).includes('first_workout')) gear.push({ icon: '🗡️', name: 'Training Blade', desc: 'First workout completed' });
+  if ((achievements || []).includes('streak_7'))      gear.push({ icon: '🔥', name: 'Flame Emblem', desc: '7-day streak' });
+  if ((achievements || []).includes('streak_30'))     gear.push({ icon: '💎', name: 'Diamond Shield', desc: '30-day streak' });
+  if ((achievements || []).includes('workouts_10'))   gear.push({ icon: '🏋️', name: 'Iron Gauntlets', desc: '10 workouts logged' });
+  if ((achievements || []).includes('workouts_50'))   gear.push({ icon: '⚡', name: 'Thunder Bracers', desc: '50 workouts' });
+  if ((achievements || []).includes('first_pr'))      gear.push({ icon: '🏆', name: 'Victory Crown', desc: 'First PR set' });
+  if ((achievements || []).includes('journal_7'))     gear.push({ icon: '📜', name: 'Scroll of Gnōsis', desc: '7 journal days' });
+  if ((achievements || []).includes('nutrition_7'))   gear.push({ icon: '🍇', name: 'Ambrosia Charm', desc: '7 nutrition days' });
+  if ((achievements || []).includes('level_5'))       gear.push({ icon: '🛡️', name: 'Hoplite Shield', desc: 'Reached Level 5' });
+  if ((achievements || []).includes('level_10'))      gear.push({ icon: '👑', name: 'Héros Crown', desc: 'Reached Level 10' });
+  if ((achievements || []).includes('all_pillars'))   gear.push({ icon: '🏛️', name: 'Pillar Stone', desc: 'All pillars hit' });
+  if ((achievements || []).includes('streak_100'))    gear.push({ icon: '💫', name: 'Eternal Flame', desc: '100-day streak' });
+  if ((achievements || []).includes('xp_5000'))       gear.push({ icon: '✨', name: 'Demigod Aura', desc: '5,000 XP earned' });
+
+  const gearHTML = gear.length ? gear.map(g =>
+    `<div class="char-gear-item"><span class="char-gear-icon">${g.icon}</span><div class="char-gear-info"><div class="char-gear-name">${g.name}</div><div class="char-gear-desc">${g.desc}</div></div></div>`
+  ).join('') : '<div style="color:var(--text-muted);font-size:12px;padding:8px 0">Complete achievements to unlock gear.</div>';
+
+  // Stat bars
+  const statBars = stats.map(s =>
+    `<div class="char-stat-row">
+      <div class="char-stat-icon">${s.icon}</div>
+      <div class="char-stat-info">
+        <div class="char-stat-name">${s.name}</div>
+        <div class="char-stat-bar"><div class="char-stat-fill" style="width:${s.val}%;background:${s.color}"></div></div>
+      </div>
+      <div class="char-stat-val">${s.val}</div>
+    </div>`
+  ).join('');
+
+  document.getElementById('view').innerHTML = `
+    <button class="back" onclick="go('home')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
+    <div class="char-hero ani">
+      <div class="char-avatar">${buildAvatarSVG(lvl)}</div>
+      <div class="char-name">${userName() || 'Warrior'}</div>
+      <div class="char-title">Lv.${lvl} ${title}</div>
+      <div class="char-stage">${stageNames[stage]}${nextStage ? ` → ${nextStage} at Lv.${nextStageLevel}` : ' (Max Stage)'}</div>
+      <div class="char-xp-row">
+        <div class="char-xp-track"><div class="char-xp-fill" style="width:${xpPct}%"></div></div>
+        <div class="char-xp-label">${progress.toLocaleString()} / ${needed.toLocaleString()} XP</div>
+      </div>
+      <div class="char-power">⚡ Power: ${totalPower}</div>
+    </div>
+
+    <div class="da-section ani" style="margin:0 24px 16px;padding:20px">
+      <div class="char-sec-title">Character Stats</div>
+      ${_buildRadarChart(stats, 160)}
+      <div class="char-stat-list" style="margin-top:16px">${statBars}</div>
+    </div>
+
+    <div class="da-section ani" style="margin:0 24px 16px;padding:20px">
+      <div class="char-sec-title">Equipment · ${gear.length} items</div>
+      <div class="char-gear-list">${gearHTML}</div>
+    </div>
+
+    <div class="da-section ani" style="margin:0 24px 16px;padding:20px">
+      <div class="char-sec-title">Achievements · ${(achievements||[]).length}/${ACHIEVEMENTS.length}</div>
+      <div class="g-ach-grid">${ACHIEVEMENTS.map(a => {
+        const u = (achievements || []).includes(a.id);
+        return `<div class="g-ach${u ? ' g-ach-un' : ''}" title="${esc(a.desc)}"><div class="g-ach-icon">${u ? a.icon : '🔒'}</div><div class="g-ach-name">${esc(a.name)}</div></div>`;
+      }).join('')}</div>
+    </div>
+
+    <button class="w-action-btn ani" style="margin:0 24px 32px" onclick="shareCharacterCard()">📤 Share Character Card</button>`;
+}
+
+// ── Shareable Character Card (Canvas) ────────────────────────────────────
+async function shareCharacterCard() {
+  const canvas = document.createElement('canvas');
+  const w = 600, h = 800;
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+
+  // Background
+  const bg = ctx.createLinearGradient(0, 0, 0, h);
+  bg.addColorStop(0, '#0f0d0a');
+  bg.addColorStop(1, '#1a1714');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, w, h);
+
+  // Border
+  ctx.strokeStyle = '#c4a96c';
+  ctx.lineWidth = 3;
+  _roundRect(ctx, 10, 10, w - 20, h - 20, 20);
+  ctx.stroke();
+
+  // Inner border
+  ctx.strokeStyle = 'rgba(196,169,108,0.2)';
+  ctx.lineWidth = 1;
+  _roundRect(ctx, 20, 20, w - 40, h - 40, 14);
+  ctx.stroke();
+
+  const xp = gamification.xp || 0;
+  const lvl = getLevel(xp);
+  const title = getLevelTitle(lvl);
+  const stats = _computeRPGStats();
+  const totalPower = Math.round(stats.reduce((s, st) => s + st.val, 0) / stats.length);
+
+  // Name
+  ctx.fillStyle = '#e8dfd3';
+  ctx.font = 'bold 36px Georgia, serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(userName() || 'Warrior', w / 2, 80);
+
+  // Level & Title
+  ctx.fillStyle = '#c4a96c';
+  ctx.font = '20px Georgia, serif';
+  ctx.fillText(`Level ${lvl} · ${title}`, w / 2, 115);
+
+  // XP
+  ctx.fillStyle = 'rgba(232,223,211,0.5)';
+  ctx.font = '14px -apple-system, sans-serif';
+  ctx.fillText(`${xp.toLocaleString()} XP · Power ${totalPower}`, w / 2, 145);
+
+  // Divider
+  ctx.strokeStyle = 'rgba(196,169,108,0.3)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(60, 165);
+  ctx.lineTo(w - 60, 165);
+  ctx.stroke();
+
+  // Radar chart on canvas
+  const rcx = w / 2, rcy = 295;
+  const rr = 90;
+  const n = stats.length;
+  const off = -Math.PI / 2;
+
+  // Grid
+  [0.25, 0.5, 0.75, 1].forEach(scale => {
+    ctx.beginPath();
+    for (let i = 0; i <= n; i++) {
+      const a = off + (2 * Math.PI * (i % n)) / n;
+      const x = rcx + Math.cos(a) * rr * scale;
+      const y = rcy + Math.sin(a) * rr * scale;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.stroke();
+  });
+
+  // Data polygon
+  ctx.beginPath();
+  stats.forEach((s, i) => {
+    const a = off + (2 * Math.PI * i) / n;
+    const x = rcx + Math.cos(a) * rr * (s.val / 100);
+    const y = rcy + Math.sin(a) * rr * (s.val / 100);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(196,169,108,0.2)';
+  ctx.fill();
+  ctx.strokeStyle = '#c4a96c';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Dots + labels
+  stats.forEach((s, i) => {
+    const a = off + (2 * Math.PI * i) / n;
+    const dx = rcx + Math.cos(a) * rr * (s.val / 100);
+    const dy = rcy + Math.sin(a) * rr * (s.val / 100);
+    ctx.beginPath();
+    ctx.arc(dx, dy, 4, 0, Math.PI * 2);
+    ctx.fillStyle = s.color;
+    ctx.fill();
+
+    const lx = rcx + Math.cos(a) * (rr + 28);
+    const ly = rcy + Math.sin(a) * (rr + 28);
+    ctx.fillStyle = 'rgba(232,223,211,0.7)';
+    ctx.font = 'bold 13px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(s.key, lx, ly);
+    ctx.fillStyle = '#c4a96c';
+    ctx.font = '11px -apple-system, sans-serif';
+    ctx.fillText(String(s.val), lx, ly + 14);
+  });
+
+  // Stat bars below radar
+  let barY = 430;
+  stats.forEach(s => {
+    ctx.fillStyle = 'rgba(232,223,211,0.5)';
+    ctx.font = '13px -apple-system, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${s.icon} ${s.name}`, 60, barY);
+
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#c4a96c';
+    ctx.fillText(String(s.val), w - 60, barY);
+
+    // Bar track
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    _roundRect(ctx, 60, barY + 6, w - 120, 8, 4);
+    ctx.fill();
+
+    // Bar fill
+    ctx.fillStyle = s.color;
+    const fillW = (w - 120) * (s.val / 100);
+    if (fillW > 0) {
+      _roundRect(ctx, 60, barY + 6, fillW, 8, 4);
+      ctx.fill();
+    }
+
+    barY += 38;
+  });
+
+  // Key stats
+  barY += 10;
+  ctx.strokeStyle = 'rgba(196,169,108,0.3)';
+  ctx.beginPath();
+  ctx.moveTo(60, barY);
+  ctx.lineTo(w - 60, barY);
+  ctx.stroke();
+  barY += 25;
+
+  const maxStreak = Math.max(0, ...habits.map(h => log[h.id]?.streak || 0));
+  const totalWorkouts = Object.values(workoutLog).filter(wl => wl.exercises?.some(e => e.sets?.some(s => s.completed))).length;
+  const keyStats = [
+    { label: '🔥 Best Streak', val: `${maxStreak} days` },
+    { label: '💪 Workouts', val: String(totalWorkouts) },
+    { label: '🏆 Achievements', val: `${(achievements || []).length}/${ACHIEVEMENTS.length}` },
+  ];
+
+  ctx.font = '13px -apple-system, sans-serif';
+  const colW = (w - 120) / keyStats.length;
+  keyStats.forEach((ks, i) => {
+    const kx = 60 + colW * i + colW / 2;
+    ctx.fillStyle = 'rgba(232,223,211,0.5)';
+    ctx.textAlign = 'center';
+    ctx.fillText(ks.label, kx, barY);
+    ctx.fillStyle = '#e8dfd3';
+    ctx.font = 'bold 20px Georgia, serif';
+    ctx.fillText(ks.val, kx, barY + 28);
+    ctx.font = '13px -apple-system, sans-serif';
+  });
+
+  // Footer
+  ctx.fillStyle = 'rgba(232,223,211,0.3)';
+  ctx.font = '12px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('get-arete.com · Become your greatest self', w / 2, h - 35);
+
+  // Convert to blob and share
+  canvas.toBlob(async blob => {
+    if (!blob) return;
+    const file = new File([blob], 'arete-character.png', { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          title: `${userName() || 'My'} Arete Character`,
+          text: `Level ${lvl} ${title} · Power ${totalPower} · ${xp.toLocaleString()} XP\n\nBecome your greatest self at get-arete.com`,
+          files: [file],
+        });
+        track('character_card_shared');
+      } catch {}
+    } else {
+      // Fallback: download
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'arete-character.png';
+      a.click();
+      URL.revokeObjectURL(url);
+      if (typeof _showToast === 'function') _showToast('Character card saved!');
+      track('character_card_downloaded');
+    }
+  }, 'image/png');
+}
+
+function _roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+// ══════════════════════════════════════════════════════════════════════════
 // RENDER: STATS
 // ══════════════════════════════════════════════════════════════════════════
 // ── Avatar builder ────────────────────────────────────────────────────────
