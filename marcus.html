@@ -1204,7 +1204,7 @@
     }
 
     function today() {
-      return new Date().toISOString().slice(0, 10);
+      return new Date().toLocaleDateString('en-CA');
     }
 
     function esc(s) {
@@ -1242,7 +1242,7 @@
       // 7-day avg
       const week = [...Array(7)].map((_, i) => {
         const d = new Date(); d.setDate(d.getDate() - i);
-        return d.toISOString().slice(0, 10);
+        return d.toLocaleDateString('en-CA');
       });
       const wTotal = week.reduce((s, d) => {
         return s + Object.values(habitH).filter(a => Array.isArray(a) && a.includes(d)).length;
@@ -1518,7 +1518,7 @@
 
       const days = [...Array(7)].map((_, i) => {
         const d = new Date(); d.setDate(d.getDate() - i);
-        return d.toISOString().slice(0, 10);
+        return d.toLocaleDateString('en-CA');
       });
 
       const dailyHabits = days.map(d => ({
@@ -2144,7 +2144,7 @@ RULES:
       });
 
       // Daily briefing (once per day) or welcome on first launch
-      const todayKey = new Date().toISOString().slice(0, 10);
+      const todayKey = new Date().toLocaleDateString('en-CA');
       const lastBriefing = localStorage.getItem(NS + 'last_briefing');
 
       if (!history.length) {
