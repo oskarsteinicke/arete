@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#050c15">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>M.A.R.C.U.S.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #050c15;
+      --panel:        rgba(0, 20, 45, 0.7);
+      --primary:      #00c8ff;
+      --primary-mid:  #0086bd;
+      --primary-dim:  rgba(0, 200, 255, 0.25);
+      --primary-glow: rgba(0, 200, 255, 0.35);
+      --orange:       #ff6a00;
+      --green:        #00ff88;
+      --red:          #ff2d55;
+      --text:         #caf0f8;
+      --text-dim:     #4a9ebe;
+      --border:       rgba(0, 200, 255, 0.15);
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Grid overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,200,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,200,255,0.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Scan-line sweep */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(0,200,255,0.015) 3px,
+        rgba(0,200,255,0.015) 4px
+      );
+      pointer-events: none;
+      z-index: 0;
+      animation: scan 10s linear infinite;
+    }
+
+    @keyframes scan {
+      from { background-position: 0 0; }
+      to   { background-position: 0 120px; }
+    }
+
+    /* HUD corner brackets */
+    .corner {
+      position: fixed;
+      width: 24px;
+      height: 24px;
+      border-color: var(--primary-mid);
+      border-style: solid;
+      opacity: 0.5;
+      z-index: 2;
+    }
+    .corner.tl { top: 10px; left: 10px;  border-width: 1px 0 0 1px; }
+    .corner.tr { top: 10px; right: 10px; border-width: 1px 1px 0 0; }
+    .corner.bl { bottom: 10px; left: 10px;  border-width: 0 0 1px 1px; }
+    .corner.br { bottom: 10px; right: 10px; border-width: 0 1px 1px 0; }
+
+    /* ── App shell ─────────────────────────────────────────────────── */
+    #app {
+      position: relative;
+      z-index: 1;
+      height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 16px 20px;
+    }
+
+    /* ── Header ─────────────────────────────────────────────────────── */
+    #header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand-name {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 5px;
+      color: var(--primary);
+      text-shadow: 0 0 20px var(--primary-glow);
+    }
+
+    .brand-sub {
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 2px;
+      margin-top: 2px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .live-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      color: var(--green);
+      letter-spacing: 1px;
+    }
+
+    .live-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: blink 2.5s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+
+    #clock {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 1px;
+    }
+
+    #cfg-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 5px 10px;
+      cursor: pointer;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 11px;
+      letter-spacing: 1px;
+      transition: all 0.2s;
+    }
+
+    #cfg-btn:hover { color: var(--primary); border-color: var(--primary-mid); }
+
+    /* ── Center ─────────────────────────────────────────────────────── */
+    #center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      overflow: hidden;
+    }
+
+    /* ── Stats strip ────────────────────────────────────────────────── */
+    #stats-strip {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-val {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 17px;
+      color: var(--primary);
+      text-shadow: 0 0 12px var(--primary-glow);
+    }
+
+    .stat-lbl {
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-top: 1px;
+    }
+
+    /* ── Orb ─────────────────────────────────────────────────────────── */
+    #orb-wrap {
+      position: relative;
+      width: 190px;
+      height: 190px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid var(--primary-dim);
+    }
+
+    .ring-1 { inset: 0;   border-color: rgba(0,200,255,0.4); }
+    .ring-2 { inset: 12px; animation: spin 22s linear infinite; }
+    .ring-3 { inset: 22px; animation: spin 14s linear infinite reverse; border-style: dashed; }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    .orb-core {
+      position: absolute;
+      inset: 32px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 38% 32%, #1a5a8a, #071828, #050c15);
+      box-shadow:
+        0 0 30px rgba(0,200,255,0.2),
+        0 0 80px rgba(0,200,255,0.07),
+        inset 0 0 25px rgba(0,200,255,0.12);
+      transition: box-shadow 0.4s, background 0.4s;
+    }
+
+    .orb-inner {
+      position: absolute;
+      inset: 60px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,200,255,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .orb-dot {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 15px var(--primary), 0 0 35px var(--primary-glow);
+      animation: pulse-idle 3s ease-in-out infinite;
+      transition: background 0.3s, box-shadow 0.3s;
+    }
+
+    @keyframes pulse-idle {
+      0%, 100% { transform: scale(1);   opacity: 1; }
+      50%       { transform: scale(.8); opacity: .7; }
+    }
+
+    /* State: listening */
+    body.listening .orb-core {
+      background: radial-gradient(circle at 38% 32%, #00a8ff, #003a88, #001040);
+      box-shadow: 0 0 50px rgba(0,200,255,0.5), 0 0 100px rgba(0,200,255,0.15), inset 0 0 30px rgba(0,200,255,0.2);
+    }
+    body.listening .orb-dot {
+      background: #00ffff;
+      box-shadow: 0 0 20px #00ffff, 0 0 50px rgba(0,255,255,0.5);
+      animation: pulse-listen 0.7s ease-in-out infinite;
+    }
+    body.listening .ring-1 { animation: breathe 1s ease-in-out infinite; }
+
+    @keyframes pulse-listen {
+      0%, 100% { transform: scale(1.2); }
+      50%       { transform: scale(.9); }
+    }
+    @keyframes breathe {
+      0%, 100% { transform: scale(1);    opacity: 1; }
+      50%       { transform: scale(1.04); opacity: .7; }
+    }
+
+    /* State: processing */
+    body.processing .orb-dot {
+      background: var(--orange);
+      box-shadow: 0 0 15px var(--orange), 0 0 35px rgba(255,106,0,0.4);
+      animation: orbit 1s linear infinite;
+    }
+    @keyframes orbit {
+      from { transform: rotate(0deg) translateX(14px) rotate(0deg); }
+      to   { transform: rotate(360deg) translateX(14px) rotate(-360deg); }
+    }
+
+    /* State: speaking */
+    body.speaking .orb-dot {
+      background: var(--green);
+      box-shadow: 0 0 15px var(--green), 0 0 35px rgba(0,255,136,0.4);
+      animation: pulse-speak 0.45s ease-in-out infinite;
+    }
+    @keyframes pulse-speak {
+      0%, 100% { transform: scale(1); }
+      50%       { transform: scale(1.4); }
+    }
+
+    /* ── Live mic text ──────────────────────────────────────────────── */
+    #live-text {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      color: var(--primary-mid);
+      letter-spacing: 1px;
+      font-style: italic;
+      min-height: 18px;
+      text-align: center;
+      max-width: 580px;
+    }
+
+    /* ── Status line ────────────────────────────────────────────────── */
+    #status {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      color: var(--text-dim);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    /* ── Conversation ───────────────────────────────────────────────── */
+    #convo {
+      width: 100%;
+      max-width: 640px;
+      max-height: 260px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 2px 4px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--primary-mid) transparent;
+    }
+
+    #convo::-webkit-scrollbar       { width: 3px; }
+    #convo::-webkit-scrollbar-thumb { background: var(--primary-mid); border-radius: 2px; }
+
+    .msg {
+      display: flex;
+      gap: 12px;
+      animation: fadeUp .25s ease;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .msg-who {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1px;
+      width: 52px;
+      flex-shrink: 0;
+      padding-top: 3px;
+    }
+
+    .msg.user   .msg-who { color: var(--text-dim); }
+    .msg.marcus .msg-who { color: var(--primary); text-shadow: 0 0 8px var(--primary-glow); }
+
+    .msg-body {
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    .msg.user   .msg-body { color: var(--text-dim); }
+    .msg.marcus .msg-body { color: var(--text); }
+
+    /* ── Input bar ──────────────────────────────────────────────────── */
+    #input-bar {
+      border-top: 1px solid var(--border);
+      padding-top: 14px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    #txt-in {
+      flex: 1;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    #txt-in:focus { border-color: var(--primary-mid); }
+    #txt-in::placeholder { color: var(--text-dim); opacity: 0.4; }
+
+    .bar-btn {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 10px 14px;
+      cursor: pointer;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      white-space: nowrap;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .bar-btn:hover { color: var(--primary); border-color: var(--primary-mid); }
+
+    #mic-btn { border-color: rgba(0,200,255,0.35); color: var(--primary); }
+
+    body.listening #mic-btn {
+      background: rgba(0,200,255,0.1);
+      border-color: var(--primary);
+      animation: glow-btn 1s ease-in-out infinite;
+    }
+
+    @keyframes glow-btn {
+      0%, 100% { box-shadow: 0 0 0 0 var(--primary-glow); }
+      50%       { box-shadow: 0 0 0 4px rgba(0,200,255,0.1); }
+    }
+
+    /* ── Setup modal ────────────────────────────────────────────────── */
+    #setup {
+      position: fixed;
+      inset: 0;
+      background: rgba(5,12,21,0.96);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(12px);
+    }
+
+    #setup.hidden { display: none; }
+
+    .setup-box {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 44px 48px;
+      max-width: 460px;
+      width: calc(100% - 40px);
+      position: relative;
+    }
+
+    .setup-box::before {
+      content: '';
+      position: absolute;
+      top: -1px; left: 24px;
+      width: 64px; height: 2px;
+      background: var(--primary);
+      box-shadow: 0 0 10px var(--primary-glow);
+    }
+
+    .setup-title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 5px;
+      color: var(--primary);
+      text-shadow: 0 0 20px var(--primary-glow);
+      margin-bottom: 6px;
+    }
+
+    .setup-desc {
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.65;
+      margin-bottom: 36px;
+    }
+
+    .setup-lbl {
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+    }
+
+    .setup-inp {
+      width: 100%;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 12px 14px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 13px;
+      outline: none;
+      margin-bottom: 28px;
+      transition: border-color 0.2s;
+    }
+
+    .setup-inp:focus { border-color: var(--primary-mid); }
+
+    .setup-go {
+      width: 100%;
+      background: rgba(0,200,255,0.08);
+      border: 1px solid rgba(0,200,255,0.5);
+      color: var(--primary);
+      padding: 13px;
+      cursor: pointer;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      transition: all 0.2s;
+    }
+
+    .setup-go:hover { background: rgba(0,200,255,0.15); box-shadow: 0 0 20px rgba(0,200,255,0.1); }
+
+    .setup-note {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 18px;
+      line-height: 1.6;
+      opacity: 0.65;
+    }
+
+    /* ── Config modal ───────────────────────────────────────────────── */
+    #config-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(5,12,21,0.96);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(12px);
+    }
+
+    #config-modal.hidden { display: none; }
+
+    .cfg-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 28px;
+    }
+
+    .cfg-row .setup-inp { margin-bottom: 0; flex: 1; }
+
+    .preview-btn {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 12px 14px;
+      cursor: pointer;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      white-space: nowrap;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .preview-btn:hover { color: var(--primary); border-color: var(--primary-mid); }
+
+    .voice-select {
+      width: 100%;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 12px 14px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      outline: none;
+      margin-bottom: 8px;
+      appearance: none;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .voice-select:focus { border-color: var(--primary-mid); }
+    .voice-select option { background: #071828; color: var(--text); }
+
+    .cfg-cancel {
+      width: 100%;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 10px;
+      cursor: pointer;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 13px;
+      letter-spacing: 2px;
+      margin-top: 10px;
+      transition: all 0.2s;
+    }
+
+    .cfg-cancel:hover { color: var(--text); border-color: rgba(0,200,255,0.3); }
+
+    /* ── Toast ──────────────────────────────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(16px);
+      background: rgba(255,45,85,0.12);
+      border: 1px solid rgba(255,45,85,0.4);
+      color: #ff6b8a;
+      padding: 8px 20px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 1px;
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 200;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── Responsive ─────────────────────────────────────────────────── */
+    @media (max-height: 640px) {
+      #orb-wrap { width: 140px; height: 140px; }
+      #center { gap: 12px; }
+      #convo { max-height: 180px; }
+    }
+
+    @media (max-width: 480px) {
+      #app { padding: 12px 14px; }
+      .stat-val { font-size: 14px; }
+      #stats-strip { gap: 14px; }
+      .setup-box { padding: 32px 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="corner tl"></div>
+  <div class="corner tr"></div>
+  <div class="corner bl"></div>
+  <div class="corner br"></div>
+
+  <!-- Setup -->
+  <div id="setup">
+    <div class="setup-box">
+      <div class="setup-title">M.A.R.C.U.S.</div>
+      <div class="setup-desc">Modular Adaptive Reasoning & Coaching Unified System.<br>Enter your Anthropic API key to bring me online.</div>
+      <div class="setup-lbl">ANTHROPIC API KEY</div>
+      <input id="setup-inp" class="setup-inp" type="password" placeholder="sk-ant-api03-..." autocomplete="off" spellcheck="false">
+      <button class="setup-go" onclick="boot()">INITIALIZE</button>
+      <div class="setup-note">Your key is stored locally on this device only and sent exclusively to Anthropic's API.</div>
+    </div>
+  </div>
+
+  <!-- Config modal -->
+  <div id="config-modal" class="hidden">
+    <div class="setup-box">
+      <div class="setup-title">CONFIG</div>
+
+      <div class="setup-lbl">ANTHROPIC API KEY</div>
+      <div class="cfg-row">
+        <input id="cfg-key-inp" class="setup-inp" type="password" placeholder="sk-ant-api03-..." autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="setup-lbl">VOICE</div>
+      <select id="voice-select" class="voice-select"></select>
+      <div class="cfg-row" style="margin-top:8px">
+        <button class="preview-btn" onclick="previewVoice()">▶ PREVIEW</button>
+      </div>
+
+      <button class="setup-go" onclick="saveConfig()">SAVE</button>
+      <button class="cfg-cancel" onclick="closeConfig()">CANCEL</button>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast"></div>
+
+  <!-- Main -->
+  <div id="app">
+    <div id="header">
+      <div>
+        <div class="brand-name">M.A.R.C.U.S.</div>
+        <div class="brand-sub">Modular Adaptive Reasoning & Coaching Unified System</div>
+      </div>
+      <div class="header-right">
+        <div class="live-indicator"><div class="live-dot"></div>ONLINE</div>
+        <div id="clock"></div>
+        <button id="cfg-btn" onclick="openConfig()">⚙ CONFIG</button>
+      </div>
+    </div>
+
+    <div id="center">
+      <div id="stats-strip"></div>
+
+      <div id="orb-wrap" onclick="handleOrb()" title="Click or press Space to speak">
+        <div class="ring ring-1"></div>
+        <div class="ring ring-2"></div>
+        <div class="ring ring-3"></div>
+        <div class="orb-core"></div>
+        <div class="orb-inner">
+          <div class="orb-dot"></div>
+        </div>
+      </div>
+
+      <div id="live-text"></div>
+      <div id="status">Online · Ready</div>
+      <div id="convo"></div>
+    </div>
+
+    <div id="input-bar">
+      <input id="txt-in" type="text" placeholder="Or type here..." onkeydown="onKey(event)">
+      <button class="bar-btn" onclick="sendText()">SEND</button>
+      <button class="bar-btn" id="mic-btn" onclick="toggleMic()">⏺ MIC</button>
+    </div>
+  </div>
+
+  <script>
+    // ── Config ────────────────────────────────────────────────────────
+    const MODEL   = 'claude-sonnet-4-6';
+    const API_URL = 'https://api.anthropic.com/v1/messages';
+    const NS      = 'marcus_';
+
+    // ── State ─────────────────────────────────────────────────────────
+    let apiKey  = localStorage.getItem(NS + 'key') || '';
+    let history = safeJSON(NS + 'history', []);
+    let mode    = 'idle';
+
+    // Speech
+    let recog         = null;
+    let speechQueue   = [];
+    let isSpeaking    = false;
+    const synth       = window.speechSynthesis;
+    let voices        = [];
+    const hasMic      = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+
+    synth.onvoiceschanged = () => { voices = synth.getVoices(); };
+    voices = synth.getVoices();
+
+    // ── Helpers ───────────────────────────────────────────────────────
+    function safeJSON(key, fallback) {
+      try { return JSON.parse(localStorage.getItem(key) || 'null') ?? fallback; } catch { return fallback; }
+    }
+
+    function today() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function esc(s) {
+      return String(s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ── Arete data ────────────────────────────────────────────────────
+    function areteContext() {
+      const td      = today();
+      const name    = localStorage.getItem('hvi_user_name') || '';
+      const habits  = safeJSON('hvi_habits', []);
+      const log     = safeJSON('hvi_log', {});
+      const wLog    = safeJSON('hvi_workout_log', {});
+      const wMeta   = safeJSON('hvi_workout_meta', {});
+      const mLog    = safeJSON('hvi_meal_log', {});
+      const dMeta   = safeJSON('hvi_diet_meta', { dailyGoals: {} });
+      const wtLog   = safeJSON('hvi_weight_log', {});
+      const slLog   = safeJSON('hvi_sleep_log', {});
+      const journal = safeJSON('hvi_journal3', {});
+      const gami    = safeJSON('hvi_gamification', { xp: 0 });
+      const habitH  = safeJSON('hvi_habit_history', {});
+      const prs     = safeJSON('hvi_prs', {});
+
+      // Habits today
+      const done  = habits.filter(h => log[h.id]?.completedToday).length;
+      const total = habits.length;
+      const pct   = total ? Math.round(done / total * 100) : 0;
+
+      // 7-day avg
+      const week = [...Array(7)].map((_, i) => {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        return d.toISOString().slice(0, 10);
+      });
+      const wTotal = week.reduce((s, d) => {
+        if (d === td) return s + done;
+        return s + Object.values(habitH).filter(a => Array.isArray(a) && a.includes(d)).length;
+      }, 0);
+      const wAvg = total ? Math.round(wTotal / 7 / total * 100) : 0;
+      const maxStreak = habits.reduce((m, h) => Math.max(m, log[h.id]?.streak || 0), 0);
+
+      const habitsStr = habits.map(h =>
+        `  - "${h.name}" [${h.category}]${log[h.id]?.completedToday ? ' ✓' : ' ✗'} streak:${log[h.id]?.streak || 0}d`
+      ).join('\n');
+
+      // Workout
+      const tw = wLog[td];
+      const workoutToday = tw
+        ? `Logged: ${tw.dayName || 'Session'}${tw.duration ? ' (' + tw.duration + 'min)' : ''}`
+        : 'Not logged yet';
+
+      const recentW = Object.keys(wLog).sort().reverse().slice(0, 5).map(d => {
+        const w   = wLog[d];
+        const vol = (w.exercises || []).reduce((s, ex) =>
+          s + (ex.sets || []).reduce((ss, set) =>
+            ss + (!set.warmup && set.kg && set.reps ? set.kg * set.reps : 0), 0), 0);
+        return `  ${d}: ${w.dayName || 'Workout'}${vol ? ' | ' + vol.toLocaleString() + 'kg vol' : ''}`;
+      }).join('\n');
+
+      // Nutrition
+      const todayMeals = Object.values(mLog[td] || {}).flat();
+      const mac = todayMeals.reduce((s, i) => ({
+        cal: s.cal + (i.cal || 0), p: s.p + (i.p || 0),
+        c: s.c + (i.c || 0),       f: s.f + (i.f || 0),
+      }), { cal: 0, p: 0, c: 0, f: 0 });
+      const goals = dMeta.dailyGoals || {};
+
+      // Weight
+      const wtKeys = Object.keys(wtLog).sort().reverse();
+      const latestWt = wtKeys[0] ? `${wtLog[wtKeys[0]]}kg (${wtKeys[0]})` : 'not logged';
+
+      // Sleep
+      const slKeys = Object.keys(slLog).sort().reverse().slice(0, 3);
+      const sleepStr = slKeys.length
+        ? slKeys.map(d => `  ${d}: ${slLog[d].hours || '?'}h quality:${slLog[d].quality || '?'}/5`).join('\n')
+        : '  No data';
+
+      // Journal
+      const jKeys = Object.keys(journal).sort().reverse();
+      const lj = jKeys[0] ? journal[jKeys[0]] : null;
+      const journalStr = lj
+        ? `Date: ${jKeys[0]}\n  Win: ${lj.win || '—'}\n  Struggle: ${lj.struggle || '—'}\n  Focus: ${lj.focus || '—'}`
+        : 'No entries';
+
+      const xp    = gami.xp || 0;
+      const level = Math.floor(Math.sqrt(xp / 100)) + 1;
+
+      return {
+        name, td, done, total, pct, wAvg, maxStreak,
+        habitsStr, workoutToday, recentW,
+        mac, goals, latestWt, sleepStr, journalStr,
+        xp, level, prs,
+      };
+    }
+
+    // ── System prompt ─────────────────────────────────────────────────
+    function sysPrompt() {
+      const c = areteContext();
+      const h = new Date().getHours();
+      const gr = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
+
+      return `You are MARCUS — the personal AI of ${c.name || 'your user'}, named after Marcus Aurelius, the Stoic emperor.
+
+Personality: British, precise, dry-witted, occasionally sardonic, deeply loyal. You call them "sir" sparingly. You are brilliant and direct — never verbose or sycophantic. You are simultaneously their coach, strategist, and accountability partner. Your singular purpose: help them become the absolute best version of themselves — mentally, physically, financially, socially.
+
+You have live access to their Arete performance data:
+
+TODAY: ${c.td} (${gr})
+NAME: ${c.name || 'Unknown'}
+LEVEL: ${c.level} | ${c.xp} XP | Best streak: ${c.maxStreak} days
+
+HABITS TODAY: ${c.done}/${c.total} complete (${c.pct}%) | 7-day avg: ${c.wAvg}%
+${c.habitsStr || '  None configured'}
+
+WORKOUT TODAY: ${c.workoutToday}
+Recent workouts:
+${c.recentW || '  No history'}
+
+NUTRITION TODAY:
+  Calories: ${Math.round(c.mac.cal)} / ${c.goals.calories || '—'}
+  Protein:  ${Math.round(c.mac.p)}g / ${c.goals.protein || '—'}g
+  Carbs:    ${Math.round(c.mac.c)}g / ${c.goals.carbs || '—'}g
+  Fat:      ${Math.round(c.mac.f)}g / ${c.goals.fat || '—'}g
+
+WEIGHT: ${c.latestWt}
+
+SLEEP:
+${c.sleepStr}
+
+LAST JOURNAL:
+  ${c.journalStr}
+
+RULES:
+- This is a voice interface — write clean prose only. No markdown, no bullets, no em-dashes used as list markers, no asterisks
+- Keep replies under 80 words unless detail is explicitly requested
+- Reference their actual numbers to make feedback feel personal
+- Be direct. Hold them accountable without coddling
+- Celebrate genuine wins before coaching — but don't linger
+- Only reference data shown above — never invent context
+- Stoic philosophy is your foundation
+- "Sir" once per response maximum`;
+    }
+
+    // ── Claude streaming ──────────────────────────────────────────────
+    async function ask(userMsg) {
+      setMode('processing');
+      addMsg('user', userMsg);
+
+      history.push({ role: 'user', content: userMsg });
+      if (history.length > 30) history = history.slice(-30);
+
+      const marcusEl = addMsg('marcus', '');
+      const bodyEl   = marcusEl.querySelector('.msg-body');
+
+      let full = '', buf = '';
+      speechQueue = [];
+      isSpeaking  = false;
+
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true',
+          },
+          body: JSON.stringify({
+            model: MODEL,
+            max_tokens: 512,
+            system: sysPrompt(),
+            messages: history.slice(0, -1).concat([{ role: 'user', content: userMsg }]),
+            stream: true,
+          }),
+        });
+
+        if (!res.ok) {
+          const e = await res.json().catch(() => ({}));
+          throw new Error(e.error?.message || `HTTP ${res.status}`);
+        }
+
+        setMode('speaking');
+
+        const reader  = res.body.getReader();
+        const decoder = new TextDecoder();
+        let sseBuf = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          sseBuf += decoder.decode(value, { stream: true });
+          const lines = sseBuf.split('\n');
+          sseBuf = lines.pop();
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const raw = line.slice(6).trim();
+            if (!raw || raw === '[DONE]') continue;
+            try {
+              const ev = JSON.parse(raw);
+              if (ev.type === 'content_block_delta' && ev.delta?.type === 'text_delta') {
+                const chunk = ev.delta.text;
+                full += chunk;
+                buf  += chunk;
+                bodyEl.textContent = full;
+                marcusEl.scrollIntoView({ behavior: 'smooth', block: 'end' });
+
+                // Flush complete sentences to speech
+                const m = buf.match(/^(.*[.!?])\s+(.*)$/s);
+                if (m) {
+                  queueSpeech(m[1].trim());
+                  buf = m[2];
+                }
+              }
+            } catch {}
+          }
+        }
+
+        if (buf.trim()) queueSpeech(buf.trim());
+
+        history.push({ role: 'assistant', content: full });
+        localStorage.setItem(NS + 'history', JSON.stringify(history));
+
+      } catch (err) {
+        bodyEl.textContent = 'System error: ' + err.message;
+        bodyEl.style.color = 'var(--red)';
+        toast('Error: ' + err.message);
+        setMode('idle');
+        isSpeaking = false;
+      }
+    }
+
+    // ── Speech synthesis ──────────────────────────────────────────────
+    function britishVoice() {
+      if (!voices.length) voices = synth.getVoices();
+      const saved = localStorage.getItem(NS + 'voice');
+      if (saved) {
+        const found = voices.find(v => v.voiceURI === saved);
+        if (found) return found;
+      }
+      return (
+        voices.find(v => v.lang === 'en-GB' && /daniel/i.test(v.name)) ||
+        voices.find(v => v.lang === 'en-GB' && !/female|woman|fiona|moira|kate|serena/i.test(v.name)) ||
+        voices.find(v => v.lang === 'en-GB') ||
+        voices.find(v => v.lang.startsWith('en-') && /male|google us/i.test(v.name)) ||
+        voices.find(v => v.lang.startsWith('en')) ||
+        null
+      );
+    }
+
+    function queueSpeech(text) {
+      speechQueue.push(text);
+      if (!isSpeaking) drainQueue();
+    }
+
+    function drainQueue() {
+      if (!speechQueue.length) {
+        isSpeaking = false;
+        if (mode === 'speaking') setMode('idle');
+        return;
+      }
+      isSpeaking = true;
+      const utt   = new SpeechSynthesisUtterance(speechQueue.shift());
+      utt.voice   = britishVoice();
+      utt.rate    = 0.92;
+      utt.pitch   = 0.82;
+      utt.volume  = 1;
+      utt.onend   = drainQueue;
+      utt.onerror = drainQueue;
+      synth.speak(utt);
+    }
+
+    function stopSpeech() {
+      synth.cancel();
+      speechQueue = [];
+      isSpeaking  = false;
+    }
+
+    // ── Speech recognition ────────────────────────────────────────────
+    function initRecog() {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) return null;
+
+      const r       = new SR();
+      r.continuous  = false;
+      r.interimResults = true;
+      r.lang        = 'en-US';
+
+      r.onresult = e => {
+        let interim = '', final = '';
+        for (const res of e.results) {
+          if (res.isFinal) final += res[0].transcript;
+          else interim += res[0].transcript;
+        }
+        document.getElementById('live-text').textContent = final || interim;
+        if (final.trim()) {
+          setTimeout(() => {
+            document.getElementById('live-text').textContent = '';
+            ask(final.trim());
+          }, 80);
+        }
+      };
+
+      r.onerror = e => {
+        if (e.error === 'not-allowed') toast('Microphone permission denied');
+        else if (e.error !== 'no-speech') toast('Voice error: ' + e.error);
+        setMode('idle');
+      };
+
+      r.onend = () => { if (mode === 'listening') setMode('idle'); };
+
+      return r;
+    }
+
+    function toggleMic() {
+      if (!hasMic) { toast('Voice input requires Chrome or Safari'); return; }
+
+      if (mode === 'listening') {
+        recog?.stop();
+        setMode('idle');
+        return;
+      }
+
+      stopSpeech();
+      recog = initRecog();
+      if (!recog) return;
+      setMode('listening');
+      try { recog.start(); } catch { setMode('idle'); }
+    }
+
+    // ── UI ────────────────────────────────────────────────────────────
+    function handleOrb() {
+      if (mode === 'listening')  { recog?.stop(); setMode('idle'); return; }
+      if (mode === 'speaking')   { stopSpeech(); setMode('idle'); return; }
+      if (mode === 'processing') return;
+      toggleMic();
+    }
+
+    function setMode(m) {
+      mode = m;
+      document.body.className = m;
+      const labels = { idle: 'Online · Ready', listening: 'Listening...', processing: 'Processing...', speaking: 'Speaking...' };
+      document.getElementById('status').textContent = labels[m] || m;
+      const micBtn = document.getElementById('mic-btn');
+      if (micBtn) micBtn.textContent = m === 'listening' ? '⏹ STOP' : '⏺ MIC';
+    }
+
+    function addMsg(role, text) {
+      const el  = document.createElement('div');
+      el.className = `msg ${role}`;
+      el.innerHTML = `<div class="msg-who">${role === 'user' ? 'YOU' : 'MARCUS'}</div><div class="msg-body">${esc(text)}</div>`;
+      const convo = document.getElementById('convo');
+      convo.appendChild(el);
+      el.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      return el;
+    }
+
+    function toast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 3500);
+    }
+
+    function onKey(e) { if (e.key === 'Enter') sendText(); }
+
+    function sendText() {
+      const inp  = document.getElementById('txt-in');
+      const text = inp.value.trim();
+      if (!text || mode === 'processing' || mode === 'listening') return;
+      inp.value = '';
+      stopSpeech();
+      ask(text);
+    }
+
+    // ── Stats strip ───────────────────────────────────────────────────
+    function renderStats() {
+      const c = areteContext();
+      const items = [
+        { v: `${c.done}/${c.total}`, l: 'Habits' },
+        { v: `${c.pct}%`,           l: 'Today'  },
+        { v: `${c.wAvg}%`,          l: '7-Day'  },
+        { v: `${Math.round(c.mac.p)}g`, l: 'Protein' },
+        { v: `Lv ${c.level}`,       l: 'Level'  },
+      ];
+      document.getElementById('stats-strip').innerHTML =
+        items.map(i => `<div class="stat"><div class="stat-val">${i.v}</div><div class="stat-lbl">${i.l}</div></div>`).join('');
+    }
+
+    // ── Clock ─────────────────────────────────────────────────────────
+    function tickClock() {
+      const now = new Date();
+      document.getElementById('clock').textContent =
+        now.toLocaleDateString('en-GB', { weekday:'short', day:'2-digit', month:'short' }).toUpperCase() +
+        ' · ' +
+        now.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+    }
+    tickClock();
+    setInterval(tickClock, 30000);
+
+    // ── Setup / config ────────────────────────────────────────────────
+    function boot() {
+      const k = document.getElementById('setup-inp').value.trim();
+      if (!k.startsWith('sk-ant-')) { toast('Invalid key — must start with sk-ant-'); return; }
+      apiKey = k;
+      localStorage.setItem(NS + 'key', k);
+      document.getElementById('setup').classList.add('hidden');
+      onReady();
+    }
+
+    function openConfig() {
+      // Populate voice list
+      if (!voices.length) voices = synth.getVoices();
+      const sel = document.getElementById('voice-select');
+      const saved = localStorage.getItem(NS + 'voice');
+      const current = britishVoice();
+      sel.innerHTML = voices
+        .filter(v => v.lang.startsWith('en'))
+        .map(v => `<option value="${v.voiceURI}" ${(saved ? v.voiceURI === saved : v === current) ? 'selected' : ''}>${v.name} (${v.lang})</option>`)
+        .join('');
+
+      // Pre-fill key
+      document.getElementById('cfg-key-inp').value = apiKey ? '••••••••••••••••' : '';
+
+      document.getElementById('config-modal').classList.remove('hidden');
+    }
+
+    function closeConfig() {
+      document.getElementById('config-modal').classList.add('hidden');
+    }
+
+    function previewVoice() {
+      synth.cancel();
+      const sel = document.getElementById('voice-select');
+      const voice = voices.find(v => v.voiceURI === sel.value);
+      const utt = new SpeechSynthesisUtterance('Online and ready, sir. How may I assist?');
+      utt.voice = voice;
+      utt.rate  = 0.92;
+      utt.pitch = 0.82;
+      synth.speak(utt);
+    }
+
+    function saveConfig() {
+      const k   = document.getElementById('cfg-key-inp').value.trim();
+      const sel = document.getElementById('voice-select');
+
+      if (k && !k.startsWith('•')) {
+        if (!k.startsWith('sk-ant-')) { toast('Invalid key format'); return; }
+        apiKey = k;
+        localStorage.setItem(NS + 'key', k);
+      }
+
+      if (sel.value) localStorage.setItem(NS + 'voice', sel.value);
+
+      closeConfig();
+      toast('Settings saved');
+    }
+
+    // Keyboard: Space = mic, Esc = stop
+    document.addEventListener('keydown', e => {
+      if (e.target === document.getElementById('txt-in') ||
+          e.target === document.getElementById('setup-inp')) return;
+      if (e.code === 'Space' && mode === 'idle')   { e.preventDefault(); toggleMic(); }
+      if (e.code === 'Escape')                      { stopSpeech(); recog?.stop(); setMode('idle'); }
+    });
+
+    document.getElementById('setup-inp').addEventListener('keydown', e => {
+      if (e.key === 'Enter') boot();
+    });
+
+    // ── Ready ─────────────────────────────────────────────────────────
+    function onReady() {
+      renderStats();
+
+      // Replay last few messages
+      const convo = document.getElementById('convo');
+      convo.innerHTML = '';
+      history.slice(-8).forEach(m => {
+        if (m.role === 'user' || m.role === 'assistant')
+          addMsg(m.role === 'user' ? 'user' : 'marcus', m.content);
+      });
+
+      // Welcome on first launch
+      if (!history.length) {
+        const c    = areteContext();
+        const h    = new Date().getHours();
+        const gr   = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+        const left = c.total - c.done;
+
+        let welcome;
+        if (!c.total) {
+          welcome = `${gr}${c.name ? ', ' + c.name : ', sir'}. Systems are online. I don't see any Arete data yet — open the Arete app to get started, then come back and we'll get to work.`;
+        } else if (left === 0) {
+          welcome = `${gr}, ${c.name || 'sir'}. All ${c.total} habits completed today. That's the standard — not the exception. What do we work on next?`;
+        } else {
+          welcome = `${gr}, ${c.name || 'sir'}. ${c.done} of ${c.total} habits done today. ${left} remaining. You know what needs to happen.`;
+        }
+
+        setTimeout(() => {
+          addMsg('marcus', welcome);
+          queueSpeech(welcome);
+        }, 500);
+      }
+    }
+
+    // ── Init ──────────────────────────────────────────────────────────
+    if (apiKey) {
+      document.getElementById('setup').classList.add('hidden');
+      onReady();
+    }
+  </script>
+</body>
+</html>
