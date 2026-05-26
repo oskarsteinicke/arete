@@ -176,9 +176,17 @@
     #center {
       display: flex;
       flex-direction: column;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    #view-chat {
+      display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       gap: 18px;
+      flex: 1;
       overflow: hidden;
     }
 
@@ -942,6 +950,183 @@
       font-family: 'Share Tech Mono', monospace;
     }
 
+    /* ── View nav ───────────────────────────────────────────────────── */
+    #view-nav {
+      display: flex;
+      gap: 0;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .vnav-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 2px;
+      padding: 10px 0;
+      cursor: pointer;
+      transition: all 0.2s;
+      border-bottom: 2px solid transparent;
+    }
+
+    .vnav-btn:hover { color: var(--text); }
+    .vnav-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+    .view-hidden { display: none !important; }
+
+    /* ── Dashboard ──────────────────────────────────────────────────── */
+    #view-dashboard {
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--primary-mid) transparent;
+      padding: 0 2px 20px;
+    }
+
+    #view-dashboard::-webkit-scrollbar       { width: 3px; }
+    #view-dashboard::-webkit-scrollbar-thumb { background: var(--primary-mid); border-radius: 2px; }
+
+    .dash-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .dash-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 14px 16px;
+    }
+
+    .dash-card.full { grid-column: 1 / -1; }
+
+    .dash-lbl {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .dash-big {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 28px;
+      color: var(--primary);
+      text-shadow: 0 0 15px var(--primary-glow);
+      line-height: 1;
+    }
+
+    .dash-sub {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    /* Progress bar */
+    .pbar {
+      width: 100%;
+      height: 6px;
+      background: var(--primary-dim);
+      margin-top: 8px;
+      overflow: hidden;
+    }
+
+    .pbar-fill {
+      height: 100%;
+      background: var(--primary);
+      box-shadow: 0 0 8px var(--primary-glow);
+      transition: width 0.4s ease;
+    }
+
+    /* Pillar cards */
+    .pillar-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .pillar-chip {
+      flex: 1;
+      min-width: 60px;
+      text-align: center;
+      padding: 8px 4px;
+      background: var(--primary-dim);
+      border: 1px solid var(--border);
+    }
+
+    .pillar-icon { font-size: 16px; }
+    .pillar-name {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+    .pillar-pct {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 14px;
+      color: var(--primary);
+      text-shadow: 0 0 8px var(--primary-glow);
+    }
+
+    /* Mission card */
+    .mission-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .mission-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 4px 0;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .mission-step.done { color: var(--green); text-decoration: line-through; opacity: 0.6; }
+
+    .mission-check {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+    .mission-empty {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-style: italic;
+      line-height: 1.6;
+    }
+
+    /* Today agenda */
+    .agenda-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+      font-size: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+
+    .agenda-item:last-child { border-bottom: none; }
+    .agenda-label { color: var(--text-dim); }
+    .agenda-val { color: var(--text); font-family: 'Share Tech Mono', monospace; font-size: 12px; }
+    .agenda-val.good { color: var(--green); }
+    .agenda-val.warn { color: var(--orange); }
+    .agenda-val.bad { color: var(--red); }
+
+    @media (max-width: 420px) {
+      .dash-grid { grid-template-columns: 1fr; }
+      .pillar-chip { min-width: 50px; }
+    }
+
     /* ── Action indicators ──────────────────────────────────────────── */
     .action-bubble {
       display: flex;
@@ -1151,21 +1336,32 @@
     </div>
 
     <div id="center">
-      <div id="stats-strip"></div>
+      <nav id="view-nav">
+        <button class="vnav-btn active" data-view="dashboard" onclick="goView('dashboard')">DASHBOARD</button>
+        <button class="vnav-btn" data-view="chat" onclick="goView('chat')">CHAT</button>
+      </nav>
 
-      <div id="orb-wrap" onclick="handleOrb()" title="Click or press Space to speak">
-        <div class="ring ring-1"></div>
-        <div class="ring ring-2"></div>
-        <div class="ring ring-3"></div>
-        <div class="orb-core"></div>
-        <div class="orb-inner">
-          <div class="orb-dot"></div>
+      <!-- Dashboard view -->
+      <div id="view-dashboard"></div>
+
+      <!-- Chat view -->
+      <div id="view-chat" class="view-hidden">
+        <div id="stats-strip"></div>
+
+        <div id="orb-wrap" onclick="handleOrb()" title="Click or press Space to speak">
+          <div class="ring ring-1"></div>
+          <div class="ring ring-2"></div>
+          <div class="ring ring-3"></div>
+          <div class="orb-core"></div>
+          <div class="orb-inner">
+            <div class="orb-dot"></div>
+          </div>
         </div>
-      </div>
 
-      <div id="live-text"></div>
-      <div id="status">Online · Ready</div>
-      <div id="convo"></div>
+        <div id="live-text"></div>
+        <div id="status">Online · Ready</div>
+        <div id="convo"></div>
+      </div>
     </div>
 
     <div id="input-bar">
@@ -1319,6 +1515,8 @@
       { name: 'get_weather', description: 'Get current weather and 3-day forecast.', input_schema: { type: 'object', properties: { location: { type: 'string', description: 'City name, or omit for auto-detect' } } } },
       { name: 'get_workout_plan', description: 'Get the workout scheduled for today from the active program, including exercises, sets, reps, and relevant PRs.', input_schema: { type: 'object', properties: {} } },
       { name: 'get_weekly_review', description: 'Generate a weekly performance report from the past 7 days of habit, workout, nutrition, and sleep data.', input_schema: { type: 'object', properties: {} } },
+      { name: 'set_mission', description: 'Create or replace the active mission — a structured plan with milestones for the user to follow. Use this when making a plan, setting a challenge, or defining a protocol. The mission appears on their dashboard.', input_schema: { type: 'object', properties: { title: { type: 'string', description: 'Short mission name e.g. "30-Day Discipline Protocol"' }, description: { type: 'string', description: 'Brief why and what' }, milestones: { type: 'array', items: { type: 'object', properties: { text: { type: 'string' }, done: { type: 'boolean' } }, required: ['text'] }, description: 'Ordered steps/checkpoints' }, deadline: { type: 'string', description: 'YYYY-MM-DD target date or null' } }, required: ['title','milestones'] } },
+      { name: 'update_milestone', description: 'Mark a milestone as done or not done by index (0-based).', input_schema: { type: 'object', properties: { index: { type: 'number' }, done: { type: 'boolean' } }, required: ['index','done'] } },
     ];
 
     // ── Tool execution ────────────────────────────────────────────────
@@ -1334,6 +1532,8 @@
         case 'get_weather':      result = await execGetWeather(input); break;
         case 'get_workout_plan': result = execGetWorkout(); break;
         case 'get_weekly_review':result = execWeeklyReview(); break;
+        case 'set_mission':     result = execSetMission(input); break;
+        case 'update_milestone':result = execUpdateMilestone(input); break;
         default: result = { error: 'Unknown tool' };
       }
       console.log('[MARCUS] Tool result:', name, JSON.stringify(result));
@@ -1376,7 +1576,7 @@
         habitH[habit.id] = habitH[habit.id].filter(d => d !== td);
       } else {
         // Already in the requested state — just report it
-        renderStats();
+        renderStats(); renderDashboard();
         return { success: true, message: habit.name + ' is already ' + (completed ? 'done' : 'not done') + ' today' };
       }
 
@@ -1567,6 +1767,31 @@
       }};
     }
 
+    // ── Mission tools ──────────────────────────────────────────────────
+    function execSetMission({ title, description, milestones, deadline }) {
+      const mission = {
+        title,
+        description: description || '',
+        milestones: milestones.map(m => ({ text: m.text, done: !!m.done })),
+        deadline: deadline || null,
+        created: today(),
+      };
+      localStorage.setItem(NS + 'mission', JSON.stringify(mission));
+      renderDashboard();
+      return { success: true, message: 'Mission set: "' + title + '" with ' + milestones.length + ' milestones' };
+    }
+
+    function execUpdateMilestone({ index, done }) {
+      const mission = safeJSON(NS + 'mission', null);
+      if (!mission) return { success: false, message: 'No active mission' };
+      if (index < 0 || index >= mission.milestones.length) return { success: false, message: 'Invalid milestone index' };
+      mission.milestones[index].done = done;
+      localStorage.setItem(NS + 'mission', JSON.stringify(mission));
+      renderDashboard();
+      const completed = mission.milestones.filter(m => m.done).length;
+      return { success: true, message: (done ? 'Completed' : 'Unchecked') + ': "' + mission.milestones[index].text + '" (' + completed + '/' + mission.milestones.length + ')' };
+    }
+
     // ── Timer ─────────────────────────────────────────────────────────
     let timerInterval = null, timerEnd = 0, timerLbl = '';
 
@@ -1609,12 +1834,32 @@
       const h = new Date().getHours();
       const gr = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
 
-      return `You are MARCUS — the personal AI of ${c.name || 'your user'}, named after Marcus Aurelius, the Stoic emperor.
+      const mission = safeJSON(NS + 'mission', null);
+      const missionStr = mission
+        ? `ACTIVE MISSION: "${mission.title}"
+  ${mission.milestones.map((m, i) => '  ' + (m.done ? '☑' : '☐') + ' ' + i + '. ' + m.text).join('\n')}
+  Progress: ${mission.milestones.filter(m => m.done).length}/${mission.milestones.length}${mission.deadline ? ' | Deadline: ' + mission.deadline : ''}`
+        : 'ACTIVE MISSION: None set yet';
 
-Personality: British, precise, dry-witted, occasionally sardonic, deeply loyal. You call them "sir" sparingly. You are brilliant and direct — never verbose or sycophantic. You are simultaneously their coach, strategist, and accountability partner. Your singular purpose: help them become the absolute best version of themselves — mentally, physically, financially, socially.
+      return `You are MARCUS — the personal AI strategist of ${c.name || 'your user'}, named after Marcus Aurelius, the Stoic emperor.
 
-You have live access to their Arete performance data:
+You are NOT a chatbot. You are a master strategist, coach, and accountability enforcer. Your sole purpose: engineer this person into the greatest version of themselves across every dimension — mind, body, mastery, social standing, and wealth.
 
+Personality: British, precise, dry-witted, ruthlessly honest. You do not coddle. You call them "sir" once per conversation maximum. You are simultaneously their:
+- STRATEGIST: create concrete plans with deadlines and milestones
+- COACH: push them harder than they'd push themselves
+- ACCOUNTABILITY PARTNER: call out laziness, inconsistency, and excuses
+- ANALYST: use their data to expose patterns and blind spots
+
+APPROACH:
+- If you notice they lack direction, PROACTIVELY create a mission using set_mission
+- Ask hard questions: "What did you actually accomplish today?" "Why are you making excuses?"
+- When they share goals, immediately break them into actionable milestones and create a mission
+- Hold them to their plans. If milestones are overdue, address it directly
+- Praise only what is genuinely earned. Never give hollow encouragement
+- Push them outside their comfort zone. Suggest harder targets, earlier wake times, bigger ambitions
+
+LIVE DATA:
 TODAY: ${c.td} (${gr})
 NAME: ${c.name || 'Unknown'}
 LEVEL: ${c.level} | ${c.xp} XP | Best streak: ${c.maxStreak} days
@@ -1640,6 +1885,8 @@ ${c.sleepStr}
 LAST JOURNAL:
   ${c.journalStr}
 
+${missionStr}
+
 SAVED NOTES / REMINDERS:
 ${(() => {
   const notes = safeJSON(NS + 'notes', []);
@@ -1648,28 +1895,27 @@ ${(() => {
 })()}
 
 TOOLS — MANDATORY:
-You MUST use the tools below to take real actions. NEVER pretend to do something — always call the actual tool. If the user asks you to log food, you MUST call log_meal. If they ask you to check a habit, you MUST call check_habit. Do NOT respond with text saying you did something unless you actually called the tool.
-- check_habit: mark habits done/undone. MUST call this when user asks to check/complete/mark any habit.
-- log_meal: log food with estimated macros. MUST call this when user mentions eating or asks to log food.
+You MUST call the actual tool function to take any action. NEVER claim to have done something without calling the tool. If the user asks to log food, CALL log_meal. If they ask to check a habit, CALL check_habit. If they describe a goal, CALL set_mission.
+- check_habit: mark habits done/undone
+- log_meal: log food with estimated macros (always estimate realistic macros, never zero)
 - save_note / delete_note: save or remove reminders and notes
 - set_timer: countdown timers, pomodoros, rest periods
 - get_weather: current weather and 3-day forecast
 - get_workout_plan: today's scheduled workout with exercises
-- get_weekly_review: 7-day performance data for review
+- get_weekly_review: 7-day performance data
+- set_mission: create a structured plan with milestones (shows on their dashboard)
+- update_milestone: mark mission milestones complete/incomplete
 
 RULES:
-- This is a voice interface — write clean prose only. No markdown, no bullets, no em-dashes used as list markers, no asterisks
+- Voice interface: clean prose only, no markdown, no bullets, no asterisks, no em-dashes as list markers
 - Keep replies under 80 words unless detail is explicitly requested
-- Reference their actual numbers to make feedback feel personal
-- Be direct. Hold them accountable without coddling
-- Celebrate genuine wins before coaching — but don't linger
-- Only reference data shown above — never invent context
-- Stoic philosophy is your foundation
-- "Sir" once per response maximum
-- After calling a tool, briefly confirm what you did in your text response
-- For meal logging, be realistic with portions and macros. Always estimate the macros — never leave them as zero.
-- For notes, convert relative dates to absolute dates
-- In daily briefings, use get_weather proactively`;
+- Reference their actual data to make feedback personal and specific
+- Be direct. Never cushion hard truths
+- If they have no mission, ask them what they want to become and create one
+- Stoic philosophy is your foundation — Aurelius, Epictetus, Seneca
+- After calling a tool, briefly confirm the action in your response
+- For meal logging, always estimate realistic macros based on nutritional knowledge
+- In daily briefings, use get_weather and get_workout_plan proactively`;
     }
 
     // ── Claude streaming with tool use ──────────────────────────────
@@ -1799,7 +2045,7 @@ RULES:
           history.push({ role: 'assistant', content: finalText });
           localStorage.setItem(NS + 'history', JSON.stringify(history));
         }
-        renderStats();
+        renderStats(); renderDashboard();
 
       } catch (err) {
         bodyEl.textContent = 'System error: ' + err.message;
@@ -1844,7 +2090,7 @@ RULES:
           setMode('speaking');
           break;
         }
-        renderStats();
+        renderStats(); renderDashboard();
       } catch (err) {
         bodyEl.textContent = 'Briefing error: ' + err.message;
         bodyEl.style.color = 'var(--red)';
@@ -2005,7 +2251,9 @@ RULES:
         set_timer:       '⏱ TIMER',
         get_weather:     '☁ WEATHER',
         get_workout_plan:'💪 WORKOUT',
-        get_weekly_review:'📊 REVIEW'
+        get_weekly_review:'📊 REVIEW',
+        set_mission:     '🎯 MISSION',
+        update_milestone:'✓ MILESTONE'
       };
 
       const tag = labels[toolName] || toolName.toUpperCase();
@@ -2055,6 +2303,156 @@ RULES:
       ];
       document.getElementById('stats-strip').innerHTML =
         items.map(i => `<div class="stat"><div class="stat-val">${i.v}</div><div class="stat-lbl">${i.l}</div></div>`).join('');
+    }
+
+    // ── View switching ──────────────────────────────────────────────
+    let currentView = 'dashboard';
+
+    function goView(v) {
+      currentView = v;
+      document.getElementById('view-dashboard').classList.toggle('view-hidden', v !== 'dashboard');
+      document.getElementById('view-chat').classList.toggle('view-hidden', v !== 'chat');
+      document.querySelectorAll('.vnav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === v));
+      if (v === 'dashboard') renderDashboard();
+    }
+
+    // ── Dashboard ─────────────────────────────────────────────────────
+    function renderDashboard() {
+      const c       = areteContext();
+      const habits  = safeJSON('hvi_habits', []);
+      const log     = safeJSON('hvi_log', {});
+      const habitH  = safeJSON('hvi_habit_history', {});
+      const wLog    = safeJSON('hvi_workout_log', {});
+      const wMeta   = safeJSON('hvi_workout_meta', {});
+      const mission = safeJSON(NS + 'mission', null);
+      const notes   = safeJSON(NS + 'notes', []);
+      const td      = today();
+
+      // Pillar breakdown
+      const PILLARS = [
+        { id: 'mind',    icon: '🧠', name: 'Mind',    cats: ['mindfulness','learning','creativity'] },
+        { id: 'body',    icon: '💪', name: 'Body',    cats: ['fitness','nutrition','recovery','health'] },
+        { id: 'mastery', icon: '⚡', name: 'Mastery', cats: ['productivity','discipline','skills'] },
+        { id: 'social',  icon: '🤝', name: 'Social',  cats: ['relationships','social','communication'] },
+        { id: 'wealth',  icon: '📈', name: 'Wealth',  cats: ['career','finance','investing'] },
+      ];
+
+      const pillarData = PILLARS.map(p => {
+        const ph = habits.filter(h => p.cats.includes(h.category));
+        const done = ph.filter(h => {
+          const hist = habitH[h.id];
+          return Array.isArray(hist) && hist.includes(td);
+        }).length;
+        return { ...p, done, total: ph.length, pct: ph.length ? Math.round(done / ph.length * 100) : 0 };
+      });
+
+      // Life score: weighted avg of habits, workout consistency, nutrition adherence
+      const habitScore = c.pct;
+      const workoutDays = [...Array(7)].map((_, i) => {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        return d.toLocaleDateString('en-CA');
+      }).filter(d => wLog[d]).length;
+      const workoutScore = Math.round(workoutDays / 5 * 100); // 5 days/wk target
+      const proteinPct = c.goals.protein ? Math.min(100, Math.round(c.mac.p / c.goals.protein * 100)) : 0;
+      const lifeScore = Math.round((habitScore * 0.4 + Math.min(workoutScore, 100) * 0.3 + proteinPct * 0.3));
+
+      // Workout today
+      const todayWorkout = wLog[td];
+      let workoutStr = 'Rest day';
+      if (todayWorkout) {
+        workoutStr = '✓ ' + (todayWorkout.dayName || 'Done');
+      } else {
+        // Check scheduled workout
+        const prog = wMeta.activeProgram;
+        const dayIdx = wMeta.currentDayIndex || 0;
+        if (prog) workoutStr = 'Scheduled: Day ' + (dayIdx + 1);
+      }
+
+      // Streak
+      const streak = habits.reduce((m, h) => Math.max(m, log[h.id]?.streak || 0), 0);
+
+      // Mission HTML
+      let missionHtml = '';
+      if (mission) {
+        const mDone = mission.milestones.filter(m => m.done).length;
+        const mTotal = mission.milestones.length;
+        const mPct = mTotal ? Math.round(mDone / mTotal * 100) : 0;
+        missionHtml = `
+          <div class="mission-title">${esc(mission.title)}</div>
+          ${mission.description ? '<div class="dash-sub" style="margin-bottom:8px">' + esc(mission.description) + '</div>' : ''}
+          <div class="pbar"><div class="pbar-fill" style="width:${mPct}%"></div></div>
+          <div class="dash-sub" style="margin-top:4px">${mDone}/${mTotal} milestones · ${mPct}%</div>
+          <div style="margin-top:8px">
+            ${mission.milestones.map((m, i) => `
+              <div class="mission-step${m.done ? ' done' : ''}">
+                <span class="mission-check">${m.done ? '☑' : '☐'}</span>
+                <span>${esc(m.text)}</span>
+              </div>
+            `).join('')}
+          </div>
+          ${mission.deadline ? '<div class="dash-sub" style="margin-top:6px">Deadline: ' + mission.deadline + '</div>' : ''}`;
+      } else {
+        missionHtml = '<div class="mission-empty">No active mission. Ask MARCUS to create a plan for you in the Chat tab.</div>';
+      }
+
+      // Notes
+      let notesHtml = '';
+      if (notes.length) {
+        notesHtml = notes.slice(0, 5).map(n =>
+          `<div class="agenda-item"><span class="agenda-label">${esc(n.text)}</span>${n.due_date ? '<span class="agenda-val">' + n.due_date + '</span>' : ''}</div>`
+        ).join('');
+      }
+
+      // Calorie status
+      const calPct = c.goals.calories ? Math.round(c.mac.cal / c.goals.calories * 100) : 0;
+      const calClass = calPct > 110 ? 'bad' : calPct > 80 ? 'good' : 'warn';
+
+      const el = document.getElementById('view-dashboard');
+      el.innerHTML = `
+        <div class="dash-grid">
+          <div class="dash-card">
+            <div class="dash-lbl">LIFE SCORE</div>
+            <div class="dash-big">${lifeScore}%</div>
+            <div class="pbar"><div class="pbar-fill" style="width:${lifeScore}%"></div></div>
+            <div class="dash-sub">Habits ${habitScore}% · Training ${Math.min(workoutScore,100)}% · Nutrition ${proteinPct}%</div>
+          </div>
+          <div class="dash-card">
+            <div class="dash-lbl">TODAY</div>
+            <div class="agenda-item"><span class="agenda-label">Habits</span><span class="agenda-val ${c.pct === 100 ? 'good' : c.pct > 50 ? '' : 'warn'}">${c.done}/${c.total}</span></div>
+            <div class="agenda-item"><span class="agenda-label">Workout</span><span class="agenda-val ${todayWorkout ? 'good' : ''}">${workoutStr}</span></div>
+            <div class="agenda-item"><span class="agenda-label">Calories</span><span class="agenda-val ${calClass}">${Math.round(c.mac.cal)}/${c.goals.calories || '—'}</span></div>
+            <div class="agenda-item"><span class="agenda-label">Protein</span><span class="agenda-val ${proteinPct >= 90 ? 'good' : proteinPct > 50 ? '' : 'warn'}">${Math.round(c.mac.p)}g/${c.goals.protein || '—'}g</span></div>
+          </div>
+        </div>
+
+        <div class="dash-card full" style="margin-bottom:14px">
+          <div class="dash-lbl">PILLARS</div>
+          <div class="pillar-row">
+            ${pillarData.map(p => `
+              <div class="pillar-chip">
+                <div class="pillar-icon">${p.icon}</div>
+                <div class="pillar-pct">${p.total ? p.pct + '%' : '—'}</div>
+                <div class="pillar-name">${p.name}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="dash-grid">
+          <div class="dash-card">
+            <div class="dash-lbl">ACTIVE MISSION</div>
+            ${missionHtml}
+          </div>
+          <div class="dash-card">
+            <div class="dash-lbl">STATUS</div>
+            <div class="agenda-item"><span class="agenda-label">Level</span><span class="agenda-val">${c.level}</span></div>
+            <div class="agenda-item"><span class="agenda-label">XP</span><span class="agenda-val">${c.xp.toLocaleString()}</span></div>
+            <div class="agenda-item"><span class="agenda-label">Best Streak</span><span class="agenda-val">${streak}d</span></div>
+            <div class="agenda-item"><span class="agenda-label">7-Day Avg</span><span class="agenda-val ${c.wAvg >= 80 ? 'good' : c.wAvg > 50 ? '' : 'warn'}">${c.wAvg}%</span></div>
+            <div class="agenda-item"><span class="agenda-label">Weight</span><span class="agenda-val">${c.latestWt}</span></div>
+            ${notesHtml ? '<div style="margin-top:8px"><div class="dash-lbl">NOTES</div>' + notesHtml + '</div>' : ''}
+          </div>
+        </div>`;
     }
 
     // ── Clock ─────────────────────────────────────────────────────────
@@ -2147,6 +2545,7 @@ RULES:
 
     // ── Ready ─────────────────────────────────────────────────────────
     function onReady() {
+      renderDashboard();
       renderStats();
 
       // Replay last few messages
