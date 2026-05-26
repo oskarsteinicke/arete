@@ -1093,17 +1093,25 @@ async function _lbJoinGroupById(groupId) {
   const name = userName() || 'Anonymous';
   const stats = _buildMyStats();
 
+  // Use return=minimal to avoid RLS SELECT chicken-and-egg issue
+  // Try plain INSERT first, fall back to PATCH if already a member
   const res = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard_members`, {
     method: 'POST',
-    headers: { ..._lbHeaders(), 'Prefer': 'resolution=merge-duplicates,return=representation' },
+    headers: { ..._lbHeaders(), 'Prefer': 'return=minimal' },
     body: JSON.stringify({ group_id: groupId, user_id: uid, display_name: name, stats, updated_at: new Date().toISOString() }),
   });
-  if (!res.ok) {
-    const err = await res.text().catch(() => '');
-    console.warn('[lb] join failed:', res.status, err);
-    return { error: 'Failed to join group' };
+  if (res.ok || res.status === 201) return { ok: true };
+
+  // 409 = already a member (unique constraint), that's fine
+  if (res.status === 409) {
+    // Update stats instead
+    await _lbPushMyStats(groupId);
+    return { ok: true };
   }
-  return { ok: true };
+
+  const err = await res.text().catch(() => '');
+  console.warn('[lb] join failed:', res.status, err);
+  return { error: 'Failed to join group. Try again.' };
 }
 
 async function _lbFetchMyGroups() {
