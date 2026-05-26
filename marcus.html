@@ -942,6 +942,75 @@
       font-family: 'Share Tech Mono', monospace;
     }
 
+    /* ── Action indicators ──────────────────────────────────────────── */
+    .action-bubble {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 0;
+      animation: fadeUp 0.25s ease;
+    }
+
+    .action-tag {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 1px;
+      color: var(--primary);
+      background: var(--primary-dim);
+      padding: 3px 8px;
+      white-space: nowrap;
+    }
+
+    .action-msg {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-family: 'Share Tech Mono', monospace;
+    }
+
+    /* ── Timer bar ──────────────────────────────────────────────────── */
+    #timer-bar {
+      position: fixed;
+      bottom: 72px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 8px 20px;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      z-index: 50;
+      font-family: 'Share Tech Mono', monospace;
+    }
+
+    #timer-bar.hidden { display: none; }
+
+    #timer-lbl {
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    #timer-time {
+      font-size: 22px;
+      color: var(--primary);
+      text-shadow: 0 0 10px var(--primary-glow);
+      letter-spacing: 2px;
+    }
+
+    .timer-x {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 14px;
+      padding: 0 4px;
+      transition: color 0.2s;
+    }
+
+    .timer-x:hover { color: var(--text); }
+
     /* ── Theme picker (in config) ──────────────────────────────────── */
     .theme-row {
       display: flex;
@@ -1055,6 +1124,13 @@
       <button class="setup-go" onclick="saveConfig()">SAVE</button>
       <button class="cfg-cancel" onclick="closeConfig()">CANCEL</button>
     </div>
+  </div>
+
+  <!-- Timer -->
+  <div id="timer-bar" class="hidden">
+    <span id="timer-lbl"></span>
+    <span id="timer-time">0:00</span>
+    <button class="timer-x" onclick="cancelTimer()">✕</button>
   </div>
 
   <!-- Toast -->
@@ -1228,6 +1304,271 @@
       };
     }
 
+    // ── Tools ──────────────────────────────────────────────────────────
+    const TOOLS = [
+      { name: 'check_habit', description: 'Mark a habit as completed or uncompleted for today. Match by partial name.', input_schema: { type: 'object', properties: { habit_name: { type: 'string', description: 'Name or partial match of the habit' }, completed: { type: 'boolean', description: 'true = done, false = undo' } }, required: ['habit_name', 'completed'] } },
+      { name: 'log_meal', description: 'Log a meal with estimated macros. Estimate calories and macros based on nutritional knowledge.', input_schema: { type: 'object', properties: { meal_type: { type: 'string', enum: ['Breakfast','Lunch','Dinner','Snack'] }, items: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, cal: { type: 'number' }, p: { type: 'number', description: 'protein g' }, c: { type: 'number', description: 'carbs g' }, f: { type: 'number', description: 'fat g' }, qty: { type: 'string' } }, required: ['name','cal','p','c','f'] } } }, required: ['meal_type','items'] } },
+      { name: 'save_note', description: 'Save a quick note, reminder, or task for the user.', input_schema: { type: 'object', properties: { text: { type: 'string' }, due_date: { type: 'string', description: 'YYYY-MM-DD or null' } }, required: ['text'] } },
+      { name: 'delete_note', description: 'Delete a saved note by its text (partial match).', input_schema: { type: 'object', properties: { text: { type: 'string', description: 'Text to match against saved notes' } }, required: ['text'] } },
+      { name: 'set_timer', description: 'Set a countdown timer (focus session, pomodoro, rest, etc).', input_schema: { type: 'object', properties: { minutes: { type: 'number' }, label: { type: 'string' } }, required: ['minutes'] } },
+      { name: 'get_weather', description: 'Get current weather and 3-day forecast.', input_schema: { type: 'object', properties: { location: { type: 'string', description: 'City name, or omit for auto-detect' } } } },
+      { name: 'get_workout_plan', description: 'Get the workout scheduled for today from the active program, including exercises, sets, reps, and relevant PRs.', input_schema: { type: 'object', properties: {} } },
+      { name: 'get_weekly_review', description: 'Generate a weekly performance report from the past 7 days of habit, workout, nutrition, and sleep data.', input_schema: { type: 'object', properties: {} } },
+    ];
+
+    // ── Tool execution ────────────────────────────────────────────────
+    async function executeTool(name, input) {
+      switch (name) {
+        case 'check_habit':      return execCheckHabit(input);
+        case 'log_meal':         return execLogMeal(input);
+        case 'save_note':        return execSaveNote(input);
+        case 'delete_note':      return execDeleteNote(input);
+        case 'set_timer':        return execSetTimer(input);
+        case 'get_weather':      return await execGetWeather(input);
+        case 'get_workout_plan': return execGetWorkout();
+        case 'get_weekly_review':return execWeeklyReview();
+        default: return { error: 'Unknown tool' };
+      }
+    }
+
+    function execCheckHabit({ habit_name, completed }) {
+      const habits = safeJSON('hvi_habits', []);
+      const log    = safeJSON('hvi_log', {});
+      const habitH = safeJSON('hvi_habit_history', {});
+      const td = today();
+      const q  = habit_name.toLowerCase();
+
+      const habit = habits.find(h => h.name.toLowerCase().includes(q))
+                 || habits.find(h => h.category.toLowerCase().includes(q));
+      if (!habit) return { success: false, message: 'No habit matching "' + habit_name + '"' };
+
+      if (!log[habit.id]) log[habit.id] = {};
+      if (!habitH[habit.id]) habitH[habit.id] = [];
+
+      if (completed) {
+        log[habit.id].completedToday = true;
+        if (!habitH[habit.id].includes(td)) habitH[habit.id].push(td);
+        log[habit.id].streak = (log[habit.id].streak || 0) + 1;
+        const gami = safeJSON('hvi_gamification', { xp: 0 });
+        gami.xp = (gami.xp || 0) + 10;
+        localStorage.setItem('hvi_gamification', JSON.stringify(gami));
+      } else {
+        log[habit.id].completedToday = false;
+        habitH[habit.id] = habitH[habit.id].filter(d => d !== td);
+        if (log[habit.id].streak > 0) log[habit.id].streak--;
+      }
+
+      localStorage.setItem('hvi_log', JSON.stringify(log));
+      localStorage.setItem('hvi_habit_history', JSON.stringify(habitH));
+      renderStats();
+      return { success: true, message: (completed ? 'Checked' : 'Unchecked') + ': ' + habit.name };
+    }
+
+    function execLogMeal({ meal_type, items }) {
+      const td   = today();
+      const mLog = safeJSON('hvi_meal_log', {});
+      if (!mLog[td]) mLog[td] = {};
+      if (!mLog[td][meal_type]) mLog[td][meal_type] = [];
+
+      items.forEach(item => mLog[td][meal_type].push({
+        name: item.name, cal: item.cal, p: item.p, c: item.c, f: item.f,
+        qty: item.qty || '1 serving',
+      }));
+
+      localStorage.setItem('hvi_meal_log', JSON.stringify(mLog));
+      renderStats();
+      const totCal = items.reduce((s, i) => s + i.cal, 0);
+      const totP   = items.reduce((s, i) => s + i.p, 0);
+      return { success: true, message: `Logged ${meal_type}: ${Math.round(totCal)} cal, ${Math.round(totP)}g protein (${items.length} item${items.length > 1 ? 's' : ''})` };
+    }
+
+    function execSaveNote({ text, due_date }) {
+      const notes = safeJSON(NS + 'notes', []);
+      notes.push({ text, due_date: due_date || null, created: new Date().toISOString(), id: Date.now().toString() });
+      localStorage.setItem(NS + 'notes', JSON.stringify(notes));
+      return { success: true, message: 'Saved: "' + text + '"' + (due_date ? ' (due ' + due_date + ')' : '') };
+    }
+
+    function execDeleteNote({ text }) {
+      const notes = safeJSON(NS + 'notes', []);
+      const q = text.toLowerCase();
+      const idx = notes.findIndex(n => n.text.toLowerCase().includes(q));
+      if (idx === -1) return { success: false, message: 'No note matching "' + text + '"' };
+      const removed = notes.splice(idx, 1)[0];
+      localStorage.setItem(NS + 'notes', JSON.stringify(notes));
+      return { success: true, message: 'Deleted: "' + removed.text + '"' };
+    }
+
+    function execSetTimer({ minutes, label }) {
+      startTimer(minutes, label || 'Timer');
+      return { success: true, message: 'Timer set: ' + minutes + ' min' + (label ? ' — ' + label : '') };
+    }
+
+    async function execGetWeather({ location } = {}) {
+      try {
+        let lat, lon, city;
+        if (location) {
+          const geo = await fetch('https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(location) + '&count=1');
+          const gd = await geo.json();
+          if (gd.results?.length) { lat = gd.results[0].latitude; lon = gd.results[0].longitude; city = gd.results[0].name; }
+        }
+        if (!lat) {
+          const pos = await new Promise((ok, fail) => navigator.geolocation.getCurrentPosition(ok, fail, { timeout: 5000 })).catch(() => null);
+          if (pos) { lat = pos.coords.latitude; lon = pos.coords.longitude; city = 'Your location'; }
+          else {
+            const ip = await fetch('https://ipapi.co/json/').then(r => r.json()).catch(() => null);
+            if (ip) { lat = ip.latitude; lon = ip.longitude; city = ip.city; }
+          }
+        }
+        if (!lat) return { success: false, message: 'Could not determine location' };
+
+        const wr = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=auto&forecast_days=3`);
+        const w = await wr.json();
+        const codes = { 0:'Clear',1:'Mostly clear',2:'Partly cloudy',3:'Overcast',45:'Foggy',48:'Foggy',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',71:'Light snow',73:'Snow',75:'Heavy snow',80:'Showers',81:'Showers',82:'Heavy showers',95:'Thunderstorm' };
+
+        return { success: true, data: {
+          location: city,
+          current_temp: Math.round(w.current.temperature_2m),
+          condition: codes[w.current.weather_code] || 'Unknown',
+          wind_kph: Math.round(w.current.wind_speed_10m),
+          forecast: w.daily.time.map((d, i) => ({
+            date: d, high: Math.round(w.daily.temperature_2m_max[i]),
+            low: Math.round(w.daily.temperature_2m_min[i]),
+            condition: codes[w.daily.weather_code[i]] || 'Unknown'
+          }))
+        }};
+      } catch (e) { return { success: false, message: 'Weather unavailable: ' + e.message }; }
+    }
+
+    function execGetWorkout() {
+      const wMeta   = safeJSON('hvi_workout_meta', {});
+      const wLog    = safeJSON('hvi_workout_log', {});
+      const prs     = safeJSON('hvi_prs', {});
+      const customs = safeJSON('hvi_custom_programs', []);
+      const td      = today();
+
+      const todayW = wLog[td];
+      const progId = wMeta.activeProgram || 'none';
+      const dayIdx = wMeta.currentDayIndex || 0;
+      const prog   = customs.find(p => p.id === progId);
+
+      let dayInfo = null;
+      if (prog && prog.days && prog.days[dayIdx]) {
+        const day = prog.days[dayIdx];
+        dayInfo = {
+          program: prog.name,
+          day_name: day.name,
+          day_number: dayIdx + 1,
+          total_days: prog.days.length,
+          exercises: (day.exercises || []).map(ex => ({
+            name: ex.name || ex.id,
+            sets: ex.sets || 3,
+            reps: ex.reps || 10,
+            pr: prs[ex.id] ? prs[ex.id].weight + 'kg x' + prs[ex.id].reps : null
+          }))
+        };
+      }
+
+      const recent = Object.keys(wLog).sort().reverse().slice(0, 5).map(d => {
+        const w = wLog[d];
+        return { date: d, name: w.dayName || 'Workout', duration: w.duration || null };
+      });
+
+      return { success: true, data: {
+        program_id: progId, today_logged: !!todayW, day_plan: dayInfo,
+        recent_sessions: recent, prs: Object.entries(prs).slice(0, 10).map(([k,v]) => k + ': ' + v.weight + 'kg x' + v.reps)
+      }};
+    }
+
+    function execWeeklyReview() {
+      const habitH = safeJSON('hvi_habit_history', {});
+      const habits = safeJSON('hvi_habits', []);
+      const wLog   = safeJSON('hvi_workout_log', {});
+      const mLog   = safeJSON('hvi_meal_log', {});
+      const slLog  = safeJSON('hvi_sleep_log', {});
+      const wtLog  = safeJSON('hvi_weight_log', {});
+      const total  = habits.length;
+
+      const days = [...Array(7)].map((_, i) => {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        return d.toISOString().slice(0, 10);
+      });
+
+      const dailyHabits = days.map(d => ({
+        date: d,
+        done: Object.values(habitH).filter(a => Array.isArray(a) && a.includes(d)).length,
+        total
+      }));
+
+      const workouts = days.filter(d => wLog[d]).map(d => ({
+        date: d, name: wLog[d].dayName || 'Workout', duration: wLog[d].duration || null
+      }));
+
+      const nutrition = days.map(d => {
+        const meals = Object.values(mLog[d] || {}).flat();
+        return {
+          date: d,
+          cal: Math.round(meals.reduce((s, m) => s + (m.cal || 0), 0)),
+          p: Math.round(meals.reduce((s, m) => s + (m.p || 0), 0)),
+        };
+      });
+
+      const sleep = days.filter(d => slLog[d]).map(d => ({
+        date: d, hours: slLog[d].hours, quality: slLog[d].quality
+      }));
+
+      const weights = Object.keys(wtLog).sort().reverse().slice(0, 7).map(d => ({ date: d, kg: wtLog[d] }));
+
+      const avgHabitPct = total ? Math.round(dailyHabits.reduce((s, d) => s + d.done, 0) / 7 / total * 100) : 0;
+
+      return { success: true, data: {
+        period: days[6] + ' to ' + days[0],
+        avg_habit_completion: avgHabitPct + '%',
+        daily_habits: dailyHabits,
+        workouts: workouts,
+        nutrition_summary: nutrition,
+        sleep: sleep,
+        weight_trend: weights,
+        workout_count: workouts.length
+      }};
+    }
+
+    // ── Timer ─────────────────────────────────────────────────────────
+    let timerInterval = null, timerEnd = 0, timerLbl = '';
+
+    function startTimer(minutes, label) {
+      if (timerInterval) clearInterval(timerInterval);
+      timerEnd = Date.now() + minutes * 60000;
+      timerLbl = label;
+      document.getElementById('timer-bar').classList.remove('hidden');
+      updateTimerDisplay();
+      timerInterval = setInterval(() => {
+        if (Date.now() >= timerEnd) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+          document.getElementById('timer-bar').classList.add('hidden');
+          toast(label + ' complete');
+          queueSpeech(label + ' is complete, sir.');
+          if (Notification.permission === 'granted') new Notification('MARCUS', { body: label + ' complete.' });
+        } else { updateTimerDisplay(); }
+      }, 1000);
+      if (Notification.permission === 'default') Notification.requestPermission();
+    }
+
+    function cancelTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = null;
+      document.getElementById('timer-bar').classList.add('hidden');
+    }
+
+    function updateTimerDisplay() {
+      const rem  = Math.max(0, timerEnd - Date.now());
+      const mins = Math.floor(rem / 60000);
+      const secs = Math.floor((rem % 60000) / 1000);
+      document.getElementById('timer-time').textContent = mins + ':' + String(secs).padStart(2, '0');
+      document.getElementById('timer-lbl').textContent = timerLbl;
+    }
+
     // ── System prompt ─────────────────────────────────────────────────
     function sysPrompt() {
       const c = areteContext();
@@ -1265,6 +1606,23 @@ ${c.sleepStr}
 LAST JOURNAL:
   ${c.journalStr}
 
+SAVED NOTES / REMINDERS:
+${(() => {
+  const notes = safeJSON(NS + 'notes', []);
+  if (!notes.length) return '  None';
+  return notes.map(n => '  - "' + n.text + '"' + (n.due_date ? ' (due: ' + n.due_date + ')' : '')).join('\n');
+})()}
+
+CAPABILITIES:
+You have tools to take actions — use them when appropriate:
+- check_habit: mark habits done/undone
+- log_meal: log food with estimated macros (estimate accurately from nutritional knowledge)
+- save_note / delete_note: save or remove reminders and notes
+- set_timer: countdown timers, pomodoros, rest periods
+- get_weather: current weather and 3-day forecast
+- get_workout_plan: today's scheduled workout with exercises
+- get_weekly_review: 7-day performance data for review
+
 RULES:
 - This is a voice interface — write clean prose only. No markdown, no bullets, no em-dashes used as list markers, no asterisks
 - Keep replies under 80 words unless detail is explicitly requested
@@ -1273,89 +1631,134 @@ RULES:
 - Celebrate genuine wins before coaching — but don't linger
 - Only reference data shown above — never invent context
 - Stoic philosophy is your foundation
-- "Sir" once per response maximum`;
+- "Sir" once per response maximum
+- When you use a tool, briefly confirm what you did
+- For meal logging, be realistic with portions and macros
+- For notes, convert relative dates to absolute dates
+- In daily briefings, use get_weather proactively`;
     }
 
-    // ── Claude streaming ──────────────────────────────────────────────
-    async function ask(userMsg) {
+    // ── Claude streaming with tool use ──────────────────────────────
+    async function streamClaude(messages, bodyEl) {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: MODEL, max_tokens: 1024,
+          system: sysPrompt(), messages, tools: TOOLS, stream: true,
+        }),
+      });
+
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(e.error?.message || `HTTP ${res.status}`);
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let sseBuf = '', text = '', speechBuf = '';
+      let toolCalls = [], toolInputBuf = '', currentBlock = null, stopReason = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        sseBuf += decoder.decode(value, { stream: true });
+        const lines = sseBuf.split('\n');
+        sseBuf = lines.pop();
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const raw = line.slice(6).trim();
+          if (!raw) continue;
+          try {
+            const ev = JSON.parse(raw);
+            switch (ev.type) {
+              case 'content_block_start':
+                if (ev.content_block?.type === 'tool_use') {
+                  currentBlock = { type: 'tool_use', id: ev.content_block.id, name: ev.content_block.name };
+                  toolInputBuf = '';
+                } else { currentBlock = { type: 'text' }; }
+                break;
+              case 'content_block_delta':
+                if (ev.delta?.type === 'text_delta') {
+                  const chunk = ev.delta.text;
+                  text += chunk; speechBuf += chunk;
+                  if (bodyEl) { bodyEl.textContent = text; bodyEl.closest('.msg')?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }
+                  const m = speechBuf.match(/^(.*[.!?])\s+(.*)$/s);
+                  if (m) { queueSpeech(m[1].trim()); speechBuf = m[2]; }
+                } else if (ev.delta?.type === 'input_json_delta') {
+                  toolInputBuf += ev.delta.partial_json;
+                }
+                break;
+              case 'content_block_stop':
+                if (currentBlock?.type === 'tool_use') {
+                  try { toolCalls.push({ id: currentBlock.id, name: currentBlock.name, input: JSON.parse(toolInputBuf) }); } catch {}
+                }
+                currentBlock = null;
+                break;
+              case 'message_delta':
+                if (ev.delta?.stop_reason) stopReason = ev.delta.stop_reason;
+                break;
+            }
+          } catch {}
+        }
+      }
+      if (speechBuf.trim()) queueSpeech(speechBuf.trim());
+      return { text, toolCalls, stopReason };
+    }
+
+    async function ask(userMsg, silent) {
       setMode('processing');
-      addMsg('user', userMsg);
+      if (!silent) addMsg('user', userMsg);
 
       history.push({ role: 'user', content: userMsg });
-      if (history.length > 30) history = history.slice(-30);
+      if (history.length > 40) history = history.slice(-40);
 
       const marcusEl = addMsg('marcus', '');
-      const bodyEl   = marcusEl.querySelector('.msg-body');
+      const bodyEl = marcusEl.querySelector('.msg-body');
+      speechQueue = []; isSpeaking = false;
 
-      let full = '', buf = '';
-      speechQueue = [];
-      isSpeaking  = false;
+      let messages = history.map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }));
+      let finalText = '';
+      let rounds = 5;
 
       try {
-        const res = await fetch(API_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey,
-            'anthropic-version': '2023-06-01',
-            'anthropic-dangerous-direct-browser-access': 'true',
-          },
-          body: JSON.stringify({
-            model: MODEL,
-            max_tokens: 512,
-            system: sysPrompt(),
-            messages: history.slice(0, -1).concat([{ role: 'user', content: userMsg }]),
-            stream: true,
-          }),
-        });
+        while (rounds-- > 0) {
+          const { text, toolCalls, stopReason } = await streamClaude(messages, bodyEl);
 
-        if (!res.ok) {
-          const e = await res.json().catch(() => ({}));
-          throw new Error(e.error?.message || `HTTP ${res.status}`);
-        }
+          if (stopReason === 'tool_use' && toolCalls.length) {
+            const assistantContent = [];
+            if (text) assistantContent.push({ type: 'text', text });
+            toolCalls.forEach(tc => assistantContent.push({ type: 'tool_use', id: tc.id, name: tc.name, input: tc.input }));
+            messages.push({ role: 'assistant', content: assistantContent });
 
-        setMode('speaking');
+            const toolResults = [];
+            for (const tc of toolCalls) {
+              const result = await executeTool(tc.name, tc.input);
+              showAction(tc.name, result);
+              toolResults.push({ type: 'tool_result', tool_use_id: tc.id, content: JSON.stringify(result) });
+            }
+            messages.push({ role: 'user', content: toolResults });
 
-        const reader  = res.body.getReader();
-        const decoder = new TextDecoder();
-        let sseBuf = '';
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          sseBuf += decoder.decode(value, { stream: true });
-          const lines = sseBuf.split('\n');
-          sseBuf = lines.pop();
-
-          for (const line of lines) {
-            if (!line.startsWith('data: ')) continue;
-            const raw = line.slice(6).trim();
-            if (!raw || raw === '[DONE]') continue;
-            try {
-              const ev = JSON.parse(raw);
-              if (ev.type === 'content_block_delta' && ev.delta?.type === 'text_delta') {
-                const chunk = ev.delta.text;
-                full += chunk;
-                buf  += chunk;
-                bodyEl.textContent = full;
-                marcusEl.scrollIntoView({ behavior: 'smooth', block: 'end' });
-
-                // Flush complete sentences to speech
-                const m = buf.match(/^(.*[.!?])\s+(.*)$/s);
-                if (m) {
-                  queueSpeech(m[1].trim());
-                  buf = m[2];
-                }
-              }
-            } catch {}
+            bodyEl.textContent = '';
+            continue;
           }
+
+          finalText = text;
+          setMode('speaking');
+          break;
         }
 
-        if (buf.trim()) queueSpeech(buf.trim());
-
-        history.push({ role: 'assistant', content: full });
-        localStorage.setItem(NS + 'history', JSON.stringify(history));
+        if (finalText) {
+          history.push({ role: 'assistant', content: finalText });
+          localStorage.setItem(NS + 'history', JSON.stringify(history));
+        }
+        renderStats();
 
       } catch (err) {
         bodyEl.textContent = 'System error: ' + err.message;
@@ -1363,6 +1766,48 @@ RULES:
         toast('Error: ' + err.message);
         setMode('idle');
         isSpeaking = false;
+      }
+    }
+
+    async function triggerBriefing() {
+      const marcusEl = addMsg('marcus', '');
+      const bodyEl = marcusEl.querySelector('.msg-body');
+      speechQueue = []; isSpeaking = false;
+      setMode('processing');
+
+      const messages = [{ role: 'user', content: 'Give me my daily briefing. Include a greeting, the weather, my habits status, workout plan for today, nutrition progress, and any saved notes or reminders. Use your tools to get the weather and workout plan. Be concise and natural.' }];
+
+      try {
+        let rounds = 5;
+        while (rounds-- > 0) {
+          const { text, toolCalls, stopReason } = await streamClaude(messages, bodyEl);
+          if (stopReason === 'tool_use' && toolCalls.length) {
+            const ac = [];
+            if (text) ac.push({ type: 'text', text });
+            toolCalls.forEach(tc => ac.push({ type: 'tool_use', id: tc.id, name: tc.name, input: tc.input }));
+            messages.push({ role: 'assistant', content: ac });
+            const tr = [];
+            for (const tc of toolCalls) {
+              const result = await executeTool(tc.name, tc.input);
+              showAction(tc.name, result);
+              tr.push({ type: 'tool_result', tool_use_id: tc.id, content: JSON.stringify(result) });
+            }
+            messages.push({ role: 'user', content: tr });
+            bodyEl.textContent = '';
+            continue;
+          }
+          if (text) {
+            history.push({ role: 'assistant', content: text });
+            localStorage.setItem(NS + 'history', JSON.stringify(history));
+          }
+          setMode('speaking');
+          break;
+        }
+        renderStats();
+      } catch (err) {
+        bodyEl.textContent = 'Briefing error: ' + err.message;
+        bodyEl.style.color = 'var(--red)';
+        setMode('idle');
       }
     }
 
@@ -1506,6 +1951,39 @@ RULES:
       return el;
     }
 
+    function showAction(toolName, result) {
+      const convo = document.getElementById('convo');
+      const el = document.createElement('div');
+      el.className = 'action-bubble';
+
+      const labels = {
+        check_habit:     '✓ HABIT',
+        log_meal:        '🍽 MEAL',
+        save_note:       '📌 NOTE',
+        delete_note:     '🗑 NOTE',
+        set_timer:       '⏱ TIMER',
+        get_weather:     '☁ WEATHER',
+        get_workout_plan:'💪 WORKOUT',
+        get_weekly_review:'📊 REVIEW'
+      };
+
+      const tag = labels[toolName] || toolName.toUpperCase();
+      let msg = '';
+      if (result && typeof result === 'object') {
+        if (result.status)  msg = result.status;
+        else if (result.summary) msg = result.summary;
+        else if (result.location) msg = `${result.location}: ${result.temp_c ?? ''}°C`;
+        else if (result.program) msg = result.program;
+        else msg = JSON.stringify(result).slice(0, 80);
+      } else {
+        msg = String(result).slice(0, 80);
+      }
+
+      el.innerHTML = `<span class="action-tag">${tag}</span><span class="action-msg">${esc(msg)}</span>`;
+      convo.appendChild(el);
+      el.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+
     function toast(msg) {
       const t = document.getElementById('toast');
       t.textContent = msg;
@@ -1638,8 +2116,12 @@ RULES:
           addMsg(m.role === 'user' ? 'user' : 'marcus', m.content);
       });
 
-      // Welcome on first launch
+      // Daily briefing (once per day) or welcome on first launch
+      const todayKey = new Date().toISOString().slice(0, 10);
+      const lastBriefing = localStorage.getItem(NS + 'last_briefing');
+
       if (!history.length) {
+        // First-ever launch: no briefing, just a welcome
         const c    = areteContext();
         const h    = new Date().getHours();
         const gr   = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
@@ -1658,6 +2140,10 @@ RULES:
           addMsg('marcus', welcome);
           queueSpeech(welcome);
         }, 500);
+      } else if (lastBriefing !== todayKey) {
+        // Returning user, first visit of the day → auto daily briefing
+        localStorage.setItem(NS + 'last_briefing', todayKey);
+        setTimeout(() => triggerBriefing(), 600);
       }
     }
 
