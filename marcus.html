@@ -1323,17 +1323,24 @@
 
     // ── Tool execution ────────────────────────────────────────────────
     async function executeTool(name, input) {
+      console.log('[MARCUS] Executing tool:', name, JSON.stringify(input));
+      let result;
       switch (name) {
-        case 'check_habit':      return execCheckHabit(input);
-        case 'log_meal':         return execLogMeal(input);
-        case 'save_note':        return execSaveNote(input);
-        case 'delete_note':      return execDeleteNote(input);
-        case 'set_timer':        return execSetTimer(input);
-        case 'get_weather':      return await execGetWeather(input);
-        case 'get_workout_plan': return execGetWorkout();
-        case 'get_weekly_review':return execWeeklyReview();
-        default: return { error: 'Unknown tool' };
+        case 'check_habit':      result = execCheckHabit(input); break;
+        case 'log_meal':         result = execLogMeal(input); break;
+        case 'save_note':        result = execSaveNote(input); break;
+        case 'delete_note':      result = execDeleteNote(input); break;
+        case 'set_timer':        result = execSetTimer(input); break;
+        case 'get_weather':      result = await execGetWeather(input); break;
+        case 'get_workout_plan': result = execGetWorkout(); break;
+        case 'get_weekly_review':result = execWeeklyReview(); break;
+        default: result = { error: 'Unknown tool' };
       }
+      console.log('[MARCUS] Tool result:', name, JSON.stringify(result));
+      // Verify localStorage write
+      if (name === 'check_habit') console.log('[MARCUS] hvi_log after:', localStorage.getItem('hvi_log')?.slice(0, 200));
+      if (name === 'log_meal') console.log('[MARCUS] hvi_meal_log after:', localStorage.getItem('hvi_meal_log')?.slice(0, 300));
+      return result;
     }
 
     function execCheckHabit({ habit_name, completed }) {
@@ -1640,10 +1647,10 @@ ${(() => {
   return notes.map(n => '  - "' + n.text + '"' + (n.due_date ? ' (due: ' + n.due_date + ')' : '')).join('\n');
 })()}
 
-CAPABILITIES:
-You have tools to take actions — use them when appropriate:
-- check_habit: mark habits done/undone
-- log_meal: log food with estimated macros (estimate accurately from nutritional knowledge)
+TOOLS — MANDATORY:
+You MUST use the tools below to take real actions. NEVER pretend to do something — always call the actual tool. If the user asks you to log food, you MUST call log_meal. If they ask you to check a habit, you MUST call check_habit. Do NOT respond with text saying you did something unless you actually called the tool.
+- check_habit: mark habits done/undone. MUST call this when user asks to check/complete/mark any habit.
+- log_meal: log food with estimated macros. MUST call this when user mentions eating or asks to log food.
 - save_note / delete_note: save or remove reminders and notes
 - set_timer: countdown timers, pomodoros, rest periods
 - get_weather: current weather and 3-day forecast
@@ -1659,8 +1666,8 @@ RULES:
 - Only reference data shown above — never invent context
 - Stoic philosophy is your foundation
 - "Sir" once per response maximum
-- When you use a tool, briefly confirm what you did
-- For meal logging, be realistic with portions and macros
+- After calling a tool, briefly confirm what you did in your text response
+- For meal logging, be realistic with portions and macros. Always estimate the macros — never leave them as zero.
 - For notes, convert relative dates to absolute dates
 - In daily briefings, use get_weather proactively`;
     }
@@ -1724,7 +1731,13 @@ RULES:
                 break;
               case 'content_block_stop':
                 if (currentBlock?.type === 'tool_use') {
-                  try { toolCalls.push({ id: currentBlock.id, name: currentBlock.name, input: JSON.parse(toolInputBuf) }); } catch {}
+                  try {
+                    const parsed = JSON.parse(toolInputBuf);
+                    toolCalls.push({ id: currentBlock.id, name: currentBlock.name, input: parsed });
+                    console.log('[MARCUS] Tool parsed:', currentBlock.name, parsed);
+                  } catch (parseErr) {
+                    console.error('[MARCUS] Tool JSON parse failed:', currentBlock.name, toolInputBuf, parseErr);
+                  }
                 }
                 currentBlock = null;
                 break;
@@ -1757,6 +1770,7 @@ RULES:
       try {
         while (rounds-- > 0) {
           const { text, toolCalls, stopReason } = await streamClaude(messages, bodyEl);
+          console.log('[MARCUS] Stream result — stopReason:', stopReason, 'toolCalls:', toolCalls.length, 'text length:', text.length);
 
           if (stopReason === 'tool_use' && toolCalls.length) {
             const assistantContent = [];
