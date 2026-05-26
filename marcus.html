@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <title>M.A.R.C.U.S.</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -626,6 +626,359 @@
 
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+    /* ══════════════════════════════════════════════════════════════════
+       THEMES
+       ══════════════════════════════════════════════════════════════════ */
+
+    /* ── Stoic Marble ──────────────────────────────────────────────── */
+    body.theme-stoic {
+      --bg:           #f5f0e8;
+      --panel:        rgba(44, 24, 16, 0.05);
+      --primary:      #8b6914;
+      --primary-mid:  #a07d2e;
+      --primary-dim:  rgba(139, 105, 20, 0.15);
+      --primary-glow: rgba(212, 168, 67, 0.25);
+      --text:         #2c1810;
+      --text-dim:     #7a6855;
+      --border:       rgba(139, 105, 20, 0.12);
+      --green:        #5a8c3c;
+      --red:          #8c3c3c;
+      --orange:       #a07d2e;
+    }
+
+    body.theme-stoic { font-family: 'Playfair Display', Georgia, serif; }
+    body.theme-stoic::before, body.theme-stoic::after { display: none; }
+    body.theme-stoic .corner { display: none; }
+
+    body.theme-stoic .brand-name {
+      font-family: 'Playfair Display', serif;
+      letter-spacing: 3px;
+      text-shadow: none;
+    }
+    body.theme-stoic .brand-sub { font-family: 'Playfair Display', serif; font-style: italic; }
+    body.theme-stoic .stat-val { font-family: 'Playfair Display', serif; text-shadow: none; }
+    body.theme-stoic .stat-lbl { font-family: 'Rajdhani', sans-serif; }
+    body.theme-stoic #clock { font-family: 'Rajdhani', sans-serif; }
+    body.theme-stoic .msg-who { font-family: 'Rajdhani', sans-serif; text-shadow: none; }
+    body.theme-stoic .live-dot { box-shadow: none; }
+
+    body.theme-stoic .ring-2,
+    body.theme-stoic .ring-3 { display: none; }
+    body.theme-stoic .ring-1 { border: 2px solid var(--primary); animation: none; }
+    body.theme-stoic .orb-core {
+      background: radial-gradient(circle at 40% 35%, #e8dcc8, #d4c4a8, #c8b898);
+      box-shadow: 0 0 30px rgba(139, 105, 20, 0.1);
+    }
+    body.theme-stoic .orb-inner { border-color: rgba(139, 105, 20, 0.25); }
+    body.theme-stoic .orb-dot {
+      background: var(--primary);
+      box-shadow: 0 0 10px var(--primary-glow);
+    }
+
+    body.theme-stoic #txt-in,
+    body.theme-stoic .bar-btn,
+    body.theme-stoic #mic-btn,
+    body.theme-stoic #cfg-btn { border-radius: 4px; font-family: 'Rajdhani', sans-serif; }
+
+    body.theme-stoic #toast {
+      background: rgba(140, 60, 60, 0.1);
+      border-color: rgba(140, 60, 60, 0.3);
+      color: #8c3c3c;
+    }
+
+    body.theme-stoic.listening .orb-core {
+      box-shadow: 0 0 40px rgba(139, 105, 20, 0.25);
+    }
+    body.theme-stoic.speaking .orb-dot {
+      background: var(--green);
+      box-shadow: 0 0 10px rgba(90, 140, 60, 0.4);
+    }
+    body.theme-stoic.processing .orb-dot {
+      background: var(--orange);
+      box-shadow: 0 0 10px rgba(160, 125, 46, 0.4);
+    }
+
+    /* ── Minimal Void ──────────────────────────────────────────────── */
+    body.theme-void {
+      --bg:           #000;
+      --panel:        rgba(255, 255, 255, 0.03);
+      --primary:      #fff;
+      --primary-mid:  #555;
+      --primary-dim:  rgba(255, 255, 255, 0.08);
+      --primary-glow: rgba(255, 255, 255, 0.15);
+      --text:         #e0e0e0;
+      --text-dim:     #444;
+      --border:       rgba(255, 255, 255, 0.06);
+      --green:        #888;
+      --red:          #ff2d55;
+      --orange:       #666;
+    }
+
+    body.theme-void { font-family: -apple-system, 'Helvetica Neue', sans-serif; font-weight: 300; }
+    body.theme-void::before, body.theme-void::after { display: none; }
+    body.theme-void .corner { display: none; }
+    body.theme-void #stats-strip { display: none; }
+    body.theme-void .brand-sub { display: none; }
+    body.theme-void .live-indicator { display: none; }
+
+    body.theme-void .brand-name {
+      font-family: -apple-system, 'Helvetica Neue', sans-serif;
+      font-weight: 200;
+      letter-spacing: 10px;
+      font-size: 16px;
+      text-shadow: none;
+    }
+    body.theme-void #clock { font-family: -apple-system, sans-serif; font-weight: 300; }
+    body.theme-void #cfg-btn { font-family: -apple-system, sans-serif; font-weight: 400; }
+    body.theme-void .msg-who { font-family: -apple-system, sans-serif; font-weight: 400; text-shadow: none; }
+    body.theme-void .msg-body { font-family: -apple-system, sans-serif; font-weight: 300; }
+    body.theme-void #status { font-family: -apple-system, sans-serif; font-weight: 300; letter-spacing: 4px; }
+    body.theme-void #live-text { font-family: -apple-system, sans-serif; font-weight: 300; }
+
+    body.theme-void .ring-2,
+    body.theme-void .ring-3 { display: none; }
+    body.theme-void .ring-1 { border: 1px solid rgba(255,255,255,0.15); animation: none; }
+    body.theme-void .orb-core { background: transparent; box-shadow: none; }
+    body.theme-void .orb-inner { border-color: rgba(255,255,255,0.08); }
+    body.theme-void .orb-dot {
+      width: 10px; height: 10px;
+      background: #fff;
+      box-shadow: 0 0 25px rgba(255,255,255,0.4);
+    }
+
+    body.theme-void #orb-wrap { width: 160px; height: 160px; }
+
+    body.theme-void #txt-in {
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      font-family: -apple-system, sans-serif;
+      font-weight: 300;
+    }
+    body.theme-void .bar-btn,
+    body.theme-void #mic-btn { border: none; font-family: -apple-system, sans-serif; font-weight: 400; }
+    body.theme-void #input-bar { border-top: none; }
+    body.theme-void #header { border-bottom: none; }
+
+    body.theme-void.listening .orb-dot {
+      box-shadow: 0 0 40px rgba(255,255,255,0.6);
+      animation: pulse-listen 1.2s ease-in-out infinite;
+    }
+    body.theme-void.speaking .orb-dot {
+      animation: pulse-speak 0.6s ease-in-out infinite;
+    }
+    body.theme-void.processing .orb-dot {
+      animation: blink 0.8s ease-in-out infinite;
+    }
+
+    /* ── Aurora Ambient ─────────────────────────────────────────────── */
+    body.theme-aurora {
+      --bg:           #0f0a1a;
+      --panel:        rgba(255, 255, 255, 0.06);
+      --primary:      #c4b5fd;
+      --primary-mid:  #8b5cf6;
+      --primary-dim:  rgba(139, 92, 246, 0.15);
+      --primary-glow: rgba(139, 92, 246, 0.25);
+      --text:         #e8e0f5;
+      --text-dim:     #7868a0;
+      --border:       rgba(139, 92, 246, 0.12);
+      --green:        #34d399;
+      --red:          #f87171;
+      --orange:       #fbbf24;
+    }
+
+    body.theme-aurora::before {
+      background: none !important;
+    }
+    body.theme-aurora::after {
+      background: linear-gradient(
+        135deg,
+        rgba(88, 28, 135, 0.18) 0%,
+        rgba(15, 118, 110, 0.12) 25%,
+        rgba(30, 27, 75, 0.18) 50%,
+        rgba(59, 130, 246, 0.1) 75%,
+        rgba(88, 28, 135, 0.18) 100%
+      ) !important;
+      background-size: 400% 400% !important;
+      animation: aurora-drift 18s ease infinite !important;
+    }
+
+    @keyframes aurora-drift {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    body.theme-aurora .corner { display: none; }
+
+    body.theme-aurora .brand-name { text-shadow: 0 0 20px rgba(139, 92, 246, 0.3); }
+
+    body.theme-aurora .stat {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 8px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    body.theme-aurora .ring-1,
+    body.theme-aurora .ring-2,
+    body.theme-aurora .ring-3 { display: none; }
+    body.theme-aurora .orb-core {
+      inset: 18px;
+      background: radial-gradient(circle at 35% 30%, #7c3aed, #4c1d95, #1e1b4b);
+      box-shadow:
+        0 0 50px rgba(139, 92, 246, 0.35),
+        0 0 100px rgba(139, 92, 246, 0.12),
+        inset 0 0 30px rgba(196, 181, 253, 0.15);
+      border-radius: 50%;
+    }
+    body.theme-aurora .orb-inner {
+      inset: 50px;
+      border-color: rgba(196, 181, 253, 0.2);
+    }
+    body.theme-aurora .orb-dot {
+      background: #c4b5fd;
+      box-shadow: 0 0 20px #c4b5fd, 0 0 45px rgba(196, 181, 253, 0.4);
+    }
+
+    body.theme-aurora #txt-in,
+    body.theme-aurora .bar-btn,
+    body.theme-aurora #mic-btn,
+    body.theme-aurora #cfg-btn {
+      border-radius: 12px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    body.theme-aurora #txt-in { background: rgba(255,255,255,0.04); }
+    body.theme-aurora #input-bar { border-color: rgba(139, 92, 246, 0.08); }
+    body.theme-aurora #header { border-color: rgba(139, 92, 246, 0.08); }
+
+    body.theme-aurora.listening .orb-core {
+      box-shadow: 0 0 70px rgba(139, 92, 246, 0.5), 0 0 140px rgba(139, 92, 246, 0.2);
+    }
+    body.theme-aurora.speaking .orb-dot {
+      background: var(--green);
+      box-shadow: 0 0 20px var(--green), 0 0 45px rgba(52, 211, 153, 0.4);
+    }
+
+    /* ── Terminal ───────────────────────────────────────────────────── */
+    body.theme-terminal {
+      --bg:           #0a0a0a;
+      --panel:        rgba(0, 255, 65, 0.03);
+      --primary:      #00ff41;
+      --primary-mid:  #00aa2a;
+      --primary-dim:  rgba(0, 255, 65, 0.1);
+      --primary-glow: rgba(0, 255, 65, 0.25);
+      --text:         #00ee38;
+      --text-dim:     #006618;
+      --border:       rgba(0, 255, 65, 0.1);
+      --green:        #00ff41;
+      --red:          #ff2d55;
+      --orange:       #ffaa00;
+    }
+
+    body.theme-terminal {
+      font-family: 'Share Tech Mono', 'Courier New', monospace;
+    }
+    body.theme-terminal::before { display: none; }
+    body.theme-terminal::after {
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 255, 65, 0.015) 2px,
+        rgba(0, 255, 65, 0.015) 4px
+      ) !important;
+      animation: scan 6s linear infinite !important;
+    }
+
+    body.theme-terminal .corner { display: none; }
+    body.theme-terminal #orb-wrap { display: none; }
+
+    body.theme-terminal .brand-name {
+      font-family: 'Share Tech Mono', monospace;
+      letter-spacing: 3px;
+      text-shadow: 0 0 10px var(--primary-glow);
+    }
+    body.theme-terminal .brand-sub {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+    }
+    body.theme-terminal .stat-val { font-size: 14px; text-shadow: 0 0 8px var(--primary-glow); }
+    body.theme-terminal .msg-who { text-shadow: none; }
+    body.theme-terminal .msg.user .msg-who::before { content: '> '; }
+    body.theme-terminal .msg.marcus .msg-who::before { content: '$ '; }
+    body.theme-terminal .msg-body { font-family: 'Share Tech Mono', monospace; font-size: 13px; }
+    body.theme-terminal .live-dot { box-shadow: 0 0 6px var(--green); }
+
+    body.theme-terminal #live-text {
+      font-size: 14px;
+      min-height: 24px;
+    }
+    body.theme-terminal #live-text::after {
+      content: ' █';
+      animation: term-blink 1s step-end infinite;
+      color: var(--primary);
+    }
+    body.theme-terminal #status { font-size: 11px; }
+
+    @keyframes term-blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0; }
+    }
+
+    body.theme-terminal #txt-in {
+      font-family: 'Share Tech Mono', monospace;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--border);
+    }
+    body.theme-terminal #txt-in::placeholder { color: var(--text-dim); }
+    body.theme-terminal .bar-btn,
+    body.theme-terminal #mic-btn,
+    body.theme-terminal #cfg-btn {
+      font-family: 'Share Tech Mono', monospace;
+    }
+
+    /* ── Theme picker (in config) ──────────────────────────────────── */
+    .theme-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+
+    .theme-btn {
+      flex: 1;
+      min-width: 70px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 10px 6px 8px;
+      cursor: pointer;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1px;
+      text-align: center;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .theme-btn:hover { border-color: var(--primary-mid); color: var(--text); }
+    .theme-btn.active { border-color: var(--primary); color: var(--primary); }
+
+    .theme-swatch {
+      width: 100%;
+      height: 24px;
+      border-radius: 3px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
     /* ── Responsive ─────────────────────────────────────────────────── */
     @media (max-height: 640px) {
       #orb-wrap { width: 140px; height: 140px; }
@@ -663,6 +1016,30 @@
   <div id="config-modal" class="hidden">
     <div class="setup-box">
       <div class="setup-title">CONFIG</div>
+
+      <div class="setup-lbl">THEME</div>
+      <div class="theme-row" id="theme-row">
+        <button class="theme-btn" onclick="pickTheme('hud')">
+          <div class="theme-swatch" style="background:#050c15;box-shadow:inset 0 0 8px rgba(0,200,255,0.4)"></div>
+          HUD
+        </button>
+        <button class="theme-btn" onclick="pickTheme('stoic')">
+          <div class="theme-swatch" style="background:#f5f0e8;box-shadow:inset 0 0 8px rgba(139,105,20,0.3)"></div>
+          STOIC
+        </button>
+        <button class="theme-btn" onclick="pickTheme('void')">
+          <div class="theme-swatch" style="background:#000;box-shadow:inset 0 0 12px rgba(255,255,255,0.15)"></div>
+          VOID
+        </button>
+        <button class="theme-btn" onclick="pickTheme('aurora')">
+          <div class="theme-swatch" style="background:linear-gradient(135deg,#2d1b69,#0f766e,#1e1b4b);box-shadow:inset 0 0 8px rgba(139,92,246,0.3)"></div>
+          AURORA
+        </button>
+        <button class="theme-btn" onclick="pickTheme('terminal')">
+          <div class="theme-swatch" style="background:#0a0a0a;box-shadow:inset 0 0 8px rgba(0,255,65,0.3)"></div>
+          TERMINAL
+        </button>
+      </div>
 
       <div class="setup-lbl">ANTHROPIC API KEY</div>
       <div class="cfg-row">
@@ -732,6 +1109,7 @@
     let apiKey  = localStorage.getItem(NS + 'key') || '';
     let history = safeJSON(NS + 'history', []);
     let mode    = 'idle';
+    let theme   = localStorage.getItem(NS + 'theme') || 'hud';
 
     // Speech
     let recog         = null;
@@ -1094,13 +1472,28 @@ RULES:
       toggleMic();
     }
 
+    function applyClasses() {
+      let cls = mode;
+      if (theme && theme !== 'hud') cls += ' theme-' + theme;
+      document.body.className = cls;
+    }
+
     function setMode(m) {
       mode = m;
-      document.body.className = m;
+      applyClasses();
       const labels = { idle: 'Online · Ready', listening: 'Listening...', processing: 'Processing...', speaking: 'Speaking...' };
       document.getElementById('status').textContent = labels[m] || m;
       const micBtn = document.getElementById('mic-btn');
       if (micBtn) micBtn.textContent = m === 'listening' ? '⏹ STOP' : '⏺ MIC';
+    }
+
+    function pickTheme(t) {
+      theme = t;
+      applyClasses();
+      // Highlight active button
+      document.querySelectorAll('.theme-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.onclick.toString().includes("'" + t + "'"));
+      });
     }
 
     function addMsg(role, text) {
@@ -1180,6 +1573,11 @@ RULES:
       // Pre-fill key
       document.getElementById('cfg-key-inp').value = apiKey ? '••••••••••••••••' : '';
 
+      // Highlight current theme
+      document.querySelectorAll('.theme-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.onclick.toString().includes("'" + theme + "'"));
+      });
+
       document.getElementById('config-modal').classList.remove('hidden');
     }
 
@@ -1209,6 +1607,8 @@ RULES:
       }
 
       if (sel.value) localStorage.setItem(NS + 'voice', sel.value);
+
+      localStorage.setItem(NS + 'theme', theme);
 
       closeConfig();
       toast('Settings saved');
@@ -1262,6 +1662,8 @@ RULES:
     }
 
     // ── Init ──────────────────────────────────────────────────────────
+    applyClasses();
+
     if (apiKey) {
       document.getElementById('setup').classList.add('hidden');
       onReady();
