@@ -1268,12 +1268,17 @@
         return `  ${d}: ${w.dayName || 'Workout'}${vol ? ' | ' + vol.toLocaleString() + 'kg vol' : ''}`;
       }).join('\n');
 
-      // Nutrition
-      const todayMeals = Object.values(mLog[td] || {}).flat();
-      const mac = todayMeals.reduce((s, i) => ({
-        cal: s.cal + (i.cal || 0), p: s.p + (i.p || 0),
-        c: s.c + (i.c || 0),       f: s.f + (i.f || 0),
-      }), { cal: 0, p: 0, c: 0, f: 0 });
+      // Nutrition — Arete stores: mLog[date] = { meals: [{ name, items: [{ calories, protein, carbs, fat }] }] }
+      const todayMeals = (mLog[td] || {}).meals || [];
+      const mac = todayMeals.reduce((s, meal) => {
+        (meal.items || []).forEach(it => {
+          s.cal += it.calories || 0;
+          s.p   += it.protein  || 0;
+          s.c   += it.carbs    || 0;
+          s.f   += it.fat      || 0;
+        });
+        return s;
+      }, { cal: 0, p: 0, c: 0, f: 0 });
       const goals = dMeta.dailyGoals || {};
 
       // Weight
@@ -1307,7 +1312,7 @@
     // ── Tools ──────────────────────────────────────────────────────────
     const TOOLS = [
       { name: 'check_habit', description: 'Mark a habit as completed or uncompleted for today. Match by partial name.', input_schema: { type: 'object', properties: { habit_name: { type: 'string', description: 'Name or partial match of the habit' }, completed: { type: 'boolean', description: 'true = done, false = undo' } }, required: ['habit_name', 'completed'] } },
-      { name: 'log_meal', description: 'Log a meal with estimated macros. Estimate calories and macros based on nutritional knowledge.', input_schema: { type: 'object', properties: { meal_type: { type: 'string', enum: ['Breakfast','Lunch','Dinner','Snack'] }, items: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, cal: { type: 'number' }, p: { type: 'number', description: 'protein g' }, c: { type: 'number', description: 'carbs g' }, f: { type: 'number', description: 'fat g' }, qty: { type: 'string' } }, required: ['name','cal','p','c','f'] } } }, required: ['meal_type','items'] } },
+      { name: 'log_meal', description: 'Log a meal with estimated macros. Estimate calories and macros based on nutritional knowledge.', input_schema: { type: 'object', properties: { meal_type: { type: 'string', enum: ['Breakfast','Lunch','Dinner','Snack'] }, items: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, calories: { type: 'number' }, protein: { type: 'number', description: 'protein grams' }, carbs: { type: 'number', description: 'carbs grams' }, fat: { type: 'number', description: 'fat grams' }, qty: { type: 'string' } }, required: ['name','calories','protein','carbs','fat'] } } }, required: ['meal_type','items'] } },
       { name: 'save_note', description: 'Save a quick note, reminder, or task for the user.', input_schema: { type: 'object', properties: { text: { type: 'string' }, due_date: { type: 'string', description: 'YYYY-MM-DD or null' } }, required: ['text'] } },
       { name: 'delete_note', description: 'Delete a saved note by its text (partial match).', input_schema: { type: 'object', properties: { text: { type: 'string', description: 'Text to match against saved notes' } }, required: ['text'] } },
       { name: 'set_timer', description: 'Set a countdown timer (focus session, pomodoro, rest, etc).', input_schema: { type: 'object', properties: { minutes: { type: 'number' }, label: { type: 'string' } }, required: ['minutes'] } },
@@ -1336,50 +1341,72 @@
       const log    = safeJSON('hvi_log', {});
       const habitH = safeJSON('hvi_habit_history', {});
       const td = today();
+      const yd = (() => { const d = new Date(); d.setDate(d.getDate()-1); return d.toLocaleDateString('en-CA'); })();
       const q  = habit_name.toLowerCase();
 
       const habit = habits.find(h => h.name.toLowerCase().includes(q))
                  || habits.find(h => h.category.toLowerCase().includes(q));
       if (!habit) return { success: false, message: 'No habit matching "' + habit_name + '"' };
 
-      if (!log[habit.id]) log[habit.id] = {};
+      if (!log[habit.id]) log[habit.id] = { streak: 0, lastCompletedDate: '', completedToday: false };
       if (!habitH[habit.id]) habitH[habit.id] = [];
 
-      if (completed) {
-        log[habit.id].completedToday = true;
+      const entry = log[habit.id];
+
+      if (completed && !entry.completedToday) {
+        // Mirror tapHabit() logic from Arete app.js
+        entry.streak = entry.lastCompletedDate === yd ? (entry.streak || 0) + 1 : 1;
+        entry.lastCompletedDate = td;
+        entry.completedToday = true;
         if (!habitH[habit.id].includes(td)) habitH[habit.id].push(td);
-        log[habit.id].streak = (log[habit.id].streak || 0) + 1;
+        // XP
         const gami = safeJSON('hvi_gamification', { xp: 0 });
-        gami.xp = (gami.xp || 0) + 10;
+        const bonus = entry.streak >= 30 ? 10 : entry.streak >= 14 ? 7 : entry.streak >= 7 ? 5 : 0;
+        gami.xp = (gami.xp || 0) + 10 + bonus;
         localStorage.setItem('hvi_gamification', JSON.stringify(gami));
-      } else {
-        log[habit.id].completedToday = false;
+      } else if (!completed && entry.completedToday) {
+        entry.completedToday = false;
         habitH[habit.id] = habitH[habit.id].filter(d => d !== td);
-        if (log[habit.id].streak > 0) log[habit.id].streak--;
+      } else {
+        // Already in the requested state — just report it
+        renderStats();
+        return { success: true, message: habit.name + ' is already ' + (completed ? 'done' : 'not done') + ' today' };
       }
 
       localStorage.setItem('hvi_log', JSON.stringify(log));
       localStorage.setItem('hvi_habit_history', JSON.stringify(habitH));
       renderStats();
-      return { success: true, message: (completed ? 'Checked' : 'Unchecked') + ': ' + habit.name };
+      return { success: true, message: (completed ? 'Checked' : 'Unchecked') + ': ' + habit.name + (entry.streak > 1 ? ' (streak: ' + entry.streak + ')' : '') };
     }
 
     function execLogMeal({ meal_type, items }) {
       const td   = today();
       const mLog = safeJSON('hvi_meal_log', {});
-      if (!mLog[td]) mLog[td] = {};
-      if (!mLog[td][meal_type]) mLog[td][meal_type] = [];
+      if (!mLog[td]) mLog[td] = { meals: [] };
+      if (!mLog[td].meals) mLog[td].meals = [];
 
-      items.forEach(item => mLog[td][meal_type].push({
-        name: item.name, cal: item.cal, p: item.p, c: item.c, f: item.f,
-        qty: item.qty || '1 serving',
+      // Match Arete diet.js saveMeal() format exactly:
+      // { id, name (meal_type), items: [{ name, calories, protein, carbs, fat, qty }] }
+      const mealItems = items.map(item => ({
+        name:     item.name,
+        calories: item.cal || item.calories || 0,
+        protein:  item.p   || item.protein  || 0,
+        carbs:    item.c   || item.carbs    || 0,
+        fat:      item.f   || item.fat      || 0,
+        qty:      item.qty || '1 serving',
       }));
+
+      mLog[td].meals.push({
+        id:    'm_' + Date.now(),
+        name:  meal_type,
+        items: mealItems,
+      });
 
       localStorage.setItem('hvi_meal_log', JSON.stringify(mLog));
       renderStats();
-      const totCal = items.reduce((s, i) => s + i.cal, 0);
-      const totP   = items.reduce((s, i) => s + i.p, 0);
-      return { success: true, message: `Logged ${meal_type}: ${Math.round(totCal)} cal, ${Math.round(totP)}g protein (${items.length} item${items.length > 1 ? 's' : ''})` };
+      const totCal = mealItems.reduce((s, i) => s + i.calories, 0);
+      const totP   = mealItems.reduce((s, i) => s + i.protein, 0);
+      return { success: true, message: `Logged ${meal_type}: ${Math.round(totCal)} cal, ${Math.round(totP)}g protein (${mealItems.length} item${mealItems.length > 1 ? 's' : ''})` };
     }
 
     function execSaveNote({ text, due_date }) {
