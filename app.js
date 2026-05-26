@@ -899,6 +899,8 @@ async function init() {
     habits = LS.get('hvi_habits', habits);
     log = LS.get('hvi_log', log);
     habits.forEach(h => { if (!log[h.id]) log[h.id] = { streak: 0, lastCompletedDate: '', completedToday: false }; });
+    // Re-sanitize after sync reload — clear any stale completedToday
+    checkReset();
     journal = LS.get('hvi_journal3', journal);
     meta = LS.get('hvi_meta', meta);
     workoutLog = LS.get('hvi_workout_log', workoutLog);
@@ -984,6 +986,17 @@ async function init() {
 
 function checkReset() {
   const t = today();
+  // Always sanitize: clear any completedToday where lastCompletedDate isn't actually today
+  // This catches stale data restored by cloud sync after a previous checkReset
+  let sanitized = false;
+  habits.forEach(h => {
+    const e = log[h.id];
+    if (e && e.completedToday && e.lastCompletedDate !== t) {
+      e.completedToday = false;
+      sanitized = true;
+    }
+  });
+  if (sanitized) LS.set('hvi_log', log);
   if (meta.lastOpenedDate === t) return;
   const allDone = habits.every(h => log[h.id]?.completedToday);
   if (allDone && meta.lastOpenedDate) meta.totalPerfectDays = (meta.totalPerfectDays || 0) + 1;
