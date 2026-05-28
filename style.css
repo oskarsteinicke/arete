@@ -2281,3 +2281,163 @@ nav {
 }
 [data-theme="light"] .sec-lbl { color: var(--accent); }
 [data-theme="light"] .ni.active { filter: drop-shadow(0 0 5px rgba(140,104,48,0.38)); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   EXCLUSIVE EDITION — GRAIN · ANIMATED BORDERS · EDITORIAL
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Film grain — the #1 premium detail ─────────────────────────── */
+#grain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9997;
+  opacity: 0.028;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='250' height='250'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='250' height='250' filter='url(%23g)'/%3E%3C/svg%3E");
+}
+
+/* ── CSS @property for animated conic-gradient borders ───────────── */
+@property --ba {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes borderSpin { to { --ba: 360deg; } }
+
+/* ── Pillar cards — spinning gold border ─────────────────────────── */
+.pc {
+  border: 1px solid transparent;
+  background:
+    rgba(18, 14, 9, 0.88) padding-box,
+    conic-gradient(from var(--ba),
+      rgba(217,180,106,0.04) 0%,
+      rgba(217,180,106,0.38) 12%,
+      rgba(255,245,180,0.72) 22%,
+      rgba(217,180,106,0.38) 32%,
+      rgba(217,180,106,0.04) 44%,
+      rgba(217,180,106,0.04) 100%) border-box;
+  animation: borderSpin 8s linear infinite;
+}
+
+/* ── Hero card — slower spinning gold border ─────────────────────── */
+.hm-hero-card {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(160deg, rgba(34,26,13,0.96), rgba(11,9,6,0.98)) padding-box,
+    conic-gradient(from var(--ba),
+      rgba(217,180,106,0.04) 0%,
+      rgba(217,180,106,0.28) 15%,
+      rgba(255,245,180,0.55) 25%,
+      rgba(217,180,106,0.28) 35%,
+      rgba(217,180,106,0.04) 50%,
+      rgba(217,180,106,0.04) 100%) border-box;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow:
+    0 10px 50px rgba(0,0,0,0.72),
+    inset 0 1px 0 rgba(255,255,255,0.09),
+    inset 0 0 0 1px rgba(217,180,106,0.04);
+  animation: borderSpin 14s linear infinite;
+}
+
+/* ── Ring glow — breathing pulse ────────────────────────────────── */
+@keyframes ringGlow {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(217,180,106,0.55)); }
+  50%       { filter: drop-shadow(0 0 11px rgba(255,230,140,0.95)); }
+}
+.pc-ring svg circle:last-child,
+.pd-ring svg circle:last-child,
+.hm-pc-ring svg circle:last-child,
+.d-ring-wrap svg circle:last-child {
+  animation: ring-fill 1.0s cubic-bezier(0.16,1,0.3,1) forwards,
+             ringGlow 3.5s ease-in-out 1.2s infinite;
+}
+
+/* ── Editorial day heading — large & breathing ───────────────────── */
+.h-day { font-size: 52px; letter-spacing: 0.3px; line-height: 1.02; }
+
+/* ── Home head — gold ornamental rule below ─────────────────────── */
+.h-head::after {
+  content: '';
+  display: block;
+  width: 56px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(217,180,106,0.7), transparent);
+  margin-top: 20px;
+}
+
+/* ── Eyebrow — warm gold, wider tracking ─────────────────────────── */
+.h-eyebrow { color: rgba(217,180,106,0.62); letter-spacing: 4px; }
+
+/* ── Nav active — gold pill glow behind icon ─────────────────────── */
+.ni { z-index: 0; }
+.ni.active::after {
+  content: '';
+  position: absolute;
+  top: 0px; left: 50%;
+  transform: translateX(-50%);
+  width: 40px; height: 36px;
+  background: rgba(176,132,72,0.13);
+  border-radius: 12px;
+  z-index: -1;
+  box-shadow: 0 0 20px rgba(217,180,106,0.18);
+}
+
+/* ── Section labels — gold with ornamental dash ─────────────────── */
+.sec-lbl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(217,180,106,0.65);
+  letter-spacing: 3px;
+}
+.sec-lbl::before {
+  content: '';
+  display: inline-block;
+  width: 18px;
+  height: 1px;
+  background: rgba(217,180,106,0.45);
+  flex-shrink: 0;
+}
+
+/* ── Deeper atmosphere — bottom vignette ────────────────────────── */
+body {
+  background-image:
+    radial-gradient(ellipse 95% 55% at 50% -2%, rgba(176,132,72,0.14) 0%, transparent 56%),
+    radial-gradient(ellipse 55% 48% at 4% 72%, rgba(176,132,72,0.07) 0%, transparent 52%),
+    radial-gradient(ellipse 50% 42% at 96% 88%, rgba(100,140,210,0.04) 0%, transparent 52%),
+    radial-gradient(ellipse 130% 60% at 50% 110%, rgba(0,0,0,0.38) 0%, transparent 60%);
+}
+
+/* ── Light theme overrides ───────────────────────────────────────── */
+[data-theme="light"] #grain { opacity: 0.014; }
+[data-theme="light"] .pc {
+  background:
+    rgba(255,252,246,0.92) padding-box,
+    conic-gradient(from var(--ba),
+      rgba(140,104,48,0.04) 0%,
+      rgba(140,104,48,0.28) 14%,
+      rgba(200,160,72,0.52) 24%,
+      rgba(140,104,48,0.28) 34%,
+      rgba(140,104,48,0.04) 46%,
+      rgba(140,104,48,0.04) 100%) border-box;
+  border: 1px solid transparent;
+}
+[data-theme="light"] .hm-hero-card {
+  background:
+    linear-gradient(160deg, rgba(255,252,246,0.97), rgba(248,243,236,0.98)) padding-box,
+    conic-gradient(from var(--ba),
+      rgba(140,104,48,0.04) 0%,
+      rgba(140,104,48,0.22) 15%,
+      rgba(200,160,72,0.42) 25%,
+      rgba(140,104,48,0.22) 35%,
+      rgba(140,104,48,0.04) 50%,
+      rgba(140,104,48,0.04) 100%) border-box;
+  border: 1px solid transparent;
+}
+[data-theme="light"] body {
+  background-image:
+    radial-gradient(ellipse 110% 60% at 50% 0%, rgba(176,132,72,0.04) 0%, transparent 65%),
+    radial-gradient(ellipse 130% 60% at 50% 110%, rgba(0,0,0,0.06) 0%, transparent 60%);
+}
