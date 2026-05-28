@@ -29,7 +29,10 @@ html, body { height: 100%; overflow: hidden; }
 
 body {
   background-color: var(--bg);
-  background-image: radial-gradient(ellipse 110% 60% at 50% 0%, rgba(176,132,72,0.08) 0%, transparent 65%);
+  background-image:
+    radial-gradient(ellipse 95% 55% at 50% -2%, rgba(176,132,72,0.14) 0%, transparent 56%),
+    radial-gradient(ellipse 55% 48% at 4% 72%, rgba(176,132,72,0.07) 0%, transparent 52%),
+    radial-gradient(ellipse 50% 42% at 96% 88%, rgba(100,140,210,0.04) 0%, transparent 52%);
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
   line-height: 1.55;
@@ -2098,7 +2101,183 @@ nav {
 }
 
 /* Serif headings — bump size for Cormorant's taller x-height */
-.h-day         { font-size: 38px; letter-spacing: 0.5px; }
-.page-title    { font-size: 28px; }
 .pd-name       { font-size: 26px; }
 .hm-hero-title { font-size: 22px; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   VISUAL INTENSITY — GLASS · GLOW · GRADIENT · SHIMMER
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Glass morphism: pillar cards ───────────────────────────────── */
+.pc {
+  background: rgba(20, 16, 10, 0.82);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  border-color: rgba(217, 180, 106, 0.12);
+}
+
+/* ── Gradient text: day heading ─────────────────────────────────── */
+.h-day {
+  font-size: 40px;
+  letter-spacing: 0.4px;
+  background: linear-gradient(172deg, #fff8ef 0%, var(--accent-b) 52%, #c07e28 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Gradient text: all page titles ────────────────────────────── */
+.page-title {
+  font-size: 29px;
+  background: linear-gradient(155deg, var(--text) 20%, var(--accent-b) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Gradient text: home hero name ─────────────────────────────── */
+.hm-hero-name {
+  background: linear-gradient(145deg, var(--text) 0%, var(--accent-b) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Gradient text: XP score number ────────────────────────────── */
+.hm-score-num {
+  background: linear-gradient(140deg, var(--accent-b) 0%, #fff3cc 55%, var(--accent-b) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Gradient text: pillar card names ───────────────────────────── */
+.pc-name {
+  background: linear-gradient(180deg, rgba(237,228,212,0.95) 0%, var(--accent-b) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Gradient text: pillar detail % ────────────────────────────── */
+.pd-pct {
+  background: linear-gradient(135deg, var(--accent-b) 0%, #ffe8a0 60%, var(--accent-b) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-size: 15px;
+}
+
+/* ── Ring progress arc — gold glow ─────────────────────────────── */
+.pc-ring svg circle:last-child,
+.pd-ring svg circle:last-child,
+.hm-pc-ring svg circle:last-child,
+.d-ring-wrap svg circle:last-child {
+  filter: drop-shadow(0 0 5px rgba(217,180,106,0.72));
+}
+
+/* ── Progress bar — glow + animated shimmer ─────────────────────── */
+@keyframes barShimmer {
+  0%   { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+.h-prog-track { height: 3px; background: rgba(255,255,255,0.07); }
+.h-prog-fill {
+  background-image: linear-gradient(90deg,
+    var(--accent) 0%, var(--accent-b) 30%,
+    rgba(255,248,210,0.95) 50%, var(--accent-b) 70%, var(--accent) 100%);
+  background-size: 250% auto;
+  box-shadow: 0 0 10px rgba(217,180,106,0.9), 0 0 26px rgba(217,180,106,0.42);
+  animation: progEnter 0.9s cubic-bezier(0.16,1,0.3,1) both,
+             barShimmer 5s 1s linear infinite;
+}
+
+/* ── XP bar — glow + shimmer ────────────────────────────────────── */
+.hm-xp-fill {
+  background-image: linear-gradient(90deg,
+    var(--accent) 0%, var(--accent-b) 35%,
+    rgba(255,248,210,0.9) 50%, var(--accent-b) 65%, var(--accent) 100%);
+  background-size: 250% auto;
+  box-shadow: 0 0 8px rgba(217,180,106,0.75), 0 0 20px rgba(217,180,106,0.32);
+  animation: progEnter 0.9s cubic-bezier(0.16,1,0.3,1) both,
+             barShimmer 6s 1.2s linear infinite;
+}
+
+/* ── Home hero card — rich glass atmosphere ─────────────────────── */
+.hm-hero-card {
+  background: linear-gradient(160deg, rgba(36,28,14,0.94) 0%, rgba(11,9,6,0.97) 100%);
+  border: 1px solid rgba(217,180,106,0.18);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow:
+    0 10px 50px rgba(0,0,0,0.72),
+    inset 0 1px 0 rgba(255,255,255,0.09),
+    inset 0 0 0 1px rgba(217,180,106,0.06);
+}
+
+/* ── Hero glow — bigger, more luminous ──────────────────────────── */
+.hm-hero-glow {
+  width: 300px; height: 300px;
+  top: -110px; right: -90px;
+  background: radial-gradient(circle, rgba(217,180,106,1) 0%, rgba(176,132,72,0.45) 35%, transparent 70%);
+  opacity: 0.2;
+}
+
+/* ── Pillar card hover — gold bloom ─────────────────────────────── */
+.pc:hover {
+  box-shadow:
+    0 20px 56px rgba(0,0,0,0.72),
+    0 0 0 1px rgba(217,180,106,0.28),
+    0 0 55px rgba(176,132,72,0.14),
+    inset 0 1px 0 rgba(255,255,255,0.1);
+}
+
+/* ── Habit done row — golden wash ───────────────────────────────── */
+.hi.done { background: linear-gradient(90deg, rgba(176,132,72,0.10) 0%, transparent 66%); }
+
+/* ── Section labels — warm gold ─────────────────────────────────── */
+.sec-lbl { color: rgba(217,180,106,0.68); }
+
+/* ── Level badge — glowing border ───────────────────────────────── */
+.hm-hero-lvl {
+  background: rgba(176,132,72,0.16);
+  border-color: rgba(217,180,106,0.32);
+  box-shadow: 0 0 14px rgba(217,180,106,0.18);
+}
+
+/* ── Active nav icon — gold glow ────────────────────────────────── */
+.ni.active { filter: drop-shadow(0 0 7px rgba(217,180,106,0.48)); }
+
+/* ── Streak hot label — brighter ────────────────────────────────── */
+.hi-streak.hot { color: var(--accent-b); font-weight: 600; }
+
+/* ── Pillar separator line — gradient ───────────────────────────── */
+.pd-sep { background: linear-gradient(90deg, var(--accent-b), transparent); width: 44px; }
+
+/* ── Light theme overrides for gradient text ────────────────────── */
+[data-theme="light"] .h-day {
+  background: linear-gradient(172deg, #1a1208 0%, var(--accent) 55%, #7a5020 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+[data-theme="light"] .page-title,
+[data-theme="light"] .hm-hero-name,
+[data-theme="light"] .pc-name {
+  background: none;
+  -webkit-text-fill-color: var(--text);
+}
+[data-theme="light"] .hm-score-num {
+  background: none;
+  -webkit-text-fill-color: var(--accent);
+}
+[data-theme="light"] .pd-pct {
+  background: none;
+  -webkit-text-fill-color: var(--accent);
+}
+[data-theme="light"] .pc {
+  background: rgba(255,252,246,0.88);
+  border-color: rgba(140,104,48,0.18);
+}
+[data-theme="light"] .sec-lbl { color: var(--accent); }
+[data-theme="light"] .ni.active { filter: drop-shadow(0 0 5px rgba(140,104,48,0.38)); }
