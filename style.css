@@ -15,7 +15,7 @@ body, #app, .view, nav, .coach-panel { transition: background-color 0.2s ease, c
   --accent-b: #d9b46a;
   --card-shadow: 0 2px 16px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.04);
   --nav-h: 64px;
-  --serif: 'Playfair Display', Georgia, serif;
+  --serif: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
   --display: 'Cinzel', 'Playfair Display', Georgia, serif;
   --radius: 16px;
   --radius-sm: 10px;
@@ -28,7 +28,8 @@ body, #app, .view, nav, .coach-panel { transition: background-color 0.2s ease, c
 html, body { height: 100%; overflow: hidden; }
 
 body {
-  background: var(--bg);
+  background-color: var(--bg);
+  background-image: radial-gradient(ellipse 110% 60% at 50% 0%, rgba(176,132,72,0.08) 0%, transparent 65%);
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
   line-height: 1.55;
@@ -161,13 +162,24 @@ nav {
 #sync-dot.sync-away { background:rgba(255,255,255,0.2); }
 
 /* ANIMATIONS */
-@keyframes fu { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-.ani { animation: fu 0.35s cubic-bezier(0.25,0.1,0.25,1) both; }
-.ani:nth-child(2) { animation-delay: 0.04s; }
-.ani:nth-child(3) { animation-delay: 0.08s; }
-.ani:nth-child(4) { animation-delay: 0.12s; }
-@keyframes viewSlide { from { transform:translateX(12px); opacity:0.8; } to { transform:translateX(0); opacity:1; } }
-.view-slide-in { animation: viewSlide 0.2s cubic-bezier(0.25,0.46,0.45,0.94) forwards; }
+@keyframes fu {
+  from { opacity: 0; transform: translateY(18px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.ani { animation: fu 0.65s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.ani:nth-child(1) { animation-delay: 0s; }
+.ani:nth-child(2) { animation-delay: 0.07s; }
+.ani:nth-child(3) { animation-delay: 0.14s; }
+.ani:nth-child(4) { animation-delay: 0.21s; }
+.ani:nth-child(5) { animation-delay: 0.27s; }
+.ani:nth-child(6) { animation-delay: 0.32s; }
+.ani:nth-child(7) { animation-delay: 0.37s; }
+.ani:nth-child(8) { animation-delay: 0.41s; }
+@keyframes viewSlide {
+  from { transform: translateX(24px) scale(0.983); opacity: 0; filter: blur(4px); }
+  to   { transform: translateX(0) scale(1); opacity: 1; filter: blur(0); }
+}
+.view-slide-in { animation: viewSlide 0.42s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
 /* SHARED */
 .sec-lbl { font-family: var(--display); font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--text-dim); padding: 16px 24px 8px; font-weight: 500; }
@@ -193,10 +205,15 @@ nav {
   padding: 24px 12px 18px;
   display: flex; flex-direction: column; align-items: center; gap: 10px;
   cursor: pointer;
-  transition: background 0.2s, border-color 0.2s;
+  transition: background 0.28s, border-color 0.28s, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
 }
-.pc:hover { background: var(--surface2); border-color: var(--border); }
+.pc:hover {
+  background: var(--surface2);
+  border-color: rgba(176,132,72,0.22);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.55), 0 0 0 1px rgba(176,132,72,0.07), inset 0 1px 0 rgba(255,255,255,0.07);
+}
 
 .pc-ring { position: relative; width: 72px; height: 72px; }
 .pc-ring > svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
@@ -1639,7 +1656,12 @@ nav {
   to { stroke-dashoffset: var(--ring-off); }
 }
 .d-ring-wrap svg circle:last-child {
-  animation: ring-fill 0.8s ease-out forwards;
+  animation: ring-fill 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.pc-ring svg circle:last-child,
+.pd-ring svg circle:last-child,
+.hm-pc-ring svg circle:last-child {
+  animation: ring-fill 1.0s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* ═══ PRO UPGRADE PROMPT ══════════════════════════════════════════ */
@@ -2005,3 +2027,78 @@ nav {
   background: linear-gradient(160deg, #ffffff 0%, rgba(176,132,72,.05) 100%);
   box-shadow: 0 4px 24px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,1);
 }
+[data-theme="light"] body {
+  background-image: radial-gradient(ellipse 110% 60% at 50% 0%, rgba(176,132,72,0.04) 0%, transparent 65%);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PRO MAX MOTION LAYER
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Progress bar entrance — scaleX sweep from left */
+@keyframes progEnter {
+  from { transform: scaleX(0); opacity: 0.5; }
+  to   { transform: scaleX(1); opacity: 1; }
+}
+.h-prog-fill,
+.hm-xp-fill,
+.hm-habits-fill,
+.ps-fill,
+.hm-chal-fill,
+.chal-prog-fill {
+  transform-origin: left center;
+  animation: progEnter 1.0s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Coach bubble slide-in — left for AI, right for user */
+@keyframes bubbleInLeft {
+  from { opacity: 0; transform: translateX(-14px) scale(0.94); }
+  to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes bubbleInRight {
+  from { opacity: 0; transform: translateX(14px) scale(0.94); }
+  to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+.coach-bubble.coach { animation: bubbleInLeft  0.38s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.coach-bubble.user  { animation: bubbleInRight 0.38s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* Workout card hover lift */
+.w-card {
+  transition: background 0.25s, border-color 0.25s, transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.w-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+.w-card:active { transform: translateY(-1px) scale(0.985); }
+
+/* Gold button shine sweep */
+.pro-btn { position: relative; overflow: hidden; }
+.pro-btn::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 55%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+  transform: skewX(-18deg);
+  transition: left 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.pro-btn:hover::after { left: 160%; }
+
+/* Nav active indicator — gold top bar */
+.ni.active::before {
+  border-radius: 0 0 3px 3px;
+  box-shadow: 0 0 8px rgba(217,180,106,0.5);
+}
+
+/* Pillar ring track — subtle accent tint */
+.pc-ring svg circle:first-child,
+.pd-ring svg circle:first-child {
+  stroke: rgba(176,132,72,0.12);
+}
+
+/* Serif headings — bump size for Cormorant's taller x-height */
+.h-day         { font-size: 38px; letter-spacing: 0.5px; }
+.page-title    { font-size: 28px; }
+.pd-name       { font-size: 26px; }
+.hm-hero-title { font-size: 22px; }
