@@ -1036,6 +1036,12 @@ function checkReset() {
 
 // ── NAVIGATION ────────────────────────────────────────────────────────────
 function go(view, params = {}, pushState = true) {
+  // Paywall: gate premium sections for free (post-trial) users
+  if (typeof isPremium === 'function' && !isPremium()) {
+    const _parent = NAV_PARENT[view] || view;
+    if (_parent === 'workout') { showUpgradeModal('workout'); return; }
+    if (_parent === 'diet') { showUpgradeModal('diet'); return; }
+  }
   clearInterval(qTimer);
   closeQuickLog();
   curView = view;
@@ -1604,7 +1610,7 @@ function renderPillar() {
 function renderHabits() {
   const toggle = `<div class="hab-toggle">
     <button class="hab-toggle-btn${_habitsTab==='habits'?' active':''}" onclick="_habitsTab='habits';renderHabits()">Habits</button>
-    <button class="hab-toggle-btn${_habitsTab==='routines'?' active':''}" onclick="_habitsTab='routines';renderHabits()">Routines</button>
+    <button class="hab-toggle-btn${_habitsTab==='routines'?' active':''}" onclick="tryRoutinesTab()">Routines</button>
   </div>`;
 
   if (_habitsTab === 'routines') { renderRoutines(toggle); return; }
@@ -1621,7 +1627,7 @@ function renderHabits() {
       <div><div class="ah-title">All Habits</div><div class="ah-sub">We are what we repeatedly do.</div></div>
       <div style="display:flex;gap:8px;padding-top:8px">
         ${!_habitEditMode ? `<button class="w-action-btn" style="margin:0;padding:8px 18px;font-size:11px;width:auto" onclick="_habitEditMode=true;renderHabits()">Edit</button>` : `<button class="w-action-btn" style="margin:0;padding:8px 18px;font-size:11px;width:auto;background:rgba(154,130,86,0.15);border-color:var(--accent)" onclick="_habitEditMode=false;renderHabits()">Done</button>`}
-        ${!_habitEditMode ? `<button class="w-action-btn" style="margin:0;padding:8px 14px;font-size:16px;width:auto;line-height:1" onclick="go('habitCreate')">+</button>` : ''}
+        ${!_habitEditMode ? `<button class="w-action-btn" style="margin:0;padding:8px 14px;font-size:16px;width:auto;line-height:1" onclick="tryAddHabit()">+</button>` : ''}
       </div>
     </div>
     <div class="ani">${groups}</div>
@@ -1896,9 +1902,31 @@ function _getSchedFromForm() {
   return { schedule: 'daily' };
 }
 
+// Paywall-aware entry points for habit creation & routines
+function tryAddHabit() {
+  if (typeof isPremium === 'function' && !isPremium() && habits.length >= FREE_HABIT_LIMIT) {
+    showUpgradeModal('habits');
+    return;
+  }
+  go('habitCreate');
+}
+function tryRoutinesTab() {
+  if (typeof isPremium === 'function' && !isPremium()) {
+    showUpgradeModal('routines');
+    return;
+  }
+  _habitsTab = 'routines';
+  renderHabits();
+}
+
 function saveHabit() {
   const name = document.getElementById('hc-name')?.value?.trim();
   if (!name) return;
+  // Paywall backstop: free tier capped at FREE_HABIT_LIMIT habits
+  if (typeof isPremium === 'function' && !isPremium() && habits.length >= FREE_HABIT_LIMIT) {
+    showUpgradeModal('habits');
+    return;
+  }
   const id = 'cu_' + Date.now();
   const sched = _getSchedFromForm();
   const h = { id, name, category: curHabitCat, ...sched };

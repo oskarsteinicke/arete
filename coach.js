@@ -188,6 +188,11 @@ function _renderCoachMsgs() {
 }
 
 function openCoach() {
+  // Paywall: AI coach is Premium-only for free (post-trial) users
+  if (typeof isPremium === 'function' && !isPremium()) {
+    if (typeof showUpgradeModal === 'function') showUpgradeModal('coach');
+    return;
+  }
   _loadCoachHistory();
   const overlay = document.getElementById('coach-overlay');
   const fab = document.getElementById('coach-fab');

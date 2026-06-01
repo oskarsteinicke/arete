@@ -1434,7 +1434,8 @@ function renderStats() {
       <div class="q-auth" id="qa">\u2014 ${esc(q.author)}</div>
       <div class="q-nav"><button class="q-btn" onclick="rotQ(-1)">\u2190</button><button class="q-btn" onclick="rotQ(1)">\u2192</button></div>
     </div>
-    <button class="w-action-btn" style="margin:16px 24px 8px" onclick="go('progressPhotos')">📸 Progress Photos</button>
+    ${typeof renderPremiumSettingsCard === 'function' ? `<div style="margin:16px 24px 4px">${renderPremiumSettingsCard()}</div>` : ''}
+    <button class="w-action-btn" style="margin:12px 24px 8px" onclick="go('progressPhotos')">📸 Progress Photos</button>
     <button class="w-action-btn" style="margin:0 24px 8px" onclick="shareRecap()">📤 Share Weekly Recap</button>
     <button class="w-action-btn" style="margin:0 24px 8px" onclick="go('leaderboard')">🏆 Leaderboard</button>
     <button class="w-action-btn" style="margin:0 24px 8px" onclick="go('challenges')">⚔️ Challenge a Friend</button>

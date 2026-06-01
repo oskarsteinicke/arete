@@ -1,19 +1,24 @@
-// Cloudflare Worker — Arete API Proxy (Gemini + OAuth + Health)
+// Cloudflare Worker — Arete API Proxy (Gemini + OAuth + Health + Stripe)
 // Deploy: npx wrangler deploy
 // Secrets needed:
-//   GEMINI_KEY          — Google Gemini API key
-//   GROQ_KEY            — Groq API key (free tier, fallback for diet AI)
-//   HEALTH_TOKEN        — Bearer token for Apple Health Shortcut
-//   GOOGLE_CLIENT_ID    — Google OAuth client ID
-//   GOOGLE_SECRET       — Google OAuth client secret
-//   STRAVA_CLIENT_ID    — Strava OAuth client ID
-//   STRAVA_SECRET       — Strava OAuth client secret
-//   FITBIT_CLIENT_ID    — Fitbit OAuth client ID
-//   FITBIT_SECRET       — Fitbit OAuth client secret
-//   WHOOP_CLIENT_ID     — Whoop OAuth client ID
-//   WHOOP_SECRET        — Whoop OAuth client secret
+//   GEMINI_KEY            — Google Gemini API key
+//   GROQ_KEY              — Groq API key (free tier, fallback for diet AI)
+//   HEALTH_TOKEN          — Bearer token for Apple Health Shortcut
+//   GOOGLE_CLIENT_ID      — Google OAuth client ID
+//   GOOGLE_SECRET         — Google OAuth client secret
+//   STRAVA_CLIENT_ID      — Strava OAuth client ID
+//   STRAVA_SECRET         — Strava OAuth client secret
+//   FITBIT_CLIENT_ID      — Fitbit OAuth client ID
+//   FITBIT_SECRET         — Fitbit OAuth client secret
+//   WHOOP_CLIENT_ID       — Whoop OAuth client ID
+//   WHOOP_SECRET          — Whoop OAuth client secret
+//   STRIPE_SECRET_KEY     — Stripe secret key (sk_live_… or sk_test_…)
+//   STRIPE_WEBHOOK_SECRET — Stripe webhook signing secret (whsec_…)
+//   STRIPE_PRICE_MONTHLY  — Stripe price ID for $7.99/mo Premium
+//   STRIPE_PRICE_YEARLY   — Stripe price ID for $59/yr Premium
+//   SUPABASE_SERVICE_KEY  — Supabase service_role key (updates user plan metadata)
 // KV binding needed:
-//   HEALTH_KV           — KV namespace for Apple Health data
+//   HEALTH_KV             — KV namespace for Apple Health data
 
 const ALLOWED_ORIGINS = [
   'https://get-arete.com',
@@ -172,6 +177,131 @@ async function handleHealth(request, env, origin) {
   return jsonResponse({ error: 'Method not allowed' }, 405, origin);
 }
 
+// ── STRIPE ──────────────────────────────────────────────────────────────────
+const STRIPE_API = 'https://api.stripe.com/v1';
+const SUPABASE_URL = 'https://socflncohsenjptgkkax.supabase.co';
+
+async function stripeRequest(path, params, env) {
+  const res = await fetch(`${STRIPE_API}${path}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${env.STRIPE_SECRET_KEY}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams(params).toString(),
+  });
+  return res.json();
+}
+
+// Update Supabase user metadata (requires service_role key). Merges fields.
+async function updateUserMeta(userId, meta, env) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+      'apikey': env.SUPABASE_SERVICE_KEY,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ user_metadata: meta }),
+  });
+  return res.ok;
+}
+
+// Create Stripe Checkout session (single Premium tier, monthly or yearly)
+async function handleCheckout(body, env, origin) {
+  const { user_id, email, billing } = body;
+  if (!user_id || !email) return jsonResponse({ error: 'Missing user_id or email' }, 400, origin);
+  if (!env.STRIPE_SECRET_KEY) return jsonResponse({ error: 'Stripe not configured' }, 500, origin);
+
+  const priceId = billing === 'monthly' ? env.STRIPE_PRICE_MONTHLY : env.STRIPE_PRICE_YEARLY;
+  if (!priceId) return jsonResponse({ error: `Price not configured for billing: ${billing}` }, 500, origin);
+
+  const session = await stripeRequest('/checkout/sessions', {
+    mode: 'subscription',
+    'line_items[0][price]': priceId,
+    'line_items[0][quantity]': '1',
+    success_url: 'https://get-arete.com/?upgrade=success',
+    cancel_url: 'https://get-arete.com/?upgrade=cancel',
+    customer_email: email,
+    'metadata[user_id]': user_id,
+    'metadata[plan]': 'premium',
+    'subscription_data[metadata][user_id]': user_id,
+    'subscription_data[metadata][plan]': 'premium',
+  }, env);
+
+  if (session.error) return jsonResponse({ error: session.error.message }, 400, origin);
+  return jsonResponse({ url: session.url }, 200, origin);
+}
+
+// Create Stripe Customer Portal session (manage / cancel subscription)
+async function handlePortal(body, env, origin) {
+  const { customer_id } = body;
+  if (!customer_id) return jsonResponse({ error: 'Missing customer_id' }, 400, origin);
+  const session = await stripeRequest('/billing_portal/sessions', {
+    customer: customer_id,
+    return_url: 'https://get-arete.com/',
+  }, env);
+  if (session.error) return jsonResponse({ error: session.error.message }, 400, origin);
+  return jsonResponse({ url: session.url }, 200, origin);
+}
+
+// Verify Stripe webhook signature (HMAC-SHA256)
+async function verifyStripeSignature(payload, sigHeader, secret) {
+  const parts = {};
+  for (const item of (sigHeader || '').split(',')) {
+    const [k, v] = item.split('=');
+    parts[k] = v;
+  }
+  const timestamp = parts['t'], sig = parts['v1'];
+  if (!timestamp || !sig) return false;
+  if (Math.abs(Date.now() / 1000 - parseInt(timestamp)) > 300) return false;
+  const key = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  const mac = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(`${timestamp}.${payload}`));
+  const expected = Array.from(new Uint8Array(mac)).map(b => b.toString(16).padStart(2, '0')).join('');
+  return expected === sig;
+}
+
+async function handleStripeWebhook(request, env) {
+  if (!env.STRIPE_WEBHOOK_SECRET || !env.SUPABASE_SERVICE_KEY) {
+    return new Response('Webhook not configured', { status: 500 });
+  }
+  const payload = await request.text();
+  const sig = request.headers.get('stripe-signature');
+  if (!(await verifyStripeSignature(payload, sig, env.STRIPE_WEBHOOK_SECRET))) {
+    return new Response('Invalid signature', { status: 401 });
+  }
+  const event = JSON.parse(payload);
+
+  switch (event.type) {
+    case 'checkout.session.completed': {
+      const s = event.data.object;
+      const userId = s.metadata?.user_id;
+      if (userId) await updateUserMeta(userId, { plan: 'premium', stripe_customer: s.customer || null }, env);
+      break;
+    }
+    case 'customer.subscription.updated': {
+      const sub = event.data.object;
+      const userId = sub.metadata?.user_id;
+      if (userId && (sub.status === 'active' || sub.status === 'trialing')) {
+        await updateUserMeta(userId, { plan: 'premium', stripe_customer: sub.customer || null }, env);
+      } else if (userId && (sub.status === 'canceled' || sub.status === 'unpaid')) {
+        await updateUserMeta(userId, { plan: 'free' }, env);
+      }
+      break;
+    }
+    case 'customer.subscription.deleted': {
+      const sub = event.data.object;
+      const userId = sub.metadata?.user_id;
+      if (userId) await updateUserMeta(userId, { plan: 'free' }, env);
+      break;
+    }
+  }
+  return new Response('ok', { status: 200 });
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get('Origin') || '';
@@ -189,11 +319,26 @@ export default {
       return handleHealth(request, env, origin);
     }
 
+    // Stripe webhook (from Stripe servers — no CORS, raw body)
+    if (path === '/stripe/webhook') {
+      return handleStripeWebhook(request, env);
+    }
+
     if (request.method !== 'POST') {
       return new Response('Method not allowed', { status: 405 });
     }
 
     try {
+      // Stripe checkout session
+      if (path === '/stripe/checkout') {
+        return handleCheckout(await request.json(), env, origin);
+      }
+
+      // Stripe customer portal
+      if (path === '/stripe/portal') {
+        return handlePortal(await request.json(), env, origin);
+      }
+
       // OAuth token exchange
       if (path === '/oauth/exchange') {
         const body = await request.json();
