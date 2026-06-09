@@ -1,0 +1,8 @@
+name = "arete-ai"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+# Apple Health data store (bound as env.HEALTH_KV in worker.js)
+[[kv_namespaces]]
+binding = "HEALTH_KV"
+id = "92ae048db60145e788f12578b1c9f426"
