@@ -151,7 +151,7 @@ function readinessCardHTML() {
     if (f.whoop != null) bits.push('Whoop ' + Math.round(f.whoop));
     bits.push('Sleep ' + Math.round(f.sleep * 100) + '%');
     bits.push('Load ' + (f.load >= 1 ? 'fresh' : f.load >= 0.7 ? 'moderate' : 'high'));
-    return `<div class="hm-readiness ani" onclick="go('stats')" role="button" tabindex="0" aria-label="Daily readiness ${r.score} out of 100, ${r.label}">
+    return `<div class="hm-readiness ani" onclick="showReadinessBreakdown()" role="button" tabindex="0" aria-label="Daily readiness ${r.score} out of 100, ${r.label}">
       <div class="hm-rd-ring">${ringSvg}<div class="hm-rd-score" style="color:${color}">${r.score}</div></div>
       <div class="hm-rd-body">
         <div class="hm-rd-title">Readiness · <span style="color:${color}">${r.label}</span></div>
@@ -452,6 +452,84 @@ function dismissBriefCoach() {
   }
 }
 
+// Breakdown modal: shows the factors that make up the readiness score.
+function _rdFactorRow(icon, label, val, weight) {
+  const v = Math.round(val);
+  const c = v >= 70 ? 'var(--carb)' : v >= 40 ? '#e0a866' : 'var(--fat)';
+  return `<div class="rd-factor">
+    <div class="rd-factor-top">
+      <span class="rd-factor-name">${icon} ${label}</span>
+      <span class="rd-factor-val">${v}<span class="rd-factor-unit">/100</span></span>
+    </div>
+    <div class="rd-bar"><div class="rd-bar-fill" style="width:${Math.max(3, v)}%;background:${c}"></div></div>
+    <div class="rd-factor-weight">${weight}</div>
+  </div>`;
+}
+
+function showReadinessBreakdown() {
+  try {
+    const existing = document.getElementById('rd-modal');
+    if (existing) existing.remove();
+    const r = getReadiness();
+    const f = r.factors;
+    const color = readinessColor(r.score);
+    const usingWhoop = f.whoop != null;
+    const pct = v => Math.round(v * 100);
+
+    const interp = r.score >= 75 ? 'Primed. Green light to push hard today.'
+      : r.score >= 50 ? 'Steady. Train as planned, just don\'t force PRs.'
+      : r.score >= 30 ? 'Run down. Dial back intensity and prioritize recovery.'
+      : 'Depleted. Make today a recovery day. Sleep and food come first.';
+
+    const rows = [];
+    if (usingWhoop) {
+      rows.push(_rdFactorRow('💚', 'Whoop recovery', f.whoop, 'Leads the score'));
+      rows.push(_rdFactorRow('😴', 'Sleep', pct(f.sleep), 'Fine-tunes'));
+      rows.push(_rdFactorRow('🏋️', 'Training load', pct(f.load), 'Fine-tunes'));
+    } else {
+      rows.push(_rdFactorRow('🏋️', 'Training load', pct(f.load), '40% of score'));
+      rows.push(_rdFactorRow('😴', 'Sleep', pct(f.sleep), '30% of score'));
+      rows.push(_rdFactorRow('✓', 'Habit consistency', pct(f.habits), '15% of score'));
+      rows.push(_rdFactorRow('🍽️', 'Nutrition', pct(f.nutrition), '15% of score'));
+    }
+
+    const foot = usingWhoop
+      ? 'Your Whoop recovery score leads today; sleep and training load adjust it.'
+      : 'Each factor contributes the weight shown. Log sleep and meals to sharpen it.';
+
+    const html = `<div id="rd-modal" class="rd-overlay" role="dialog" aria-modal="true" aria-label="Readiness breakdown">
+      <div class="rd-sheet">
+        <button class="rd-close" onclick="closeReadinessBreakdown()" aria-label="Close">&times;</button>
+        <div class="rd-score-wrap">
+          <div class="rd-score-ring">${(typeof ring === 'function') ? ring(34, r.score / 100, 4, color) : ''}<div class="rd-score-num" style="color:${color}">${r.score}</div></div>
+          <div class="rd-score-meta">
+            <div class="rd-score-lbl" style="color:${color}">${r.label}</div>
+            <div class="rd-score-cap">Daily readiness</div>
+          </div>
+        </div>
+        <div class="rd-intro">${interp}</div>
+        <div class="rd-factors">${rows.join('')}</div>
+        <div class="rd-foot">${foot}</div>
+      </div>
+    </div>`;
+
+    const wrap = document.createElement('div');
+    wrap.innerHTML = html;
+    const node = wrap.firstElementChild;
+    document.body.appendChild(node);
+    node.addEventListener('click', e => { if (e.target === node) closeReadinessBreakdown(); });
+    requestAnimationFrame(() => node.classList.add('rd-visible'));
+    if (typeof track === 'function') track('readiness_breakdown_open', { score: r.score });
+  } catch (e) { console.warn('[Arete] readiness breakdown error:', e); }
+}
+
+function closeReadinessBreakdown() {
+  const m = document.getElementById('rd-modal');
+  if (!m) return;
+  m.classList.remove('rd-visible');
+  setTimeout(() => m.remove(), 250);
+}
+
 function todayBriefingHTML() {
   try {
     const t = today();
@@ -480,7 +558,7 @@ function todayBriefingHTML() {
     const jToday = (typeof journal !== 'undefined' && journal[t]) || {};
     const jDone = Object.values(jToday).some(v => v && String(v).trim());
 
-    const readyHTML = r ? `<div class="tb-ready" onclick="go('stats')" role="button" aria-label="Readiness ${r.score}, ${r.label}">
+    const readyHTML = r ? `<div class="tb-ready" onclick="showReadinessBreakdown()" role="button" tabindex="0" aria-label="Readiness ${r.score}, ${r.label}. Tap for breakdown.">
         <div class="tb-ready-ring">${(typeof ring === 'function') ? ring(19, r.score / 100, 3, rColor) : ''}<span class="tb-ready-num" style="color:${rColor}">${r.score}</span></div>
         <div class="tb-ready-lbl">${r.label}</div>
       </div>` : '';
