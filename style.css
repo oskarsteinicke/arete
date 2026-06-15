@@ -2442,6 +2442,61 @@ body {
     radial-gradient(ellipse 130% 60% at 50% 110%, rgba(0,0,0,0.06) 0%, transparent 60%);
 }
 
+/* ══ CONNECTED SYSTEM: UNIFIED TODAY BRIEFING ═══════════════════════════ */
+.today-brief {
+  margin: 0 16px 12px; padding: 16px;
+  background: linear-gradient(160deg, rgba(34,28,20,0.95), var(--surface));
+  border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+}
+.tb-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.tb-eyebrow {
+  font-family: var(--display); font-size: 11px; letter-spacing: 3px;
+  text-transform: uppercase; color: var(--accent-b);
+}
+.tb-ready { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.tb-ready-ring { position: relative; width: 44px; height: 44px; }
+.tb-ready-ring svg { width: 44px; height: 44px; }
+.tb-ready-num {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-family: var(--serif); font-size: 14px; font-weight: 600;
+}
+.tb-ready-lbl { font-size: 12px; color: var(--text-dim); }
+.tb-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.tb-cell {
+  background: var(--surface2); border-radius: var(--radius-sm); padding: 12px 8px;
+  text-align: center; cursor: pointer; transition: transform 0.1s;
+}
+.tb-cell:active { transform: scale(0.97); }
+.tb-cell-ico { font-size: 18px; margin-bottom: 4px; }
+.tb-cell-val { font-family: var(--serif); font-size: 18px; color: var(--text); line-height: 1.1; }
+.tb-cell-sub { font-size: 12px; color: var(--text-muted); font-family: var(--serif); }
+.tb-cell-lbl { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.6px; margin-top: 3px; }
+.tb-coach {
+  display: flex; gap: 10px; align-items: flex-start;
+  margin-top: 12px; padding: 12px; border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, rgba(176,132,72,0.14), rgba(176,132,72,0.03));
+  border: 1px solid rgba(217,180,106,0.25);
+}
+.tb-coach-ico { font-size: 18px; flex-shrink: 0; }
+.tb-coach-main { flex: 1; min-width: 0; }
+.tb-coach-text { font-size: 13px; color: var(--text); line-height: 1.5; }
+.tb-coach-actions { display: flex; gap: 8px; margin-top: 8px; }
+.tb-coach-btn {
+  background: var(--accent); color: #1a1209; border: none; cursor: pointer;
+  font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 8px;
+}
+.tb-coach-x { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 12px; padding: 6px; }
+.tb-journal {
+  display: flex; align-items: center; gap: 10px; justify-content: space-between;
+  margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border2);
+}
+.tb-journal-prompt { font-size: 12px; color: var(--text-dim); line-height: 1.4; font-style: italic; }
+.tb-journal-btn {
+  background: var(--surface2); border: 1px solid var(--border2); color: var(--accent-b);
+  cursor: pointer; font-size: 12px; font-weight: 600; padding: 7px 14px; border-radius: 9px; flex-shrink: 0;
+}
+
 /* ══ CONNECTED SYSTEM: READINESS ════════════════════════════════════════ */
 .hm-readiness {
   display: flex; align-items: center; gap: 14px;

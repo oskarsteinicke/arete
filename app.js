@@ -1440,8 +1440,7 @@ function renderHome() {
       </div>
     </div>
 
-    ${typeof readinessCardHTML === 'function' ? readinessCardHTML() : ''}
-    ${typeof coachNudgeHTML === 'function' ? coachNudgeHTML() : ''}
+    ${typeof todayBriefingHTML === 'function' ? todayBriefingHTML() : ''}
 
     <div class="hm-pillars ani">${pillarStrip}</div>
 

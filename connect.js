@@ -424,3 +424,90 @@ function dismissCoachNudge() {
   const el = document.getElementById('coach-nudge');
   if (el) el.remove();
 }
+
+// ── PHASE 5: UNIFIED "TODAY" BRIEFING ────────────────────────────────────────
+// One daily command-center card at the top of home that composes every module:
+// readiness, today's training, the adjusted nutrition target, habit status, a
+// journaling prompt, and one coach line. Folds in the standalone readiness card
+// and coach nudge so home reads as a single connected briefing.
+const _JOURNAL_PROMPTS = [
+  'What did you do today that your future self will thank you for?',
+  'Where did you fall short, and what will you do differently tomorrow?',
+  'What is one thing fully within your control right now?',
+  'What drained you today, and what gave you energy?',
+  'If today repeated for a year, where would it take you?',
+  'What did you avoid that you know you should face?',
+  'What are you grateful for that you usually overlook?',
+];
+function _journalPrompt() {
+  const d = new Date();
+  const doy = Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 86400000);
+  return _JOURNAL_PROMPTS[doy % _JOURNAL_PROMPTS.length];
+}
+
+function dismissBriefCoach() {
+  try { localStorage.setItem('hvi_nudge_dismissed', today()); } catch {}
+  if (typeof go === 'function' && typeof curView !== 'undefined' && curView === 'home') {
+    try { go('home', {}, false); } catch {}
+  }
+}
+
+function todayBriefingHTML() {
+  try {
+    const t = today();
+    const r = hasReadinessSignal() ? getReadiness() : null;
+    const rColor = r ? readinessColor(r.score) : '';
+    const mt = getTodaysMacroTargets();
+    const m = (typeof getDayMacros === 'function') ? getDayMacros() : { cal: 0, p: 0 };
+    const sess = classifyTodaySession();
+
+    const wEntry = (typeof workoutLog !== 'undefined' && workoutLog) ? workoutLog[t] : null;
+    const wLogged = !!wEntry;
+    const trainVal = wLogged ? 'Done' : (sess.type === 'rest' ? 'Rest' : (sess.dayName || 'Train'));
+    const trainLbl = wLogged ? 'Workout' : (sess.type === 'rest' ? 'Recovery' : (sess.type === 'hard' ? 'Heavy day' : 'Training'));
+
+    const calTarget = (mt && mt.calories) ? mt.calories
+      : ((typeof dietMeta !== 'undefined' && dietMeta.dailyGoals && dietMeta.dailyGoals.calories) || 0);
+    const fuelLbl = (mt && mt.adjusted) ? (mt.type === 'hard' ? 'Heavy day' : mt.type === 'rest' ? 'Rest day' : 'Training day') : 'Fuel';
+
+    const doneH = Array.isArray(habits) ? habits.filter(h => log[h.id] && log[h.id].completedToday).length : 0;
+    const totalH = Array.isArray(habits) ? habits.length : 0;
+
+    const dismissed = (function () { try { return localStorage.getItem('hvi_nudge_dismissed') === t; } catch { return false; } })();
+    const nudge = dismissed ? null : getCoachNudge();
+
+    const prompt = _journalPrompt();
+    const jToday = (typeof journal !== 'undefined' && journal[t]) || {};
+    const jDone = Object.values(jToday).some(v => v && String(v).trim());
+
+    const readyHTML = r ? `<div class="tb-ready" onclick="go('stats')" role="button" aria-label="Readiness ${r.score}, ${r.label}">
+        <div class="tb-ready-ring">${(typeof ring === 'function') ? ring(19, r.score / 100, 3, rColor) : ''}<span class="tb-ready-num" style="color:${rColor}">${r.score}</span></div>
+        <div class="tb-ready-lbl">${r.label}</div>
+      </div>` : '';
+
+    const coachHTML = nudge ? `<div class="tb-coach">
+        <span class="tb-coach-ico">${nudge.icon}</span>
+        <div class="tb-coach-main">
+          <div class="tb-coach-text">${esc(nudge.text)}</div>
+          <div class="tb-coach-actions">
+            <button class="tb-coach-btn" onclick="if(typeof openCoach==='function')openCoach()">Talk to coach</button>
+            <button class="tb-coach-x" onclick="dismissBriefCoach()">Dismiss</button>
+          </div>
+        </div>
+      </div>` : '';
+
+    return `<div class="today-brief ani">
+      <div class="tb-head"><div class="tb-eyebrow">Today</div>${readyHTML}</div>
+      <div class="tb-grid">
+        <div class="tb-cell" onclick="go('workout')"><div class="tb-cell-ico">🏋️</div><div class="tb-cell-val">${esc(String(trainVal))}</div><div class="tb-cell-lbl">${trainLbl}</div></div>
+        <div class="tb-cell" onclick="go('diet')"><div class="tb-cell-ico">🍽️</div><div class="tb-cell-val">${m.cal.toLocaleString()}<span class="tb-cell-sub">/${calTarget ? calTarget.toLocaleString() : '—'}</span></div><div class="tb-cell-lbl">${fuelLbl}</div></div>
+        <div class="tb-cell" onclick="go('habits')"><div class="tb-cell-ico">✓</div><div class="tb-cell-val">${doneH}/${totalH}</div><div class="tb-cell-lbl">Habits</div></div>
+      </div>
+      ${coachHTML}
+      <div class="tb-journal">
+        <span class="tb-journal-prompt">📓 ${esc(prompt)}</span>
+        <button class="tb-journal-btn" onclick="libTab='journal';go('library')">${jDone ? 'Edit' : 'Reflect'}</button>
+      </div>
+    </div>`;
+  } catch (e) { console.warn('[Arete] briefing error:', e); return ''; }
+}
