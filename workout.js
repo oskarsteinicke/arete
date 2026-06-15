@@ -696,6 +696,9 @@ function finishWorkout() {
     }), 500);
   }
 
+  // Connected system: fire workout-completed so linked habits auto-complete
+  if (window.Arete) window.Arete.emit('workout:completed');
+
   go('workout');
 }
 

@@ -67,7 +67,7 @@ function setUnits(u) {
 // ── SUPABASE AUTH + CLOUD SYNC ────────────────────────────────────────────
 const SUPABASE_URL = 'https://socflncohsenjptgkkax.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_J2qJ8iTfCESrML5Hm6NGbQ_mz9uPeug';
-const SYNC_KEYS = ['hvi_habits','hvi_log','hvi_journal3','hvi_meta','hvi_workout_log','hvi_workout_meta','hvi_meal_log','hvi_diet_meta','hvi_weight_log','hvi_prs','hvi_gamification','hvi_achievements','hvi_tdee_profile','hvi_custom_programs','hvi_onboarded','hvi_sleep_log','hvi_settings','hvi_habit_history','hvi_meal_favorites','hvi_progress_photos','hvi_routines','hvi_routine_log','hvi_integrations','hvi_challenges'];
+const SYNC_KEYS = ['hvi_habits','hvi_log','hvi_journal3','hvi_meta','hvi_workout_log','hvi_workout_meta','hvi_meal_log','hvi_diet_meta','hvi_weight_log','hvi_prs','hvi_gamification','hvi_achievements','hvi_tdee_profile','hvi_custom_programs','hvi_onboarded','hvi_sleep_log','hvi_settings','hvi_habit_history','hvi_meal_favorites','hvi_progress_photos','hvi_routines','hvi_routine_log','hvi_integrations','hvi_challenges','hvi_habit_links'];
 // Keys that are date-keyed objects — these get merged instead of overwritten
 const MERGE_KEYS = ['hvi_workout_log','hvi_meal_log','hvi_journal3','hvi_weight_log','hvi_sleep_log','hvi_habit_history'];
 
@@ -1104,6 +1104,7 @@ function habitRowHTML(h, suffix = '', editMode = false) {
   const e = log[h.id] || {}, s = e.streak || 0;
   const due = isHabitDueToday(h);
   const streakTxt = s > 0 ? `${s >= 3 ? '\uD83D\uDD25 ' : ''}${s} day streak` : 'Start your streak';
+  const _lk = (typeof getHabitLink === 'function' && getHabitLink(h.id)) ? ' <span class="hi-auto" title="Auto-completes from another module">\u26A1</span>' : '';
   if (!due && !editMode) {
     return `<div class="hi rest-day" id="hi${suffix}-${h.id}" style="opacity:0.4;pointer-events:none">
       <div class="hi-info"><div class="hi-name">${esc(h.name)}</div><div class="hi-streak">Rest day</div></div>
@@ -1112,7 +1113,7 @@ function habitRowHTML(h, suffix = '', editMode = false) {
   if (editMode) {
     const idx = habits.indexOf(h);
     return `<div class="hi" id="hi${suffix}-${h.id}" style="opacity:0.85">
-      <div class="hi-info"><div class="hi-name">${esc(h.name)}</div><div class="hi-streak" id="hs${suffix}-${h.id}">${streakTxt}</div></div>
+      <div class="hi-info"><div class="hi-name">${esc(h.name)}${_lk}</div><div class="hi-streak" id="hs${suffix}-${h.id}">${streakTxt}</div></div>
       <div style="display:flex;gap:6px;flex-shrink:0;align-items:center">
         <button class="habit-move-btn" onclick="event.stopPropagation();moveHabit('${h.id}',-1)" ${idx===0?'disabled':''}>▲</button>
         <button class="habit-move-btn" onclick="event.stopPropagation();moveHabit('${h.id}',1)" ${idx===habits.length-1?'disabled':''}>▼</button>
@@ -1121,7 +1122,7 @@ function habitRowHTML(h, suffix = '', editMode = false) {
       </div></div>`;
   }
   return `<div class="hi${e.completedToday?' done':''}" id="hi${suffix}-${h.id}" onclick="tapHabit('${h.id}','${suffix}')" role="checkbox" aria-checked="${!!e.completedToday}" aria-label="${esc(h.name)} \u2014 ${streakTxt}" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();tapHabit('${h.id}','${suffix}')}">
-    <div class="hi-info"><div class="hi-name">${esc(h.name)}</div><div class="hi-streak${s>=3?' hot':''}" id="hs${suffix}-${h.id}">${streakTxt}</div></div>
+    <div class="hi-info"><div class="hi-name">${esc(h.name)}${_lk}</div><div class="hi-streak${s>=3?' hot':''}" id="hs${suffix}-${h.id}">${streakTxt}</div></div>
     <div class="hi-check" id="hc${suffix}-${h.id}" aria-hidden="true">\u2713</div></div>`;
 }
 
@@ -1810,6 +1811,15 @@ function openEditHabit(id) {
       <div id="edit-sched-weekly" style="display:${sched==='weekly'?'block':'none'};padding:8px 0">
         <div class="d-goals-row"><div class="d-goals-label">× per week</div><input class="d-input" type="number" id="edit-per-week" value="${h.perWeek||3}" min="1" max="7" style="width:60px;text-align:center"></div>
       </div>
+      ${(() => {
+        const curLink = (typeof getHabitLink === 'function') ? getHabitLink(id) : '';
+        const opt = (val, label) => `<button class="d-type-btn link-btn${curLink===val?' active':''}" data-link="${val}" onclick="_setEditLink(this)">${label}</button>`;
+        return `<div class="sec-lbl" style="padding:12px 0 8px">Auto-complete when</div>
+      <div class="d-type-row" style="flex-wrap:wrap;gap:6px">
+        ${opt('', 'None')}${opt('workout', '🏋️ Workout done')}${opt('protein', '🥩 Protein hit')}${opt('calories', '🔥 Calories hit')}
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);padding:6px 0 0">This habit ticks itself when the linked action happens, so you never log it twice.</div>`;
+      })()}
       <div style="display:flex;gap:10px;margin-top:20px">
         <button class="w-action-btn" style="flex:1;margin:0" onclick="closeEditHabit()">Cancel</button>
         <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:#fff" onclick="saveEditHabit('${id}')">Save</button>
@@ -1823,6 +1833,11 @@ function _setEditSchedMode(btn, mode) {
   btn.classList.add('active');
   document.getElementById('edit-sched-days').style.display = mode === 'specific' ? 'block' : 'none';
   document.getElementById('edit-sched-weekly').style.display = mode === 'weekly' ? 'block' : 'none';
+}
+
+function _setEditLink(btn) {
+  btn.parentElement.querySelectorAll('.link-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
 }
 
 function closeEditHabit() {
@@ -1850,6 +1865,12 @@ function saveEditHabit(id) {
     h.perWeek = Math.min(7, Math.max(1, parseInt(document.getElementById('edit-per-week')?.value) || 3));
   } else { delete h.perWeek; }
   LS.set('hvi_habits', habits);
+  // Persist auto-complete link
+  const linkBtn = document.querySelector('#edit-habit-modal .link-btn.active');
+  const link = linkBtn ? (linkBtn.dataset.link || '') : '';
+  const links = LS.get('hvi_habit_links', {});
+  if (link) links[id] = link; else delete links[id];
+  LS.set('hvi_habit_links', links);
   closeEditHabit();
   renderHabits();
 }

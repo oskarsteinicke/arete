@@ -585,6 +585,8 @@ function renderDiet() {
     </div>
     <button class="w-action-btn" onclick="go('dietGoals')">Edit Daily Goals</button>
     ${weightHTML}`;
+  // Connected system: auto-complete habits linked to protein/calorie targets
+  if (typeof checkNutritionTriggers === 'function') checkNutritionTriggers();
 }
 
 function deleteMeal(mi) {

@@ -274,3 +274,70 @@ function macroAdjustBadgeHTML() {
     </div>`;
   } catch { return ''; }
 }
+
+// ── PHASE 3: CROSS-MODULE HABIT COMPLETION ───────────────────────────────────
+// Habits can be linked to a trigger ('workout' | 'protein' | 'calories') in the
+// habit editor. When that action happens the linked habit auto-completes through
+// the event bus, so the user never logs the same thing twice.
+const TRIGGER_LABELS = { workout: '🏋️ Workout', protein: '🥩 Protein target', calories: '🔥 Calorie target' };
+
+function getHabitLink(id) { return (LS.get('hvi_habit_links', {}) || {})[id] || ''; }
+
+// Complete a habit if (and only if) it is not already done today. Reuses
+// tapHabit so streaks, XP, quests and milestones behave exactly like a manual
+// tap. tapHabit toggles, so we guard on completedToday; the unmatched suffix
+// makes tapHabit skip its DOM updates when the habit row isn't on screen.
+function autoCompleteHabit(id) {
+  try {
+    if (!log[id] || log[id].completedToday) return false;
+    if (typeof tapHabit !== 'function') return false;
+    tapHabit(id, '__auto');
+    return true;
+  } catch (e) { console.warn('[Arete] autoCompleteHabit error:', e); return false; }
+}
+
+function _connectToast(msg) {
+  try {
+    const el = document.createElement('div');
+    el.className = 'streak-toast';
+    el.style.cssText = 'bottom:100px;animation-duration:4s';
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 3800);
+  } catch {}
+}
+
+function _autoCompleteLinkedHabits(trigger) {
+  const links = LS.get('hvi_habit_links', {}) || {};
+  const done = [];
+  Object.keys(links).forEach(hid => {
+    if (links[hid] === trigger && autoCompleteHabit(hid)) {
+      const h = (Array.isArray(habits) ? habits.find(x => x.id === hid) : null);
+      if (h) done.push(h.name);
+    }
+  });
+  if (done.length) {
+    _connectToast('✓ Auto-completed: ' + done.join(', '));
+    // Refresh a habit-showing view so the tick appears immediately
+    if (typeof go === 'function' && (curView === 'home' || curView === 'habits')) {
+      try { go(curView, {}, false); } catch {}
+    }
+  }
+  return done;
+}
+
+// Called after the diet view renders (covers every meal-add path) and is
+// idempotent — a habit only completes the first time its target is crossed.
+function checkNutritionTriggers() {
+  try {
+    const goals = getTodaysMacroTargets();
+    if (!goals || !goals.calories) return;
+    const m = (typeof getDayMacros === 'function') ? getDayMacros() : null;
+    if (!m) return;
+    if (goals.protein && m.p >= goals.protein) _autoCompleteLinkedHabits('protein');
+    if (goals.calories && m.cal >= goals.calories) _autoCompleteLinkedHabits('calories');
+  } catch (e) { console.warn('[Arete] nutrition triggers error:', e); }
+}
+
+// Workout completion comes through the bus (emitted by finishWorkout).
+window.Arete.on('workout:completed', () => _autoCompleteLinkedHabits('workout'));
