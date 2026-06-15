@@ -2442,6 +2442,56 @@ body {
     radial-gradient(ellipse 130% 60% at 50% 110%, rgba(0,0,0,0.06) 0%, transparent 60%);
 }
 
+/* ══ MY WHY + GOALS ═════════════════════════════════════════════════════ */
+.why-card {
+  margin: 0 16px 12px; padding: 16px 18px;
+  background: linear-gradient(135deg, rgba(176,132,72,0.16), rgba(176,132,72,0.03));
+  border: 1px solid rgba(217,180,106,0.3); border-radius: var(--radius);
+}
+.why-eyebrow {
+  font-family: var(--display); font-size: 10px; letter-spacing: 3px;
+  text-transform: uppercase; color: var(--accent-b); margin-bottom: 6px;
+}
+.why-edit-hint { opacity: 0.5; font-size: 11px; letter-spacing: 0; margin-left: 4px; }
+.why-quote { font-family: var(--serif); font-size: 18px; line-height: 1.4; color: var(--text); font-style: italic; }
+.why-empty-text { font-size: 13px; color: var(--text-dim); line-height: 1.5; }
+.why-goals-link {
+  margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border2);
+  font-size: 13px; color: var(--accent-b); cursor: pointer; font-weight: 500;
+}
+/* Why editor modal */
+.why-modal-overlay { position: fixed; inset: 0; z-index: 9998; display: none; }
+.why-modal-backdrop { position: absolute; inset: 0; background: rgba(5,4,3,0.7); backdrop-filter: blur(4px); }
+.why-modal-sheet {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+  width: calc(100% - 40px); max-width: 420px;
+  background: linear-gradient(180deg, #221c14, var(--surface));
+  border: 1px solid var(--border); border-radius: 18px; padding: 22px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+.why-modal-title { font-family: var(--display); font-size: 20px; color: var(--text); margin-bottom: 6px; }
+.why-modal-sub { font-size: 13px; color: var(--text-dim); line-height: 1.5; margin-bottom: 14px; }
+.why-modal-input {
+  width: 100%; box-sizing: border-box; background: var(--surface); color: var(--text);
+  border: 1px solid var(--border2); border-radius: 12px; padding: 12px;
+  font-family: var(--serif); font-size: 16px; line-height: 1.5; resize: none;
+}
+/* Goals page */
+.goals-why { margin: 0 24px 16px; padding: 14px 16px; background: rgba(176,132,72,0.08); border: 1px solid var(--border2); border-radius: var(--radius); cursor: pointer; }
+.goal-add { display: flex; gap: 8px; padding: 0 24px 16px; flex-wrap: wrap; }
+.goal-add #goal-input { flex: 1 1 100%; }
+.goal-date { flex: 1; min-width: 0; color-scheme: dark; }
+.goal-add-btn { flex-shrink: 0; padding: 10px 18px; border: none; border-radius: 10px; background: var(--accent); color: #1a1209; font-size: 13px; font-weight: 700; letter-spacing: 0.5px; cursor: pointer; }
+.goal-item { display: flex; align-items: center; gap: 12px; margin: 0 24px 8px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-sm); }
+.goal-check { flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--accent); display: flex; align-items: center; justify-content: center; color: var(--accent-b); font-size: 13px; cursor: pointer; }
+.goal-done .goal-check { background: var(--accent); color: #1a1209; }
+.goal-body { flex: 1; min-width: 0; }
+.goal-text { font-size: 15px; color: var(--text); line-height: 1.35; }
+.goal-done .goal-text { text-decoration: line-through; color: var(--text-muted); }
+.goal-target { font-size: 11px; color: var(--accent-b); margin-top: 3px; display: inline-block; }
+.goal-del { flex-shrink: 0; background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; padding: 0 4px; }
+.goal-empty { margin: 0 24px; padding: 24px; text-align: center; font-size: 14px; color: var(--text-dim); }
+
 /* ══ CONNECTED SYSTEM: READINESS BREAKDOWN MODAL ════════════════════════ */
 .rd-overlay {
   position: fixed; inset: 0; z-index: 9998;

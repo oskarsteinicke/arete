@@ -67,7 +67,7 @@ function setUnits(u) {
 // ── SUPABASE AUTH + CLOUD SYNC ────────────────────────────────────────────
 const SUPABASE_URL = 'https://socflncohsenjptgkkax.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_J2qJ8iTfCESrML5Hm6NGbQ_mz9uPeug';
-const SYNC_KEYS = ['hvi_habits','hvi_log','hvi_journal3','hvi_meta','hvi_workout_log','hvi_workout_meta','hvi_meal_log','hvi_diet_meta','hvi_weight_log','hvi_prs','hvi_gamification','hvi_achievements','hvi_tdee_profile','hvi_custom_programs','hvi_onboarded','hvi_sleep_log','hvi_settings','hvi_habit_history','hvi_meal_favorites','hvi_progress_photos','hvi_routines','hvi_routine_log','hvi_integrations','hvi_challenges','hvi_habit_links'];
+const SYNC_KEYS = ['hvi_habits','hvi_log','hvi_journal3','hvi_meta','hvi_workout_log','hvi_workout_meta','hvi_meal_log','hvi_diet_meta','hvi_weight_log','hvi_prs','hvi_gamification','hvi_achievements','hvi_tdee_profile','hvi_custom_programs','hvi_onboarded','hvi_sleep_log','hvi_settings','hvi_habit_history','hvi_meal_favorites','hvi_progress_photos','hvi_routines','hvi_routine_log','hvi_integrations','hvi_challenges','hvi_habit_links','hvi_why','hvi_goals'];
 // Keys that are date-keyed objects — these get merged instead of overwritten
 const MERGE_KEYS = ['hvi_workout_log','hvi_meal_log','hvi_journal3','hvi_weight_log','hvi_sleep_log','hvi_habit_history'];
 
@@ -815,7 +815,7 @@ const NAV_PARENT = {
   habitCreate: 'habits',
   workoutPicker: 'workout', workoutActive: 'workout', workoutHistory: 'workout', workoutBuilder: 'workout', exerciseBrowser: 'workout', prHistory: 'workout',
   dietAddMeal: 'diet', dietRecipes: 'diet', dietRecipeDetail: 'diet', dietGoals: 'diet', dietTrend: 'diet', dietTDEE: 'diet',
-  calendar: 'stats', progressPhotos: 'stats', challenges: 'home', leaderboard: 'home', character: 'home',
+  calendar: 'stats', progressPhotos: 'stats', challenges: 'home', leaderboard: 'home', character: 'home', goals: 'stats',
 };
 
 // ── INIT ──────────────────────────────────────────────────────────────────
@@ -1067,7 +1067,7 @@ function go(view, params = {}, pushState = true) {
     workout: renderWorkout, workoutPicker: renderWorkoutPicker, workoutActive: renderWorkoutActive, workoutHistory: renderWorkoutHistory, workoutBuilder: renderWorkoutBuilder, exerciseBrowser: renderExerciseBrowser, prHistory: renderPRHistory,
     diet: renderDiet, dietAddMeal: renderDietAddMeal, dietRecipes: renderDietRecipes, dietRecipeDetail: renderDietRecipeDetail, dietGoals: renderDietGoals, dietTrend: renderDietTrend, dietTDEE: renderDietTDEE,
     library: renderLibrary,
-    sleep: renderSleep, progressPhotos: renderProgressPhotos, challenges: renderChallenges, leaderboard: renderLeaderboard, character: renderCharacter,
+    sleep: renderSleep, progressPhotos: renderProgressPhotos, challenges: renderChallenges, leaderboard: renderLeaderboard, character: renderCharacter, goals: renderGoals,
     calendar: () => { window._statsSubView = 'calendar'; renderStats(); },
   };
   (renders[view] || renderHome)();
@@ -1440,6 +1440,7 @@ function renderHome() {
       </div>
     </div>
 
+    ${typeof whyCardHTML === 'function' ? whyCardHTML() : ''}
     ${typeof todayBriefingHTML === 'function' ? todayBriefingHTML() : ''}
 
     <div class="hm-pillars ani">${pillarStrip}</div>

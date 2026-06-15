@@ -1435,7 +1435,8 @@ function renderStats() {
       <div class="q-nav"><button class="q-btn" onclick="rotQ(-1)">\u2190</button><button class="q-btn" onclick="rotQ(1)">\u2192</button></div>
     </div>
     ${typeof renderPremiumSettingsCard === 'function' ? `<div style="margin:16px 24px 4px">${renderPremiumSettingsCard()}</div>` : ''}
-    <button class="w-action-btn" style="margin:12px 24px 8px" onclick="go('sleep')">🌙 Log Sleep</button>
+    <button class="w-action-btn" style="margin:12px 24px 8px" onclick="go('goals')">🎯 My Goals</button>
+    <button class="w-action-btn" style="margin:0 24px 8px" onclick="go('sleep')">🌙 Log Sleep</button>
     <button class="w-action-btn" style="margin:0 24px 8px" onclick="go('progressPhotos')">📸 Progress Photos</button>
     <button class="w-action-btn" style="margin:0 24px 8px" onclick="shareRecap()">📤 Share Weekly Recap</button>
     <button class="w-action-btn" style="margin:0 24px 8px" onclick="go('leaderboard')">🏆 Leaderboard</button>
@@ -2345,4 +2346,138 @@ function showPhotoCompare() {
       <div style="color:var(--text-muted);font-size:12px;margin-top:12px">Tap anywhere to close</div>
     </div>`;
   modal.style.display = 'block';
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// MY WHY + GOALS
+// ══════════════════════════════════════════════════════════════════════════
+
+// ── MY WHY (home card + editor) ─────────────────────────────────────────────
+function whyCardHTML() {
+  const why = LS.get('hvi_why', '');
+  const goals = LS.get('hvi_goals', []);
+  const active = goals.filter(g => !g.done).length;
+  const goalsLabel = goals.length ? `${active} active goal${active === 1 ? '' : 's'}` : 'Set your goals';
+  const goalsLink = `<div class="why-goals-link" onclick="event.stopPropagation();go('goals')">🎯 ${goalsLabel} ›</div>`;
+  if (!why) {
+    return `<div class="why-card ani">
+      <div onclick="editWhy()" role="button" tabindex="0" style="cursor:pointer">
+        <div class="why-eyebrow">Your Why</div>
+        <div class="why-empty-text">Define the one reason you get up and grind. Tap to set it.</div>
+      </div>
+      ${goalsLink}
+    </div>`;
+  }
+  return `<div class="why-card ani">
+    <div onclick="editWhy()" role="button" tabindex="0" style="cursor:pointer">
+      <div class="why-eyebrow">Your Why <span class="why-edit-hint">✎</span></div>
+      <div class="why-quote">${esc(why)}</div>
+    </div>
+    ${goalsLink}
+  </div>`;
+}
+
+function editWhy() {
+  const cur = LS.get('hvi_why', '');
+  let modal = document.getElementById('why-modal');
+  if (!modal) { modal = document.createElement('div'); modal.id = 'why-modal'; document.body.appendChild(modal); }
+  modal.className = 'why-modal-overlay';
+  modal.innerHTML = `
+    <div class="why-modal-backdrop" onclick="closeWhyModal()"></div>
+    <div class="why-modal-sheet">
+      <div class="why-modal-title">Your Why</div>
+      <div class="why-modal-sub">The one reason you get up and grind. Make it real. You'll see it every day.</div>
+      <textarea class="why-modal-input" id="why-input" rows="4" maxlength="280" placeholder="e.g. To become the man my younger self needed, and the one my future family deserves.">${esc(cur)}</textarea>
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <button class="w-action-btn" style="flex:1;margin:0" onclick="closeWhyModal()">Cancel</button>
+        <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:#1a1209" onclick="saveWhy()">Save</button>
+      </div>
+    </div>`;
+  modal.style.display = 'block';
+  setTimeout(() => { const i = document.getElementById('why-input'); if (i) i.focus(); }, 150);
+}
+
+function closeWhyModal() {
+  const m = document.getElementById('why-modal');
+  if (m) m.style.display = 'none';
+}
+
+function saveWhy() {
+  const v = (document.getElementById('why-input')?.value || '').trim();
+  LS.set('hvi_why', v);
+  closeWhyModal();
+  if (curView === 'home') go('home', {}, false);
+  else if (curView === 'goals') renderGoals();
+}
+
+// ── GOALS (full page CRUD) ──────────────────────────────────────────────────
+function renderGoals() {
+  const goals = LS.get('hvi_goals', []);
+  const why = LS.get('hvi_why', '');
+  const active = goals.filter(g => !g.done);
+  const done = goals.filter(g => g.done);
+
+  const goalRow = g => {
+    const dateTxt = g.target ? `<span class="goal-target">by ${fmtDate(g.target)}</span>` : '';
+    return `<div class="goal-item${g.done ? ' goal-done' : ''}">
+      <div class="goal-check" onclick="toggleGoal('${g.id}')" role="checkbox" aria-checked="${!!g.done}">${g.done ? '✓' : ''}</div>
+      <div class="goal-body">
+        <div class="goal-text">${esc(g.text)}</div>
+        ${dateTxt}
+      </div>
+      <button class="goal-del" onclick="deleteGoal('${g.id}')" aria-label="Delete goal">&times;</button>
+    </div>`;
+  };
+
+  const activeHTML = active.length ? active.map(goalRow).join('')
+    : '<div class="goal-empty">No active goals yet. What are you aiming at?</div>';
+  const doneHTML = done.length ? `<div class="sec-lbl" style="padding-top:20px">Achieved · ${done.length}</div>${done.map(goalRow).join('')}` : '';
+
+  const whyBanner = why
+    ? `<div class="goals-why" onclick="editWhy()"><div class="why-eyebrow">Your Why</div><div class="why-quote" style="font-size:16px">${esc(why)}</div></div>`
+    : `<div class="goals-why goals-why-empty" onclick="editWhy()"><div class="why-eyebrow">Your Why</div><div class="why-empty-text">Tap to define the reason behind these goals.</div></div>`;
+
+  document.getElementById('view').innerHTML = `
+    <button class="back" onclick="go('stats')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
+    <div class="page-head ani"><div class="page-title">Goals</div><div class="page-sub">Aim at what matters. Then close the gap daily.</div></div>
+    ${whyBanner}
+    <div class="goal-add ani">
+      <input class="d-input" id="goal-input" type="text" maxlength="120" placeholder="Add a goal…" onkeydown="if(event.key==='Enter')addGoal()">
+      <input class="d-input goal-date" id="goal-date" type="date" title="Optional target date">
+      <button class="goal-add-btn" onclick="addGoal()">Add</button>
+    </div>
+    <div class="ani">${activeHTML}</div>
+    ${doneHTML}`;
+}
+
+function addGoal() {
+  const inp = document.getElementById('goal-input');
+  const text = (inp?.value || '').trim();
+  if (!text) return;
+  const target = document.getElementById('goal-date')?.value || '';
+  const goals = LS.get('hvi_goals', []);
+  const id = 'g_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+  goals.push({ id, text, target, done: false, created: today() });
+  LS.set('hvi_goals', goals);
+  if (typeof track === 'function') track('goal_added', {});
+  renderGoals();
+}
+
+function toggleGoal(id) {
+  const goals = LS.get('hvi_goals', []);
+  const g = goals.find(x => x.id === id);
+  if (!g) return;
+  g.done = !g.done;
+  g.completedDate = g.done ? today() : '';
+  LS.set('hvi_goals', goals);
+  if (g.done) { if (typeof playSound === 'function') playSound('check'); if (typeof launchConfetti === 'function') launchConfetti(0.4); }
+  renderGoals();
+}
+
+function deleteGoal(id) {
+  const goals = LS.get('hvi_goals', []);
+  const g = goals.find(x => x.id === id);
+  if (g && !confirm(`Delete goal "${g.text}"?`)) return;
+  LS.set('hvi_goals', goals.filter(x => x.id !== id));
+  renderGoals();
 }
