@@ -2484,6 +2484,14 @@ body {
 .rd-bar { height: 7px; background: rgba(255,255,255,0.07); border-radius: 4px; overflow: hidden; }
 .rd-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
 .rd-factor-weight { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+.rd-hint { font-size: 12px; color: var(--accent-b); line-height: 1.5; margin-top: 16px; }
+.rd-actions { margin-top: 14px; }
+.rd-action-btn {
+  display: block; width: 100%; cursor: pointer;
+  background: var(--accent); color: #1a1209; border: none;
+  font-size: 14px; font-weight: 600; padding: 13px; border-radius: 12px;
+}
+.rd-action-btn:active { transform: scale(0.99); }
 .rd-foot { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border2); }
 
 /* ══ CONNECTED SYSTEM: UNIFIED TODAY BRIEFING ═══════════════════════════ */

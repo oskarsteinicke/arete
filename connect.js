@@ -493,6 +493,9 @@ function showReadinessBreakdown() {
       rows.push(_rdFactorRow('🍽️', 'Nutrition', pct(f.nutrition), '15% of score'));
     }
 
+    const slp = getRecentSleep();
+    const slpLogged = !!(slp.hours || slp.quality || typeof slp.whoopRecovery === 'number');
+
     const foot = usingWhoop
       ? 'Your Whoop recovery score leads today; sleep and training load adjust it.'
       : 'Each factor contributes the weight shown. Log sleep and meals to sharpen it.';
@@ -509,6 +512,10 @@ function showReadinessBreakdown() {
         </div>
         <div class="rd-intro">${interp}</div>
         <div class="rd-factors">${rows.join('')}</div>
+        ${slpLogged ? '' : '<div class="rd-hint">😴 You haven\'t logged sleep today. Add it to sharpen your score.</div>'}
+        <div class="rd-actions">
+          <button class="rd-action-btn" onclick="closeReadinessBreakdown();if(typeof go==='function')go('sleep')">🌙 Log sleep</button>
+        </div>
         <div class="rd-foot">${foot}</div>
       </div>
     </div>`;
