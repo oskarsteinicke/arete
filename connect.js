@@ -234,7 +234,8 @@ function getTodaysMacroTargets() {
   carbs = (carbs != null) ? carbs : Math.max(0, Math.round((calories - protein * 4 - fat * 9) / 4));
 
   const sess = classifyTodaySession();
-  const carbMult = sess.type === 'hard' ? 1.20 : sess.type === 'rest' ? 0.75 : 1.0;
+  // hard day: carbs +20% / protein +10%; normal training day: carbs +8%; rest: carbs -25%
+  const carbMult = sess.type === 'hard' ? 1.20 : sess.type === 'rest' ? 0.75 : 1.08;
   const protMult = sess.type === 'hard' ? 1.10 : 1.0;
   const adjCarbs = Math.round(carbs * carbMult);
   const adjProtein = Math.round(protein * protMult);
@@ -256,7 +257,7 @@ function macroAdjustReason() {
   if (!t.adjusted) return '';
   if (t.type === 'hard') return `${t.dayName || 'Heavy day'} · carbs +20%, protein +10%`;
   if (t.type === 'rest') return 'Rest day · carbs -25%';
-  return '';
+  return `${t.dayName || 'Training day'} · carbs +8%`;
 }
 
 function macroAdjustBadgeHTML() {
@@ -264,8 +265,9 @@ function macroAdjustBadgeHTML() {
     const t = getTodaysMacroTargets();
     if (!t.adjusted) return '';
     const isHard = t.type === 'hard';
-    const icon = isHard ? '🔥' : '🌙';
-    const color = isHard ? 'var(--carb)' : 'var(--text-dim)';
+    const isRest = t.type === 'rest';
+    const icon = isRest ? '🌙' : isHard ? '🔥' : '💪';
+    const color = isRest ? 'var(--text-dim)' : 'var(--carb)';
     return `<div class="d-adjust-badge" style="border-color:${color}">
       <span class="d-adjust-main">${icon} ${macroAdjustReason()}</span>
       <span class="d-adjust-base">${t.baseCalories.toLocaleString()} → ${t.calories.toLocaleString()} cal</span>

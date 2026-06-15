@@ -1385,7 +1385,7 @@ function renderHome() {
   const _mt = (typeof getTodaysMacroTargets === 'function') ? getTodaysMacroTargets() : null;
   const dGoal = (_mt && _mt.calories) ? _mt.calories : dietMeta.dailyGoals.calories;
   const dPct = dGoal ? Math.min(dm.cal / dGoal, 1) : 0;
-  const _mtNote = (_mt && _mt.adjusted) ? (_mt.type === 'hard' ? '🔥 Heavy day' : _mt.type === 'rest' ? '🌙 Rest day' : '') : '';
+  const _mtNote = (_mt && _mt.adjusted) ? (_mt.type === 'hard' ? '🔥 Heavy day' : _mt.type === 'rest' ? '🌙 Rest day' : '💪 Training day') : '';
 
   // Quests
   const _questDone = new Set((gamification.questsCompleted || {})[today()] || []);
