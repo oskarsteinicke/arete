@@ -2444,16 +2444,21 @@ body {
 
 /* ══ MY WHY + GOALS ═════════════════════════════════════════════════════ */
 .why-card {
-  margin: 0 16px 12px; padding: 16px 18px;
-  background: linear-gradient(135deg, rgba(176,132,72,0.16), rgba(176,132,72,0.03));
-  border: 1px solid rgba(217,180,106,0.3); border-radius: var(--radius);
+  margin: 0 16px 14px; padding: 22px 20px;
+  background: linear-gradient(135deg, rgba(176,132,72,0.18), rgba(176,132,72,0.03));
+  border: 1px solid rgba(217,180,106,0.34); border-radius: var(--radius);
+  text-align: center;
 }
 .why-eyebrow {
   font-family: var(--display); font-size: 10px; letter-spacing: 3px;
-  text-transform: uppercase; color: var(--accent-b); margin-bottom: 6px;
+  text-transform: uppercase; color: var(--accent-b); margin-bottom: 10px;
 }
 .why-edit-hint { opacity: 0.5; font-size: 11px; letter-spacing: 0; margin-left: 4px; }
-.why-quote { font-family: var(--serif); font-size: 18px; line-height: 1.4; color: var(--text); font-style: italic; }
+.why-quote {
+  font-family: var(--serif); font-size: 27px; line-height: 1.3; color: var(--text);
+  font-style: italic; letter-spacing: 0.2px;
+}
+.why-card .why-empty-text { font-size: 14px; }
 .why-empty-text { font-size: 13px; color: var(--text-dim); line-height: 1.5; }
 .why-goals-link {
   margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border2);
