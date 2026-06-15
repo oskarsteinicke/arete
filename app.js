@@ -1437,6 +1437,8 @@ function renderHome() {
       </div>
     </div>
 
+    ${typeof readinessCardHTML === 'function' ? readinessCardHTML() : ''}
+
     <div class="hm-pillars ani">${pillarStrip}</div>
 
     <div class="hm-stats-mini ani" onclick="go('character')">

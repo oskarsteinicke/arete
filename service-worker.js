@@ -1,10 +1,11 @@
-const CACHE = 'arete-v53';
+const CACHE = 'arete-v54';
 const ASSETS = [
   '/',
   '/index.html',
   '/style.css',
   '/data.js',
   '/app.js',
+  '/connect.js',
   '/premium.js',
   '/workout.js',
   '/diet.js',
