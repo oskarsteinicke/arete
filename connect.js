@@ -341,3 +341,86 @@ function checkNutritionTriggers() {
 
 // Workout completion comes through the bus (emitted by finishWorkout).
 window.Arete.on('workout:completed', () => _autoCompleteLinkedHabits('workout'));
+
+// ── PHASE 4: PROACTIVE COACH (rule-based local nudges) ───────────────────────
+// Deterministic flags computed on-device from the signals the connected layer
+// already produces. The single highest-priority flag surfaces as a coach card
+// on the home screen — unprompted, free, instant. The AI coach (when opened)
+// remains the deeper, conversational layer.
+function _lastJournal() {
+  const j = (typeof journal !== 'undefined' && journal) ? journal : {};
+  const keys = Object.keys(j).sort().reverse();
+  return keys.length ? j[keys[0]] : null;
+}
+
+function getCoachNudge() {
+  try {
+    // Don't nag brand-new users with no signal at all
+    if (!hasReadinessSignal() && !(Array.isArray(habits) && habits.length)) return null;
+
+    const flags = [];
+    const r = getReadiness();
+    const rec = (typeof getRecoveryStatus === 'function') ? getRecoveryStatus() : { status: 'fresh', days: 0 };
+    const mt = getTodaysMacroTargets();
+    const m = (typeof getDayMacros === 'function') ? getDayMacros() : { cal: 0, p: 0 };
+    const hourNow = new Date().getHours();
+    const nutAdh = getNutritionAdherence3d();
+    const habitAdh = getHabitAdherence7d();
+
+    // 1) Hard training day, afternoon, well under protein
+    if (mt && mt.type === 'hard' && mt.protein && hourNow >= 14 && (m.p / mt.protein) < 0.5) {
+      flags.push({ id: 'hardfuel', icon: '🍗', sev: 3,
+        text: `Heavy day today and you're at ${m.p}g of ${mt.protein}g protein. Muscle doesn't rebuild on an empty tank. Get a protein-heavy meal in.` });
+    }
+    // 2) Training load vs nutrition mismatch over recent days
+    if ((rec.status === 'fatigued' || rec.status === 'moderate') && nutAdh < 0.4) {
+      flags.push({ id: 'mismatch', icon: '⚖️', sev: 2,
+        text: `You've trained ${rec.days}x this week but nutrition's been short. Hard training plus underfueling is how you stall and get hurt. Lock in your meals today.` });
+    }
+    // 3) Low readiness — ease off
+    if (r.score < 35) {
+      flags.push({ id: 'lowready', icon: '🪫', sev: 2,
+        text: `Readiness is ${r.score} today. Pushing hard now just digs the hole deeper. Make today lighter and prioritize sleep and food.` });
+    }
+    // 4) Habits slipping while the journal shows a struggle
+    const lastJ = _lastJournal();
+    if (habitAdh < 0.5 && lastJ && lastJ.struggle && String(lastJ.struggle).trim()) {
+      flags.push({ id: 'slip', icon: '🧭', sev: 1,
+        text: `Your habits have slipped this week and your last journal named a struggle. This is the moment that decides who you become. One small win today turns it around.` });
+    }
+    // 5) Everything aligned — push (only when nothing's wrong)
+    if (!flags.length && r.score >= 75 && habitAdh >= 0.8 && nutAdh >= 0.6) {
+      flags.push({ id: 'aligned', icon: '⚡', sev: 0,
+        text: `Readiness ${r.score}, habits on track, nutrition dialed in. Everything's aligned. This is the day to push.` });
+    }
+
+    if (!flags.length) return null;
+    flags.sort((a, b) => b.sev - a.sev);
+    return flags[0];
+  } catch (e) { console.warn('[Arete] nudge error:', e); return null; }
+}
+
+function coachNudgeHTML() {
+  try {
+    if (localStorage.getItem('hvi_nudge_dismissed') === today()) return '';
+    const n = getCoachNudge();
+    if (!n) return '';
+    return `<div class="hm-nudge ani" id="coach-nudge" data-nudge="${n.id}">
+      <div class="hm-nudge-icon">${n.icon}</div>
+      <div class="hm-nudge-body">
+        <div class="hm-nudge-title">Coach noticed</div>
+        <div class="hm-nudge-text">${n.text}</div>
+        <div class="hm-nudge-actions">
+          <button class="hm-nudge-btn" onclick="if(typeof openCoach==='function')openCoach()">Talk to coach</button>
+          <button class="hm-nudge-x" onclick="dismissCoachNudge()">Dismiss</button>
+        </div>
+      </div>
+    </div>`;
+  } catch { return ''; }
+}
+
+function dismissCoachNudge() {
+  try { localStorage.setItem('hvi_nudge_dismissed', today()); } catch {}
+  const el = document.getElementById('coach-nudge');
+  if (el) el.remove();
+}

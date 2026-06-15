@@ -1441,6 +1441,7 @@ function renderHome() {
     </div>
 
     ${typeof readinessCardHTML === 'function' ? readinessCardHTML() : ''}
+    ${typeof coachNudgeHTML === 'function' ? coachNudgeHTML() : ''}
 
     <div class="hm-pillars ani">${pillarStrip}</div>
 
