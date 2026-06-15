@@ -2463,6 +2463,16 @@ body {
 .hm-rd-sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; letter-spacing: 0.2px; }
 .hm-rd-chev { color: var(--text-muted); font-size: 20px; flex-shrink: 0; }
 
+/* ══ CONNECTED SYSTEM: NUTRITION ADJUSTMENT BADGE ═══════════════════════ */
+.d-adjust-badge {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin: 0 24px 8px; padding: 10px 14px;
+  background: var(--surface2); border: 1px solid var(--border2); border-left-width: 3px;
+  border-radius: 10px;
+}
+.d-adjust-main { font-size: 12px; color: var(--text); font-weight: 500; }
+.d-adjust-base { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+
 /* ══ PAYWALL / PREMIUM ══════════════════════════════════════════════════ */
 .pw-overlay {
   position: fixed; inset: 0; z-index: 9999;

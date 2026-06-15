@@ -1380,10 +1380,12 @@ function renderHome() {
   // Streak shields
   const _shields = getStreakShields();
 
-  // Nutrition card
+  // Nutrition card (training-adjusted target)
   const dm = getDayMacros();
-  const dGoal = dietMeta.dailyGoals.calories;
+  const _mt = (typeof getTodaysMacroTargets === 'function') ? getTodaysMacroTargets() : null;
+  const dGoal = (_mt && _mt.calories) ? _mt.calories : dietMeta.dailyGoals.calories;
   const dPct = dGoal ? Math.min(dm.cal / dGoal, 1) : 0;
+  const _mtNote = (_mt && _mt.adjusted) ? (_mt.type === 'hard' ? '🔥 Heavy day' : _mt.type === 'rest' ? '🌙 Rest day' : '') : '';
 
   // Quests
   const _questDone = new Set((gamification.questsCompleted || {})[today()] || []);
@@ -1514,7 +1516,7 @@ function renderHome() {
         <div class="hm-card-icon">🥗</div>
         <div class="hm-card-lbl">Nutrition</div>
         <div class="hm-card-val">${dm.cal.toLocaleString()} cal</div>
-        <div class="hm-card-sub">${dGoal.toLocaleString()} goal</div>
+        <div class="hm-card-sub">${dGoal.toLocaleString()} goal${_mtNote ? ' · ' + _mtNote : ''}</div>
         <div class="hm-card-bar"><div class="hm-card-fill" style="width:${(dPct*100).toFixed(0)}%;background:var(--cal)"></div></div>
         <div class="hm-card-status" style="color:var(--text-dim)">${dm.p}p · ${dm.c}c · ${dm.f}f</div>
       </div>

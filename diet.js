@@ -503,7 +503,8 @@ function _buildCalorieTrendChart() {
 function renderDiet() {
   mealLog = LS.get('hvi_meal_log', {});
   weightLog = LS.get('hvi_weight_log', {});
-  const goals = dietMeta.dailyGoals;
+  // Training-adjusted targets (non-destructive; base dailyGoals untouched)
+  const goals = (typeof getTodaysMacroTargets === 'function') ? getTodaysMacroTargets() : dietMeta.dailyGoals;
   const m = getDayMacros();
   const meals = (mealLog[today()] || {}).meals || [];
 
@@ -573,6 +574,7 @@ function renderDiet() {
   document.getElementById('view').innerHTML = `
     <div class="page-head ani"><div class="page-title">Nutrition</div><div class="page-sub">Fuel your body with intention.</div></div>
     <div class="d-rings ani">${rings}</div>
+    ${typeof macroAdjustBadgeHTML === 'function' ? macroAdjustBadgeHTML() : ''}
     ${_buildCalorieTrendChart()}
     ${expenditureHTML}
     <div class="sec-lbl">Today's Meals</div>
@@ -1387,6 +1389,11 @@ function logRecipe(id) {
 
 function renderDietGoals() {
   const g = dietMeta.dailyGoals;
+  const _td = (typeof getTrainingDays === 'function') ? getTrainingDays() : [1, 2, 3, 4, 5];
+  const _dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  const tdBtns = _dayLabels.map((d, i) =>
+    `<button class="sched-day-btn${_td.includes(i) ? ' active' : ''}" onclick="toggleTrainingDay(${i})" aria-pressed="${_td.includes(i)}">${d}</button>`
+  ).join('');
   document.getElementById('view').innerHTML = `
     <button class="back" onclick="go('diet')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
     <div class="page-head ani"><div class="page-title">Daily Goals</div><div class="page-sub">Set your daily macro targets.</div></div>
@@ -1396,8 +1403,21 @@ function renderDietGoals() {
       <div class="d-goals-row"><div class="d-goals-label">Carbs</div><input class="d-goals-input" type="number" inputmode="decimal" id="dg-c" value="${g.carbs}"><span style="color:var(--text-muted);font-size:12px">g</span></div>
       <div class="d-goals-row"><div class="d-goals-label">Fat</div><input class="d-goals-input" type="number" inputmode="decimal" id="dg-f" value="${g.fat}"><span style="color:var(--text-muted);font-size:12px">g</span></div>
     </div>
+    <div class="sec-lbl" style="padding:20px 24px 8px">Training Days</div>
+    <div class="d-goals-form ani" style="display:block">
+      <div style="font-size:12px;color:var(--text-dim);line-height:1.5;margin-bottom:12px">Carbs rise on training days and drop on rest days. Tap the days you train.</div>
+      <div class="sched-day-row">${tdBtns}</div>
+    </div>
     <button class="w-action-btn" style="margin-bottom:0" onclick="go('dietTDEE')">TDEE CALCULATOR</button>
     <button class="w-finish" onclick="saveDietGoals()">SAVE GOALS</button>`;
+}
+
+function toggleTrainingDay(i) {
+  const cur = ((typeof getTrainingDays === 'function') ? getTrainingDays() : [1, 2, 3, 4, 5]).slice();
+  const idx = cur.indexOf(i);
+  if (idx >= 0) cur.splice(idx, 1); else cur.push(i);
+  if (typeof setTrainingDays === 'function') setTrainingDays(cur);
+  go('dietGoals');
 }
 
 function saveDietGoals() {

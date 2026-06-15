@@ -164,3 +164,111 @@ function readinessCardHTML() {
     return '';
   }
 }
+
+// ── PHASE 2: TRAINING DRIVES NUTRITION ───────────────────────────────────────
+// Weekly training schedule (0=Sun..6=Sat). Defaults from the active program's
+// day count; persisted to hvi_settings once the user edits it.
+function _defaultTrainingDays() {
+  let n = 5;
+  try {
+    const prog = (typeof findProgram === 'function') ? findProgram(workoutMeta && workoutMeta.activeProgram) : null;
+    if (prog && prog.days) n = prog.days.length;
+  } catch {}
+  const map = { 3: [1, 3, 5], 4: [1, 2, 4, 5], 5: [1, 2, 3, 4, 5], 6: [1, 2, 3, 4, 5, 6], 7: [0, 1, 2, 3, 4, 5, 6] };
+  return map[n] || [1, 2, 3, 4, 5];
+}
+function getTrainingDays() {
+  try {
+    const s = (typeof settings !== 'undefined' && settings) ? settings : {};
+    if (Array.isArray(s.trainingDays)) return s.trainingDays;
+  } catch {}
+  return _defaultTrainingDays();
+}
+function setTrainingDays(arr) {
+  try {
+    if (typeof settings === 'undefined' || !settings) return;
+    settings.trainingDays = arr.slice().sort((a, b) => a - b);
+    LS.set('hvi_settings', settings);
+    window.Arete.emit('trainingDays:changed', settings.trainingDays);
+  } catch {}
+}
+
+function _intensityFromDayName(name) {
+  if (!name) return 'moderate';
+  const n = String(name).toLowerCase();
+  if (/leg|lower|squat|deadlift|power|full ?body|posterior|hinge/.test(n)) return 'hard';
+  return 'moderate';
+}
+
+// Classify today: 'hard' | 'moderate' | 'rest'. A logged workout always counts
+// as a training day; otherwise the weekly schedule decides training vs rest.
+function classifyTodaySession() {
+  const t = today();
+  const wl = (typeof workoutLog !== 'undefined' && workoutLog) ? workoutLog[t] : null;
+  if (wl && wl.exercises && wl.exercises.length) {
+    return { type: _intensityFromDayName(wl.dayName), dayName: wl.dayName || null, source: 'logged' };
+  }
+  const dow = new Date().getDay();
+  if (!getTrainingDays().includes(dow)) return { type: 'rest', dayName: 'Rest', source: 'schedule' };
+  let dayName = null;
+  try {
+    const prog = (typeof findProgram === 'function' ? findProgram(workoutMeta && workoutMeta.activeProgram) : null)
+      || (typeof WORKOUT_PROGRAMS !== 'undefined' ? WORKOUT_PROGRAMS[0] : null);
+    if (prog && prog.days && prog.days.length) {
+      const day = prog.days[((workoutMeta && workoutMeta.currentDayIndex) || 0) % prog.days.length];
+      dayName = (day && day.name) || null;
+    }
+  } catch {}
+  return { type: _intensityFromDayName(dayName), dayName, source: 'planned' };
+}
+
+// Today's macro targets = base goals + carb-cycling modifier (non-destructive;
+// base dietMeta.dailyGoals is never mutated). Hard days: carbs +20%, protein
+// +10%. Rest days: carbs -25%. Normal training day = your set goal unchanged.
+function getTodaysMacroTargets() {
+  const base = (typeof dietMeta !== 'undefined' && dietMeta) ? (dietMeta.dailyGoals || {}) : {};
+  let { calories, protein, carbs, fat } = base;
+  if (!calories) return { calories, protein, carbs, fat, adjusted: false, type: null, dayName: null };
+  protein = protein || 0;
+  fat = (fat != null) ? fat : Math.round(calories * 0.25 / 9);
+  carbs = (carbs != null) ? carbs : Math.max(0, Math.round((calories - protein * 4 - fat * 9) / 4));
+
+  const sess = classifyTodaySession();
+  const carbMult = sess.type === 'hard' ? 1.20 : sess.type === 'rest' ? 0.75 : 1.0;
+  const protMult = sess.type === 'hard' ? 1.10 : 1.0;
+  const adjCarbs = Math.round(carbs * carbMult);
+  const adjProtein = Math.round(protein * protMult);
+  // Calories = the user's set goal plus only the delta from the adjustment, so
+  // a normal day shows their exact numbers (macros need not sum to calories).
+  const adjCalories = Math.round(calories + (adjCarbs - carbs) * 4 + (adjProtein - protein) * 4);
+
+  return {
+    calories: adjCalories, protein: adjProtein, carbs: adjCarbs, fat,
+    baseCalories: calories, baseCarbs: carbs, baseProtein: protein,
+    adjusted: carbMult !== 1.0 || protMult !== 1.0,
+    type: sess.type, dayName: sess.dayName, source: sess.source,
+  };
+}
+
+// Short human label for the current adjustment, used by home/diet/coach.
+function macroAdjustReason() {
+  const t = getTodaysMacroTargets();
+  if (!t.adjusted) return '';
+  if (t.type === 'hard') return `${t.dayName || 'Heavy day'} · carbs +20%, protein +10%`;
+  if (t.type === 'rest') return 'Rest day · carbs -25%';
+  return '';
+}
+
+function macroAdjustBadgeHTML() {
+  try {
+    const t = getTodaysMacroTargets();
+    if (!t.adjusted) return '';
+    const isHard = t.type === 'hard';
+    const icon = isHard ? '🔥' : '🌙';
+    const color = isHard ? 'var(--carb)' : 'var(--text-dim)';
+    return `<div class="d-adjust-badge" style="border-color:${color}">
+      <span class="d-adjust-main">${icon} ${macroAdjustReason()}</span>
+      <span class="d-adjust-base">${t.baseCalories.toLocaleString()} → ${t.calories.toLocaleString()} cal</span>
+    </div>`;
+  } catch { return ''; }
+}

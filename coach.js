@@ -41,9 +41,9 @@ function buildCoachSystemPrompt() {
     : null) || 'None';
   const todayWorkout = workoutLog?.[d] ? 'Logged' : 'Not logged yet';
 
-  // Diet
+  // Diet (training-adjusted targets so coach references what the user sees)
   const dm = getDayMacros();
-  const goals = dietMeta?.dailyGoals || {};
+  const goals = (typeof getTodaysMacroTargets === 'function') ? getTodaysMacroTargets() : (dietMeta?.dailyGoals || {});
 
   // Weight — weightLog is date-keyed object
   const wtDates = Object.keys(weightLog || {}).sort().reverse();
@@ -94,7 +94,7 @@ ${recent || '  (none)'}`;
 Available programs:
 ${progList}
 
-NUTRITION TODAY:
+NUTRITION TODAY:${goals.adjusted ? ` (targets adjusted — ${typeof macroAdjustReason === 'function' ? macroAdjustReason() : goals.type})` : ''}
   Calories  ${dm.cal} / ${goals.calories || '—'} target
   Protein   ${dm.p}g / ${goals.protein || '—'}g target
   Carbs     ${dm.c}g / ${goals.carbs || '—'}g target
