@@ -59,6 +59,10 @@ function buildCoachSystemPrompt() {
   const jKeys = Object.keys(journal || {}).sort().reverse();
   const lastJ = jKeys[0] ? journal[jKeys[0]] : null;
 
+  // Why + active goals (connected context)
+  const _why = LS.get('hvi_why', '');
+  const _activeGoals = (LS.get('hvi_goals', []) || []).filter(g => !g.done);
+
   // Current habits list
   const habitsList = habits.map(h => `  - "${h.name}" (${h.category})${log[h.id]?.completedToday ? ' ✓' : ''} | streak: ${log[h.id]?.streak || 0}d`).join('\n');
 
@@ -72,6 +76,7 @@ TODAY: ${d}
 USER PROFILE:
 Name: ${name}
 Level ${lvl} (${getLevelTitle(lvl)}) | ${g.xp || 0} XP | Best streak: ${maxStreak}d
+${_why ? `\nWHY THEY GRIND: "${_why}"` : ''}${_activeGoals.length ? `\nACTIVE GOALS:\n${_activeGoals.map(gg => `  - ${gg.text}${gg.target ? ` (target ${gg.target})` : ''}`).join('\n')}` : ''}
 
 HABITS TODAY: ${todayDone}/${totalH} completed (${pct}%) | 7-day avg: ${weekAvg}%
 ${habitsList}
@@ -118,6 +123,7 @@ RULES:
 - Never show internal IDs, codes, or technical data to the user — use habit names and plain language only
 - If you don't know something, ask
 - Reference their actual numbers to make advice feel personal
+- When it's relevant and natural, connect advice back to their Why and active goals
 - Be honest about gaps but solution-focused
 - Keep replies under 150 words unless asked for detail
 - When they share a win, celebrate it genuinely before coaching

@@ -1220,7 +1220,7 @@ function logFavorite(i) {
   if (!fav) return;
   const t = today();
   if (!mealLog[t]) mealLog[t] = { meals: [] };
-  mealLog[t].meals.push({ id: 'm_' + Date.now(), name: fav.name, items: [...fav.items] });
+  mealLog[t].meals.push({ id: genId('m'), name: fav.name, items: [...fav.items] });
   LS.set('hvi_meal_log', mealLog);
   awardXP(15, 'body');
   checkDailyQuests();
@@ -1316,7 +1316,7 @@ function logRecentMeal(i) {
   if (!m) return;
   const t = today();
   if (!mealLog[t]) mealLog[t] = { meals: [] };
-  mealLog[t].meals.push({ id: 'm_' + Date.now(), name: m.name, items: [...m.items] });
+  mealLog[t].meals.push({ id: genId('m'), name: m.name, items: [...m.items] });
   LS.set('hvi_meal_log', mealLog);
   awardXP(15, 'body');
   checkDailyQuests();
@@ -1329,7 +1329,7 @@ function saveMeal() {
   saveMealAsFavorite();
   const t = today();
   if (!mealLog[t]) mealLog[t] = { meals: [] };
-  mealLog[t].meals.push({ id: 'm_' + Date.now(), name: curMealType, items: [...curMealItems] });
+  mealLog[t].meals.push({ id: genId('m'), name: curMealType, items: [...curMealItems] });
   LS.set('hvi_meal_log', mealLog);
   awardXP(15, 'body');
   const _dm = getDayMacros();
@@ -1381,7 +1381,7 @@ function logRecipe(id) {
   const t = today();
   if (!mealLog[t]) mealLog[t] = { meals: [] };
   mealLog[t].meals.push({
-    id: 'm_' + Date.now(),
+    id: genId('m'),
     name: r.cat,
     items: [{ name: r.name, calories: r.cal, protein: r.p, carbs: r.c, fat: r.f }]
   });

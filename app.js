@@ -162,9 +162,22 @@ function setSyncStatus(state) {
   else if (state === 'pending') el.title = 'Syncing…';
 }
 
+let _syncToastAt = 0;
 function _syncToast(msg) {
-  // Silent — only log to console for debugging
   console.log('[sync]', msg);
+  // Surface only failures, and at most once per 30s so flaky wifi isn't spammy
+  if (!/^⚠️/.test(msg)) return;
+  const now = Date.now();
+  if (now - _syncToastAt < 30000) return;
+  _syncToastAt = now;
+  try {
+    const el = document.createElement('div');
+    el.className = 'streak-toast';
+    el.style.cssText = 'bottom:100px;animation-duration:5s';
+    el.textContent = '⚠️ Saved on device — will sync when back online';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 4500);
+  } catch {}
 }
 
 function authHeaders(extra = {}) {
@@ -552,6 +565,12 @@ const LS = {
   get: (k, fb) => { try { const v = localStorage.getItem(k); return v !== null ? JSON.parse(v) : fb; } catch { return fb; } },
   set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); schedulePush(); } catch {} },
 };
+
+// Collision-proof id generator (timestamp + random suffix). Avoids two items
+// created in the same millisecond sharing an id.
+function genId(prefix) {
+  return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 11);
+}
 
 // ── DATE ──────────────────────────────────────────────────────────────────
 const today = () => new Date().toLocaleDateString('en-CA');
@@ -974,7 +993,7 @@ async function init() {
     renderOnboarding(0);
   } else {
     (() => {
-      const validViews = ['home','pillar','habits','habitCreate','stats','progressPhotos','workout','workoutPicker','workoutActive','workoutHistory','workoutBuilder','exerciseBrowser','diet','dietAddMeal','dietRecipes','dietRecipeDetail','dietGoals','dietTrend','dietTDEE','library','calendar','sleep','challenges'];
+      const validViews = ['home','pillar','habits','habitCreate','stats','progressPhotos','workout','workoutPicker','workoutActive','workoutHistory','workoutBuilder','exerciseBrowser','diet','dietAddMeal','dietRecipes','dietRecipeDetail','dietGoals','dietTrend','dietTDEE','library','calendar','sleep','challenges','goals','character','leaderboard'];
       const hash = location.hash.replace(/^#/, '');
       const view = validViews.includes(hash) ? hash : 'home';
       go(view, {}, false);
@@ -1486,7 +1505,7 @@ function renderHome() {
         <div class="hm-risk-icon">⚠️</div>
         <div class="hm-risk-body">
           <div class="hm-risk-title">Streaks at risk</div>
-          <div class="hm-risk-text">${top.map(h => `${h.name} (${h.streak}d)`).join(', ')}</div>
+          <div class="hm-risk-text">${top.map(h => `${esc(h.name)} (${h.streak}d)`).join(', ')}</div>
         </div>
       </div>`;
     })()}
@@ -1953,7 +1972,7 @@ function saveHabit() {
     showUpgradeModal('habits');
     return;
   }
-  const id = 'cu_' + Date.now();
+  const id = genId('cu');
   const sched = _getSchedFromForm();
   const h = { id, name, category: curHabitCat, ...sched };
   habits.push(h);

@@ -297,7 +297,7 @@ function addCalTask(date, text) {
   text = (text || '').trim();
   if (!text) return;
   if (!calTasks[date]) calTasks[date] = [];
-  calTasks[date].push({ id: 't_' + Date.now(), text, done: false });
+  calTasks[date].push({ id: genId('t'), text, done: false });
   LS.set('hvi_cal_tasks', calTasks);
 }
 function toggleCalTask(date, id) {
@@ -817,7 +817,7 @@ function createChallenge(templateId) {
   const endD = new Date(); endD.setDate(endD.getDate() + tmpl.duration - 1);
   const endDate = endD.toLocaleDateString('en-CA');
   const challenge = {
-    id: 'ch_' + Date.now(),
+    id: genId('ch'),
     templateId: tmpl.id,
     icon: tmpl.icon,
     name: tmpl.name,
@@ -877,7 +877,7 @@ function acceptChallenge(payload) {
     }
 
     const challenge = {
-      id: 'ch_' + Date.now(),
+      id: genId('ch'),
       templateId: tmpl.id,
       icon: tmpl.icon,
       name: tmpl.name,

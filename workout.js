@@ -217,9 +217,9 @@ function renderWorkout() {
     </div>
     <div class="w-hero-card ani" onclick="go('workoutActive')">
       <div class="w-hero-glow"></div>
-      <div class="w-day-badge">${day.name}</div>
-      <div class="w-card-name" style="font-size:22px;margin:4px 0 2px">${prog.name}</div>
-      <div class="w-card-desc">${day.focus}</div>
+      <div class="w-day-badge">${esc(day.name)}</div>
+      <div class="w-card-name" style="font-size:22px;margin:4px 0 2px">${esc(prog.name)}</div>
+      <div class="w-card-desc">${esc(day.focus)}</div>
       ${muscleTagsHTML ? `<div class="w-muscle-tags">${muscleTagsHTML}</div>` : ''}
       ${exPreviewHTML}
       <div class="w-hero-cta ${todayLog ? 'done' : ''}">${todayLog ? '✓ Workout logged today' : '→ Start today\'s workout'}</div>
@@ -743,7 +743,7 @@ function deleteCustomProgram(id) {
 }
 
 function initBuilder() {
-  builderProg = { id: 'cp_' + Date.now(), name: '', desc: '', days: [{ name: 'Day 1', focus: '', ex: [] }] };
+  builderProg = { id: genId('cp'), name: '', desc: '', days: [{ name: 'Day 1', focus: '', ex: [] }] };
   builderDayIdx = 0;
   builderSearch = '';
 }

@@ -37,7 +37,7 @@
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=92">
+  <link rel="stylesheet" href="style.css?v=93">
 </head>
 <body>
 <div id="grain" aria-hidden="true"></div>
@@ -71,6 +71,7 @@
   <button class="coach-fab" id="coach-fab" onclick="openCoach()" aria-label="Open AI Coach">
     <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
   </button>
+  <button class="quick-log-fab" id="quick-log-fab" onclick="toggleQuickLog()" aria-label="Quick log">+</button>
 
   <nav id="nav" role="navigation" aria-label="Main navigation">
     <button class="ni active" data-n="home" onclick="go('home')" aria-label="Home">
@@ -99,27 +100,27 @@
     </button>
   </nav>
 </div>
-<script src="data.js?v=92"></script>
-<script src="app.js?v=92"></script>
-<script src="connect.js?v=92"></script>
-<script src="premium.js?v=92"></script>
-<script src="workout.js?v=92"></script>
-<script src="diet.js?v=92"></script>
+<script src="data.js?v=93"></script>
+<script src="app.js?v=93"></script>
+<script src="connect.js?v=93"></script>
+<script src="premium.js?v=93"></script>
+<script src="workout.js?v=93"></script>
+<script src="diet.js?v=93"></script>
 <script>
 // Stub coach functions until lazy-loaded
 if(typeof openCoach==='undefined'){window.openCoach=function(){};window.closeCoach=function(){};window.sendCoachMsg=function(){};window.clearCoachHistory=function(){}}
 // Lazy-load coach + social after first paint for faster startup
 (window.requestIdleCallback||function(cb){setTimeout(cb,800)})(function(){
-  var s1=document.createElement('script');s1.src='coach.js?v=92';document.body.appendChild(s1);
-  var s2=document.createElement('script');s2.src='social.js?v=92';document.body.appendChild(s2);
+  var s1=document.createElement('script');s1.src='coach.js?v=93';document.body.appendChild(s1);
+  var s2=document.createElement('script');s2.src='social.js?v=93';document.body.appendChild(s2);
 });
 </script>
-<script src="integrations.js?v=92"></script>
-<script src="profile.js?v=92"></script>
+<script src="integrations.js?v=93"></script>
+<script src="profile.js?v=93"></script>
 <script>
   if ('serviceWorker' in navigator) {
     // Purge ALL old caches on load to ensure fresh files
-    caches.keys().then(ks => ks.filter(k => k !== 'arete-v63').forEach(k => caches.delete(k)));
+    caches.keys().then(ks => ks.filter(k => k !== 'arete-v64').forEach(k => caches.delete(k)));
     navigator.serviceWorker.register('/service-worker.js').then(reg => {
       reg.update();
     });
