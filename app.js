@@ -504,7 +504,31 @@ function renderAuth() {
         ${isSignIn ? `Don't have an account? <span onclick="_authMode='signup';renderAuth()">Sign up</span>` : `Already have an account? <span onclick="_authMode='signin';renderAuth()">Sign in</span>`}
       </div>
       ${isSignIn ? `<div class="auth-switch" style="margin-top:10px"><span onclick="handleForgotPassword()" style="color:var(--text-dim);font-weight:400">Forgot password?</span></div>` : ''}
+      ${(LS.get('hvi_habits', null) || localStorage.getItem('hvi_onboarded')) ? `<div class="auth-switch" style="margin-top:16px"><span onclick="closeAuth()" style="color:var(--text-dim);font-weight:400">Maybe later — keep using the app</span></div>` : ''}
     </div>`;
+}
+
+function closeAuth() { document.getElementById('auth-overlay')?.remove(); }
+function showSignup() { _authMode = 'signup'; renderAuth(); }
+function showAuth() { _authMode = 'signin'; renderAuth(); }
+function isGuest() { return !getAccessToken(); }
+
+// Guest nudge to create an account (shown on home; dismissable per session)
+function guestBannerHTML() {
+  if (!isGuest()) return '';
+  try { if (sessionStorage.getItem('hvi_guest_banner_x')) return ''; } catch {}
+  return `<div class="guest-banner ani">
+    <div class="guest-banner-text">Your progress is saved on this device only. Create a free account to back it up and sync everywhere.</div>
+    <div class="guest-banner-actions">
+      <button class="guest-banner-btn" onclick="showSignup()">Create free account</button>
+      <button class="guest-banner-x" onclick="dismissGuestBanner()">Later</button>
+    </div>
+  </div>`;
+}
+function dismissGuestBanner() {
+  try { sessionStorage.setItem('hvi_guest_banner_x', '1'); } catch {}
+  const e = document.querySelector('.guest-banner');
+  if (e) e.remove();
 }
 
 async function submitAuth() {
@@ -840,13 +864,15 @@ const NAV_PARENT = {
 // ── INIT ──────────────────────────────────────────────────────────────────
 async function init() {
   injectAuthStyles();
-  // If not signed in, show auth screen
-  if (!getAccessToken()) {
-    renderAuth();
-    return;
+  // Guest mode: the app is fully local-first, so anyone can use it immediately.
+  // Cloud sync only runs once they've created an account.
+  if (getAccessToken()) {
+    try { localStorage.removeItem('hvi_guest'); } catch {}
+    setSyncStatus('pending');
+    await cloudPull();
+  } else {
+    try { if (!localStorage.getItem('hvi_guest')) localStorage.setItem('hvi_guest', '1'); } catch {}
   }
-  setSyncStatus('pending');
-  await cloudPull();
   const stored = LS.get('hvi_habits', null);
   habits = stored || DEFAULT_HABITS;
   if (!stored) LS.set('hvi_habits', habits);
@@ -1459,6 +1485,7 @@ function renderHome() {
       </div>
     </div>
 
+    ${typeof guestBannerHTML === 'function' ? guestBannerHTML() : ''}
     ${typeof whyCardHTML === 'function' ? whyCardHTML() : ''}
     ${typeof todayBriefingHTML === 'function' ? todayBriefingHTML() : ''}
 

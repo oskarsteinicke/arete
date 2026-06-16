@@ -1185,7 +1185,11 @@ async function renderLeaderboard() {
   if (!uid) {
     document.getElementById('view').innerHTML = `
       <button class="back" onclick="go('home')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
-      <div class="page-head ani"><div class="page-title">Leaderboard</div><div class="page-sub">Sign in to compete with friends.</div></div>`;
+      <div class="page-head ani"><div class="page-title">Leaderboard</div><div class="page-sub">Compete with friends on streaks and XP.</div></div>
+      <div class="guest-cta" style="margin:8px 24px">
+        <div class="guest-cta-text">Create a free account to start a group and climb the leaderboard with friends.</div>
+        <button class="guest-cta-btn" onclick="if(typeof showSignup==='function')showSignup()">Create free account</button>
+      </div>`;
     return;
   }
 

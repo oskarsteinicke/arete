@@ -1442,9 +1442,15 @@ function renderStats() {
     <button class="w-action-btn" style="margin:0 24px 8px" onclick="go('leaderboard')">🏆 Leaderboard</button>
     <button class="w-action-btn" style="margin:0 24px 8px" onclick="go('challenges')">⚔️ Challenge a Friend</button>
     <button class="w-action-btn" style="margin:0 24px 8px" onclick="shareInvite()">🔗 Invite a Friend</button>
-    <button class="w-action-btn" style="margin:0 24px 8px" onclick="forceSync()" id="force-sync-btn">🔄 Force Sync Now</button>
-    <div id="sync-log" style="margin:0 24px 8px;font-size:11px;color:var(--text-dim);max-height:120px;overflow:auto;font-family:monospace;white-space:pre-wrap"></div>
-    <button class="w-action-btn" style="margin:0 24px 32px;color:var(--fat);border-color:var(--fat)" onclick="if(confirm('Sign out?'))authSignOut()">Sign Out</button>`;
+    ${(typeof isGuest === 'function' && isGuest())
+      ? `<div class="guest-cta" style="margin:0 24px 8px">
+           <div class="guest-cta-text">You're using Arete as a guest. Your data lives only on this device.</div>
+           <button class="guest-cta-btn" onclick="showSignup()">Create a free account to save & sync</button>
+         </div>
+         <button class="w-action-btn" style="margin:8px 24px 32px" onclick="showAuth()">Already have an account? Sign in</button>`
+      : `<button class="w-action-btn" style="margin:0 24px 8px" onclick="forceSync()" id="force-sync-btn">🔄 Force Sync Now</button>
+         <div id="sync-log" style="margin:0 24px 8px;font-size:11px;color:var(--text-dim);max-height:120px;overflow:auto;font-family:monospace;white-space:pre-wrap"></div>
+         <button class="w-action-btn" style="margin:0 24px 32px;color:var(--fat);border-color:var(--fat)" onclick="if(confirm('Sign out?'))authSignOut()">Sign Out</button>`}`;
   qTimer = setInterval(() => rotQ(1), 30000);
 }
 

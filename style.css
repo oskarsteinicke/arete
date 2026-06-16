@@ -2442,6 +2442,30 @@ body {
     radial-gradient(ellipse 130% 60% at 50% 110%, rgba(0,0,0,0.06) 0%, transparent 60%);
 }
 
+/* ══ GUEST MODE (account nudges) ════════════════════════════════════════ */
+.guest-banner {
+  margin: 0 16px 12px; padding: 14px 16px;
+  background: linear-gradient(135deg, rgba(110,159,212,0.14), rgba(110,159,212,0.03));
+  border: 1px solid rgba(110,159,212,0.3); border-radius: var(--radius);
+}
+.guest-banner-text { font-size: 13px; color: var(--text); line-height: 1.5; }
+.guest-banner-actions { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
+.guest-banner-btn {
+  background: var(--accent); color: #1a1209; border: none; cursor: pointer;
+  font-size: 12px; font-weight: 600; padding: 8px 14px; border-radius: 9px;
+}
+.guest-banner-x { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 12px; padding: 8px 6px; }
+.guest-cta {
+  padding: 16px; border-radius: var(--radius);
+  background: linear-gradient(135deg, rgba(176,132,72,0.16), rgba(176,132,72,0.03));
+  border: 1px solid rgba(217,180,106,0.3); text-align: center;
+}
+.guest-cta-text { font-size: 13px; color: var(--text-dim); line-height: 1.5; margin-bottom: 12px; }
+.guest-cta-btn {
+  display: block; width: 100%; background: var(--accent); color: #1a1209; border: none;
+  cursor: pointer; font-size: 14px; font-weight: 600; padding: 13px; border-radius: 12px;
+}
+
 /* ══ MY WHY + GOALS ═════════════════════════════════════════════════════ */
 .why-card {
   margin: 0 16px 14px; padding: 22px 20px;
