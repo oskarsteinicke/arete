@@ -93,11 +93,27 @@ function getCurrentUserId() {
   return getSession()?.user?.id || null;
 }
 
-async function authSignUp(email, password) {
+// Fire the post-signup welcome webhook via the Cloudflare Worker. Fully
+// non-blocking: never awaited, never throws, never blocks signup. The actual
+// n8n URL lives only as a Worker secret (N8N_WELCOME_WEBHOOK_URL), never here.
+function sendWelcomeWebhook(name, email) {
+  try {
+    fetch('https://arete-ai.oskarsteinicke.workers.dev/welcome', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name || '', email: email || '' }),
+    }).catch(() => {});
+  } catch {}
+}
+
+async function authSignUp(email, password, name) {
+  // GoTrue REST equivalent of supabase-js options.data: `data` → user_metadata
+  const body = { email, password };
+  if (name) body.data = { name, full_name: name };
   const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
     method: 'POST',
     headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password })
+    body: JSON.stringify(body)
   });
   return await res.json();
 }
@@ -494,7 +510,7 @@ function renderAuth() {
     <div class="auth-title">${isSignIn ? 'Welcome back.' : 'Begin the path to excellence.'}</div>
     <div class="auth-sub">${isSignIn ? 'Sign in to continue your pursuit of arete.' : 'Create your account and pursue daily excellence.'}</div>
     <div style="width:100%;max-width:360px">
-      ${!isSignIn ? `<input class="auth-input" type="text" id="auth-name" placeholder="First name" autocomplete="given-name" onkeydown="if(event.key==='Enter')submitAuth()">` : ''}
+      ${!isSignIn ? `<input class="auth-input" type="text" id="auth-name" placeholder="First name" autocomplete="given-name" value="${esc(userName())}" onkeydown="if(event.key==='Enter')submitAuth()">` : ''}
       <input class="auth-input" type="email" id="auth-email" placeholder="Email address" autocomplete="email">
       <input class="auth-input" type="password" id="auth-password" placeholder="Password" autocomplete="${isSignIn ? 'current-password' : 'new-password'}" onkeydown="if(event.key==='Enter')submitAuth()">
       ${!isSignIn ? `<input class="auth-input" type="password" id="auth-confirm" placeholder="Confirm password" onkeydown="if(event.key==='Enter')submitAuth()">` : ''}
@@ -548,10 +564,12 @@ async function submitAuth() {
   if (_authMode === 'signup') {
     const firstName = document.getElementById('auth-name')?.value?.trim();
     if (!firstName) { errEl.textContent = 'Please enter your first name.'; btn.disabled = false; btn.textContent = 'CREATE ACCOUNT'; return; }
-    const res = await authSignUp(email, password);
+    const res = await authSignUp(email, password, firstName);
     if (res.error) { errEl.textContent = res.error.message || 'Sign up failed.'; btn.disabled = false; btn.textContent = 'CREATE ACCOUNT'; return; }
     localStorage.setItem('hvi_user_name', firstName);
     track('sign_up', { method: 'email' });
+    // Fire welcome webhook (server-side via Worker; non-blocking, never breaks signup)
+    sendWelcomeWebhook(firstName, email);
     // Auto sign in after signup
     _authMode = 'signin';
   }

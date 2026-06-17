@@ -17,6 +17,7 @@
 //   STRIPE_PRICE_MONTHLY  — Stripe price ID for $7.99/mo Premium
 //   STRIPE_PRICE_YEARLY   — Stripe price ID for $59/yr Premium
 //   SUPABASE_SERVICE_KEY  — Supabase service_role key (updates user plan metadata)
+//   N8N_WELCOME_WEBHOOK_URL — n8n webhook URL POSTed to on each new signup
 // KV binding needed:
 //   HEALTH_KV             — KV namespace for Apple Health data
 
@@ -302,6 +303,26 @@ async function handleStripeWebhook(request, env) {
   return new Response('ok', { status: 200 });
 }
 
+// Forward a new signup to the n8n welcome webhook. Server-side so the URL stays
+// secret. Always returns 200 to the client; a webhook failure never breaks signup.
+async function handleWelcome(body, env, origin) {
+  const { name, email } = body || {};
+  if (!env.N8N_WELCOME_WEBHOOK_URL) {
+    return jsonResponse({ ok: false, skipped: 'webhook not configured' }, 200, origin);
+  }
+  try {
+    const res = await fetch(env.N8N_WELCOME_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name || '', email: email || '' }),
+    });
+    return jsonResponse({ ok: res.ok }, 200, origin);
+  } catch (e) {
+    console.warn('[welcome] webhook failed:', e);
+    return jsonResponse({ ok: false }, 200, origin);
+  }
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get('Origin') || '';
@@ -337,6 +358,11 @@ export default {
       // Stripe customer portal
       if (path === '/stripe/portal') {
         return handlePortal(await request.json(), env, origin);
+      }
+
+      // Post-signup welcome webhook (forwards to n8n; never fails the client)
+      if (path === '/welcome') {
+        return handleWelcome(await request.json().catch(() => ({})), env, origin);
       }
 
       // OAuth token exchange
