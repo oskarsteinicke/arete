@@ -529,24 +529,6 @@ function showSignup() { _authMode = 'signup'; renderAuth(); }
 function showAuth() { _authMode = 'signin'; renderAuth(); }
 function isGuest() { return !getAccessToken(); }
 
-// Guest nudge to create an account (shown on home; dismissable per session)
-function guestBannerHTML() {
-  if (!isGuest()) return '';
-  try { if (sessionStorage.getItem('hvi_guest_banner_x')) return ''; } catch {}
-  return `<div class="guest-banner ani">
-    <div class="guest-banner-text">Your progress is saved on this device only. Create a free account to back it up and sync everywhere.</div>
-    <div class="guest-banner-actions">
-      <button class="guest-banner-btn" onclick="showSignup()">Create free account</button>
-      <button class="guest-banner-x" onclick="dismissGuestBanner()">Later</button>
-    </div>
-  </div>`;
-}
-function dismissGuestBanner() {
-  try { sessionStorage.setItem('hvi_guest_banner_x', '1'); } catch {}
-  const e = document.querySelector('.guest-banner');
-  if (e) e.remove();
-}
-
 async function submitAuth() {
   const email = document.getElementById('auth-email')?.value?.trim();
   const password = document.getElementById('auth-password')?.value;
@@ -1503,7 +1485,6 @@ function renderHome() {
       </div>
     </div>
 
-    ${typeof guestBannerHTML === 'function' ? guestBannerHTML() : ''}
     ${typeof whyCardHTML === 'function' ? whyCardHTML() : ''}
     ${typeof todayBriefingHTML === 'function' ? todayBriefingHTML() : ''}
 
