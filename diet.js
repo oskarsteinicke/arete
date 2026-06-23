@@ -999,13 +999,13 @@ function renderDietAddMeal() {
 
       <div class="dm-section">
         <div class="dm-header">
-          <span class="dm-icon">📸</span>
+          <span class="dm-icon">${typeof icon==='function'?icon('camera',18):''}</span>
           <span class="dm-header-text">Scan Food Photo</span>
           <span class="dm-header-sub">AI identifies & calculates</span>
         </div>
         <input type="file" accept="image/*" capture="environment" id="food-photo-input" style="display:none" onchange="handleFoodPhoto(this)">
         <button class="w-action-btn photo-scan-btn" style="width:100%;margin:0" onclick="triggerFoodPhoto()">
-          <span style="font-size:18px">📷</span> TAKE PHOTO OR CHOOSE IMAGE
+          ${typeof icon==='function'?icon('camera',16):''} TAKE PHOTO OR CHOOSE IMAGE
         </button>
         <div id="photo-preview" class="photo-preview"></div>
         <div id="photo-output" class="dm-output"></div>
@@ -1256,7 +1256,7 @@ function _buildFavoritesSection() {
   const recent = getRecentMeals();
   if (!favs.length && !recent.length) return '';
 
-  let html = '<div class="dm-section"><div class="dm-header"><span class="dm-icon">⭐</span><span class="dm-header-text">Quick Re-log</span><span class="dm-header-sub">Favorites & recent meals</span></div>';
+  let html = '<div class="dm-section"><div class="dm-header"><span class="dm-icon">' + (typeof icon==='function'?icon('star',18):'') + '</span><span class="dm-header-text">Quick Re-log</span><span class="dm-header-sub">Favorites & recent meals</span></div>';
 
   const SHOW_LIMIT = 3;
 

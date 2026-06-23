@@ -247,7 +247,7 @@ function renderWorkoutPicker() {
       <div class="w-card-desc">${esc(p.desc)}</div>
       <div class="w-card-days">${p.days.length}-day rotation: ${p.days.map(d=>esc(d.name)).join(', ')}</div>
       <div style="position:absolute;top:12px;right:12px;display:flex;gap:6px">
-        <button class="d-del-btn" style="font-size:14px;padding:4px 8px" onclick="event.stopPropagation();editCustomProgram('${p.id}')">✎</button>
+        <button class="d-del-btn" style="font-size:14px;padding:4px 8px" onclick="event.stopPropagation();editCustomProgram('${p.id}')">${typeof icon==='function'?icon('edit',14):'✎'}</button>
         <button class="d-del-btn" style="font-size:18px" onclick="event.stopPropagation();deleteCustomProgram('${p.id}')">×</button>
       </div>
     </div>`).join('');
@@ -948,7 +948,7 @@ function renderWorkoutHistory() {
     <div class="page-head ani"><div class="page-title">History</div><div class="page-sub">Your training log.</div></div>
     <div style="padding:0 24px 12px" class="ani"><input class="search-input" type="text" placeholder="Search workouts…" value="${esc(_workoutHistorySearch)}" oninput="_workoutHistorySearch=this.value;renderWorkoutHistory()"></div>
     ${chartHTML}
-    <button class="w-action-btn" onclick="go('prHistory')">🏆 Personal Records</button>
+    <button class="w-action-btn" onclick="go('prHistory')">${typeof icon==='function'?icon('award',16):''} Personal Records</button>
     <div class="ani">${items}</div>`;
 }
 
