@@ -691,7 +691,7 @@ function renderCharacter() {
       }).join('')}</div>
     </div>
 
-    <button class="w-action-btn ani" style="margin:0 24px 32px" onclick="shareCharacterCard()">📤 Share Character Card</button>`;
+    <button class="w-action-btn ani" style="margin:0 24px 32px" onclick="shareCharacterCard()">${icon('share')} Share Character Card</button>`;
 }
 
 // ── Shareable Character Card (Canvas) ────────────────────────────────────
@@ -1435,20 +1435,20 @@ function renderStats() {
       <div class="q-nav"><button class="q-btn" onclick="rotQ(-1)">\u2190</button><button class="q-btn" onclick="rotQ(1)">\u2192</button></div>
     </div>
     ${typeof renderPremiumSettingsCard === 'function' ? `<div style="margin:16px 24px 4px">${renderPremiumSettingsCard()}</div>` : ''}
-    <button class="w-action-btn" style="margin:12px 24px 8px" onclick="go('goals')">🎯 My Goals</button>
-    <button class="w-action-btn" style="margin:0 24px 8px" onclick="go('sleep')">🌙 Log Sleep</button>
-    <button class="w-action-btn" style="margin:0 24px 8px" onclick="go('progressPhotos')">📸 Progress Photos</button>
-    <button class="w-action-btn" style="margin:0 24px 8px" onclick="shareRecap()">📤 Share Weekly Recap</button>
-    <button class="w-action-btn" style="margin:0 24px 8px" onclick="go('leaderboard')">🏆 Leaderboard</button>
-    <button class="w-action-btn" style="margin:0 24px 8px" onclick="go('challenges')">⚔️ Challenge a Friend</button>
-    <button class="w-action-btn" style="margin:0 24px 8px" onclick="shareInvite()">🔗 Invite a Friend</button>
+    <button class="w-action-btn" style="margin:12px 24px 8px" onclick="go('goals')">${icon('flag')} My Goals</button>
+    <button class="w-action-btn" style="margin:0 24px 8px" onclick="go('sleep')">${icon('moon')} Log Sleep</button>
+    <button class="w-action-btn" style="margin:0 24px 8px" onclick="go('progressPhotos')">${icon('camera')} Progress Photos</button>
+    <button class="w-action-btn" style="margin:0 24px 8px" onclick="shareRecap()">${icon('share')} Share Weekly Recap</button>
+    <button class="w-action-btn" style="margin:0 24px 8px" onclick="go('leaderboard')">${icon('award')} Leaderboard</button>
+    <button class="w-action-btn" style="margin:0 24px 8px" onclick="go('challenges')">${icon('swords')} Challenge a Friend</button>
+    <button class="w-action-btn" style="margin:0 24px 8px" onclick="shareInvite()">${icon('link')} Invite a Friend</button>
     ${(typeof isGuest === 'function' && isGuest())
       ? `<div class="guest-cta" style="margin:0 24px 8px">
            <div class="guest-cta-text">You're using Arete as a guest. Your data lives only on this device.</div>
            <button class="guest-cta-btn" onclick="showSignup()">Create a free account to save & sync</button>
          </div>
          <button class="w-action-btn" style="margin:8px 24px 32px" onclick="showAuth()">Already have an account? Sign in</button>`
-      : `<button class="w-action-btn" style="margin:0 24px 8px" onclick="forceSync()" id="force-sync-btn">🔄 Force Sync Now</button>
+      : `<button class="w-action-btn" style="margin:0 24px 8px" onclick="forceSync()" id="force-sync-btn">${icon('refresh')} Force Sync Now</button>
          <div id="sync-log" style="margin:0 24px 8px;font-size:11px;color:var(--text-dim);max-height:120px;overflow:auto;font-family:monospace;white-space:pre-wrap"></div>
          <button class="w-action-btn" style="margin:0 24px 32px;color:var(--fat);border-color:var(--fat)" onclick="if(confirm('Sign out?'))authSignOut()">Sign Out</button>`}`;
   qTimer = setInterval(() => rotQ(1), 30000);
@@ -2258,7 +2258,7 @@ function renderProgressPhotos() {
     <div class="page-head ani"><div class="page-title">Progress Photos</div><div class="page-sub">Track your visual transformation over time.</div></div>
     <div style="padding:0 24px">
       <label class="w-action-btn" style="display:block;text-align:center;cursor:pointer;margin-bottom:20px">
-        📸 Take / Upload Photo
+        ${icon('camera')} Take / Upload Photo
         <input type="file" accept="image/*" capture="environment" style="display:none" onchange="handleProgressPhoto(this)">
       </label>
       ${photos.length === 0 ? `<div class="empty-state"><div class="empty-icon">📷</div><div class="empty-txt">No progress photos yet.<br>Take your first photo to start tracking your transformation.</div></div>` : ''}
@@ -2364,7 +2364,7 @@ function whyCardHTML() {
   const goals = LS.get('hvi_goals', []);
   const active = goals.filter(g => !g.done).length;
   const goalsLabel = goals.length ? `${active} active goal${active === 1 ? '' : 's'}` : 'Set your goals';
-  const goalsLink = `<div class="why-goals-link" onclick="event.stopPropagation();go('goals')">🎯 ${goalsLabel} ›</div>`;
+  const goalsLink = `<div class="why-goals-link" onclick="event.stopPropagation();go('goals')">${icon('flag', 14)} ${goalsLabel} ›</div>`;
   if (!why) {
     return `<div class="why-card ani">
       <div onclick="editWhy()" role="button" tabindex="0" style="cursor:pointer">

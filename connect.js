@@ -266,10 +266,11 @@ function macroAdjustBadgeHTML() {
     if (!t.adjusted) return '';
     const isHard = t.type === 'hard';
     const isRest = t.type === 'rest';
-    const icon = isRest ? '🌙' : isHard ? '🔥' : '💪';
+    const ic = (n, s) => (typeof icon === 'function' ? icon(n, s) : '');
+    const glyph = isRest ? ic('moon', 15) : isHard ? ic('flame', 15) : ic('activity', 15);
     const color = isRest ? 'var(--text-dim)' : 'var(--carb)';
     return `<div class="d-adjust-badge" style="border-color:${color}">
-      <span class="d-adjust-main">${icon} ${macroAdjustReason()}</span>
+      <span class="d-adjust-main">${glyph} ${macroAdjustReason()}</span>
       <span class="d-adjust-base">${t.baseCalories.toLocaleString()} → ${t.calories.toLocaleString()} cal</span>
     </div>`;
   } catch { return ''; }
@@ -369,28 +370,28 @@ function getCoachNudge() {
 
     // 1) Hard training day, afternoon, well under protein
     if (mt && mt.type === 'hard' && mt.protein && hourNow >= 14 && (m.p / mt.protein) < 0.5) {
-      flags.push({ id: 'hardfuel', icon: '🍗', sev: 3,
+      flags.push({ id: 'hardfuel', icon: 'meat', sev: 3,
         text: `Heavy day today and you're at ${m.p}g of ${mt.protein}g protein. Muscle doesn't rebuild on an empty tank. Get a protein-heavy meal in.` });
     }
     // 2) Training load vs nutrition mismatch over recent days
     if ((rec.status === 'fatigued' || rec.status === 'moderate') && nutAdh < 0.4) {
-      flags.push({ id: 'mismatch', icon: '⚖️', sev: 2,
+      flags.push({ id: 'mismatch', icon: 'scale', sev: 2,
         text: `You've trained ${rec.days}x this week but nutrition's been short. Hard training plus underfueling is how you stall and get hurt. Lock in your meals today.` });
     }
     // 3) Low readiness — ease off
     if (r.score < 35) {
-      flags.push({ id: 'lowready', icon: '🪫', sev: 2,
+      flags.push({ id: 'lowready', icon: 'battery', sev: 2,
         text: `Readiness is ${r.score} today. Pushing hard now just digs the hole deeper. Make today lighter and prioritize sleep and food.` });
     }
     // 4) Habits slipping while the journal shows a struggle
     const lastJ = _lastJournal();
     if (habitAdh < 0.5 && lastJ && lastJ.struggle && String(lastJ.struggle).trim()) {
-      flags.push({ id: 'slip', icon: '🧭', sev: 1,
+      flags.push({ id: 'slip', icon: 'compass', sev: 1,
         text: `Your habits have slipped this week and your last journal named a struggle. This is the moment that decides who you become. One small win today turns it around.` });
     }
     // 5) Everything aligned — push (only when nothing's wrong)
     if (!flags.length && r.score >= 75 && habitAdh >= 0.8 && nutAdh >= 0.6) {
-      flags.push({ id: 'aligned', icon: '⚡', sev: 0,
+      flags.push({ id: 'aligned', icon: 'zap', sev: 0,
         text: `Readiness ${r.score}, habits on track, nutrition dialed in. Everything's aligned. This is the day to push.` });
     }
 
@@ -406,7 +407,7 @@ function coachNudgeHTML() {
     const n = getCoachNudge();
     if (!n) return '';
     return `<div class="hm-nudge ani" id="coach-nudge" data-nudge="${n.id}">
-      <div class="hm-nudge-icon">${n.icon}</div>
+      <div class="hm-nudge-icon">${typeof icon === 'function' ? icon(n.icon, 22) : ''}</div>
       <div class="hm-nudge-body">
         <div class="hm-nudge-title">Coach noticed</div>
         <div class="hm-nudge-text">${n.text}</div>
@@ -453,12 +454,12 @@ function dismissBriefCoach() {
 }
 
 // Breakdown modal: shows the factors that make up the readiness score.
-function _rdFactorRow(icon, label, val, weight) {
+function _rdFactorRow(glyph, label, val, weight) {
   const v = Math.round(val);
   const c = v >= 70 ? 'var(--carb)' : v >= 40 ? '#e0a866' : 'var(--fat)';
   return `<div class="rd-factor">
     <div class="rd-factor-top">
-      <span class="rd-factor-name">${icon} ${label}</span>
+      <span class="rd-factor-name">${glyph} ${label}</span>
       <span class="rd-factor-val">${v}<span class="rd-factor-unit">/100</span></span>
     </div>
     <div class="rd-bar"><div class="rd-bar-fill" style="width:${Math.max(3, v)}%;background:${c}"></div></div>
@@ -481,16 +482,17 @@ function showReadinessBreakdown() {
       : r.score >= 30 ? 'Run down. Dial back intensity and prioritize recovery.'
       : 'Depleted. Make today a recovery day. Sleep and food come first.';
 
+    const ic = (n) => (typeof icon === 'function' ? icon(n, 16) : '');
     const rows = [];
     if (usingWhoop) {
-      rows.push(_rdFactorRow('💚', 'Whoop recovery', f.whoop, 'Leads the score'));
-      rows.push(_rdFactorRow('😴', 'Sleep', pct(f.sleep), 'Fine-tunes'));
-      rows.push(_rdFactorRow('🏋️', 'Training load', pct(f.load), 'Fine-tunes'));
+      rows.push(_rdFactorRow(ic('flame'), 'Whoop recovery', f.whoop, 'Leads the score'));
+      rows.push(_rdFactorRow(ic('moon'), 'Sleep', pct(f.sleep), 'Fine-tunes'));
+      rows.push(_rdFactorRow(ic('activity'), 'Training load', pct(f.load), 'Fine-tunes'));
     } else {
-      rows.push(_rdFactorRow('🏋️', 'Training load', pct(f.load), '40% of score'));
-      rows.push(_rdFactorRow('😴', 'Sleep', pct(f.sleep), '30% of score'));
-      rows.push(_rdFactorRow('✓', 'Habit consistency', pct(f.habits), '15% of score'));
-      rows.push(_rdFactorRow('🍽️', 'Nutrition', pct(f.nutrition), '15% of score'));
+      rows.push(_rdFactorRow(ic('activity'), 'Training load', pct(f.load), '40% of score'));
+      rows.push(_rdFactorRow(ic('moon'), 'Sleep', pct(f.sleep), '30% of score'));
+      rows.push(_rdFactorRow(ic('check'), 'Habit consistency', pct(f.habits), '15% of score'));
+      rows.push(_rdFactorRow(ic('target'), 'Nutrition', pct(f.nutrition), '15% of score'));
     }
 
     const slp = getRecentSleep();
@@ -512,9 +514,9 @@ function showReadinessBreakdown() {
         </div>
         <div class="rd-intro">${interp}</div>
         <div class="rd-factors">${rows.join('')}</div>
-        ${slpLogged ? '' : '<div class="rd-hint">😴 You haven\'t logged sleep today. Add it to sharpen your score.</div>'}
+        ${slpLogged ? '' : `<div class="rd-hint">${ic('moon')} You haven't logged sleep today. Add it to sharpen your score.</div>`}
         <div class="rd-actions">
-          <button class="rd-action-btn" onclick="closeReadinessBreakdown();if(typeof go==='function')go('sleep')">🌙 Log sleep</button>
+          <button class="rd-action-btn" onclick="closeReadinessBreakdown();if(typeof go==='function')go('sleep')">${ic('moon')} Log sleep</button>
         </div>
         <div class="rd-foot">${foot}</div>
       </div>
@@ -572,7 +574,7 @@ function todayBriefingHTML() {
       </div>` : '';
 
     const coachHTML = nudge ? `<div class="tb-coach">
-        <span class="tb-coach-ico">${nudge.icon}</span>
+        <span class="tb-coach-ico">${ic(nudge.icon, 18)}</span>
         <div class="tb-coach-main">
           <div class="tb-coach-text">${esc(nudge.text)}</div>
           <div class="tb-coach-actions">

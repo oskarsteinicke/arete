@@ -632,6 +632,11 @@ const _ICONS = {
   scale: '<path d="M12 3v18"/><path d="M5 21h14"/><path d="m3 7 4-2 4 2-4 8H3z" /><path d="m13 7 4-2 4 2-4 8h-4z"/>',
   brain: '<path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44A2.5 2.5 0 0 1 4 17.5a2.5 2.5 0 0 1-1.1-4.62A2.5 2.5 0 0 1 4 8.5a2.5 2.5 0 0 1 3-2.42A2.5 2.5 0 0 1 9.5 2z"/>',
   utensils: '<path d="M3 2v7a3 3 0 0 0 6 0V2"/><path d="M6 9v13"/><path d="M18 2v20"/><path d="M18 9c1.66 0 3-1.34 3-3V2"/>',
+  flag: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>',
+  share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>',
+  edit: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
+  battery: '<rect x="1" y="6" width="18" height="12" rx="2" ry="2"/><line x1="23" y1="13" x2="23" y2="11"/>',
+  meat: '<path d="M13.5 5.5a4.5 4.5 0 0 1 6.36 6.36l-7.07 7.07a4.5 4.5 0 0 1-6.36-6.36z"/><circle cx="8" cy="16" r="2.5"/>',
 };
 function icon(name, size = 18) {
   return `<svg class="ic" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${_ICONS[name] || ''}</svg>`;
@@ -680,10 +685,10 @@ function toggleQuickLog() {
   menu.id = 'quick-log-menu';
   menu.className = 'quick-log-menu';
   menu.innerHTML = `
-    <div class="quick-log-item" onclick="closeQuickLog();go('dietAddMeal')">🍽️ Log Meal</div>
-    <div class="quick-log-item" onclick="closeQuickLog();go('workoutActive')">💪 Start Workout</div>
-    <div class="quick-log-item" onclick="closeQuickLog();go('library')">📝 Journal</div>
-    <div class="quick-log-item" onclick="closeQuickLog();go('sleep')">🌙 Log Sleep</div>`;
+    <div class="quick-log-item" onclick="closeQuickLog();go('dietAddMeal')">${icon('utensils')} Log Meal</div>
+    <div class="quick-log-item" onclick="closeQuickLog();go('workoutActive')">${icon('activity')} Start Workout</div>
+    <div class="quick-log-item" onclick="closeQuickLog();go('library')">${icon('edit')} Journal</div>
+    <div class="quick-log-item" onclick="closeQuickLog();go('sleep')">${icon('moon')} Log Sleep</div>`;
   document.body.appendChild(menu);
 }
 function closeQuickLog() {
@@ -1447,7 +1452,7 @@ function renderHome() {
   const _mt = (typeof getTodaysMacroTargets === 'function') ? getTodaysMacroTargets() : null;
   const dGoal = (_mt && _mt.calories) ? _mt.calories : dietMeta.dailyGoals.calories;
   const dPct = dGoal ? Math.min(dm.cal / dGoal, 1) : 0;
-  const _mtNote = (_mt && _mt.adjusted) ? (_mt.type === 'hard' ? '🔥 Heavy day' : _mt.type === 'rest' ? '🌙 Rest day' : '💪 Training day') : '';
+  const _mtNote = (_mt && _mt.adjusted) ? (_mt.type === 'hard' ? icon('flame', 13) + ' Heavy day' : _mt.type === 'rest' ? icon('moon', 13) + ' Rest day' : icon('activity', 13) + ' Training day') : '';
 
   // Quests
   const _questDone = new Set((gamification.questsCompleted || {})[today()] || []);
@@ -1878,7 +1883,7 @@ function openEditHabit(id) {
         const opt = (val, label) => `<button class="d-type-btn link-btn${curLink===val?' active':''}" data-link="${val}" onclick="_setEditLink(this)">${label}</button>`;
         return `<div class="sec-lbl" style="padding:12px 0 8px">Auto-complete when</div>
       <div class="d-type-row" style="flex-wrap:wrap;gap:6px">
-        ${opt('', 'None')}${opt('workout', '🏋️ Workout done')}${opt('protein', '🥩 Protein hit')}${opt('calories', '🔥 Calories hit')}
+        ${opt('', 'None')}${opt('workout', icon('activity', 14) + ' Workout done')}${opt('protein', icon('meat', 14) + ' Protein hit')}${opt('calories', icon('flame', 14) + ' Calories hit')}
       </div>
       <div style="font-size:11px;color:var(--text-muted);padding:6px 0 0">This habit ticks itself when the linked action happens, so you never log it twice.</div>`;
       })()}
