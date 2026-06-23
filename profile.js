@@ -1434,6 +1434,7 @@ function renderStats() {
       <div class="q-auth" id="qa">\u2014 ${esc(q.author)}</div>
       <div class="q-nav"><button class="q-btn" onclick="rotQ(-1)">\u2190</button><button class="q-btn" onclick="rotQ(1)">\u2192</button></div>
     </div>
+    ${typeof renderWeekInReview === 'function' ? renderWeekInReview() : ''}
     ${typeof renderPremiumSettingsCard === 'function' ? `<div style="margin:16px 24px 4px">${renderPremiumSettingsCard()}</div>` : ''}
     <button class="w-action-btn" style="margin:12px 24px 8px" onclick="go('goals')">${icon('flag')} My Goals</button>
     <button class="w-action-btn" style="margin:0 24px 8px" onclick="go('sleep')">${icon('moon')} Log Sleep</button>
@@ -1442,6 +1443,7 @@ function renderStats() {
     <button class="w-action-btn" style="margin:0 24px 8px" onclick="go('leaderboard')">${icon('award')} Leaderboard</button>
     <button class="w-action-btn" style="margin:0 24px 8px" onclick="go('challenges')">${icon('swords')} Challenge a Friend</button>
     <button class="w-action-btn" style="margin:0 24px 8px" onclick="shareInvite()">${icon('link')} Invite a Friend</button>
+    <button class="w-action-btn" style="margin:0 24px 8px" onclick="window.open('https://forms.gle/QMHZaYy2grUNmCpJ7','_blank');track('feedback_click')">${icon('edit')} Send Feedback</button>
     ${(typeof isGuest === 'function' && isGuest())
       ? `<div class="guest-cta" style="margin:0 24px 8px">
            <div class="guest-cta-text">You're using Arete as a guest. Your data lives only on this device.</div>
