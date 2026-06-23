@@ -2551,6 +2551,11 @@ body {
 .rd-bar { height: 7px; background: rgba(255,255,255,0.07); border-radius: 4px; overflow: hidden; }
 .rd-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
 .rd-factor-weight { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+.rd-vitals { display: flex; gap: 8px; margin-top: 18px; }
+.rd-vital { flex: 1; background: var(--surface2); border-radius: var(--radius-sm); padding: 12px 6px; text-align: center; }
+.rd-vital-ic { color: var(--accent-b); display: flex; justify-content: center; margin-bottom: 5px; }
+.rd-vital-val { font-family: var(--serif); font-size: 17px; color: var(--text); line-height: 1.1; }
+.rd-vital-lbl { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 3px; }
 .rd-hint { font-size: 12px; color: var(--accent-b); line-height: 1.5; margin-top: 16px; }
 .rd-actions { margin-top: 14px; }
 .rd-action-btn {

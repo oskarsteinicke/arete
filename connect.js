@@ -498,6 +498,20 @@ function showReadinessBreakdown() {
     const slp = getRecentSleep();
     const slpLogged = !!(slp.hours || slp.quality || typeof slp.whoopRecovery === 'number');
 
+    // Today's biometrics (moved here from the home screen — they explain the score)
+    const _t = today();
+    const _slToday = (typeof sleepLog !== 'undefined' && sleepLog && sleepLog[_t]) ? sleepLog[_t] : {};
+    const _steps = (LS.get('hvi_steps_log', {})[_t]) || 0;
+    const _energy = (LS.get('hvi_energy_log', {})[_t]) || 0;
+    const _vit = [];
+    if (_slToday.hours) _vit.push([ic('moon'), _slToday.hours + 'h', 'Sleep']);
+    if (_steps) _vit.push([ic('footprints'), _steps.toLocaleString(), 'Steps']);
+    if (_energy) _vit.push([ic('flame'), _energy, 'kcal active']);
+    if (_slToday.restingHR) _vit.push([ic('heart'), _slToday.restingHR, 'Resting HR']);
+    const vitalsHTML = _vit.length
+      ? `<div class="rd-vitals">${_vit.map(v => `<div class="rd-vital"><div class="rd-vital-ic">${v[0]}</div><div class="rd-vital-val">${v[1]}</div><div class="rd-vital-lbl">${v[2]}</div></div>`).join('')}</div>`
+      : '';
+
     const foot = usingWhoop
       ? 'Your Whoop recovery score leads today; sleep and training load adjust it.'
       : 'Each factor contributes the weight shown. Log sleep and meals to sharpen it.';
@@ -514,6 +528,7 @@ function showReadinessBreakdown() {
         </div>
         <div class="rd-intro">${interp}</div>
         <div class="rd-factors">${rows.join('')}</div>
+        ${vitalsHTML}
         ${slpLogged ? '' : `<div class="rd-hint">${ic('moon')} You haven't logged sleep today. Add it to sharpen your score.</div>`}
         <div class="rd-actions">
           <button class="rd-action-btn" onclick="closeReadinessBreakdown();if(typeof go==='function')go('sleep')">${ic('moon')} Log sleep</button>

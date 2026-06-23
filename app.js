@@ -637,6 +637,8 @@ const _ICONS = {
   edit: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
   battery: '<rect x="1" y="6" width="18" height="12" rx="2" ry="2"/><line x1="23" y1="13" x2="23" y2="11"/>',
   meat: '<path d="M13.5 5.5a4.5 4.5 0 0 1 6.36 6.36l-7.07 7.07a4.5 4.5 0 0 1-6.36-6.36z"/><circle cx="8" cy="16" r="2.5"/>',
+  heart: '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>',
+  footprints: '<path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z"/><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z"/>',
 };
 function icon(name, size = 18) {
   return `<svg class="ic" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${_ICONS[name] || ''}</svg>`;
@@ -1495,12 +1497,6 @@ function renderHome() {
             <div class="hm-hero-date">${dateStr}</div>
             <div class="hm-hero-name">${greeting()}${userName() ? ', ' + userName() : ''}.</div>
             <div class="hm-hero-lvl">Lv.${homeLvl} · ${getLevelTitle(homeLvl)}</div>
-            <div class="hm-score-row" style="margin-top:10px">
-              <div style="flex:1">
-                <div class="hm-habits-bar-hdr"><span>Habits</span><span>${done}/${total}</span></div>
-                <div class="hm-habits-track"><div class="hm-habits-fill" style="width:${(pct*100).toFixed(0)}%"></div></div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -1510,15 +1506,6 @@ function renderHome() {
     ${typeof todayBriefingHTML === 'function' ? todayBriefingHTML() : ''}
 
     <div class="hm-pillars ani">${pillarStrip}</div>
-
-    <div class="hm-stats-mini ani" onclick="go('character')">
-      ${(() => {
-        const rpg = _computeRPGStats();
-        return rpg.map(s =>
-          `<div class="hm-sm-stat"><div class="hm-sm-val" style="color:${s.color}">${s.val}</div><div class="hm-sm-lbl">${s.key}</div></div>`
-        ).join('');
-      })()}
-    </div>
 
     ${_overallStreak >= 2 ? `<div class="hm-streak-banner ani">
       <div class="hm-streak-fire">🔥</div>
@@ -1564,37 +1551,6 @@ function renderHome() {
         <div style="font-size:12px;color:var(--text-dim);margin-top:2px">Take 30 seconds to share your feedback</div>
       </div>
       <button onclick="event.stopPropagation();localStorage.setItem('hvi_feedback_dismissed','1');this.closest('.hm-feedback-banner').remove()" style="background:none;border:none;color:var(--text-dim);font-size:18px;padding:4px;cursor:pointer">✕</button>
-    </div>` : ''}
-
-    <div class="hm-sec ani">
-      <div class="hm-sec-title">Today's Labours</div>
-    </div>
-    <div class="hm-cards ani">
-      <div class="hm-card${wLogged ? ' hm-card-done' : ''}" onclick="go('workoutActive')">
-        ${wLogged ? '<div class="hm-card-glow"></div>' : ''}
-        <div class="hm-card-icon">🏋️</div>
-        <div class="hm-card-lbl">Workout</div>
-        <div class="hm-card-val">${wLogged && wExternal ? wEntry.dayName : wDay.name}</div>
-        <div class="hm-card-sub">${wLogged && wExternal ? (wEntry.source === 'strava' ? 'Strava' : wEntry.source === 'googlefit' ? 'Google Fit' : wEntry.source) : wProg.name}</div>
-        ${wLogged && wExtraBadges ? `<div class="hm-card-badges">${wExtraBadges}</div>` : ''}
-        <div class="hm-card-status" style="${wLogged ? 'color:var(--accent-b)' : 'color:var(--text-dim)'}">${wLogged ? '✓ Done' : '→ Start'}</div>
-        ${!wLogged ? recoveryBadgeHTML() : ''}
-      </div>
-      <div class="hm-card" onclick="go('diet')">
-        <div class="hm-card-icon">🥗</div>
-        <div class="hm-card-lbl">Nutrition</div>
-        <div class="hm-card-val">${dm.cal.toLocaleString()} cal</div>
-        <div class="hm-card-sub">${dGoal.toLocaleString()} goal${_mtNote ? ' · ' + _mtNote : ''}</div>
-        <div class="hm-card-bar"><div class="hm-card-fill" style="width:${(dPct*100).toFixed(0)}%;background:var(--cal)"></div></div>
-        <div class="hm-card-status" style="color:var(--text-dim)">${dm.p}p · ${dm.c}c · ${dm.f}f</div>
-      </div>
-    </div>
-
-    ${todaySteps || slpHours ? `<div class="hm-vitals ani">
-      ${todaySteps ? `<div class="hm-vital"><span class="hm-vital-icon">👟</span><span class="hm-vital-val">${todaySteps.toLocaleString()}</span><span class="hm-vital-lbl">steps</span></div>` : ''}
-      ${slpHours ? `<div class="hm-vital"><span class="hm-vital-icon">😴</span><span class="hm-vital-val">${slpHours}h</span><span class="hm-vital-lbl">sleep</span></div>` : ''}
-      ${todayEnergy ? `<div class="hm-vital"><span class="hm-vital-icon">⚡</span><span class="hm-vital-val">${todayEnergy}</span><span class="hm-vital-lbl">kcal active</span></div>` : ''}
-      ${slp.restingHR ? `<div class="hm-vital"><span class="hm-vital-icon">💓</span><span class="hm-vital-val">${slp.restingHR}</span><span class="hm-vital-lbl">resting HR</span></div>` : ''}
     </div>` : ''}
 
     <div class="hm-sec ani">
