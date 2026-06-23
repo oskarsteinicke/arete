@@ -178,22 +178,9 @@ function setSyncStatus(state) {
   else if (state === 'pending') el.title = 'Syncing…';
 }
 
-let _syncToastAt = 0;
 function _syncToast(msg) {
+  // Log only — no visible popup. Sync state is shown by the subtle sync dot.
   console.log('[sync]', msg);
-  // Surface only failures, and at most once per 30s so flaky wifi isn't spammy
-  if (!/^⚠️/.test(msg)) return;
-  const now = Date.now();
-  if (now - _syncToastAt < 30000) return;
-  _syncToastAt = now;
-  try {
-    const el = document.createElement('div');
-    el.className = 'streak-toast';
-    el.style.cssText = 'bottom:100px;animation-duration:5s';
-    el.textContent = '⚠️ Saved on device — will sync when back online';
-    document.body.appendChild(el);
-    setTimeout(() => el.remove(), 4500);
-  } catch {}
 }
 
 function authHeaders(extra = {}) {
@@ -619,6 +606,35 @@ function ring(r, pct, sw = 3, color = 'var(--accent)') {
       stroke-dasharray="${c.toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}" stroke-linecap="round"
       style="--ring-c:${c.toFixed(2)};--ring-off:${off.toFixed(2)}"/>
   </svg>`;
+}
+
+// ── ICON SYSTEM ─────────────────────────────────────────────────────────────
+// One consistent line-icon set (Feather/Lucide style) to replace emoji across
+// the app. Workout/diet/habit reuse the exact nav paths so the tab bar and the
+// rest of the UI agree. inherits color via stroke="currentColor".
+const _ICONS = {
+  activity: '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
+  target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  check: '<polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+  moon: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',
+  flame: '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+  zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+  target2: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  compass: '<circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88"/>',
+  book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
+  award: '<circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>',
+  camera: '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
+  refresh: '<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+  swords: '<polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"/><line x1="13" y1="19" x2="19" y2="13"/><line x1="16" y1="16" x2="20" y2="20"/><line x1="19" y1="21" x2="21" y2="19"/>',
+  plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+  scale: '<path d="M12 3v18"/><path d="M5 21h14"/><path d="m3 7 4-2 4 2-4 8H3z" /><path d="m13 7 4-2 4 2-4 8h-4z"/>',
+  brain: '<path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44A2.5 2.5 0 0 1 4 17.5a2.5 2.5 0 0 1-1.1-4.62A2.5 2.5 0 0 1 4 8.5a2.5 2.5 0 0 1 3-2.42A2.5 2.5 0 0 1 9.5 2z"/>',
+  utensils: '<path d="M3 2v7a3 3 0 0 0 6 0V2"/><path d="M6 9v13"/><path d="M18 2v20"/><path d="M18 9c1.66 0 3-1.34 3-3V2"/>',
+};
+function icon(name, size = 18) {
+  return `<svg class="ic" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${_ICONS[name] || ''}</svg>`;
 }
 
 // ── SKELETON LOADING ──────────────────────────────────────────────────────

@@ -540,6 +540,7 @@ function closeReadinessBreakdown() {
 function todayBriefingHTML() {
   try {
     const t = today();
+    const ic = (n, s) => (typeof icon === 'function' ? icon(n, s) : '');
     const r = hasReadinessSignal() ? getReadiness() : null;
     const rColor = r ? readinessColor(r.score) : '';
     const mt = getTodaysMacroTargets();
@@ -584,13 +585,13 @@ function todayBriefingHTML() {
     return `<div class="today-brief ani">
       <div class="tb-head"><div class="tb-eyebrow">Today</div>${readyHTML}</div>
       <div class="tb-grid">
-        <div class="tb-cell" onclick="go('workout')"><div class="tb-cell-ico">🏋️</div><div class="tb-cell-val">${esc(String(trainVal))}</div><div class="tb-cell-lbl">${trainLbl}</div></div>
-        <div class="tb-cell" onclick="go('diet')"><div class="tb-cell-ico">🍽️</div><div class="tb-cell-val">${m.cal.toLocaleString()}<span class="tb-cell-sub">/${calTarget ? calTarget.toLocaleString() : '—'}</span></div><div class="tb-cell-lbl">${fuelLbl}</div></div>
-        <div class="tb-cell" onclick="go('habits')"><div class="tb-cell-ico">✓</div><div class="tb-cell-val">${doneH}/${totalH}</div><div class="tb-cell-lbl">Habits</div></div>
+        <div class="tb-cell" onclick="go('workout')"><div class="tb-cell-ico">${ic('activity')}</div><div class="tb-cell-val">${esc(String(trainVal))}</div><div class="tb-cell-lbl">${trainLbl}</div></div>
+        <div class="tb-cell" onclick="go('diet')"><div class="tb-cell-ico">${ic('target')}</div><div class="tb-cell-val">${m.cal.toLocaleString()}<span class="tb-cell-sub">/${calTarget ? calTarget.toLocaleString() : '—'}</span></div><div class="tb-cell-lbl">${fuelLbl}</div></div>
+        <div class="tb-cell" onclick="go('habits')"><div class="tb-cell-ico">${ic('check')}</div><div class="tb-cell-val">${doneH}/${totalH}</div><div class="tb-cell-lbl">Habits</div></div>
       </div>
       ${coachHTML}
       <div class="tb-journal">
-        <span class="tb-journal-prompt">📓 ${esc(prompt)}</span>
+        <span class="tb-journal-prompt">${ic('book', 15)} ${esc(prompt)}</span>
         <button class="tb-journal-btn" onclick="libTab='journal';go('library')">${jDone ? 'Edit' : 'Reflect'}</button>
       </div>
     </div>`;
