@@ -695,9 +695,18 @@ function renderCharacter() {
 }
 
 // ── Shareable Character Card (Canvas) ────────────────────────────────────
+function _loadImage(src) {
+  return new Promise(resolve => {
+    const im = new Image();
+    im.onload = () => resolve(im);
+    im.onerror = () => resolve(null);
+    im.src = src;
+  });
+}
+
 async function shareCharacterCard() {
   const canvas = document.createElement('canvas');
-  const w = 600, h = 800;
+  const w = 600, h = 1060;
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext('2d');
@@ -726,6 +735,31 @@ async function shareCharacterCard() {
   const title = getLevelTitle(lvl);
   const stats = _computeRPGStats();
   const totalPower = Math.round(stats.reduce((s, st) => s + st.val, 0) / stats.length);
+
+  // Character portrait (framed so the art's dark background blends)
+  const _stage = (typeof avatarStage === 'function') ? avatarStage(lvl) : 1;
+  const _av = await _loadImage(`avatar-${_stage}.png?v=1`);
+  const pw = 210, ph = 264, px = (w - pw) / 2, py = 40;
+  const pg = ctx.createLinearGradient(0, py, 0, py + ph);
+  pg.addColorStop(0, '#14110b');
+  pg.addColorStop(1, '#000000');
+  ctx.fillStyle = pg;
+  _roundRect(ctx, px, py, pw, ph, 16); ctx.fill();
+  ctx.strokeStyle = 'rgba(196,169,108,0.35)'; ctx.lineWidth = 1.5;
+  _roundRect(ctx, px, py, pw, ph, 16); ctx.stroke();
+  if (_av && _av.naturalWidth) {
+    const maxW = pw - 16, maxH = ph - 16;
+    const sc = Math.min(maxW / _av.naturalWidth, maxH / _av.naturalHeight);
+    const dw = _av.naturalWidth * sc, dh = _av.naturalHeight * sc;
+    ctx.save();
+    _roundRect(ctx, px, py, pw, ph, 16); ctx.clip();
+    ctx.drawImage(_av, px + (pw - dw) / 2, py + ph - dh - 6, dw, dh);
+    ctx.restore();
+  }
+
+  // Shift the rest of the card below the portrait
+  ctx.save();
+  ctx.translate(0, 250);
 
   // Name
   ctx.fillStyle = '#e8dfd3';
@@ -864,6 +898,9 @@ async function shareCharacterCard() {
     ctx.fillText(ks.val, kx, barY + 28);
     ctx.font = '13px -apple-system, sans-serif';
   });
+
+  // End content shift (footer stays anchored to the card bottom)
+  ctx.restore();
 
   // Footer
   ctx.fillStyle = 'rgba(232,223,211,0.3)';
