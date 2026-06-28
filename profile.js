@@ -661,7 +661,7 @@ function renderCharacter() {
   document.getElementById('view').innerHTML = `
     <button class="back" onclick="go('home')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
     <div class="char-hero ani">
-      <div class="char-avatar">${buildAvatarSVG(lvl)}</div>
+      <div class="char-avatar avatar-frame">${avatarImg(lvl)}</div>
       <div class="char-name">${userName() || 'Warrior'}</div>
       <div class="char-title">Lv.${lvl} ${title}</div>
       <div class="char-stage">${stageNames[stage]}${nextStage ? ` → ${nextStage} at Lv.${nextStageLevel}` : ' (Max Stage)'}</div>

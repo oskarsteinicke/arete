@@ -644,6 +644,17 @@ function icon(name, size = 18) {
   return `<svg class="ic" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${_ICONS[name] || ''}</svg>`;
 }
 
+// ── CHARACTER AVATARS ───────────────────────────────────────────────────────
+// Illustrated stage art (PNG). Stage thresholds match LEVEL_TITLES exactly.
+const _AVATAR_V = '1'; // bump to bust caches when art changes
+function avatarStage(lvl) {
+  return lvl >= 20 ? 6 : lvl >= 12 ? 5 : lvl >= 8 ? 4 : lvl >= 5 ? 3 : lvl >= 3 ? 2 : 1;
+}
+function avatarImg(lvl) {
+  const s = avatarStage(lvl);
+  return `<img class="avatar-img" src="avatar-${s}.png?v=${_AVATAR_V}" alt="Character stage ${s}" draggable="false">`;
+}
+
 // ── SKELETON LOADING ──────────────────────────────────────────────────────
 function showSkeleton(type = 'home') {
   const view = document.getElementById('view');
@@ -1492,7 +1503,7 @@ function renderHome() {
       <div class="hm-hero-card" onclick="go('stats')">
         <div class="hm-hero-glow"></div>
         <div class="hm-hero-row">
-          <div style="width:64px;height:100px;flex-shrink:0;cursor:pointer" onclick="event.stopPropagation();go('character')">${buildAvatarSVG(homeLvl)}</div>
+          <div class="avatar-frame" style="width:66px;height:99px;flex-shrink:0;cursor:pointer" onclick="event.stopPropagation();go('character')">${avatarImg(homeLvl)}</div>
           <div class="hm-hero-info">
             <div class="hm-hero-date">${dateStr}</div>
             <div class="hm-hero-name">${greeting()}${userName() ? ', ' + userName() : ''}.</div>

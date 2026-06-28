@@ -1,4 +1,4 @@
-const CACHE = 'arete-v72';
+const CACHE = 'arete-v73';
 const ASSETS = [
   '/',
   '/index.html',
@@ -13,7 +13,13 @@ const ASSETS = [
   '/social.js',
   '/integrations.js',
   '/profile.js',
-  '/manifest.json'
+  '/manifest.json',
+  '/avatar-1.png',
+  '/avatar-2.png',
+  '/avatar-3.png',
+  '/avatar-4.png',
+  '/avatar-5.png',
+  '/avatar-6.png'
 ];
 
 self.addEventListener('install', e => {
