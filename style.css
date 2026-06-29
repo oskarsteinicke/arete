@@ -725,6 +725,23 @@ nav {
 }
 .hm-hero-row { display: flex; align-items: flex-start; gap: 16px; }
 .hm-hero-info { flex: 1; padding-top: 6px; }
+
+/* Character front-and-center hero */
+.hm-hero-card--center {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  padding: 18px 20px 22px;
+}
+.hm-hero-card--center .hm-hero-glow {
+  top: 30px; left: 50%; right: auto; transform: translateX(-50%);
+  width: 240px; height: 240px; opacity: 0.12;
+}
+.hm-hero-card--center .hm-hero-date { margin-bottom: 12px; }
+.hm-hero-portrait {
+  width: 158px; height: 237px; margin-bottom: 14px; cursor: pointer;
+  position: relative; z-index: 1;
+}
+.hm-hero-card--center .hm-hero-name { font-size: 25px; margin-bottom: 8px; position: relative; z-index: 1; }
+.hm-hero-card--center .hm-hero-lvl { position: relative; z-index: 1; }
 .hm-hero-date { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; font-weight: 500; }
 .hm-hero-name { font-family: var(--display); font-size: 22px; color: var(--text); line-height: 1.15; margin-bottom: 2px; letter-spacing: 0.3px; }
 .hm-hero-greet { font-size: 12px; color: var(--text-dim); margin-bottom: 8px; }

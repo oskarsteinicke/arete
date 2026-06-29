@@ -1500,16 +1500,12 @@ function renderHome() {
 
   document.getElementById('view').innerHTML = `
     <div class="hm-hero ani">
-      <div class="hm-hero-card" onclick="go('stats')">
+      <div class="hm-hero-card hm-hero-card--center" onclick="go('character')">
         <div class="hm-hero-glow"></div>
-        <div class="hm-hero-row">
-          <div class="avatar-frame" style="width:66px;height:99px;flex-shrink:0;cursor:pointer" onclick="event.stopPropagation();go('character')">${avatarImg(homeLvl)}</div>
-          <div class="hm-hero-info">
-            <div class="hm-hero-date">${dateStr}</div>
-            <div class="hm-hero-name">${greeting()}${userName() ? ', ' + userName() : ''}.</div>
-            <div class="hm-hero-lvl">Lv.${homeLvl} · ${getLevelTitle(homeLvl)}</div>
-          </div>
-        </div>
+        <div class="hm-hero-date">${dateStr}</div>
+        <div class="avatar-frame hm-hero-portrait">${avatarImg(homeLvl)}</div>
+        <div class="hm-hero-name">${greeting()}${userName() ? ', ' + userName() : ''}.</div>
+        <div class="hm-hero-lvl">Lv.${homeLvl} · ${getLevelTitle(homeLvl)}</div>
       </div>
     </div>
 
