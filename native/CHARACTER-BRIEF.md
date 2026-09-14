@@ -7,27 +7,19 @@ drop into the app without rework.
 
 ## Tools
 
-Which is best depends on one decision: **figures or marks.**
-
-### If you want geometric marks (recommended for "modern, minimalistic")
-
-| Tool | Why |
-|---|---|
-| **Recraft** | Outputs true SVG, not traced raster. Has style-set consistency so all six stages match. Built for icon systems, which is exactly what a 6-stage progression plus reward badges is. Best single choice. |
-| **Figma** (+ plugins) | Where you finish and assemble regardless of what generated it. Export SVG directly. |
-| **Illustrator + Firefly** | If you want precise manual control over the geometry. |
-
-SVG matters more than it sounds: it scales to any size, it costs almost
-nothing in bytes, and it can take its colour from the app's theme, which solves
-the light-mode problem below for free.
-
-### If you want figures (people, like the current ones but restyled)
+The set is twelve figures that must look like one family, so the thing that
+matters most is **holding a style across generations**, not raw image quality.
 
 | Tool | Why |
 |---|---|
-| **Midjourney** | Best raw quality. `--sref` locks a style across the whole set; `--cref` keeps a character consistent between stages. Raster only. |
-| **Nano Banana / Gemini image** | Strongest at *editing* an existing image, so good for deriving a female variant from a male one and keeping them plainly the same style. |
-| **Ideogram** | Clean flat-graphic look, and handles lettering if a badge needs a numeral. |
+| **Midjourney** | Best for this. `--sref` locks a style across the whole set and `--cref` keeps the same character between stages, which is the hard part. Raster only, which is fine for figures. |
+| **Nano Banana / Gemini image** | Strongest at *editing* an existing image. Use it to derive stage N+1 from stage N, and the female set from the male set, so they match by construction rather than by luck. |
+| **Recraft** | Worth a look if you want the figures as true vector. Weaker at characters than at icons, but the output scales and weighs nothing. |
+| **Figma** | Where you finish, crop to 2:3, and export at the right size regardless of what generated the art. |
+
+A realistic workflow: Midjourney for stage 1 until the style is right, then an
+editing model to walk it through the remaining stages and across to the female
+set.
 
 ---
 

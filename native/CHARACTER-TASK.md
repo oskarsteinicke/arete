@@ -1,90 +1,130 @@
-# Task: produce a 6-stage character progression set
+# Task: a 6-stage character progression, male and female
 
 Paste this whole file as the task. Everything needed is here; nothing has to be
 filled in.
 
 ## Objective
 
-Produce **six emblem images** forming a visual progression for Arete, a dark-mode
-fitness and self-improvement app. They represent a user's level, stage 1 being a
-beginner and stage 6 being fully progressed.
+Produce **twelve character illustrations** — a six-stage progression, in a male
+and a female version — for Arete, a dark-mode fitness and self-improvement app.
+They are the player character: stage 1 is a beginner, stage 6 is fully realised.
+
+These replace an existing set that was drawn as detailed anime-style figures in
+ancient Greek costume: chitons, sandals, laurel crowns, gold meander trim. Keep
+the idea of a figure growing into their potential. Drop the costume drama and
+the rendering.
 
 ## Deliverables
 
-Six files, named exactly:
+Twelve files, named exactly:
 
 ```
-avatar-1.svg  avatar-2.svg  avatar-3.svg
-avatar-4.svg  avatar-5.svg  avatar-6.svg
+avatar-m-1.png  avatar-m-2.png  avatar-m-3.png  avatar-m-4.png  avatar-m-5.png  avatar-m-6.png
+avatar-f-1.png  avatar-f-2.png  avatar-f-3.png  avatar-f-4.png  avatar-f-5.png  avatar-f-6.png
 ```
 
-SVG is strongly preferred. **If you cannot produce SVG, produce PNG at
-512 x 768 with a real alpha channel** and name them `avatar-1.png` … `avatar-6.png`.
+512 x 768 PNG, **with a real alpha channel**. Deliver layered or vector source
+files as well if the tool produces them.
 
 ## Acceptance criteria
 
-Check each before delivering. These are pass/fail, not preferences.
+Pass/fail, not preferences. Check each before delivering.
 
-1. **Background is transparent.** No filled rectangle, no black, no white. If
-   PNG, it must have an alpha channel — an RGB file with black behind the
-   subject fails. The app has a light theme and a baked background renders as a
-   black box on a cream page.
-2. **Exactly one colour is used**, a warm gold anywhere in `#b8874a` to
-   `#e3b878`. No white, no grey, no second hue.
-3. **Aspect is 2:3 upright**, and the subject is centred with margin on all
-   sides.
-4. **Each file is under 40 KB.**
-5. **Legible at 48 pixels.** Shrink it and check. If the detail turns to mush at
-   that size, simplify it.
-6. **The six read as one set.** Same stroke weights, same construction logic,
-   same optical weight. Someone seeing them side by side should not be able to
-   tell they were made separately.
-7. **Progression is visible in order.** Shown shuffled, someone should be able
+1. **Background is transparent.** No filled rectangle, no black, no white, no
+   scene, no ground shadow. An RGB file with black behind the figure fails. The
+   app has a light theme, and a baked background renders as a black box on a
+   cream page. This is the single most common way this task is failed.
+2. **Full body, standing, front-facing, upright.** Head near the top of the
+   frame, feet near the bottom, centred, with margin on all sides.
+3. **Legible at 132 pixels tall.** That is the real display size. Shrink it and
+   check the silhouette still reads.
+4. **The twelve read as one set.** Same line weight, same proportions, same
+   level of detail, same lighting logic. Male and female versions of the same
+   stage should differ only in build.
+5. **Progression is visible in order.** Shown shuffled, someone should be able
    to sort them 1 to 6 without being told the rule.
+6. **Each file under 80 KB.**
 
-## Shared style
+## Style
 
-Apply to all six, identically:
+Apply to all twelve, identically:
 
-> Minimalist geometric emblem. Modern, reductive, flat vector. Thin precise
-> strokes, generous negative space, perfect symmetry. Contemporary icon design
-> and Swiss graphic design sensibility.
+> Modern minimalist character illustration. Flat vector style with clean shapes
+> and at most two tones per surface. Confident simple silhouette. Restrained,
+> elegant, premium.
 >
-> No illustration, no shading, no texture, no gradient, no drop shadow, no outer
-> glow, no 3D, no photorealism, no background fill.
+> Face is minimal: no drawn eyes, nose or mouth, or at most the barest
+> suggestion. The character is defined by posture and silhouette, not
+> expression.
 >
-> Explicitly avoid: laurel wreaths, togas, columns, marble, Greek key or meander
-> patterns, helmets, shields, faces, anime styling.
+> Palette is tightly limited: warm neutral stone tones for the figure and
+> garment, with a single warm gold (#b8874a to #e3b878) as the only accent.
+> Nothing bright, nothing saturated, no second accent colour.
+>
+> No cel shading, no anime or manga styling, no rendered highlights, no
+> gradients, no texture, no outlines thicker than the design language, no
+> background, no ground shadow, no props held in hand.
+>
+> Explicitly avoid: laurel wreaths, togas, chitons, sandals with straps, Greek
+> key or meander patterns, columns, marble, helmets, shields, weapons, armour
+> plating, wings, capes with fabric folds rendered in detail.
+
+**Reference points for the feel:** the figures in *Sky: Children of the Light*,
+the characters in *Monument Valley*, the silhouettes in *Alto's Odyssey*.
+Minimal, graceful, atmospheric. Not flat-illustration corporate mascots, and not
+rendered game art.
 
 ## The six stages
 
-Each adds **one new idea** to the one before. It is not the same shape getting
-larger or brighter.
+Progression is shown through **silhouette and light**, not through adding
+ornament. Each stage changes the shape the figure cuts, and how much gold it
+carries. Nothing is ever added that would clutter the outline.
 
-**avatar-1 — Neophyte.** A single bare element. One clean circle, thin stroke,
-nothing inside it. Quiet and unfinished. The lightest optical weight of the set.
+**Stage 1 — Neophyte.** Plainest form. Simple sleeveless tunic to mid-thigh, in
+neutral stone. Bare feet or the simplest possible footwear. Posture is relaxed,
+slightly closed, arms at sides. No gold at all.
 
-**avatar-2 — Ephebos.** The circle from stage 1, plus a single vertical axis
-line through its centre. The first act of structure. Nothing else.
+**Stage 2 — Ephebos.** Same simple garment, but the posture opens: shoulders
+back, stance a little wider, weight settled. A single thin gold band at the
+waist. That band is the only gold.
 
-**avatar-3 — Hoplite.** Stage 2, plus two diagonals crossing the centre,
-creating deliberate radial symmetry. The form now has architecture.
+**Stage 3 — Hoplite.** The build is visibly stronger. Garment gains a clean
+diagonal sash across the torso. Gold at the waist and on the sash edge. Stance
+is grounded and square.
 
-**avatar-4 — Strategos.** Stage 3, plus a second concentric circle inside the
-first. Something is now enclosed and complete. Slightly heavier strokes.
+**Stage 4 — Strategos.** A long mantle falls from one shoulder, changing the
+silhouette from a simple column to something wider and more deliberate. Rendered
+as a flat shape, not as folded fabric. Gold along its edge.
 
-**avatar-5 — Philosophos.** Stage 4, plus an interior diamond or rosette at the
-centre, giving the form density where it was empty. The eye now has somewhere to
-rest.
+**Stage 5 — Philosophos.** The mantle becomes a full cloak reaching near the
+ankles. The silhouette is now the widest and most distinctive of the set.
+Garment is lighter in tone than earlier stages. Gold at the collar, waist and
+hem.
 
-**avatar-6 — Arete.** Stage 5, fully resolved, plus one element nothing else in
-the set has — a solid filled point at the exact centre, and a wide outer ring
-set apart from the rest. It should be immediately obvious this is the final one.
+**Stage 6 — Arete.** Fully resolved. Floor-length robe and cloak, the most
+striking silhouette. The garment is nearly luminous — the lightest tone in the
+set. Gold throughout the edges. A soft halo of light behind the head and
+shoulders, drawn as simple flat shapes, not as a glow effect. Stance is open and
+still.
+
+## Male and female
+
+Produce both sets with **identical** style, palette, garment design, stage
+progression and posture. They differ only in build:
+
+- **Male:** broader shoulders, straighter waist, squarer jaw line in the head
+  shape.
+- **Female:** narrower shoulders, defined waist, fuller hip line, slightly
+  softer head shape. Garment lengths and shapes stay the same.
+
+Do not signal gender through hair styling, colour, jewellery, chest emphasis or
+pose. Build and proportion only. Both sets should look equally strong.
 
 ## Notes
 
-- If your tool cannot hold consistency across six separate generations, build
-  stage 1 first and construct each subsequent stage by **adding to the previous
-  file** rather than regenerating from scratch. Consistency matters more than
-  any individual image.
-- Deliver the source file if there is one, not only a flattened export.
+- Consistency across the twelve matters more than any single image being
+  beautiful. If the tool cannot hold a style across separate generations, make
+  stage 1 first, then derive each following stage by editing the previous file
+  rather than starting over.
+- Start with the male set, get all six right, then produce the female set from
+  those so they match by construction.
