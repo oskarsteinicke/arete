@@ -3395,8 +3395,13 @@ function reportError(kind, msg, extra) {
     } catch {}
 
     if (typeof gtag === 'function') {
+      // GA4 truncates event parameter values at 100 characters, so 480 was
+      // never arriving intact. Put the fixed-width facts first — kind, view,
+      // file, line, version — so a long message loses its own tail instead of
+      // costing us the location it happened in, which is the useful half.
+      const head = `${kind} @${rec.where}${rec.src ? ' ' + rec.src : ''}${rec.line ? ':' + rec.line : ''} v${rec.v}`;
       gtag('event', 'exception', {
-        description: `v${rec.v} ${kind}: ${text} @${rec.where}${rec.line ? ':' + rec.line : ''}${rec.src ? ' (' + rec.src + ')' : ''}`.slice(0, 480),
+        description: `${head} \u00b7 ${text}`.slice(0, 100),
         fatal: kind === 'crash',
       });
     }

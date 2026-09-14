@@ -136,7 +136,27 @@ module.exports = async function () {
       r.check('the reload is cache-busted', /_r=/.test(to || ''), `(${to})`);
       r.check('and the stale hash is dropped', !/#/.test(to || ''),
         '(reloads straight back into the view that was broken)');
-      return r.finish();
+      // GA4 truncates event parameter values at 100 characters. Anything longer is
+  // not just clipped in the report, it never arrives — and the clipped half was
+  // the file and line, which is the useful part.
+  r.section('exception reports fit what GA4 will actually store');
+  {
+    const s = sb();
+    run(s, `curView='workoutProgress';`);
+    const longMsg = "Cannot read properties of undefined (reading 'someUnusuallyLongPropertyName')";
+    run(s, `reportError('crash', ${JSON.stringify(longMsg)}, { src:'workout.js', line:2690 })`);
+    const ev = events(s);
+    const d = (ev[0] && ev[0][2] && ev[0][2].description) || '';
+    r.check('something was reported', d.length > 0, `(${JSON.stringify(ev[0] || [])})`);
+    r.check('it fits GA4 storage', d.length <= 100, `(${d.length} chars)`);
+    r.check('the view survives truncation', /@workoutProgress/.test(d), `(${d})`);
+    r.check('so does the file and line', /workout\.js:2690/.test(d), `(${d})`);
+    // The message is the only thing allowed to lose its tail.
+    r.check('the message comes last', d.indexOf('Cannot read') > d.indexOf('workout.js'),
+      `(${d})`);
+  }
+
+  return r.finish();
     });
   }
 };
