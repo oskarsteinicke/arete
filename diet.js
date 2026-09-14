@@ -513,17 +513,41 @@ function _buildCalorieTrendChart() {
 // Always stored in millilitres regardless of the display unit. The weight log
 // learned this the hard way — storing whatever was on screen meant a unit switch
 // silently changed the value rather than converting it.
-const ML_PER_GLASS = 250;          // a glass, metric
-const ML_PER_CUP = 237;            // 8 US fl oz
+const ML_PER_GLASS = 250;          // one tap
 const WATER_ML_PER_KG = 35;        // common daily intake heuristic
+const WATER_GOAL_MIN_ML = 500;
+const WATER_GOAL_MAX_ML = 8000;
 
-function waterUnitMl() { return isImperial() ? ML_PER_CUP : ML_PER_GLASS; }
+// Water is always litres, deliberately, even when the app is set to imperial.
+// Weight in lbs and water in fl oz are unrelated preferences, and tying them
+// together meant anyone tracking bodyweight in pounds got their water in
+// ounces whether they wanted it or not.
+function waterUnitMl() { return ML_PER_GLASS; }
 
+// An explicit goal wins over the bodyweight estimate. The estimate is only ever
+// a starting point: intake depends on training, climate and sweat rate, none of
+// which the app knows.
 function waterGoalMl() {
+  const set = (typeof settings !== 'undefined' && settings) ? settings.waterGoalMl : null;
+  if (set > 0) return Math.min(WATER_GOAL_MAX_ML, Math.max(WATER_GOAL_MIN_ML, Math.round(set)));
   const p = (typeof tdeeProfile !== 'undefined' && tdeeProfile) || null;
   const kg = p && p.weight_kg > 0 ? p.weight_kg : null;
   if (!kg) return 2500;                                  // sane default, no profile
   return Math.round((kg * WATER_ML_PER_KG) / 50) * 50;   // nearest 50ml
+}
+
+// Returns the clamped value actually stored, so the caller can show what stuck
+// rather than what was typed.
+function setWaterGoalLitres(litres) {
+  const ml = Math.round(parseFloat(litres) * 1000);
+  if (!(ml > 0)) {                       // blank or nonsense clears the override
+    delete settings.waterGoalMl;
+    LS.set('hvi_settings', settings);
+    return null;
+  }
+  settings.waterGoalMl = Math.min(WATER_GOAL_MAX_ML, Math.max(WATER_GOAL_MIN_ML, ml));
+  LS.set('hvi_settings', settings);
+  return settings.waterGoalMl;
 }
 
 function getWaterMl(key) {
@@ -541,20 +565,10 @@ function addWater(units) {
   if (curView === 'diet') renderDiet();
 }
 
-// Volume is the number people actually think in, so it leads. Counting glasses
-// made the row read as a checklist of a unit nobody measures, and the litre
-// total was relegated to a suffix.
+// Volume is the number people actually think in, so it leads.
 function waterLabel(ml, goalMl) {
-  const fmt = v => isImperial()
-    ? `${Math.round(v / 29.5735)}`
-    : `${(v / 1000).toFixed(1)}`;
-  return {
-    now: fmt(ml),
-    goal: fmt(goalMl),
-    unit: isImperial() ? 'fl oz' : 'L',
-    // How much one tap moves it, phrased for a screen reader.
-    step: isImperial() ? '8 fl oz' : '250 ml',
-  };
+  const fmt = v => (v / 1000).toFixed(1);
+  return { now: fmt(ml), goal: fmt(goalMl), unit: 'L', step: '250 ml' };
 }
 
 function waterRowHTML() {

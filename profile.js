@@ -1469,6 +1469,18 @@ function renderStats() {
       </div>
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px">Offers to share a streak milestone. Each one is offered once, ever.</div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div style="font-size:14px;color:var(--text)">Daily water goal</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input class="d-input" type="number" id="water-goal" min="0.5" max="8" step="0.1"
+                 style="margin:0;width:88px;text-align:right"
+                 placeholder="${typeof waterGoalMl === 'function' ? (waterGoalMl()/1000).toFixed(1) : '2.5'}"
+                 value="${settings.waterGoalMl ? (settings.waterGoalMl/1000).toFixed(1) : ''}"
+                 onchange="applyWaterGoal(this.value)">
+          <span style="font-size:13px;color:var(--text-dim)">L</span>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px">Leave empty to estimate it from your bodyweight.</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
         <div style="font-size:14px;color:var(--text)">Version</div>
         <div style="display:flex;align-items:center;gap:10px">
           <span style="font-size:13px;color:var(--text-dim);font-variant-numeric:tabular-nums">${typeof APP_VERSION !== 'undefined' ? APP_VERSION : '?'}</span>
@@ -2181,6 +2193,18 @@ function wrapText(ctx, text, x, y, maxW, lineH) {
     } else { line = test; }
   }
   if (line) ctx.fillText(line, x, y);
+}
+
+// Writes the goal and reports back what actually stuck, since the value is
+// clamped: typing 40 when you meant 4 should not silently become a target you
+// can never hit.
+function applyWaterGoal(v) {
+  if (typeof setWaterGoalLitres !== 'function') return;
+  const ml = setWaterGoalLitres(v);
+  if (typeof showToast === 'function') {
+    showToast(ml === null ? 'Water goal back to automatic' : `Water goal ${(ml / 1000).toFixed(1)} L`);
+  }
+  renderStats();
 }
 
 function checkWeeklyRecap() {

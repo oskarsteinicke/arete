@@ -54,21 +54,48 @@ module.exports = function () {
       '(the log fills with empty days)');
   }
 
-  // The weight log learned this the hard way: storing whatever was on screen
-  // meant switching units silently changed the value instead of converting it.
-  r.section('storage is millilitres whatever the display unit');
+  // Tracking bodyweight in pounds is unrelated to wanting water in ounces, but
+  // one setting drove both — so anyone on imperial got fl oz whether or not
+  // they wanted it. Water is litres now, always.
+  r.section('imperial does not turn water into ounces');
   {
     const metric = sb({}, 'metric');
-    run(metric, 'addWater(1)');
     const imperial = sb({}, 'imperial');
-    run(imperial, 'addWater(1)');
-    r.check('a metric glass is 250ml', water(metric) === 250);
-    r.check('a US cup is 237ml', water(imperial) === 237, `(${water(imperial)})`);
+    run(metric, 'addWater(1)'); run(imperial, 'addWater(1)');
+    r.check('one tap is 250ml either way', water(metric) === 250 && water(imperial) === 250,
+      `(metric ${water(metric)}, imperial ${water(imperial)})`);
 
-    // Same stored volume, read back under either setting.
+    const ih = run(imperial, 'waterRowHTML()');
+    r.check('imperial still reads in litres', /L<\/span>/.test(ih) || / L</.test(ih), `(${ih.slice(0, 200)})`);
+    r.check('and never in ounces', !/oz/.test(ih), '(the reported bug)');
+
     const swap = sb({ hvi_water_log: JSON.stringify({ [run(sb(), 'today()')]: 1000 }) }, 'imperial');
-    r.check('an existing total is not rescaled by the unit setting',
-      water(swap) === 1000, '(unit switch changed the value)');
+    r.check('an existing total is not rescaled', water(swap) === 1000);
+  }
+
+  r.section('the goal can be set by hand');
+  {
+    const s = sb();
+    r.check('defaults to the bodyweight estimate', run(s, 'waterGoalMl()') === 2800);
+    run(s, 'setWaterGoalLitres(3.5)');
+    r.check('an explicit goal wins', run(s, 'waterGoalMl()') === 3500, `(${run(s, 'waterGoalMl()')})`);
+    r.check('and it persists',
+      JSON.parse(run(s, `localStorage.getItem('hvi_settings')`)).waterGoalMl === 3500);
+    r.check('the row shows it', /\/ 3\.5 L/.test(run(s, 'waterRowHTML()')),
+      `(${(run(s, 'waterRowHTML()').match(/[\d.]+ \/ [\d.]+ L/) || [])[0]})`);
+
+    run(s, 'setWaterGoalLitres("")');
+    r.check('clearing returns to the estimate', run(s, 'waterGoalMl()') === 2800);
+  }
+
+  // Typing 40 when you meant 4 should not create a target you can never reach.
+  r.section('an absurd goal is clamped, not accepted');
+  {
+    const s = sb();
+    r.check('40 L is capped at 8', run(s, 'setWaterGoalLitres(40)') === 8000);
+    r.check('and 0.1 L is floored at 0.5', run(s, 'setWaterGoalLitres(0.1)') === 500);
+    r.check('nonsense clears it', run(s, 'setWaterGoalLitres("abc")') === null);
+    r.check('leaving the estimate in place', run(s, 'waterGoalMl()') === 2800);
   }
 
   // The buttons no longer name a unit of their own, so they announce the volume
@@ -81,7 +108,7 @@ module.exports = function () {
       `(${(mh.match(/aria-label="Add [^"]*"/) || [])[0]})`);
     r.check('and for removing', /aria-label="Remove 250 ml"/.test(mh));
     const i = sb({}, 'imperial');
-    r.check('imperial announces ounces', /aria-label="Add 8 fl oz"/.test(run(i, 'waterRowHTML()')));
+    r.check('imperial announces the same', /aria-label="Add 250 ml"/.test(run(i, 'waterRowHTML()')));
   }
 
   r.section('the row reads in volume, not glasses');
@@ -94,9 +121,8 @@ module.exports = function () {
 
     const i = sb({}, 'imperial'); run(i, 'addWater(1); addWater(1)');
     const ih = run(i, 'waterRowHTML()');
-    r.check('imperial reads in fl oz', /\d+ \/ \d+ fl oz/.test(ih),
-      `(${(ih.match(/\d+ \/ \d+ fl oz/) || [])[0]})`);
-    r.check('no cup count', !/cups/.test(ih));
+    r.check('imperial reads in litres too', /0\.5 \/ 2\.8 L/.test(ih),
+      `(${(ih.match(/[\d.]+ \/ [\d.]+ L/) || [])[0]})`);
   }
 
   r.section('the goal comes from bodyweight');
