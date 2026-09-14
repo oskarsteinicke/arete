@@ -1689,7 +1689,12 @@ async function init() {
     (() => {
       const validViews = ['home','pillar','habits','habitCreate','stats','progressPhotos','workout','workoutPicker','workoutActive','workoutHistory','workoutProgress','workoutBuilder','exerciseBrowser','diet','dietAddMeal','dietRecipes','dietRecipeDetail','dietGoals','dietTrend','dietTDEE','library','calendar','sleep','challenges','goals','character','leaderboard'];
       const hash = location.hash.replace(/^#/, '');
-      const view = validViews.includes(hash) ? hash : 'home';
+      // pushState writes only the view name to the URL; the identifier these
+      // screens need travels in history state, which a cold launch does not
+      // have. Restoring them gives the view without the thing it is meant to
+      // show, and renderPillar threw outright on it.
+      const NEEDS_PARAM = ['pillar', 'dietRecipeDetail'];
+      const view = (validViews.includes(hash) && !NEEDS_PARAM.includes(hash)) ? hash : 'home';
       go(view, {}, false);
       // Show weekly recap on Monday (or Sunday afternoon)
       setTimeout(() => checkWeeklyRecap(), 600);
@@ -2687,7 +2692,11 @@ function renderHome() {
 // RENDER: PILLAR
 // ══════════════════════════════════════════════════════════════════════════
 function renderPillar() {
-  const p = PILLARS.find(x => x.id === curPillar), ph = pillarHabits(curPillar);
+  const p = PILLARS.find(x => x.id === curPillar);
+  // Belt and braces for the boot guard above: anything reaching this without a
+  // pillar gets sent home rather than throwing over the whole screen.
+  if (!p) { go('home', {}, false); return; }
+  const ph = pillarHabits(curPillar);
   const {done,total,pct} = pillarPct(curPillar);
   document.getElementById('view').innerHTML = `
     <button class="back" onclick="go('home')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
