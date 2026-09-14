@@ -156,6 +156,42 @@ module.exports = async function () {
       `(${d})`);
   }
 
+  // Google's terms prohibit uploading data that can personally identify
+  // someone, naming email addresses specifically. The penalty is losing the
+  // property and the data in it. This shipped for months.
+  r.section('no personal data reaches analytics');
+  {
+    const s = sb({ store: { hvi_user_name: 'Oskar',
+      hvi_session: JSON.stringify({ access_token: 't', user: {
+        id: 'a1b2c3', email: 'oskarsteinicke@gmail.com', created_at: '2026-05-20T10:00:00Z' } }) } });
+    run(s, `_sid=getSession();
+            if (_sid?.user?.id) {
+              gtag('config','G-4NQYVJR5S2',{ user_id: _sid.user.id });
+              gtag('set','user_properties',{
+                sign_up_date: _sid.user.created_at?.slice(0,10) || undefined,
+                last_active: new Date().toISOString().slice(0,10) });
+            }`);
+    const blob = JSON.stringify(events(s));
+    r.check('no email address', !/@/.test(blob), '(PII uploaded to Google)');
+    r.check('no name', !/Oskar/.test(blob), '(PII uploaded to Google)');
+    r.check('the pseudonymous id is still sent', /a1b2c3/.test(blob),
+      '(analytics can no longer distinguish users at all)');
+    r.check('and the non-identifying properties survive', /sign_up_date/.test(blob));
+  }
+
+  // The source file is what actually ships, so assert against it too: the test
+  // above only proves the shape I wrote, not that app.js still matches it.
+  r.section('the shipped source sends no identifiers');
+  {
+    const src = require('fs').readFileSync(
+      require('path').join(require('./harness').APP, 'app.js'), 'utf8');
+    const i = src.indexOf('Identify user in GA4');
+    const block = i === -1 ? '' : src.slice(i, i + 900);
+    r.check('the identify block exists', i !== -1);
+    r.check('it sends no email', !/user_email|\.email/.test(block), '(PII back in the payload)');
+    r.check('and no name', !/user_name/.test(block), '(PII back in the payload)');
+  }
+
   return r.finish();
     });
   }

@@ -126,5 +126,25 @@ module.exports = function () {
       '(whole site blocked from search)');
   }
 
+  // The policy has to match the code. It previously said error reports exclude
+  // your email — true of error reports, while a separate user_properties call
+  // sent it on every launch.
+  r.section('the privacy policy matches what the app actually sends');
+  {
+    const fs = require('fs'), path = require('path');
+    const policy = read('privacy.html');
+    const app = fs.readFileSync(path.join(APP, 'app.js'), 'utf8');
+    const i = app.indexOf('Identify user in GA4');
+    const block = i === -1 ? '' : app.slice(i, i + 900);
+
+    const sendsEmail = /user_email|\.email/.test(block);
+    r.check('the app sends no email to analytics', !sendsEmail, '(PII in the payload)');
+    r.check('and the policy says so', /not<\/strong> send your email address|does <strong>not<\/strong> send/.test(policy),
+      '(policy silent on what is sent)');
+    r.check('the policy names the pseudonymous identifier',
+      /pseudonymous account identifier/.test(policy),
+      '(policy omits the identifier that is sent)');
+  }
+
   return r.finish();
 };

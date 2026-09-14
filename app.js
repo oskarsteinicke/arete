@@ -1577,12 +1577,19 @@ async function init() {
   _migrateRoutineKeys();
 
   // ── Identify user in GA4 ───────────────────────────────────────────────
+  // user_id only — the Supabase UUID, which is pseudonymous and is the
+  // identifier GA4 is designed to take.
+  //
+  // Email and name used to be sent here as user properties. Google's terms
+  // prohibit uploading data that can personally identify someone, naming email
+  // addresses specifically, and the penalty is losing the property along with
+  // its data. It was never disclosed in the privacy policy either, and Arete
+  // has users in Germany, Switzerland and France. Nothing this feeds needed a
+  // name or an address to work.
   const _sid = getSession();
   if (_sid?.user?.id && typeof gtag === 'function') {
     gtag('config', 'G-4NQYVJR5S2', { user_id: _sid.user.id });
     gtag('set', 'user_properties', {
-      user_name: userName() || undefined,
-      user_email: _sid.user.email || undefined,
       sign_up_date: _sid.user.created_at?.slice(0, 10) || undefined,
       last_active: new Date().toISOString().slice(0, 10)
     });
