@@ -23,27 +23,33 @@ avatar-m-1.png  avatar-m-2.png  avatar-m-3.png  avatar-m-4.png  avatar-m-5.png  
 avatar-f-1.png  avatar-f-2.png  avatar-f-3.png  avatar-f-4.png  avatar-f-5.png  avatar-f-6.png
 ```
 
-512 x 768 PNG, **with a real alpha channel**. Deliver layered or vector source
-files as well if the tool produces them.
+**512 x 768 PNG on a solid black background** — the same format as the set being
+replaced. No transparency needed: the app frames every avatar in a dark card in
+both light and dark themes, so black behind the figure reads as a deliberate
+portrait vignette.
+
+Generate however produces the best art. Do not fight the tool for a transparent
+background; it makes most image models produce worse work.
 
 ## Acceptance criteria
 
 Pass/fail, not preferences. Check each before delivering.
 
-1. **Background is transparent.** No filled rectangle, no black, no white, no
-   scene, no ground shadow. An RGB file with black behind the figure fails. The
-   app has a light theme, and a baked background renders as a black box on a
-   cream page. This is the single most common way this task is failed.
+1. **Background is solid black**, edge to edge, with no scene, no horizon, no
+   ground shadow and no vignette of a different colour. Consistent across all
+   twelve, so they sit identically in the frame.
 2. **Full body, standing, front-facing, upright.** Head near the top of the
-   frame, feet near the bottom, centred, with margin on all sides.
+   frame, feet near the bottom, centred, with margin on all sides. The figure
+   occupies the same proportion of the frame in every image — no zooming in or
+   out between stages.
 3. **Legible at 132 pixels tall.** That is the real display size. Shrink it and
-   check the silhouette still reads.
+   check the silhouette still reads. This is what "minimal" is actually for.
 4. **The twelve read as one set.** Same line weight, same proportions, same
    level of detail, same lighting logic. Male and female versions of the same
    stage should differ only in build.
 5. **Progression is visible in order.** Shown shuffled, someone should be able
    to sort them 1 to 6 without being told the rule.
-6. **Each file under 80 KB.**
+6. **Each file under 150 KB.** Twelve of these ship to every visitor.
 
 ## Style
 
@@ -61,9 +67,9 @@ Apply to all twelve, identically:
 > garment, with a single warm gold (#b8874a to #e3b878) as the only accent.
 > Nothing bright, nothing saturated, no second accent colour.
 >
-> No cel shading, no anime or manga styling, no rendered highlights, no
-> gradients, no texture, no outlines thicker than the design language, no
-> background, no ground shadow, no props held in hand.
+> No cel shading, no anime or manga styling, no rendered highlights, no heavy
+> texture, no outlines thicker than the design language, no ground shadow, no
+> props held in hand, no scenery.
 >
 > Explicitly avoid: laurel wreaths, togas, chitons, sandals with straps, Greek
 > key or meander patterns, columns, marble, helmets, shields, weapons, armour

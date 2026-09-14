@@ -84,20 +84,22 @@ These are what make it drop straight in.
 
 | | |
 |---|---|
-| **Format** | SVG preferred. Otherwise PNG **with a real alpha channel**. |
-| **Transparency** | Mandatory — see below. |
+| **Format** | PNG on solid black, same as the current set. No transparency needed. |
 | **Aspect** | 2:3 upright (the slots are 158x237 and 132x198). |
 | **Source size** | 512 x 768 if raster. |
 | **File size** | Under 40 KB each. The current ones are 160–330 KB. |
 | **Count** | 6 stages. Twelve if you do male and female sets. |
 | **Naming** | `avatar-1.svg` … `avatar-6.svg`, or `avatar-m-1` / `avatar-f-1` for two sets. |
 
-### Why transparency is mandatory
+### Why black backgrounds are fine
 
-The current files are RGB with **no alpha channel** and pure black baked into
-the background. Arete has a light theme. Switch to it and every avatar becomes a
-black rectangle on a cream page. Whatever replaces them has to be transparent or
-that bug ships with the new art.
+`.avatar-frame` in style.css sets a hardcoded dark radial gradient and is never
+overridden for the light theme, so an avatar sits on a dark card whichever theme
+is active. Black behind the figure reads as a portrait vignette, not a bug.
+
+If a transparent version is ever wanted, the black can be removed here with a
+border flood fill, which keeps the dark hair, belts and outlines the figures
+contain. Keying every dark pixel would punch holes through them.
 
 ### Reward and badge marks
 
