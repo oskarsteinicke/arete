@@ -1147,14 +1147,53 @@ function _nativeNotifier() {
 }
 
 // Fixed ids so re-arming replaces rather than stacks duplicates
-const REMINDER_SLOTS = [
-  { id: 1101, hour: 7,  minute: 30, title: 'Good morning ☀️',
+// The wording belongs to the slot; the time belongs to the user. Ids stay fixed
+// at 1101-1103 so cancelling still finds a reminder whose time has changed.
+const REMINDER_DEFAULTS = ['07:30', '12:30', '20:30'];
+const REMINDER_COPY = [
+  { title: 'Good morning \u2600\ufe0f',
     body: 'New day, new chance to show up. Set the tone early.' },
-  { id: 1102, hour: 12, minute: 30, title: 'Log your meals 🥗',
+  { title: 'Log your meals \ud83e\udd57',
     body: 'A few seconds of tracking keeps your targets honest.' },
-  { id: 1103, hour: 20, minute: 30, title: 'Finish the day strong 🔥',
-    body: 'Any habits still open? Don\'t let a streak break tonight.' },
+  { title: 'Finish the day strong \ud83d\udd25',
+    body: "Any habits still open? Don't let a streak break tonight." },
 ];
+
+function reminderTimes() {
+  const set = (typeof settings !== 'undefined' && settings && settings.reminderTimes) || [];
+  return REMINDER_DEFAULTS.map((d, i) =>
+    (typeof set[i] === 'string' && /^\d{1,2}:\d{2}$/.test(set[i])) ? set[i] : d);
+}
+
+function reminderSlots() {
+  return reminderTimes().map((t, i) => {
+    const [hour, minute] = t.split(':').map(Number);
+    return { id: 1101 + i, hour, minute, title: REMINDER_COPY[i].title, body: REMINDER_COPY[i].body };
+  });
+}
+
+// Returns the value that stuck, so the caller can show what was stored rather
+// than what was typed.
+function setReminderTime(index, value) {
+  if (index < 0 || index >= REMINDER_DEFAULTS.length) return null;
+  const cur = reminderTimes();
+  const ok = typeof value === 'string' && /^\d{1,2}:\d{2}$/.test(value);
+  if (ok) {
+    const [h, m] = value.split(':').map(Number);
+    if (h > 23 || m > 59) return null;
+    cur[index] = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  } else {
+    cur[index] = REMINDER_DEFAULTS[index];        // blank resets to the default
+  }
+  settings.reminderTimes = cur;
+  LS.set('hvi_settings', settings);
+  // Both delivery paths have to be told: native reminders are re-armed locally,
+  // web push lives on the Worker and only learns the new time on a re-subscribe.
+  if (_nativeNotifier() && settings.notifications) scheduleNativeReminders();
+  refreshPushSubscription();
+  return cur[index];
+}
+
 
 async function scheduleNativeReminders() {
   const N = _nativeNotifier();
@@ -1166,10 +1205,10 @@ async function scheduleNativeReminders() {
       if (perm.display !== 'granted') return false;
     }
     // Always clear ours first so an upgrade or a settings change can't stack
-    await N.cancel({ notifications: REMINDER_SLOTS.map(s => ({ id: s.id })) }).catch(() => {});
+    await N.cancel({ notifications: reminderSlots().map(s => ({ id: s.id })) }).catch(() => {});
     if (!settings.notifications) return true; // permitted, but user turned them off
     await N.schedule({
-      notifications: REMINDER_SLOTS.map(s => ({
+      notifications: reminderSlots().map(s => ({
         id: s.id, title: s.title, body: s.body,
         schedule: { on: { hour: s.hour, minute: s.minute }, allowWhileIdle: true },
       })),
@@ -1181,7 +1220,7 @@ async function scheduleNativeReminders() {
 async function cancelNativeReminders() {
   const N = _nativeNotifier();
   if (!N) return;
-  try { await N.cancel({ notifications: REMINDER_SLOTS.map(s => ({ id: s.id })) }); }
+  try { await N.cancel({ notifications: reminderSlots().map(s => ({ id: s.id })) }); }
   catch (e) { reportError('notify-cancel', e); }
 }
 
@@ -1279,6 +1318,9 @@ async function _syncPushSubscription(sub) {
         keys: j.keys || {},
         // Sent on every launch so the schedule follows travel and DST
         tzOffset: -new Date().getTimezoneOffset(),
+        // Sent on every launch alongside the offset, so a changed reminder time
+        // reaches the Worker without needing its own request.
+        slots: reminderTimes(),
       }),
     });
     return res.ok;

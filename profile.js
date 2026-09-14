@@ -1516,13 +1516,16 @@ function renderStats() {
           </div>
         </div>
         ${err ? `<div style="font-size:11px;color:var(--fat);line-height:1.45;margin-bottom:14px">${esc(err)}</div>`
-              : note ? `<div style="font-size:10.5px;color:var(--text-muted);line-height:1.45;margin-bottom:14px">${note}</div>` : ''}`;
+              : note ? `<div style="font-size:10.5px;color:var(--text-muted);line-height:1.45;margin-bottom:${on ? 10 : 14}px">${note}</div>` : ''}
+        ${on ? `<div style="display:flex;gap:8px;margin-bottom:6px">
+          ${reminderTimes().map((t, i) => `<div style="flex:1">
+            <div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px">${['Morning','Midday','Evening'][i]}</div>
+            <input class="d-input" type="time" value="${t}" style="margin:0" onchange="applyReminderTime(${i}, this.value)">
+          </div>`).join('')}
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px">Clear one to put it back to its default.</div>` : ''}`;
       })()}
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <div style="font-size:14px;color:var(--text)">App version</div>
-        <button class="unit-btn" style="padding:6px 14px;background:var(--surface);border:1px solid var(--border2)" onclick="if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(r=>r.forEach(x=>x.unregister())).then(()=>window.location.reload(true))}else{window.location.reload(true)}">Refresh</button>
-      </div>
-      <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="display:flex;align-items:center;justify-content:space-between">
         <div style="font-size:14px;color:var(--text)">Backup</div>
         <div style="display:flex;gap:6px">
           <button class="unit-btn" style="padding:6px 14px;background:var(--surface);border:1px solid var(--border2)" onclick="exportAllData()">Export</button>
@@ -2203,6 +2206,17 @@ function applyWaterGoal(v) {
   const ml = setWaterGoalLitres(v);
   if (typeof showToast === 'function') {
     showToast(ml === null ? 'Water goal back to automatic' : `Water goal ${(ml / 1000).toFixed(1)} L`);
+  }
+  renderStats();
+}
+
+// Reports the time that actually stuck, since a malformed entry falls back to
+// the default rather than being kept.
+function applyReminderTime(index, value) {
+  if (typeof setReminderTime !== 'function') return;
+  const got = setReminderTime(index, value);
+  if (got && typeof showToast === 'function') {
+    showToast(`${['Morning', 'Midday', 'Evening'][index]} reminder at ${got}`);
   }
   renderStats();
 }

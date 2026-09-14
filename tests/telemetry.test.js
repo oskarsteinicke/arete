@@ -192,6 +192,54 @@ module.exports = async function () {
     r.check('and no name', !/user_name/.test(block), '(PII back in the payload)');
   }
 
+  r.section('reminder times come from settings');
+  {
+    const s = sb();
+    r.check('defaults when unset',
+      run(s, `reminderTimes().join(',')`) === '07:30,12:30,20:30');
+
+    run(s, `_native=null; _nativeNotifier=function(){ return null; };
+            refreshPushSubscription=function(){ _refreshed = true; }; _refreshed=false;`);
+    const got = run(s, `setReminderTime(0, '06:15')`);
+    r.check('a valid time is stored', got === '06:15', `(${got})`);
+    r.check('and read back', run(s, `reminderTimes()[0]`) === '06:15');
+    r.check('it persists',
+      JSON.parse(run(s, `localStorage.getItem('hvi_settings')`)).reminderTimes[0] === '06:15');
+    r.check('the others are untouched', run(s, `reminderTimes()[1]`) === '12:30');
+
+    // Web push slots live on the Worker, so it has to be told.
+    r.check('the push subscription is refreshed', run(s, '_refreshed') === true,
+      '(the Worker keeps the old time)');
+  }
+
+  r.section('a bad time falls back rather than sticking');
+  {
+    const s = sb();
+    run(s, `_nativeNotifier=function(){ return null; }; refreshPushSubscription=function(){};`);
+    run(s, `setReminderTime(0, '06:15')`);
+    r.check('nonsense resets to the default',
+      run(s, `setReminderTime(0, 'half seven')`) === '07:30', `(${run(s, `reminderTimes()[0]`)})`);
+    r.check('blank does too', run(s, `setReminderTime(1, '')`) === '12:30');
+    r.check('an impossible hour is refused', run(s, `setReminderTime(2, '26:00')`) === null);
+    r.check('leaving it as it was', run(s, `reminderTimes()[2]`) === '20:30');
+    r.check('a single digit hour is padded', run(s, `setReminderTime(0, '6:05')`) === '06:05');
+  }
+
+  // The ids are how a scheduled native reminder is cancelled. If they moved with
+  // the time, changing one would orphan the old notification.
+  r.section('native reminder ids stay fixed when times change');
+  {
+    const s = sb();
+    run(s, `_nativeNotifier=function(){ return null; }; refreshPushSubscription=function(){};`);
+    const before = run(s, `reminderSlots().map(x => x.id).join(',')`);
+    run(s, `setReminderTime(0, '05:00'); setReminderTime(2, '22:45');`);
+    const after = run(s, `reminderSlots().map(x => x.id).join(',')`);
+    r.check('ids unchanged', before === after && after === '1101,1102,1103', `(${after})`);
+    r.check('but the hours moved', run(s, `reminderSlots()[0].hour`) === 5);
+    r.check('and the wording stayed with the slot',
+      /morning/i.test(run(s, `reminderSlots()[0].title`)), `(${run(s, `reminderSlots()[0].title`)})`);
+  }
+
   return r.finish();
     });
   }

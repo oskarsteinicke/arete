@@ -254,7 +254,19 @@ async function aiRateLimited(request, env) {
 //
 // Subscriptions live in HEALTH_KV under a `push:` prefix, reusing the existing
 // namespace so no new binding has to be provisioned.
+// Defaults only. Each subscription carries its own times, set by the person it
+// belongs to; these apply to anyone who subscribed before that existed.
 const PUSH_SLOTS = ['07:30', '12:30', '20:30'];
+
+function parseSlots(slots) {
+  const list = (Array.isArray(slots) ? slots : [])
+    .filter(v => typeof v === 'string' && /^\d{1,2}:\d{2}$/.test(v))
+    .map(v => { const [h, m] = v.split(':').map(Number); return { s: v, min: h * 60 + m }; })
+    .filter(x => x.min >= 0 && x.min < 1440);
+  // De-duplicate, since two identical times would fight over one `sent` key.
+  const seen = new Set();
+  return list.filter(x => !seen.has(x.min) && seen.add(x.min)).sort((a, b) => a.min - b.min);
+}
 
 function b64urlFromBytes(buf) {
   const b = new Uint8Array(buf);
@@ -288,7 +300,7 @@ async function vapidAuth(endpoint, env) {
 }
 
 async function handlePushSubscribe(body, env, origin) {
-  const { endpoint, keys, tzOffset } = body || {};
+  const { endpoint, keys, tzOffset, slots } = body || {};
   if (!endpoint || typeof endpoint !== 'string' || !/^https:\/\//.test(endpoint)) {
     return jsonResponse({ error: 'Invalid endpoint' }, 400, origin);
   }
@@ -303,6 +315,9 @@ async function handlePushSubscribe(body, env, origin) {
     // Minutes east of UTC. Re-sent on every launch, so DST and travel correct
     // themselves without the server tracking timezone rules.
     tzOffset: Number.isFinite(+tzOffset) ? Math.max(-840, Math.min(840, +tzOffset)) : 0,
+    // Re-sent on every launch alongside the timezone, so changing a reminder
+    // time takes effect without any separate call.
+    slots: parseSlots(slots).map(x => x.s),
     sent,                       // slot -> local date already delivered
     updatedAt: new Date().toISOString(),
   }));
@@ -335,14 +350,22 @@ const PUSH_CATCHUP_MIN = 180;
 // reaches this inside a single slot.
 const PUSH_FAIL_LIMIT = 3;
 
-function slotDueAt(localDate) {
-  const hh = localDate.getUTCHours(), mm = localDate.getUTCMinutes();
-  for (const slot of PUSH_SLOTS) {
-    const [sh, sm] = slot.split(':').map(Number);
-    const delta = (hh * 60 + mm) - (sh * 60 + sm);
-    if (delta >= 0 && delta < PUSH_CATCHUP_MIN) return slot;
+function slotDueAt(localDate, slots) {
+  const list = parseSlots(slots);
+  const use = list.length ? list : parseSlots(PUSH_SLOTS);
+  const now = localDate.getUTCHours() * 60 + localDate.getUTCMinutes();
+  // Catch-up must never reach the following slot. With fixed times three hours
+  // apart that could not happen, but people can now put two reminders ninety
+  // minutes apart, and the earlier one's window would swallow the later one —
+  // it would simply never fire. Cap each window at the gap to the next.
+  let due = null;
+  for (let i = 0; i < use.length; i++) {
+    const next = use[i + 1];
+    const gap = next ? next.min - use[i].min : 1440 - use[i].min;
+    const delta = now - use[i].min;
+    if (delta >= 0 && delta < Math.min(PUSH_CATCHUP_MIN, gap)) due = use[i].s;
   }
-  return null;
+  return due;   // the most recent eligible slot, not the first
 }
 
 async function sendPush(endpoint, env) {
@@ -403,7 +426,7 @@ async function runReminders(env) {
         seen++;
 
         const local = new Date(now + (sub.tzOffset || 0) * 60000);
-        const slot = slotDueAt(local);
+        const slot = slotDueAt(local, sub.slots);
         if (!slot) continue;
         const localDay = local.toISOString().slice(0, 10);
         if (sub.sent && sub.sent[slot] === localDay) continue;  // already sent today

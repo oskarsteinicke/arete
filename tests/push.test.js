@@ -304,6 +304,60 @@ module.exports = async function () {
     r.check('and it is case-insensitive', enabled({ PAYWALL_ENABLED: 'TRUE' }) === true);
   }
 
+  // Fixed times were always three hours apart so catch-up could never reach the
+  // next slot. People can now set them ninety minutes apart, where an earlier
+  // slot's window would swallow the later one and it would simply never fire.
+  r.section('close-together times do not swallow each other');
+  {
+    const { sb } = loadWorker(accepted);
+    const due = (iso, slots) => vm.runInContext('slotDueAt', sb)(new Date(iso), slots);
+    const tight = ['07:00', '08:30', '20:00'];
+
+    r.check('07:00 fires at 07:00', due('2026-07-30T07:00:00Z', tight) === '07:00');
+    r.check('and still catches up at 08:00', due('2026-07-30T08:00:00Z', tight) === '07:00');
+    r.check('08:30 wins from 08:30', due('2026-07-30T08:30:00Z', tight) === '08:30',
+      '(the earlier slot swallowed it)');
+    r.check('and holds through its own window', due('2026-07-30T10:00:00Z', tight) === '08:30');
+    r.check('nothing due in between slots', due('2026-07-30T12:00:00Z', tight) === null);
+  }
+
+  r.section('times are taken from the subscription, not a constant');
+  {
+    const store = kv({ 'push:a': JSON.stringify({
+      endpoint: 'https://push.example/a', tzOffset: 0, slots: ['09:15'], sent: {} }) });
+    const { sb, calls } = loadWorker(accepted);
+    // Frozen at 12:00 UTC: past the built-in 07:30, inside this person's 09:15.
+    await withFrozenNow(() => vm.runInContext('runReminders', sb)(
+      { HEALTH_KV: store, VAPID_PRIVATE_JWK: PRIV, VAPID_PUBLIC_KEY: PUB }));
+    r.check('their own time is used', calls.some(c => c.url.includes('push.example')),
+      '(fell back to the default slots)');
+    r.check('recorded against their slot',
+      JSON.parse(store._d['push:a']).sent['09:15'] === '2026-07-30',
+      `(${JSON.stringify(JSON.parse(store._d['push:a']).sent)})`);
+  }
+
+  r.section('a subscription with no times still works');
+  {
+    const store = kv({ 'push:a': JSON.stringify({
+      endpoint: 'https://push.example/a', tzOffset: -270, sent: {} }) });
+    const { sb, calls } = loadWorker(accepted);
+    await withFrozenNow(() => vm.runInContext('runReminders', sb)(
+      { HEALTH_KV: store, VAPID_PRIVATE_JWK: PRIV, VAPID_PUBLIC_KEY: PUB }));
+    r.check('falls back to the defaults', calls.some(c => c.url.includes('push.example')),
+      '(anyone who subscribed before this shipped stops getting reminders)');
+  }
+
+  r.section('rubbish times are discarded, not trusted');
+  {
+    const { sb } = loadWorker(accepted);
+    const parse = vm.runInContext('parseSlots', sb);
+    r.check('a bad string is dropped', parse(['25:00', 'nope', '07:30']).length === 1);
+    r.check('duplicates collapse', parse(['08:00', '08:00']).length === 1,
+      '(two slots fighting over one sent key)');
+    r.check('and they come back sorted',
+      parse(['20:00', '07:00']).map(x => x.s).join(',') === '07:00,20:00');
+  }
+
   r.section('subscribe and unsubscribe');
   {
     const store = kv({});
