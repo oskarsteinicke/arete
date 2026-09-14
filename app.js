@@ -67,7 +67,10 @@ let calSelectedDate = '';
 let calView = 'monthly'; // 'monthly' | 'weekly' | 'daily'
 let calTasks = {};
 let sleepLog;
-let restTimer = null, restTimerEnd = 0, restTimerDur = 90;
+// Three minutes. Long enough for compound work, which is what the built-in
+// programs are mostly made of.
+const DEFAULT_REST_SEC = 180;
+let restTimer = null, restTimerEnd = 0, restTimerDur = DEFAULT_REST_SEC;
 
 // ── Unit helpers ──────────────────────────────────────────────────────────
 const LB_PER_KG = 2.20462;
@@ -1052,21 +1055,17 @@ function showToast(msg) {
 // wanted to check. diet.js owns the water functions and loads eagerly, but this
 // is reachable from every screen, so guard rather than assume.
 function _quickWaterLabel() {
-  if (typeof getWaterMl !== 'function') return 'Log Water';
-  const per = typeof waterUnitMl === 'function' ? waterUnitMl() : 250;
-  const n = Math.round(getWaterMl() / per);
-  const goalN = Math.max(1, Math.ceil(waterGoalMl() / per));
-  return `Water \u00b7 ${n} of ${goalN}`;
+  if (typeof waterLabel !== 'function') return 'Log Water';
+  const { now, goal, unit } = waterLabel(getWaterMl(), waterGoalMl());
+  return `Water \u00b7 ${now} / ${goal} ${unit}`;
 }
 
 function quickLogWater() {
   if (typeof addWater !== 'function') return;
   addWater(1);
-  const per = waterUnitMl();
-  const n = Math.round(getWaterMl() / per);
-  const goalN = Math.max(1, Math.ceil(waterGoalMl() / per));
-  const word = isImperial() ? 'cups' : 'glasses';
-  showToast(n >= goalN ? `Water goal hit \u00b7 ${n} ${word}` : `${n} of ${goalN} ${word}`);
+  const ml = getWaterMl(), goalMl = waterGoalMl();
+  const { now, goal, unit } = waterLabel(ml, goalMl);
+  showToast(ml >= goalMl ? `Water goal hit \u00b7 ${now} ${unit}` : `${now} / ${goal} ${unit}`);
 }
 
 function closeQuickLog() {

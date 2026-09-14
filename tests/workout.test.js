@@ -150,5 +150,133 @@ module.exports = function () {
       `(${(svg.match(/<path/g) || []).length} paths)`);
   }
 
+  // ── What the tip claims you did last time ────────────────────────────────
+  const S = (w, r, extra) => Object.assign({ weight: w, reps: r, completed: true }, extra || {});
+  const withLast = (sets) => sb({
+    hvi_workout_log: JSON.stringify({ [dk(3)]: { exercises: [
+      { exerciseId: 'bench_press', name: 'Bench Press', sets } ] } }),
+  });
+
+  // An average is a number that was never performed. 8, 8, 5 became "avg 7".
+  r.section('the tip reports the reps actually done');
+  {
+    const s = withLast([S(100, 8), S(100, 8), S(100, 5)]);
+    const msg = run(s, `getProgressionTip('bench_press').msg`);
+    r.check('every set is shown', /8, 8, 5/.test(msg), `(${msg})`);
+    r.check('no invented average', !/avg/.test(msg), '(reporting a rep count never hit)');
+  }
+
+  r.section('uniform sets collapse rather than repeating');
+  {
+    const s = withLast([S(100, 8), S(100, 8), S(100, 8)]);
+    const msg = run(s, `getProgressionTip('bench_press').msg`);
+    r.check('reads as 8 x 3', /8 \u00d7 3/.test(msg), `(${msg})`);
+  }
+
+  // Every other performance number in the app excludes warmups.
+  r.section('warmups do not count as working sets');
+  {
+    // A completed warmup plus two of three working sets done. Counting the
+    // warmup inflates both halves of the ratio and overstates the session.
+    const s = withLast([S(40, 15, { warmup: true }), S(100, 8), S(100, 8),
+                        { weight: 100, reps: 0, completed: false }]);
+    const msg = run(s, `getProgressionTip('bench_press').msg`);
+    r.check('the ratio counts working sets only', /2\/3 sets/.test(msg),
+      `(${msg} — warmup counted as a working set)`);
+    r.check('the warmup weight is not reported', !/40/.test(msg), `(${msg})`);
+  }
+
+  r.section('the weight carries its unit');
+  {
+    const s = withLast([S(100, 8), S(100, 8), S(100, 8)]);
+    r.check('metric says kg', /100 kg/.test(run(s, `getProgressionTip('bench_press').msg`)));
+    const i = withLast([S(220, 8), S(220, 8), S(220, 8)]);
+    run(i, `settings.units='imperial';`);
+    r.check('imperial says lbs', /220 lbs/.test(run(i, `getProgressionTip('bench_press').msg`)),
+      `(${run(i, `getProgressionTip('bench_press').msg`)})`);
+  }
+
+  // The target used to be read from last session's first set, so it chased
+  // itself: hit 12 once and it asked for 12 from then on.
+  r.section('the rep target comes from the program, not last time');
+  {
+    const s = withLast([S(100, 12), S(100, 6), S(100, 6)]);
+    const msg = run(s, `getProgressionTip('bench_press').msg`);
+    const target = run(s, `(lookupExercise('bench_press')||{}).dr`);
+    r.check('the program defines a target', typeof target === 'number', `(${target})`);
+    r.check('and the tip asks for that', new RegExp(`hit ${target} before`).test(msg),
+      `(${msg}, program target ${target})`);
+  }
+
+  // ── What gets prefilled into today's sets ────────────────────────────────
+  // This took the heaviest weight from anywhere in the session and the reps
+  // from whichever set was last, describing a set nobody performed.
+  r.section('prefill describes one real set');
+  {
+    const s = withLast([S(100, 8), S(100, 8), S(80, 15)]);
+    const pick = run(s, `(function(){ const t = topWorkingSet(getLastExerciseSession('bench_press').ex.sets);
+                                      return t.weight + 'x' + t.reps; })()`);
+    r.check('takes 100x8, not 100x15', pick === '100x8',
+      `(${pick} — weight and reps from different sets)`);
+
+    // A heavy warmup must not become the prefill either.
+    const w = run(s, `(function(){ const t = topWorkingSet([
+      {weight:120, reps:1, completed:true, warmup:true},
+      {weight:100, reps:8, completed:true}]); return t.weight + 'x' + t.reps; })()`);
+    r.check('and skips warmups', w === '100x8', `(${w})`);
+
+    const none = run(s, `topWorkingSet([{weight:100, reps:8, completed:false}]) === null`);
+    r.check('nothing completed gives nothing', none === true);
+
+    // The original bug was not in choosing a set, it was in composing two
+    // values from different ones. Taking a single set object makes that
+    // impossible by construction, so guard the construction: both prefilled
+    // values must come from the same variable.
+    const fs = require('fs'), path = require('path');
+    const src = fs.readFileSync(path.join(require('./harness').APP, 'workout.js'), 'utf8');
+    const block = src.slice(src.indexOf('// Prefill from one real set'),
+                            src.indexOf('const lastR', src.indexOf('// Prefill from one real set')) + 60);
+    r.check('prefill reads weight and reps off one set',
+      /const top = topWorkingSet\(/.test(block) &&
+      /lastW = top \?/.test(block) && /lastR = top \?/.test(block),
+      '(weight and reps sourced separately again)');
+    r.check('and does not scan for a max independently',
+      !/Math\.max\(\.\.\.lastSets/.test(block), '(back to mixing two sets)');
+  }
+
+  // ── Removing a whole exercise ────────────────────────────────────────────
+  r.section('a whole exercise can be removed mid-workout');
+  {
+    const s = sb({ hvi_workout_log: JSON.stringify({ [T]: { exercises: [
+      { exerciseId: 'bench_press', sets: [S(100, 8)] },
+      { exerciseId: 'squat', sets: [{ weight: 0, reps: 0, completed: false }] } ] } }) });
+    run(s, `confirm=function(){ _asked = true; return true; }; _asked=false;
+            rerenderWorkoutActive=function(){};`);
+    run(s, 'removeExercise(1)');
+    const ids = run(s, `workoutLog['${T}'].exercises.map(e => e.exerciseId).join(',')`);
+    r.check('it is gone', ids === 'bench_press', `(${ids})`);
+    r.check('and persisted', JSON.parse(s.localStorage._d['hvi_workout_log'])[T].exercises.length === 1,
+      '(reappears on reload)');
+  }
+
+  r.section('removing logged work asks first');
+  {
+    const s = sb({ hvi_workout_log: JSON.stringify({ [T]: { exercises: [
+      { exerciseId: 'bench_press', sets: [S(100, 8), S(100, 8)] } ] } }) });
+    run(s, `_msg=''; confirm=function(m){ _msg=m; return false; }; rerenderWorkoutActive=function(){};`);
+    run(s, 'removeExercise(0)');
+    r.check('it warns what will be lost', /2 logged sets/.test(run(s, '_msg')), `(${run(s, '_msg')})`);
+    r.check('and declining keeps it',
+      run(s, `workoutLog['${T}'].exercises.length`) === 1, '(removed despite cancelling)');
+  }
+
+  r.section('rest defaults to three minutes');
+  {
+    const s = sb({});
+    r.check('the constant is 180s', run(s, 'DEFAULT_REST_SEC') === 180);
+    r.check('and that is what is armed', run(s, 'restTimerDur') === 180,
+      `(${run(s, 'restTimerDur')})`);
+  }
+
   return r.finish();
 };

@@ -113,12 +113,30 @@ function getLastExerciseSession(exerciseId) {
   return null;
 }
 
+// The single best working set: heaviest, and among equal weights the one with
+// the most reps. Prefill used to take the heaviest weight from anywhere in the
+// session and the reps from whichever set happened to be last, so 100x8, 100x8,
+// 80x15 produced 100x15 — a set nobody performed.
+function topWorkingSet(sets) {
+  let top = null;
+  for (const s of (sets || [])) {
+    if (!s.completed || s.warmup) continue;
+    if (!top || s.weight > top.weight ||
+        (s.weight === top.weight && s.reps > top.reps)) top = s;
+  }
+  return top;
+}
+
 function getProgressionTip(exerciseId) {
   const last = getLastExerciseSession(exerciseId);
   if (!last) return { type: 'first', msg: 'First time — focus on form, pick a manageable weight' };
 
   const { date, ex } = last;
-  const allSets = ex.sets || [];
+  // Warmups are excluded everywhere else that judges performance — volume and
+  // PR detection both skip them — but not here. A light warm-up set counted as
+  // a working set: it padded "all sets complete", and if it happened to be
+  // first it supplied the rep target below.
+  const allSets = (ex.sets || []).filter(s => !s.warmup);
   const completedSets = allSets.filter(s => s.completed);
   const weightedSets = completedSets.filter(s => s.weight > 0 && s.reps > 0);
   const bwSets = completedSets.filter(s => s.weight === 0 && s.reps > 0);
@@ -141,20 +159,34 @@ function getProgressionTip(exerciseId) {
 
   const maxW = Math.max(...weightedSets.map(s => s.weight));
   const topSets = weightedSets.filter(s => s.weight === maxW);
-  const avgReps = Math.round(topSets.reduce((s, x) => s + x.reps, 0) / topSets.length);
-  const targetReps = allSets[0]?.reps || 8;
+
+  // Report what was actually done. An average hid the shape of the session:
+  // 8, 8, 5 became "avg 7", a number that was never performed on any set.
+  const repsList = topSets.map(s => s.reps);
+  const uniform = repsList.every(r => r === repsList[0]);
+  const repsLabel = uniform
+    ? `${repsList[0]}${repsList.length > 1 ? ` \u00d7 ${repsList.length}` : ''}`
+    : repsList.join(', ');
+
+  // The rep target belongs to the program, not to whatever happened to be done
+  // on the first set last time. Reading it from the last session made the goal
+  // chase itself: hit 12 once and it asked for 12 from then on.
+  const meta = lookupExercise(exerciseId);
+  const targetReps = (meta && meta.dr) || allSets[0]?.reps || 8;
+
   const allSetsComplete = completedSets.length >= allSets.length;
   const allRepsHit = topSets.every(s => s.reps >= targetReps);
+  const u = wtUnit();
 
   if (allSetsComplete && allRepsHit) {
-    const inc = maxW >= 80 ? 2.5 : maxW >= 40 ? 2.5 : 1.25;
+    const inc = maxW >= 40 ? 2.5 : 1.25;
     const next = +(maxW + inc).toFixed(2).replace(/\.?0+$/, '');
-    return { type: 'increase', msg: `All sets hit (${maxW} × ${avgReps}) ${dLabel} — try ${next} today` };
+    return { type: 'increase', msg: `All sets hit (${maxW} ${u} \u00d7 ${repsLabel}) ${dLabel} — try ${next} ${u} today` };
   }
   if (allSetsComplete && !allRepsHit) {
-    return { type: 'maintain', msg: `Last: ${maxW} × avg ${avgReps} reps ${dLabel} — hit ${targetReps} reps before going heavier` };
+    return { type: 'maintain', msg: `Last: ${maxW} ${u} \u00d7 ${repsLabel} ${dLabel} — hit ${targetReps} before going heavier` };
   }
-  return { type: 'maintain', msg: `${completedSets.length}/${allSets.length} sets at ${maxW} ${dLabel} — complete all sets first` };
+  return { type: 'maintain', msg: `${completedSets.length}/${allSets.length} sets at ${maxW} ${u} ${dLabel} — complete all sets first` };
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -358,10 +390,14 @@ function renderWorkoutActive() {
         const ds = ex ? ex.ds : 3;
         const dr = ex ? ex.dr : 10;
         // Auto-fill weight/reps from last session
+        // Prefill from one real set, not a mix of two. This used to take the
+        // heaviest weight from anywhere in the session and the reps from
+        // whichever set happened to be last, so 100x8, 100x8, 80x15 prefilled
+        // 100x15 — a set that was never performed and cannot be.
         const last = getLastExerciseSession(eid);
-        const lastSets = (last?.ex.sets || []).filter(s => s.completed);
-        const lastW = lastSets.length ? Math.max(...lastSets.map(s => s.weight)) : 0;
-        const lastR = lastSets.length ? (lastSets[lastSets.length - 1]?.reps || dr) : dr;
+        const top = topWorkingSet(last?.ex.sets);
+        const lastW = top ? top.weight : 0;
+        const lastR = top ? top.reps : dr;
         return { exerciseId: eid, sets: Array.from({length: ds}, () => ({weight: lastW, reps: lastR, completed: false})) };
       })};
       LS.set('hvi_workout_log', workoutLog);
@@ -419,6 +455,7 @@ function renderWorkoutActive() {
         ${canMoveUp ? `<button class="w-ex-act-btn" onclick="reorderExercise(${ei},-1)" title="Move up">↑</button>` : ''}
         ${canMoveDown ? `<button class="w-ex-act-btn" onclick="reorderExercise(${ei},1)" title="Move down">↓</button>` : ''}
         <button class="w-ex-act-btn" onclick="swapExercise(${ei})" title="Swap exercise">⇄</button>
+        <button class="w-ex-act-btn" onclick="removeExercise(${ei})" title="Remove exercise" style="color:var(--fat)">\u00d7</button>
       </div>
       ${infoHTML}
       ${tipHTML}
@@ -582,6 +619,29 @@ function reorderExercise(ei, dir) {
   rerenderWorkoutActive();
 }
 
+// ── REMOVE EXERCISE ─────────────────────────────────────────────────────
+// Sets could be removed one at a time but a whole exercise could not, so
+// dropping something you decided not to do meant emptying it set by set and
+// leaving a stub behind.
+function removeExercise(ei) {
+  const t = today(), wl = workoutLog[t];
+  if (!wl || !wl.exercises[ei]) return;
+  const we = wl.exercises[ei];
+  const ex = lookupExercise(we.exerciseId);
+  const name = (ex && ex.name) || 'this exercise';
+  // Warn only when there is something to lose. Removing an untouched exercise
+  // is not destructive, and a confirm on every tap teaches people to dismiss it.
+  const logged = (we.sets || []).filter(s => s.completed).length;
+  const msg = logged
+    ? `Remove ${name}? ${logged} logged set${logged === 1 ? '' : 's'} will be lost.`
+    : `Remove ${name} from today's workout?`;
+  if (!confirm(msg)) return;
+  wl.exercises.splice(ei, 1);
+  _wSave(wl);
+  if (typeof track === 'function') track('exercise_removed', { logged });
+  rerenderWorkoutActive();
+}
+
 // ── EXERCISE SWAP ───────────────────────────────────────────────────────
 let _swapExIdx = null;
 function swapExercise(ei) {
@@ -723,7 +783,7 @@ function _updateWorkoutElapsed() {
 
 // ── REST TIMER ──────────────────────────────────────────────────────────
 function startRestTimer(dur) {
-  restTimerDur = dur || 90;
+  restTimerDur = dur || DEFAULT_REST_SEC;
   restTimerEnd = Date.now() + restTimerDur * 1000;
   _updateRestTimer();
   if (restTimer) clearInterval(restTimer);

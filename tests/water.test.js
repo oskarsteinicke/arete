@@ -71,30 +71,32 @@ module.exports = function () {
       water(swap) === 1000, '(unit switch changed the value)');
   }
 
-  // Slicing the trailing "s" off "glasses" gave "glasse", which is what a screen
-  // reader announced on the buttons.
-  r.section('the buttons are labelled in real words');
+  // The buttons no longer name a unit of their own, so they announce the volume
+  // a tap actually moves.
+  r.section('the buttons say how much they add');
   {
     const m = sb();
     const mh = run(m, 'waterRowHTML()');
-    r.check('metric singular', /aria-label="Add one glass"/.test(mh),
-      `(${(mh.match(/aria-label="Add one [^"]*"/) || [])[0]})`);
-    r.check('and for removing', /aria-label="Remove one glass"/.test(mh));
+    r.check('metric announces millilitres', /aria-label="Add 250 ml"/.test(mh),
+      `(${(mh.match(/aria-label="Add [^"]*"/) || [])[0]})`);
+    r.check('and for removing', /aria-label="Remove 250 ml"/.test(mh));
     const i = sb({}, 'imperial');
-    r.check('imperial singular', /aria-label="Add one cup"/.test(run(i, 'waterRowHTML()')));
+    r.check('imperial announces ounces', /aria-label="Add 8 fl oz"/.test(run(i, 'waterRowHTML()')));
   }
 
-  r.section('the label follows the unit');
+  r.section('the row reads in volume, not glasses');
   {
     const m = sb(); run(m, 'addWater(1); addWater(1); addWater(1); addWater(1)');
     const mh = run(m, 'waterRowHTML()');
-    r.check('metric says glasses', /glasses/.test(mh));
-    r.check('and shows litres', /1\.0 L/.test(mh), `(${(mh.match(/[\d.]+ L/) || [])[0]})`);
+    r.check('litres lead', /1\.0 \/ 2\.8 L/.test(mh),
+      `(${(mh.match(/[\d.]+ \/ [\d.]+ L/) || [])[0]})`);
+    r.check('no glass count', !/glass/.test(mh), '(still counting glasses)');
 
     const i = sb({}, 'imperial'); run(i, 'addWater(1); addWater(1)');
     const ih = run(i, 'waterRowHTML()');
-    r.check('imperial says cups', /cups/.test(ih));
-    r.check('and shows ounces', /oz/.test(ih), `(${(ih.match(/\d+ oz/) || [])[0]})`);
+    r.check('imperial reads in fl oz', /\d+ \/ \d+ fl oz/.test(ih),
+      `(${(ih.match(/\d+ \/ \d+ fl oz/) || [])[0]})`);
+    r.check('no cup count', !/cups/.test(ih));
   }
 
   r.section('the goal comes from bodyweight');
@@ -115,9 +117,8 @@ module.exports = function () {
   r.section('the row shows progress honestly');
   {
     const s = sb();
-    r.check('nothing logged reads zero', /0 \/ 12/.test(run(s, 'waterRowHTML()')),
-      `(${(run(s, 'waterRowHTML()').match(/\d+ \/ \d+/) || [])[0]})`);
-    // Tapping the number of glasses the row displays must actually complete it.
+    r.check('nothing logged reads zero', /0\.0 \/ 2\.8 L/.test(run(s, 'waterRowHTML()')),
+      `(${(run(s, 'waterRowHTML()').match(/[\d.]+ \/ [\d.]+ L/) || [])[0]})`);
     run(s, 'for (let i=0;i<12;i++) addWater(1);');
     const full = run(s, 'waterRowHTML()');
     r.check('hitting the goal marks it done', /d-water-fill done/.test(full),
@@ -146,13 +147,13 @@ module.exports = function () {
     const s2 = sb();
     run(s2, `_toasts=[]; showToast=function(m){ _toasts.push(m); };`);
     r.check('the menu shows progress before you tap',
-      /Water · 0 of 12/.test(run(s2, '_quickWaterLabel()')), `(${run(s2, '_quickWaterLabel()')})`);
+      /Water · 0\.0 \/ 2\.8 L/.test(run(s2, '_quickWaterLabel()')), `(${run(s2, '_quickWaterLabel()')})`);
 
     run(s2, 'quickLogWater()');
     r.check('a glass is added', water(s2) === 250);
-    r.check('and it says so', run(s2, '_toasts[0]') === '1 of 12 glasses',
+    r.check('and it says so', run(s2, '_toasts[0]') === '0.3 / 2.8 L',
       `(${run(s2, '_toasts[0]')})`);
-    r.check('the label updates', /Water · 1 of 12/.test(run(s2, '_quickWaterLabel()')));
+    r.check('the label updates', /Water · 0\.3 \/ 2\.8 L/.test(run(s2, '_quickWaterLabel()')));
 
     run(s2, 'for (let i=0;i<11;i++) quickLogWater();');   // 12 total
     r.check('hitting the goal is called out',

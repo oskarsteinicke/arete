@@ -541,39 +541,38 @@ function addWater(units) {
   if (curView === 'diet') renderDiet();
 }
 
-// "6 of 10 glasses" reads better than millilitres, but the litre total is what
-// people actually check, so show both without making a second row of it.
+// Volume is the number people actually think in, so it leads. Counting glasses
+// made the row read as a checklist of a unit nobody measures, and the litre
+// total was relegated to a suffix.
 function waterLabel(ml, goalMl) {
-  const per = waterUnitMl();
-  const n = Math.round(ml / per);
-  // Ceiling, not rounding. A 2800ml goal rounds to 11 glasses, but 11 glasses is
-  // 2750ml, so the row would show every glass filled and still not read as done.
-  const goalN = Math.max(1, Math.ceil(goalMl / per));
-  const big = isImperial()
-    ? `${(ml / 29.5735).toFixed(0)} oz`
-    : `${(ml / 1000).toFixed(1)} L`;
-  // Both forms explicitly: slicing an "s" off "glasses" gives "glasse", which
-  // is what a screen reader would have read out on the buttons.
-  return { n, goalN, big, word: isImperial() ? 'cups' : 'glasses',
-           one: isImperial() ? 'cup' : 'glass' };
+  const fmt = v => isImperial()
+    ? `${Math.round(v / 29.5735)}`
+    : `${(v / 1000).toFixed(1)}`;
+  return {
+    now: fmt(ml),
+    goal: fmt(goalMl),
+    unit: isImperial() ? 'fl oz' : 'L',
+    // How much one tap moves it, phrased for a screen reader.
+    step: isImperial() ? '8 fl oz' : '250 ml',
+  };
 }
 
 function waterRowHTML() {
   const ml = getWaterMl();
   const goalMl = waterGoalMl();
-  const { n, goalN, big, word, one } = waterLabel(ml, goalMl);
+  const { now, goal, unit, step } = waterLabel(ml, goalMl);
   const pct = Math.min(100, goalMl ? (ml / goalMl) * 100 : 0);
   const done = ml >= goalMl;
   return `<div class="d-water ani">
-    <button class="d-water-btn" onclick="addWater(-1)" aria-label="Remove one ${one}"${ml <= 0 ? ' disabled' : ''}>\u2212</button>
+    <button class="d-water-btn" onclick="addWater(-1)" aria-label="Remove ${step}"${ml <= 0 ? ' disabled' : ''}>\u2212</button>
     <div class="d-water-mid">
       <div class="d-water-top">
         <span class="d-water-label">Water</span>
-        <span class="d-water-count">${n} / ${goalN} ${word} \u00b7 ${big}</span>
+        <span class="d-water-count">${now} / ${goal} ${unit}</span>
       </div>
       <div class="d-water-track"><div class="d-water-fill${done ? ' done' : ''}" style="width:${pct}%"></div></div>
     </div>
-    <button class="d-water-btn" onclick="addWater(1)" aria-label="Add one ${one}">+</button>
+    <button class="d-water-btn" onclick="addWater(1)" aria-label="Add ${step}">+</button>
   </div>`;
 }
 
