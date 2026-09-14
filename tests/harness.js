@@ -12,6 +12,26 @@ function makeEl(id) {
     id, style: {}, value: '', textContent: '', _h: '', disabled: false, files: [],
     classList: { toggle() {}, add() {}, remove() {}, contains() { return false; } },
     setAttribute() {}, removeAttribute() {}, remove() {}, appendChild() {},
+    // Enough canvas for confetti, share cards and sparklines to run. Without it
+    // any code that draws looks like a crash, which hides real ones behind it.
+    width: 0, height: 0,
+    getContext() {
+      const noop = () => {};
+      return new Proxy({}, {
+        get(_, k) {
+          if (k === 'canvas') return { width: 0, height: 0 };
+          if (k === 'measureText') return () => ({ width: 0 });
+          if (k === 'createLinearGradient' || k === 'createRadialGradient') {
+            return () => ({ addColorStop: noop });
+          }
+          if (k === 'getImageData') return () => ({ data: [] });
+          return noop;
+        },
+        set() { return true; },
+      });
+    },
+    toDataURL() { return 'data:image/png;base64,'; },
+    toBlob(cb) { if (typeof cb === 'function') cb(null); },
     addEventListener() {}, focus() {}, click() {},
     querySelector() { return null; }, querySelectorAll() { return []; },
     closest() { return makeEl('closest'); },

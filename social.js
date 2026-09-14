@@ -1080,7 +1080,21 @@ async function _lbCreateGroup(name) {
   return group;
 }
 
+// Every path here returns { ok } or { error }, so callers reasonably treat it
+// as never throwing — and the one caller, the invite-link handler, does exactly
+// that. But a network failure rejected straight out of it: an unhandled
+// rejection, no message to the user, and the pending join code left in place.
+// Opening an invite link on a bad connection is exactly when that happens.
 async function _lbJoinGroupByCode(code) {
+  try {
+    return await _lbJoinGroupByCodeInner(code);
+  } catch (e) {
+    if (typeof reportError === 'function') reportError('lb-join', e && e.message);
+    return { error: 'Could not reach the leaderboard. Check your connection.' };
+  }
+}
+
+async function _lbJoinGroupByCodeInner(code) {
   const uid = getCurrentUserId();
   if (!uid) return { error: 'Not signed in' };
   await _ensureFreshToken();

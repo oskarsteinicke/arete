@@ -2005,7 +2005,12 @@ function _handlePendingJoin(_tries) {
     if ((_tries || 0) < 12) return void setTimeout(() => _handlePendingJoin((_tries || 0) + 1), 500);
     return;
   }
-  _lbJoinGroupByCode(code).then(res => {
+  _lbJoinGroupByCode(code).catch(e => {
+    // Belt and braces: the function above is meant never to reject, but this is
+    // the growth path and a silent failure here loses the invite entirely.
+    reportError('pending-join', e && e.message);
+    return { error: 'Could not join right now.' };
+  }).then(res => {
     try { localStorage.removeItem('hvi_pending_join'); } catch {}
     if (res && res.group) {
       _lbView = 'group'; _lbActiveGroup = res.group.id;

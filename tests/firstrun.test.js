@@ -76,5 +76,33 @@ module.exports = function () {
     r.check('it redirects home', run(s, '_went') === 'home', `(${run(s, '_went')})`);
   }
 
-  return r.finish();
+  // The invite link is the growth loop, and it is opened on a phone that may be
+  // on a train. The join function returns { ok } or { error } on every path, so
+  // its caller treats it as never throwing — but a network failure rejected
+  // straight out of it: unhandled, no message, and the pending code left set.
+  r.section('an invite link opened offline fails softly');
+  {
+    const s = createSandbox({
+      files: ALL,
+      store: { hvi_onboarded: 'true', hvi_pending_join: 'ABC123',
+               hvi_session: JSON.stringify({ access_token: 't', refresh_token: 'r',
+                                             user: { id: 'u1', user_metadata: {} } }) },
+      fetch: () => Promise.reject(new TypeError('Failed to fetch')),
+    });
+    run(s, FRESH);
+    run(s, `navigator.onLine = false; reportError=function(){};`);
+
+    // Catch the rejection here rather than letting it take the suite down: a
+    // crash reports one line and loses every check after it.
+    return Promise.resolve(run(s, `_lbJoinGroupByCode('ABC123')`))
+      .then(res => ({ rejected: false, res }), e => ({ rejected: true, e }))
+      .then(({ rejected, res, e }) => {
+        r.check('it resolves rather than rejecting', !rejected,
+          `(rejected with "${e && e.message}" — unhandled on the invite path)`);
+        r.check('and reports the problem', !!(res && res.error), `(${JSON.stringify(res)})`);
+        r.check('in words a person can act on', /connection/i.test((res && res.error) || ''),
+          `(${res && res.error})`);
+        return r.finish();
+      });
+  }
 };
