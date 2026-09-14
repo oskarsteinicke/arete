@@ -86,9 +86,38 @@ function getDailyQuests() {
   return picked;
 }
 
+// questsCompleted maps every date to the quests finished that day, and only
+// today is ever read back — except for a lifetime total that feeds an
+// achievement. Left alone it grows forever and rides the sync payload in both
+// directions on every launch.
+//
+// So: bank a running count, and keep only a recent window of days. The count is
+// seeded once from whatever history already exists, so nobody loses progress
+// toward the achievement.
+const QUEST_DAYS_KEPT = 30;
+
+function _ensureQuestTotal() {
+  if (!gamification.questsCompleted) gamification.questsCompleted = {};
+  if (typeof gamification.questsTotal !== 'number') {
+    gamification.questsTotal = Object.values(gamification.questsCompleted)
+      .reduce((n, arr) => n + (Array.isArray(arr) ? arr.length : 0), 0);
+  }
+  return gamification.questsTotal;
+}
+
+function _trimQuestDays() {
+  const days = Object.keys(gamification.questsCompleted || {}).sort();
+  if (days.length <= QUEST_DAYS_KEPT) return false;
+  // Drop the oldest. The total is already banked, so this loses no progress.
+  for (const d of days.slice(0, days.length - QUEST_DAYS_KEPT)) {
+    delete gamification.questsCompleted[d];
+  }
+  return true;
+}
+
 function checkDailyQuests() {
   const t = today();
-  if (!gamification.questsCompleted) gamification.questsCompleted = {};
+  _ensureQuestTotal();
   const done = new Set(gamification.questsCompleted[t] || []);
   const quests = getDailyQuests();
   let newlyDone = [];
@@ -102,6 +131,8 @@ function checkDailyQuests() {
   });
   if (newlyDone.length) {
     gamification.questsCompleted[t] = [...done];
+    gamification.questsTotal = _ensureQuestTotal() + newlyDone.length;
+    _trimQuestDays();
     newlyDone.forEach(q => {
       gamification.xp = (gamification.xp || 0) + q.xp;
     });
@@ -213,7 +244,8 @@ function checkAchievements() {
   const mealDays = Object.keys(mealLog).filter(d => (mealLog[d]?.meals || []).length > 0).length;
   const lvl = getLevel(gamification.xp || 0);
 
-  const totalQuests = Object.values(gamification.questsCompleted || {}).reduce((s, arr) => s + arr.length, 0);
+  // The banked count, not a sum over the remaining days — those get trimmed.
+  const totalQuests = _ensureQuestTotal();
   const checks = {
     first_habit:   habits.some(h => log[h.id]?.completedToday || (log[h.id]?.streak || 0) > 0),
     streak_3:      maxStreak >= 3,

@@ -148,5 +148,75 @@ module.exports = function () {
       for (var l=1; l<=30; l++) if (!getLevelTitle(l)) return false; return true; })()`) === true);
   }
 
+  // questsCompleted kept every date forever and rode the sync payload both ways
+  // on every launch. Only today is ever read, but a lifetime total feeds an
+  // achievement, so it cannot simply be truncated.
+  r.section('quest history is bounded without losing the total');
+  {
+    const days = {};
+    for (let i = 0; i < 120; i++) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      days[d.toLocaleDateString('en-CA')] = ['q_habit', 'q_workout'];
+    }
+    const s = sb({ hvi_gamification: JSON.stringify({ xp: 5000, questsCompleted: days }) });
+    run(s, `gamification = JSON.parse(localStorage.getItem('hvi_gamification'));`);
+
+    r.check('the total is seeded from existing history',
+      run(s, '_ensureQuestTotal()') === 240, `(${run(s, '_ensureQuestTotal()')})`);
+
+    run(s, '_trimQuestDays()');
+    const kept = run(s, 'Object.keys(gamification.questsCompleted).length');
+    r.check('old days are dropped', kept === 30, `(${kept})`);
+    r.check('but the total survives', run(s, 'gamification.questsTotal') === 240,
+      '(lifetime achievement progress wiped)');
+    r.check('and today is still there',
+      run(s, `!!gamification.questsCompleted[today()]`) === true,
+      "(today's quest state lost — they would all reset)");
+
+    // Seeding must happen once, not on every read.
+    run(s, '_ensureQuestTotal(); _ensureQuestTotal();');
+    r.check('re-reading does not recount', run(s, 'gamification.questsTotal') === 240,
+      '(total drifts every time it is read)');
+
+    // The helper being right is not the point; the achievement that consumes it
+    // is. Summing the trimmed map instead of the banked total would silently
+    // roll someone back from 240 quests to 60 and revoke what they had earned.
+    const seen = run(s, `(function(){
+      const src = String(checkAchievements);
+      return /totalQuests\\s*=\\s*_ensureQuestTotal\\(\\)/.test(src);
+    })()`);
+    r.check('the achievement check reads the banked total', seen === true,
+      '(counts only the days that survived trimming)');
+  }
+
+  r.section('a fresh account starts at zero and counts up');
+  {
+    const s = sb({ hvi_gamification: JSON.stringify({ xp: 0 }) });
+    run(s, `gamification = JSON.parse(localStorage.getItem('hvi_gamification'));`);
+    r.check('starts at zero', run(s, '_ensureQuestTotal()') === 0);
+    run(s, `gamification.questsCompleted[today()] = ['q_a','q_b'];
+            gamification.questsTotal = _ensureQuestTotal() + 2;`);
+    r.check('counts what was completed', run(s, 'gamification.questsTotal') === 2);
+    run(s, '_trimQuestDays()');
+    r.check('nothing trimmed under the limit',
+      run(s, 'Object.keys(gamification.questsCompleted).length') === 1);
+  }
+
+  r.section('the trimmed map is meaningfully smaller');
+  {
+    const days = {};
+    for (let i = 0; i < 400; i++) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      days[d.toLocaleDateString('en-CA')] = ['q_habit', 'q_workout', 'q_journal'];
+    }
+    const s = sb({ hvi_gamification: JSON.stringify({ xp: 1, questsCompleted: days }) });
+    run(s, `gamification = JSON.parse(localStorage.getItem('hvi_gamification'));`);
+    const before = run(s, 'JSON.stringify(gamification.questsCompleted).length');
+    run(s, '_ensureQuestTotal(); _trimQuestDays();');
+    const after = run(s, 'JSON.stringify(gamification.questsCompleted).length');
+    r.check('a year of history shrinks by over 90%', after < before * 0.1,
+      `(${before} -> ${after} bytes)`);
+  }
+
   return r.finish();
 };
