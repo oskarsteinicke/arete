@@ -4,7 +4,7 @@
 // a cold load there is a window where the app is interactive and they have not
 // arrived. Anything go() does during that window has to survive their absence.
 const fs = require('fs'), path = require('path');
-const { APP, createSandbox, run, createReporter } = require('./harness');
+const { APP, createSandbox, run, runCatching, createReporter } = require('./harness');
 
 // Exactly what index.html loads with a blocking <script src>. The three lazy
 // ones are deliberately absent.
@@ -18,8 +18,8 @@ function boot(files) {
   run(s, `settings={}; curView='home'; habits=[]; log={}; journal={};
           workoutLog={}; workoutMeta={}; mealLog={}; weightLog={};
           meta={lastOpenedDate:'',quoteIndex:0,totalPerfectDays:0};
-          sleepLog={}; prs={}; gamification={xp:0,level:1}; achievements={};
-          routines={}; routineLog={}; challenges={}; goals=[]; habitLinks={};
+          sleepLog={}; prs={}; gamification={xp:0,level:1}; achievements=[];
+          routines={}; routineLog={}; challenges=[]; goals=[]; habitLinks={};
           tdeeProfile=null; customPrograms={}; qTimer=null;
           dietMeta={dailyGoals:{calories:2200,protein:160,carbs:220,fat:70}};
           track=function(){}; closeQuickLog=function(){};
@@ -37,10 +37,8 @@ module.exports = function () {
   r.section('navigating before the lazy scripts arrive');
   {
     const s = boot(EAGER);
-    run(s, `go('home', {}, false)`);
-    const errs = s._warnings.filter(w => /is not defined/.test(w));
-    r.check('home renders with social.js still in flight', errs.length === 0,
-      `(${errs[0] || ''})`);
+    const res = runCatching(s, `go('home', {}, false)`);
+    r.check('home renders with social.js still in flight', res.ok, `(${res.error || ''})`);
     r.check('and something was actually painted',
       (run(s, `document.getElementById('view').innerHTML`) || '').length > 0);
   }
@@ -48,9 +46,8 @@ module.exports = function () {
   r.section('a lazy screen waits instead of throwing');
   {
     const s = boot(EAGER);
-    run(s, `go('library', {}, false)`);
-    const errs = s._warnings.filter(w => /is not defined/.test(w));
-    r.check('no ReferenceError', errs.length === 0, `(${errs[0] || ''})`);
+    const res = runCatching(s, `go('library', {}, false)`);
+    r.check('no ReferenceError', res.ok, `(${res.error || ''})`);
     const html = run(s, `document.getElementById('view').innerHTML`) || '';
     r.check('shows a loading state', /Loading/.test(html), `(${html.slice(0, 60)})`);
     r.check('and does not silently bounce to home', !/pillar|habit-card/.test(html));
@@ -87,6 +84,27 @@ module.exports = function () {
       r.check(`${fn} is a top-level declaration`, declared,
         '(would never appear on window, so the screen would hang)');
     }
+  }
+
+  // The PWA restores the last view from the URL hash on launch, so the Profile
+  // tab reopens straight into renderStats — before social.js has arrived.
+  r.section('reopening on a lazy-dependent screen');
+  {
+    const s = boot(EAGER);
+    const res = runCatching(s, `window._statsSubView='calendar'; go('stats', {}, false);`);
+    r.check('stats renders without social.js', res.ok, `(${res.error || ''})`);
+    const html = run(s, `document.getElementById('view').innerHTML`) || '';
+    r.check('and paints something', html.length > 0, '(blank screen on reopen)');
+    r.check('showing it is waiting', /Loading/.test(html), `(${html.slice(0, 50)})`);
+
+    // Once the helpers land the calendar draws properly.
+    run(s, `_calDots=function(){ return ''; }; _calLegend=function(){ return ''; };
+            _calViewToggle=function(){ return ''; }; buildCalDayDetail=function(){ return ''; };
+            calSelectDate=function(){}; calPrev=function(){}; calNext=function(){};
+            window._statsSubView='calendar'; renderStats();`);
+    const after = run(s, `document.getElementById('view').innerHTML`) || '';
+    r.check('then the calendar renders', /cal-view-seg|cal-wcol/.test(after),
+      `(${after.slice(0, 60)})`);
   }
 
   // The regression guard. Whichever way the map is written, no screen owned by

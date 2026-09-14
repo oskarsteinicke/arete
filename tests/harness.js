@@ -104,6 +104,14 @@ function run(sandbox, expr) {
   catch (e) { console.log('    [sandbox error]', String(e.message).slice(0, 150)); return null; }
 }
 
+// run() swallows runtime errors, which makes "assert this did not throw"
+// impossible to write against it: the check passes whether or not it threw.
+// Use this when the absence of an error is the thing being tested.
+function runCatching(sandbox, expr) {
+  try { return { ok: true, value: vm.runInContext(expr, sandbox), error: null }; }
+  catch (e) { return { ok: false, value: null, error: String(e.message) }; }
+}
+
 function createReporter(suiteName) {
   let pass = 0, fail = 0;
   return {
@@ -119,4 +127,4 @@ function createReporter(suiteName) {
   };
 }
 
-module.exports = { APP, makeEl, createSandbox, run, createReporter };
+module.exports = { APP, makeEl, createSandbox, run, runCatching, createReporter };

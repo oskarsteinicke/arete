@@ -1209,6 +1209,7 @@ function _buildGreekAvatar(stage, gender, uid) {
   </svg>`;
 }
 
+let _calWaitTries = 0;
 function setCalView_stats(v) { calView = v; window._statsSubView = 'calendar'; renderStats(); }
 
 // ── WEEK-OVER-WEEK TREND HELPERS ─────────────────────────────────────────
@@ -1275,6 +1276,26 @@ function renderStats() {
 
   // Sub-view toggle: Profile | Calendar
   const _statsSubView = window._statsSubView || 'profile';
+  // The calendar is drawn entirely by helpers that live in social.js, which is
+  // appended at requestIdleCallback. The PWA restores the last view from the URL
+  // hash on launch, so reopening on this tab ran the whole branch before those
+  // helpers existed and threw ReferenceError over the entire screen — not just
+  // the calendar. renderHome already guards its social.js block this way.
+  if (_statsSubView === 'calendar' && typeof _calDots !== 'function') {
+    document.getElementById('view').innerHTML =
+      `<div class="view-loading" style="padding:60px 24px;text-align:center;color:var(--text-muted)">Loading\u2026</div>`;
+    if ((_calWaitTries = (_calWaitTries || 0) + 1) <= 20) {
+      setTimeout(() => { if (curView === 'stats' || curView === 'calendar') renderStats(); }, 150);
+      return;
+    }
+    // Give up on the calendar rather than the whole screen. Re-enter rather
+    // than falling through: _statsSubView above is a const captured before this
+    // point, so it still reads 'calendar' and would walk straight back into the
+    // branch we just decided not to render.
+    window._statsSubView = 'profile';
+    _calWaitTries = 0;
+    return renderStats();
+  }
   if (_statsSubView === 'calendar') {
     document.getElementById('view').innerHTML = `
       <div class="sh ani" style="display:flex;align-items:flex-start;justify-content:space-between">
