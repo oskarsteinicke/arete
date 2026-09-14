@@ -1468,6 +1468,14 @@ function renderStats() {
         </div>
       </div>
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px">Offers to share a streak milestone. Each one is offered once, ever.</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div style="font-size:14px;color:var(--text)">Version</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:13px;color:var(--text-dim);font-variant-numeric:tabular-nums">${typeof APP_VERSION !== 'undefined' ? APP_VERSION : '?'}</span>
+          <button class="unit-btn" onclick="forceUpdate()">Update</button>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px">If a change seems missing, this clears the cache and reloads.</div>
       ${(() => {
         const native = typeof _nativeNotifier === 'function' && !!_nativeNotifier();
         const push = typeof pushSupported === 'function' && pushSupported();

@@ -3332,6 +3332,28 @@ const APP_VERSION = (function () {
   } catch { return 'dev'; }
 })();
 
+// Force the newest build. A service worker serving a stale bundle looks exactly
+// like a change that never shipped — there was no way for anyone, including us,
+// to tell which of the two was happening.
+async function forceUpdate() {
+  try {
+    if (navigator.serviceWorker) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
+    if (window.caches) {
+      const keys = await window.caches.keys();
+      await Promise.all(keys.map(k => window.caches.delete(k)));
+    }
+  } catch (e) { reportError('force-update', e && e.message); }
+  // Cache-bust the document itself, or the reload can serve the same stale
+  // index.html that referenced the old script versions.
+  const u = new URL(location.href);
+  u.searchParams.set('_r', Date.now().toString(36));
+  u.hash = '';
+  location.replace(u.toString());
+}
+
 const _ERR_CAP = 8;          // per session, so a render loop can't spam
 let _errCount = 0;
 const _errSeen = new Set();  // one report per unique error per session

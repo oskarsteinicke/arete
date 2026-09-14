@@ -108,5 +108,35 @@ module.exports = async function () {
     r.check('scheduling reports failure', (await run(s, 'scheduleNativeReminders()')) === false);
   }
 
-  return r.finish();
+  // A service worker serving a stale bundle is indistinguishable from a change
+  // that never shipped. The version has to be visible and forceable.
+  r.section('the running version is knowable and forceable');
+  {
+    const s = createSandbox({ files: ['data.js', 'app.js'] });
+    r.check('a version is derived', typeof run(s, 'APP_VERSION') === 'string');
+    r.check('forceUpdate exists', run(s, 'typeof forceUpdate') === 'function',
+      '(no way to escape a stale cache)');
+  }
+
+  r.section('forcing an update clears everything and cache-busts the reload');
+  {
+    const s = createSandbox({ files: ['data.js', 'app.js'] });
+    run(s, `_unregistered=0; _deleted=[]; _replaced='';
+      navigator.serviceWorker = { getRegistrations: () => Promise.resolve([
+        { unregister: () => { _unregistered++; return Promise.resolve(); } }]) };
+      window.caches = { keys: () => Promise.resolve(['arete-v1','arete-v2']),
+                        delete: k => { _deleted.push(k); return Promise.resolve(); } };
+      location = { href: 'https://get-arete.com/#stats', replace: u => { _replaced = u; } };
+      reportError = function(){};`);
+    return Promise.resolve(run(s, 'forceUpdate()')).then(() => {
+      r.check('the service worker is unregistered', run(s, '_unregistered') === 1);
+      r.check('every cache is deleted', run(s, '_deleted.length') === 2,
+        `(${run(s, '_deleted.join(",")')})`);
+      const to = run(s, '_replaced');
+      r.check('the reload is cache-busted', /_r=/.test(to || ''), `(${to})`);
+      r.check('and the stale hash is dropped', !/#/.test(to || ''),
+        '(reloads straight back into the view that was broken)');
+      return r.finish();
+    });
+  }
 };
