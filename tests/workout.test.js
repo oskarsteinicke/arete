@@ -259,6 +259,21 @@ module.exports = function () {
       '(reappears on reload)');
   }
 
+  // Nothing on the active workout view can add an exercise, so emptying it
+  // without an escape leaves a blank screen and the nav bar.
+  r.section('emptying the session is not a dead end');
+  {
+    const s = sb({ hvi_workout_log: JSON.stringify({ [T]: { programId: 'ppl', dayIndex: 0,
+      exercises: [{ exerciseId: 'bench_press', sets: [S(100, 8)] }] } }) });
+    run(s, `confirm=function(){ return true; };`);
+    run(s, 'removeExercise(0)');
+    r.check('no exercises remain', run(s, `workoutLog['${T}'].exercises.length`) === 0);
+    const html = run(s, `document.getElementById('view').innerHTML`) || '';
+    r.check('it says so', /Nothing left/.test(html), `(${html.slice(0, 60)})`);
+    r.check('and offers a way forward', /exerciseBrowser/.test(html),
+      '(blank screen with no route out)');
+  }
+
   r.section('removing logged work asks first');
   {
     const s = sb({ hvi_workout_log: JSON.stringify({ [T]: { exercises: [

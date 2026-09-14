@@ -466,13 +466,21 @@ function renderWorkoutActive() {
       </div></div>`;
   }).join('');
 
+  // Removing every exercise used to leave a blank screen with no route forward:
+  // nothing on this view can add one, so the only way out was the nav bar.
+  const emptyHTML = wl.exercises.length ? '' : `<div class="w-card ani" style="text-align:center;padding:32px 24px">
+    <div style="font-family:var(--serif);font-size:20px;color:var(--text);margin-bottom:6px">Nothing left in today's session</div>
+    <div style="font-size:13px;color:var(--text-dim);margin-bottom:18px">Add an exercise to keep going, or pick a different day.</div>
+    <button class="w-action-btn" style="margin:0" onclick="go('exerciseBrowser')">Browse exercises</button>
+  </div>`;
+
   document.getElementById('view').innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between">
       <button class="back" onclick="stopWorkoutTimer();go('workout')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
       <div class="workout-elapsed-pill"><span class="workout-elapsed-dot"></span><span id="workout-elapsed">0:00</span></div>
     </div>
     <div class="page-head ani"><div class="w-day-badge">${day.name}</div><div class="page-title">${prog.name}</div><div class="page-sub">${day.focus}</div></div>
-    ${exHTML}
+    ${exHTML}${emptyHTML}
     <div id="rest-timer-bar" class="rt-bar" style="display:none"></div>
     <div class="rt-presets">
       <span style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.5px">Rest</span>
