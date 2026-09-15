@@ -179,5 +179,50 @@ module.exports = function () {
       `(${JSON.stringify(strings.filter(t => t.length <= 40))})`);
   }
 
+  // iOS 27 traps in _UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption
+  // and kills any app still on the pre-scene lifecycle. Capacitor's iOS template
+  // ships exactly that, so the adoption here is hand-written and a regenerated
+  // project would quietly drop it — and the symptom is the app dying at launch
+  // on a real device, which nothing in the web test suite would otherwise see.
+  r.section('iOS adopts the scene lifecycle');
+  {
+    const fs = require('fs'), path = require('path');
+    const IOS = path.join(APP, 'native/ios/App/App');
+    const plist = path.join(IOS, 'Info.plist');
+    const src = fs.existsSync(plist) ? fs.readFileSync(plist, 'utf8') : '';
+
+    r.check('Info.plist declares a scene manifest',
+      /<key>UIApplicationSceneManifest<\/key>/.test(src),
+      '(the app is terminated at launch on iOS 27)');
+
+    // The manifest alone launched the app into an empty black window: nothing
+    // instantiated the storyboard into the scene. It has to name a delegate.
+    const m = src.match(/<key>UISceneDelegateClassName<\/key>\s*<string>([^<]*)<\/string>/);
+    r.check('the manifest names a scene delegate', !!m,
+      '(app launches to a black screen)');
+
+    // $(PRODUCT_MODULE_NAME).SceneDelegate -> SceneDelegate.swift
+    const cls = m ? m[1].split('.').pop() : '';
+    r.check(`${cls || 'the delegate'} exists as a source file`,
+      !!cls && fs.existsSync(path.join(IOS, cls + '.swift')),
+      '(Info.plist points at a class that is not in the project)');
+
+    // Xcode compiles what the pbxproj lists, not what is on disk. A file added
+    // to the folder but not the build phase is simply absent at runtime, and
+    // the manifest then names a class that does not exist.
+    const pbx = path.join(APP, 'native/ios/App/App.xcodeproj/project.pbxproj');
+    const proj = fs.existsSync(pbx) ? fs.readFileSync(pbx, 'utf8') : '';
+    r.check(`${cls || 'the delegate'} is in the build phase`,
+      !!cls && new RegExp(`${cls}\\.swift in Sources`).test(proj),
+      '(on disk but never compiled)');
+
+    // Xcode 27 refuses to build anything below 15.0.
+    const targets = [...proj.matchAll(/IPHONEOS_DEPLOYMENT_TARGET = ([\d.]+);/g)]
+      .map(x => parseFloat(x[1]));
+    r.check('deployment target builds on current Xcode',
+      targets.length > 0 && targets.every(t => t >= 15),
+      `(${JSON.stringify(targets.filter(t => t < 15))} below the 15.0 minimum)`);
+  }
+
   return r.finish();
 };
