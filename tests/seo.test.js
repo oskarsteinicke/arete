@@ -146,5 +146,38 @@ module.exports = function () {
       '(policy omits the identifier that is sent)');
   }
 
+  // iOS terminates an app that touches the camera or photo library without a
+  // usage description in Info.plist. Arete does both, from the meal scanner and
+  // progress photos, so a missing key is a guaranteed crash rather than a
+  // warning — and it is invisible until someone taps the button on a device.
+  r.section('iOS declares why it wants the camera');
+  {
+    const fs = require('fs'), path = require('path');
+    const plist = path.join(APP, 'native/ios/App/App/Info.plist');
+    const src = fs.existsSync(plist) ? fs.readFileSync(plist, 'utf8') : '';
+    r.check('Info.plist exists', src.length > 0);
+
+    // Only require a key for a capability the web app actually uses.
+    const web = ['diet.js', 'profile.js']
+      .map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('');
+    const usesCamera = /capture\s*=\s*"(environment|user)"/.test(web);
+    const usesPhotos = /accept\s*=\s*"image\/\*"/.test(web);
+
+    if (usesCamera) {
+      r.check('NSCameraUsageDescription present', /NSCameraUsageDescription/.test(src),
+        '(the app terminates when the camera is opened)');
+    }
+    if (usesPhotos) {
+      r.check('NSPhotoLibraryUsageDescription present',
+        /NSPhotoLibraryUsageDescription/.test(src),
+        '(the app terminates when the picker is opened)');
+    }
+    // Apple rejects boilerplate; the string has to say what it is actually for.
+    const strings = [...src.matchAll(/<key>NS\w*UsageDescription<\/key>\s*<string>([^<]*)<\/string>/g)]
+      .map(m => m[1]);
+    r.check('each reason is specific', strings.every(t => t.length > 40),
+      `(${JSON.stringify(strings.filter(t => t.length <= 40))})`);
+  }
+
   return r.finish();
 };
