@@ -129,6 +129,54 @@ module.exports = function () {
     r.check('the other keeps its 40-day streak', streak(s, 'cu_2') === 40);
   }
 
+  // Changing the workout day discards today's entry so the new day can be
+  // built fresh. That entry is usually just a prefilled template — but once
+  // sets are logged it is the session itself, and the coach deleted it with
+  // no check and no way to ask. "I did legs today, make tomorrow push" erased
+  // the legs session, and with it the training load behind readiness and
+  // today's adjusted macros.
+  const setDay = (s, payload) =>
+    run(s, `_executeCoachAction({ type: 'set_workout_day', payload: ${JSON.stringify(payload)} })`);
+  const todayLog = s => run(s, `workoutLog[today()] || null`);
+  const dayIdx = s => run(s, `workoutMeta.currentDayIndex`);
+
+  const LOGGED = `workoutLog[today()] = { programId: 'ppl', dayIndex: 2, touched: true,
+    exercises: [{ id: 'sq', sets: [{ completed: true, weight: 140, reps: 5 }] }] };`;
+  const TEMPLATE = `workoutLog[today()] = { programId: 'ppl', dayIndex: 2,
+    exercises: [{ id: 'sq', sets: [{ completed: false }] }] };`;
+
+  r.section('a logged session survives the coach changing the day');
+  {
+    const s = fresh(LOGGED);
+    const res = setDay(s, { dayIndex: 0 });
+    const w = todayLog(s);
+    r.check('today\'s session is still there', !!w, `(deleted; reply was ${JSON.stringify(res)})`);
+    r.check('with its logged set intact',
+      !!w && w.exercises[0].sets[0].completed === true && w.exercises[0].sets[0].weight === 140);
+    r.check('the day still changed', dayIdx(s) === 0, `(index ${dayIdx(s)})`);
+    r.check('and the reply says today was kept', /kept|logged|today/i.test(res || ''), `(${res})`);
+  }
+
+  r.section('an untouched template is still cleared, as switching days always did');
+  {
+    const s = fresh(TEMPLATE);
+    setDay(s, { dayIndex: 1 });
+    r.check('the template is gone', todayLog(s) === null);
+    r.check('the day changed', dayIdx(s) === 1);
+  }
+
+  r.section('a day index that makes no sense changes nothing');
+  {
+    for (const bad of [99, -1, 1.5, 'two', null]) {
+      // Start away from 0, or a clamp of -1 to 0 looks the same as refusing.
+      const s = fresh(LOGGED + ' workoutMeta.currentDayIndex = 3;');
+      const res = setDay(s, { dayIndex: bad });
+      const ok = dayIdx(s) === 3 && !!todayLog(s);
+      r.check(`dayIndex ${JSON.stringify(bad)} is refused`, ok,
+        `(index became ${dayIdx(s)}, session ${todayLog(s) ? 'kept' : 'deleted'}, reply ${JSON.stringify(res)})`);
+    }
+  }
+
   r.section('replies never show an internal id');
   {
     const s = fresh();

@@ -330,15 +330,32 @@ function _executeCoachAction(action) {
     }
 
     case 'set_workout_day': {
-      if (p.dayIndex === undefined) return null;
       const prog = findProgram(workoutMeta.activeProgram);
       if (!prog) return null;
-      const idx = Math.max(0, Math.min(p.dayIndex, prog.days.length - 1));
+
+      // Out of range used to be clamped, so a guessed 99 silently became the
+      // last day, and a fractional or non-numeric index was written straight
+      // through — leaving currentDayIndex as 1.5 or NaN and then throwing on
+      // prog.days[idx].name, after the session had already been deleted.
+      const idx = p.dayIndex;
+      if (!Number.isInteger(idx) || idx < 0 || idx >= prog.days.length) {
+        return `That isn't one of the days in ${prog.name}, so nothing was changed.`;
+      }
+
+      // Switching days discards today's entry so the new day builds fresh.
+      // That entry is a prefilled template right up until a set is logged,
+      // and after that it is the session itself — which also feeds readiness
+      // and today's adjusted macros. The manual switch asks before discarding
+      // it; the coach cannot ask, so it keeps it and moves the day anyway.
+      const t = today();
+      const touched = (typeof _wIsTouched === 'function') ? _wIsTouched(workoutLog[t]) : !!workoutLog[t];
+      if (!touched) delete workoutLog[t];
+
       workoutMeta.currentDayIndex = idx;
-      delete workoutLog[today()];
       LS.set('hvi_workout_meta', workoutMeta);
       LS.set('hvi_workout_log', workoutLog);
-      return `Set workout to Day ${idx + 1}: ${prog.days[idx].name}`;
+      return `Set workout to Day ${idx + 1}: ${prog.days[idx].name}`
+        + (touched ? ". Today's logged session was kept." : '');
     }
 
     default: return null;
