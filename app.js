@@ -2174,12 +2174,11 @@ function checkReset() {
     }
   });
 
-  // Advance workout day only if a workout was completed yesterday
-  if (workoutMeta.lastWorkoutDate === yesterday()) {
-    const prog = findProgram(workoutMeta.activeProgram);
-    if (prog) workoutMeta.currentDayIndex = (workoutMeta.currentDayIndex + 1) % prog.days.length;
-    LS.set('hvi_workout_meta', workoutMeta);
-  }
+  // The workout day is NOT advanced here. finishWorkout already does it, and
+  // it is the only thing that writes lastWorkoutDate — so this fired on top of
+  // that advance the next morning and the program skipped the day after every
+  // session (finish Push A, wake up on Legs A). Synced workouts never set
+  // lastWorkoutDate, so this never served them either.
 
   meta.lastOpenedDate = t;
   LS.set('hvi_log', log);

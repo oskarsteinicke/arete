@@ -293,5 +293,46 @@ module.exports = function () {
       `(${run(s, 'restTimerDur')})`);
   }
 
+  // Two separate places moved the program on. finishWorkout advanced the day
+  // and stamped lastWorkoutDate; the next morning checkReset saw that stamp
+  // and advanced again. Nothing else ever writes lastWorkoutDate — synced
+  // workouts from Apple Health and the rest do not — so the second advance was
+  // always a duplicate, and every session skipped the day after it.
+  r.section('a finished workout moves the program on by one day, not two');
+  {
+    const s = sb({
+      hvi_workout_meta: JSON.stringify({ activeProgram: 'ppl', currentDayIndex: 0, lastWorkoutDate: '' }),
+      hvi_workout_log: JSON.stringify({ [T]: {
+        programId: 'ppl', dayIndex: 0, touched: true,
+        exercises: [{ exerciseId: 'bench_press', sets: [{ weight: 100, reps: 5, completed: true }] }],
+      } }),
+    });
+    run(s, `
+      habits=[]; log={}; journal={}; achievements=[]; gamification={xp:0,level:1,pillarXP:{}};
+      meta={lastOpenedDate:'',quoteIndex:0,totalPerfectDays:0};
+      setHabitHistory=function(){}; maybeAwardStreakShield=function(){}; checkAchievements=function(){};
+      checkMilestones=function(){}; showToast=function(){}; renderHome=function(){};
+      checkSleepPrompt=function(){}; checkInvitePrompt=function(){};
+    `);
+    const days = run(s, `findProgram('ppl').days.map(d => d.name)`);
+    run(s, 'finishWorkout()');
+    const after = run(s, 'workoutMeta.currentDayIndex');
+    r.check(`finishing ${days[0]} leaves you on ${days[1]}`, after === 1, `(on ${days[after]})`);
+
+    // Next morning, first open of the day.
+    run(s, `workoutMeta.lastWorkoutDate = ${JSON.stringify(dk(1))};
+            meta.lastOpenedDate = ${JSON.stringify(dk(1))}; checkReset();`);
+    const next = run(s, 'workoutMeta.currentDayIndex');
+    r.check('opening the app the next day does not advance again', next === 1,
+      `(on ${days[next]} — ${days[1]} skipped)`);
+
+    // And the day is not stuck either: the next finish still moves it on.
+    run(s, `workoutLog[today()] = { programId:'ppl', dayIndex:1, touched:true,
+              exercises:[{ exerciseId:'bench_press', sets:[{ weight:100, reps:5, completed:true }] }] };
+            finishWorkout();`);
+    r.check('the following session advances normally', run(s, 'workoutMeta.currentDayIndex') === 2,
+      `(index ${run(s, 'workoutMeta.currentDayIndex')})`);
+  }
+
   return r.finish();
 };
