@@ -65,11 +65,13 @@ function buildCoachSystemPrompt() {
   const _why = LS.get('hvi_why', '');
   const _activeGoals = (LS.get('hvi_goals', []) || []).filter(g => !g.done);
 
-  // Current habits list
-  const habitsList = habits.map(h => `  - "${h.name}" (${h.category})${log[h.id]?.completedToday ? ' ✓' : ''} | streak: ${log[h.id]?.streak || 0}d`).join('\n');
+  // Current habits list. The ids are here because the remove action needs
+  // them: the instructions below always referred to "the id from the list",
+  // and until they were listed the model's only id was the example's.
+  const habitsList = habits.map(h => `  - [id: ${h.id}] "${h.name}" (${h.category})${log[h.id]?.completedToday ? ' ✓' : ''} | streak: ${log[h.id]?.streak || 0}d`).join('\n');
 
   // Available programs
-  const progList = allPrograms().map(p => `  - ${p.name} (${p.days.length}-day)`).join('\n');
+  const progList = allPrograms().map(p => `  - [id: ${p.id}] ${p.name} (${p.days.length}-day)`).join('\n');
 
   return `You are Arete Coach — ${name}'s personal guide inside the Arete app. You blend Stoic philosophy with modern performance science. Be direct, warm, and practical — like a mentor who genuinely knows them.
 
@@ -122,7 +124,7 @@ ${lastJ ? `\nLAST JOURNAL (${jKeys[0]}):
 
 RULES:
 - ONLY reference data shown above — never invent context about the user
-- Never show internal IDs, codes, or technical data to the user — use habit names and plain language only
+- Never show internal IDs, codes, or technical data to the user — use habit names and plain language only. The [id: …] values exist only for action tags
 - If you don't know something, ask
 - Reference their actual numbers to make advice feel personal
 - When it's relevant and natural, connect advice back to their Why and active goals
@@ -143,11 +145,12 @@ Available actions (use exact format, one per line):
    [[ACTION:add_habit:{"name":"Drink 3L water","category":"health"}]]
    - Valid categories: mindset, discipline, fitness, health, learning, social, financial
 
-3. Remove a habit (use the habit id from the list above):
-   [[ACTION:remove_habit:{"id":"h07"}]]
+3. Remove a habit — give BOTH its id and its exact name, copied from the habit list above:
+   [[ACTION:remove_habit:{"id":"<id from the habit list>","name":"<exact habit name>"}]]
+   - Nothing is removed unless the id and name belong to the same habit
 
-4. Switch workout program (use program id from list above):
-   [[ACTION:switch_program:{"id":"ppl"}]]
+4. Switch workout program (copy the id from the program list above):
+   [[ACTION:switch_program:{"id":"<id from the program list>"}]]
 
 5. Set workout day index (0-based):
    [[ACTION:set_workout_day:{"dayIndex":2}]]
@@ -244,6 +247,40 @@ function _stripActionTags(text) {
   return text.replace(/\[\[ACTION:\w+:.*?\]\]\s*/g, '').trim();
 }
 
+// Compare habit names the way a person would read them: ignoring case, spacing,
+// and the dash and quote variants a model retypes differently ("7–9" vs "7-9").
+// Deliberately exact after that — a substring match would let "water" pick one
+// of several habits.
+function _coachNameKey(s) {
+  return String(s || '').normalize('NFKC').toLowerCase()
+    .replace(/[‐-―−]/g, '-')
+    .replace(/[‘’]/g, "'").replace(/[“”]/g, '"')
+    .replace(/\s+/g, ' ').trim();
+}
+
+// Removing a habit destroys its streak with no undo, so the target is taken
+// from two claims — id and name — and only when they agree. An id alone proves
+// nothing: the model was once told to use ids it was never shown, and the one
+// it had seen, the example's h07, was a real habit it then deleted.
+function _resolveCoachHabit(p) {
+  const key = _coachNameKey(p && p.name);
+  if (!key) return { error: `Couldn't tell which habit to remove, so nothing was changed.` };
+
+  const named = habits.filter(h => _coachNameKey(h.name) === key);
+  const shown = `"${p.name}"`;
+  if (!named.length) return { error: `No habit called ${shown}, so nothing was removed.` };
+
+  if (p.id) {
+    const h = named.find(x => x.id === p.id);
+    return h ? { habit: h }
+      : { error: `Couldn't confirm which habit ${shown} meant, so nothing was removed. You can delete it from the Habits screen.` };
+  }
+  if (named.length > 1) {
+    return { error: `You have more than one habit called ${shown}, so nothing was removed. You can delete the right one from the Habits screen.` };
+  }
+  return { habit: named[0] };
+}
+
 function _executeCoachAction(action) {
   const p = action.payload;
   switch (action.type) {
@@ -272,11 +309,11 @@ function _executeCoachAction(action) {
     }
 
     case 'remove_habit': {
-      if (!p.id) return null;
-      const h = habits.find(x => x.id === p.id);
-      if (!h) return `Habit "${p.id}" not found`;
-      habits = habits.filter(x => x.id !== p.id);
-      delete log[p.id];
+      const found = _resolveCoachHabit(p);
+      if (found.error) return found.error;
+      const h = found.habit;
+      habits = habits.filter(x => x.id !== h.id);
+      delete log[h.id];
       LS.set('hvi_habits', habits);
       LS.set('hvi_log', log);
       return `Removed habit: "${h.name}"`;
@@ -285,7 +322,7 @@ function _executeCoachAction(action) {
     case 'switch_program': {
       if (!p.id) return null;
       const prog = findProgram(p.id);
-      if (!prog) return `Program "${p.id}" not found`;
+      if (!prog) return `Couldn't find that program, so nothing was changed.`;
       workoutMeta.activeProgram = p.id;
       workoutMeta.currentDayIndex = 0;
       LS.set('hvi_workout_meta', workoutMeta);
