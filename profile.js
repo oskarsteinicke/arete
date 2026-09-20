@@ -703,6 +703,10 @@ function renderCharacter() {
     <button class="back" onclick="go('home')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
     <div class="char-hero ani">
       <div class="char-avatar avatar-frame">${avatarImg(lvl)}</div>
+      <div class="char-set-row">
+        <button class="char-set-btn${avatarSet() === 'm' ? ' active' : ''}" onclick="setAvatarSet('m')">Male</button>
+        <button class="char-set-btn${avatarSet() === 'f' ? ' active' : ''}" onclick="setAvatarSet('f')">Female</button>
+      </div>
       <div class="char-name">${userName() || 'Warrior'}</div>
       <div class="char-title">Lv.${lvl} ${title}</div>
       <div class="char-stage">${stageNames[stage]}${nextStage ? ` → ${nextStage} at Lv.${nextStageLevel}` : ' (Max Stage)'}</div>
@@ -778,8 +782,11 @@ async function shareCharacterCard() {
   const totalPower = Math.round(stats.reduce((s, st) => s + st.val, 0) / stats.length);
 
   // Character portrait (framed so the art's dark background blends)
-  const _stage = (typeof avatarStage === 'function') ? avatarStage(lvl) : 1;
-  const _av = await _loadImage(`avatar-${_stage}.png?v=1`);
+  // Same resolver as the screen, or the shared card shows a different
+  // character from the one the person has been looking at all week.
+  const _av = await _loadImage((typeof avatarFile === 'function')
+    ? avatarFile(lvl)
+    : `avatar-m-${(typeof avatarStage === 'function') ? avatarStage(lvl) : 1}.png`);
   const pw = 210, ph = 264, px = (w - pw) / 2, py = 40;
   const pg = ctx.createLinearGradient(0, py, 0, py + ph);
   pg.addColorStop(0, '#14110b');
@@ -1872,11 +1879,11 @@ function renderOnboarding(step) {
       <div class="ob-sub">This shapes your character's appearance. You can always change it later.</div>
       <div class="ob-gender-row">
         <div class="ob-gender-card${_obGender==='male'?' active':''}" onclick="_obGender='male';renderOnboarding(2)">
-          <div style="width:60px;height:94px;margin:0 auto 8px">${buildAvatarSVG(1)}</div>
+          <div style="width:60px;height:94px;margin:0 auto 8px">${avatarImg(1, 'm')}</div>
           <div style="font-size:13px;color:var(--text)">Male</div>
         </div>
         <div class="ob-gender-card${_obGender==='female'?' active':''}" onclick="_obGender='female';renderOnboarding(2)">
-          <div style="width:60px;height:94px;margin:0 auto 8px">${(()=>{const _tmp=tdeeProfile;tdeeProfile={sex:'female'};const s=buildAvatarSVG(1);tdeeProfile=_tmp;return s;})()}</div>
+          <div style="width:60px;height:94px;margin:0 auto 8px">${avatarImg(1, 'f')}</div>
           <div style="font-size:13px;color:var(--text)">Female</div>
         </div>
       </div>`;
@@ -1958,6 +1965,11 @@ function obNext(step) {
     if (!tdeeProfile) tdeeProfile = {};
     tdeeProfile.sex = _obGender;
     LS.set('hvi_tdee_profile', tdeeProfile);
+    // This screen asks which character you want, so record it as a choice
+    // rather than leaving the avatar to be inferred from a calorie field that
+    // happens to sit on the same answer.
+    settings.avatarSet = _obGender === 'female' ? 'f' : 'm';
+    LS.set('hvi_settings', settings);
   }
   if (step === 3) {
     // Keep the chosen path — the question used to have no effect at all

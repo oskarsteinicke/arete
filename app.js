@@ -969,13 +969,40 @@ function icon(name, size = 18) {
 
 // ── CHARACTER AVATARS ───────────────────────────────────────────────────────
 // Illustrated stage art (PNG). Stage thresholds match LEVEL_TITLES exactly.
-const _AVATAR_V = '1'; // bump to bust caches when art changes
+const _AVATAR_V = '2'; // bump to bust caches when art changes
 function avatarStage(lvl) {
   return lvl >= 20 ? 6 : lvl >= 12 ? 5 : lvl >= 8 ? 4 : lvl >= 5 ? 3 : lvl >= 3 ? 2 : 1;
 }
-function avatarImg(lvl) {
+
+// Which of the two sets to draw from.
+//
+// The default comes from the sex on the TDEE profile, because that is the only
+// thing the app already knows — but nobody should be handed a character on the
+// strength of a field they filled in for calorie maths, so an explicit choice
+// always wins and is what the character screen writes.
+function avatarSet() {
+  const chosen = (typeof settings !== 'undefined' && settings) ? settings.avatarSet : null;
+  if (chosen === 'm' || chosen === 'f') return chosen;
+  const sex = (typeof tdeeProfile !== 'undefined' && tdeeProfile) ? tdeeProfile.sex : null;
+  return sex === 'female' ? 'f' : 'm';
+}
+
+function avatarFile(lvl, set) {
+  return `avatar-${set || avatarSet()}-${avatarStage(lvl)}.png?v=${_AVATAR_V}`;
+}
+
+function avatarImg(lvl, set) {
   const s = avatarStage(lvl);
-  return `<img class="avatar-img" src="avatar-${s}.png?v=${_AVATAR_V}" alt="Character stage ${s}" draggable="false">`;
+  return `<img class="avatar-img" src="${avatarFile(lvl, set)}" alt="Character stage ${s}" draggable="false">`;
+}
+
+function setAvatarSet(v) {
+  if (v !== 'm' && v !== 'f') return;
+  settings.avatarSet = v;
+  LS.set('hvi_settings', settings);
+  if (typeof track === 'function') track('avatar_set_changed', { set: v });
+  if (typeof curView !== 'undefined' && curView === 'character' && typeof renderCharacter === 'function') renderCharacter();
+  else if (typeof go === 'function' && typeof curView !== 'undefined') go(curView, {}, false);
 }
 
 // ── SKELETON LOADING ──────────────────────────────────────────────────────
