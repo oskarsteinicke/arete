@@ -1776,6 +1776,21 @@ let _obProtein = 180;
 let _obName = '', _obGender = 'male';
 let _obProgram = 'ppl';
 
+// Which steps this person actually sees.
+//
+// Everyone was asked for a training split and a protein target, including the
+// people who had just chosen "forge discipline" on the screen before. That is
+// two screens of setup about a part of the app they said they were not here
+// for, standing between them and the first useful thing. The path now decides
+// what is left to ask.
+function _obPlan() {
+  const base = [1, 2, 3];
+  if (_obPath === 'habits') return base;
+  if (_obPath === 'fitness') return base.concat(4);
+  if (_obPath === 'nutrition') return base.concat(5);
+  return base.concat(4, 5);
+}
+
 function injectOnboardingStyles() {
   if (document.getElementById('ob-styles')) return;
   const s = document.createElement('style');
@@ -1837,19 +1852,22 @@ function renderOnboarding(step) {
     return;
   }
 
-  const dots = [1,2,3,4,5].map(i => `<div class="ob-dot${i===step?' active':''}" ></div>`).join('');
+  const _plan = _obPlan();
+  const _pos = _plan.filter(i => i <= step).length;   // robust if step left the plan
+  const stepLbl = `Step ${Math.max(1, _pos)} of ${_plan.length}`;
+  const dots = _plan.map(i => `<div class="ob-dot${i===step?' active':''}" ></div>`).join('');
   let content = '';
 
   if (step === 1) {
     content = `
-      <div class="ob-eyebrow">Step 1 of 5</div>
+      <div class="ob-eyebrow">${stepLbl}</div>
       <div class="ob-title">What is your name?</div>
       <div class="ob-sub">Knowing yourself is the beginning of all wisdom.</div>
       <input class="ob-input" type="text" id="ob-name-input" placeholder="Your first name" maxlength="30" value="${esc(_obName)}" oninput="_obName=this.value.trim()">`;
 
   } else if (step === 2) {
     content = `
-      <div class="ob-eyebrow">Step 2 of 5</div>
+      <div class="ob-eyebrow">${stepLbl}</div>
       <div class="ob-title">Choose your avatar</div>
       <div class="ob-sub">This shapes your character's appearance. You can always change it later.</div>
       <div class="ob-gender-row">
@@ -1877,7 +1895,7 @@ function renderOnboarding(step) {
         <div class="ob-goal-desc">${g.desc}</div>
       </div>`).join('');
     content = `
-      <div class="ob-eyebrow">Step 3 of 5</div>
+      <div class="ob-eyebrow">${stepLbl}</div>
       <div class="ob-title">Choose your path.</div>
       <div class="ob-sub">First say to yourself what you would be; and then do what you have to do.</div>
       <div class="ob-goal-grid">${cards}</div>`;
@@ -1896,7 +1914,7 @@ function renderOnboarding(step) {
         <div class="ob-goal-desc">${p.desc}</div>
       </div>`).join('');
     content = `
-      <div class="ob-eyebrow">Step 4 of 5</div>
+      <div class="ob-eyebrow">${stepLbl}</div>
       <div class="ob-title">Pick your program.</div>
       <div class="ob-sub">Choose a training split. You can switch anytime or build your own later.</div>
       <div class="ob-goal-grid">${progCards}</div>`;
@@ -1907,7 +1925,7 @@ function renderOnboarding(step) {
       `<button class="ob-nut-btn${_obGoalType===k?' active':''}" onclick="_obGoalType='${k}';_obCalories=${k==='cut'?2000:k==='bulk'?3000:2500};_obProtein=${k==='cut'?160:k==='bulk'?200:180};renderOnboarding(5)">${l}<br><span style="font-weight:400;font-size:10px;text-transform:none">${s}</span></button>`
     ).join('');
     content = `
-      <div class="ob-eyebrow">Step 5 of 5</div>
+      <div class="ob-eyebrow">${stepLbl}</div>
       <div class="ob-title">Set your measures.</div>
       <div class="ob-sub">Without measure, even the finest things become excess. Set your daily targets.</div>
       <div class="ob-nut-btns">${nutBtns}</div>
@@ -1917,7 +1935,7 @@ function renderOnboarding(step) {
       </div>`;
   }
 
-  const isLast = step === 5;
+  const isLast = !_plan.some(i => i > step);
   overlay.innerHTML = `
     <div class="ob-wrap">
       <div class="ob-step-dots">${dots}</div>
@@ -1953,7 +1971,14 @@ function obNext(step) {
     workoutMeta.currentDayIndex = 0;
     LS.set('hvi_workout_meta', workoutMeta);
   }
-  if (step < 5) { renderOnboarding(step + 1); return; }
+  // Advance within this person's plan, not through all five screens. Asking
+  // for the next step *greater than* this one rather than the one after its
+  // index matters: going back and changing the path can drop the screen you
+  // are standing on out of the plan, and indexOf then returns -1, which walked
+  // people back to step 1.
+  const plan = _obPlan();
+  const next = plan.find(x => x > step);
+  if (next) { renderOnboarding(next); return; }
   obFinish();
 }
 

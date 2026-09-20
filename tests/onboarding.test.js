@@ -14,15 +14,20 @@ function obSandbox(store) {
   `);
   return sb;
 }
-// Walk the flow the way a person does
+// Walk the flow the way a person does. The training and nutrition screens are
+// only shown to the paths that need them, so walking through all five
+// regardless would test a route nobody can take.
 function walk(sb, { path, program, nutrition }) {
   run(sb, 'renderOnboarding(0)');
   run(sb, "_obName='Ada'; obNext(1)");
   run(sb, "_obGender='female'; obNext(2)");
   run(sb, `_obPath='${path}'; obNext(3)`);
-  run(sb, `_obProgram='${program}'; obNext(4)`);
-  if (nutrition) run(sb, `_obGoalType='${nutrition}'`);
-  run(sb, 'obNext(5)');
+  const plan = run(sb, '_obPlan()');
+  if (plan.includes(4)) run(sb, `_obProgram='${program}'; obNext(4)`);
+  if (plan.includes(5)) {
+    if (nutrition) run(sb, `_obGoalType='${nutrition}'`);
+    run(sb, 'obNext(5)');
+  }
 }
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
@@ -49,14 +54,32 @@ module.exports = async function () {
   r.section('answers are kept');
   {
     const sb = obSandbox({});
-    walk(sb, { path: 'habits', program: 'ul', nutrition: 'cut' });
-    r.check('path persisted', JSON.parse(sb.localStorage._d['hvi_meta'] || '{}').path === 'habits');
+    walk(sb, { path: 'all', program: 'ul', nutrition: 'cut' });
+    r.check('path persisted', JSON.parse(sb.localStorage._d['hvi_meta'] || '{}').path === 'all');
     r.check('program persisted', JSON.parse(sb.localStorage._d['hvi_workout_meta']).activeProgram === 'ul');
     r.check('nutrition persisted', JSON.parse(sb.localStorage._d['hvi_diet_meta']).goalType === 'cut');
     const ev = sb._tracked.find(t => t[0] === 'onboarding_complete');
     r.check('completion reports all three',
-      ev && ev[1].path === 'habits' && ev[1].program === 'ul' && ev[1].nutrition === 'cut',
+      ev && ev[1].path === 'all' && ev[1].program === 'ul' && ev[1].nutrition === 'cut',
       `(${JSON.stringify(ev && ev[1])})`);
+  }
+
+  // The shortest route through setup, which is the one most new people should
+  // take: name, avatar, path, done. The two screens about training splits and
+  // protein targets are the ones that stood between someone who came for
+  // habits and the first thing worth seeing.
+  r.section('the habits path finishes in three screens');
+  {
+    const sb = obSandbox({});
+    walk(sb, { path: 'habits' });
+    r.check('setup is complete', sb.localStorage._d['hvi_onboarded'] === 'true');
+    r.check('it landed on home', sb._nav.includes('home'), `(${sb._nav.join(' ')})`);
+    const ev = sb._tracked.find(t => t[0] === 'onboarding_complete');
+    r.check('and reported the path', ev && ev[1].path === 'habits', `(${JSON.stringify(ev && ev[1])})`);
+    // Skipping the macro screen must still leave usable targets behind it.
+    const goals = JSON.parse(sb.localStorage._d['hvi_diet_meta'] || '{}').dailyGoals || {};
+    r.check('macro targets still have defaults', goals.calories > 0 && goals.protein > 0,
+      `(${JSON.stringify(goals)})`);
   }
 
   // An invite used to be handled while the onboarding overlay was up, so it

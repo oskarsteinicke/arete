@@ -123,7 +123,7 @@ function _convertStoredWeights(f) {
 // ── SUPABASE AUTH + CLOUD SYNC ────────────────────────────────────────────
 const SUPABASE_URL = 'https://socflncohsenjptgkkax.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_J2qJ8iTfCESrML5Hm6NGbQ_mz9uPeug';
-const SYNC_KEYS = ['hvi_habits','hvi_log','hvi_journal3','hvi_meta','hvi_workout_log','hvi_workout_meta','hvi_meal_log','hvi_diet_meta','hvi_weight_log','hvi_water_log','hvi_prs','hvi_gamification','hvi_achievements','hvi_tdee_profile','hvi_custom_programs','hvi_onboarded','hvi_sleep_log','hvi_settings','hvi_habit_history','hvi_meal_favorites','hvi_routines','hvi_routine_log','hvi_integrations','hvi_challenges','hvi_habit_links','hvi_why','hvi_goals'];
+const SYNC_KEYS = ['hvi_habits','hvi_log','hvi_journal3','hvi_meta','hvi_workout_log','hvi_workout_meta','hvi_meal_log','hvi_diet_meta','hvi_weight_log','hvi_water_log','hvi_prs','hvi_gamification','hvi_achievements','hvi_tdee_profile','hvi_custom_programs','hvi_onboarded','hvi_sleep_log','hvi_settings','hvi_habit_history','hvi_meal_favorites','hvi_routines','hvi_routine_log','hvi_integrations','hvi_challenges','hvi_habit_links','hvi_why','hvi_goals','hvi_mood_log'];
 // Keys that are date-keyed objects — these get merged instead of overwritten
 const MERGE_KEYS = ['hvi_workout_log','hvi_meal_log','hvi_journal3','hvi_weight_log','hvi_water_log','hvi_sleep_log','hvi_habit_history'];
 
@@ -2104,12 +2104,13 @@ function _wasDueOn(h, key) {
 //
 // The old logic only asked whether the habit was due YESTERDAY, so a gap of
 // several days left the streak untouched unless the final day happened to be a
-// due day. It now walks every day since the last completion; one missed due day
-// ends the streak.
+// due day. It now walks every day since the last completion, and a single
+// missed day is absorbed by a shield where one is available.
 function validateStreaks() {
   const t = today();
   let changed = false;
   const hist = LS.get('hvi_habit_history', {}) || {};
+  const _shieldsSpent = [];
   (habits || []).forEach(h => {
     const e = log[h.id];
     if (!e || !(e.streak > 0) || !e.lastCompletedDate) return;
@@ -2132,14 +2133,38 @@ function validateStreaks() {
     }
 
     const d = new Date(e.lastCompletedDate + 'T12:00');
+    let missed = 0;
     for (let i = 0; i < 400; i++) {
       d.setDate(d.getDate() + 1);
       const key = dateKey(d);
       if (key >= t) break;               // today has not been missed yet
-      if (_wasDueOn(h, key)) { e.streak = 0; changed = true; break; }
+      if (_wasDueOn(h, key)) missed++;
     }
+    if (!missed) return;
+
+    // One missed day out of an otherwise kept fortnight is not a reason to
+    // wipe the number and greet someone with "Start your streak". A shield is
+    // already awarded every Sunday and, until now, could never be spent on
+    // anything — so a single miss spends one and the streak survives.
+    // useStreakShield moves lastCompletedDate to yesterday, which is what lets
+    // the next completion continue the count whatever the habit's schedule is.
+    if (missed === 1 && typeof getStreakShields === 'function' && getStreakShields() > 0
+        && typeof useStreakShield === 'function') {
+      useStreakShield(h.id);
+      _shieldsSpent.push(h.name);
+      changed = true;
+      return;
+    }
+    e.streak = 0;
+    changed = true;
   });
   if (changed) LS.set('hvi_log', log);
+  // Spending something of theirs silently would be worse than letting the
+  // streak break, so say what was covered and what it cost.
+  if (_shieldsSpent.length && typeof showToast === 'function') {
+    const n = _shieldsSpent.length;
+    showToast(`\u{1F6E1}️ Streak shield used on ${n === 1 ? _shieldsSpent[0] : n + ' habits'} — ${getStreakShields()} left`);
+  }
   return changed;
 }
 
@@ -2304,7 +2329,13 @@ function workoutDoneToday() { return trainedOnDay(today()); }
 function habitRowHTML(h, suffix = '', editMode = false) {
   const e = log[h.id] || {}, s = e.streak || 0;
   const due = isHabitDueToday(h);
-  const streakTxt = s > 0 ? `${s >= 3 ? '\uD83D\uDD25 ' : ''}${s} day streak` : 'Start your streak';
+  // Consistency, not the streak count. The streak is still kept and still
+  // celebrated at milestones, but it is the wrong thing to put under every
+  // habit every day: one missed day turned the label into "Start your streak"
+  // and wiped the fact that the last two weeks went fine.
+  const streakTxt = (typeof consistency7 === 'function')
+    ? consistencyText(consistency7(h.id))
+    : (s > 0 ? `${s} day streak` : 'Start your streak');
   const _lk = (typeof getHabitLink === 'function' && getHabitLink(h.id)) ? ' <span class="hi-auto" title="Auto-completes from another module">\u26A1</span>' : '';
   if (!due && !editMode) {
     return `<div class="hi rest-day" id="hi${suffix}-${h.id}" style="opacity:0.4;pointer-events:none">
@@ -2394,7 +2425,14 @@ function tapHabit(id, suffix) {
   const s = e.streak || 0;
   row.classList.toggle('done', !!e.completedToday);
   row.setAttribute('aria-checked', !!e.completedToday);
-  if (stk) { stk.textContent = s > 0 ? `${s>=3?'\uD83D\uDD25 ':''}${s} day streak` : 'Start your streak'; stk.className = `hi-streak${s>=3?' hot':''}`; }
+  if (stk) {
+    stk.textContent = (typeof consistency7 === 'function')
+      ? consistencyText(consistency7(id))
+      : (s > 0 ? `${s} day streak` : 'Start your streak');
+    // The Today spine reuses this updater with its own markup, so only the
+    // habit-screen chip gets the habit-screen classes back.
+    if (/^hi-streak/.test(stk.className)) stk.className = `hi-streak${s >= 3 ? ' hot' : ''}`;
+  }
   if (chk) { chk.classList.remove('pop'); void chk.offsetWidth; chk.classList.add('pop'); }
   if (curView === 'pillar') refreshPillarRing();
 }
@@ -2629,6 +2667,7 @@ function renderHome() {
   }).join('');
 
   document.getElementById('view').innerHTML = `
+    ${typeof todaySpineHTML === 'function' ? todaySpineHTML() : ''}
     <div class="hm-hero ani">
       <div class="hm-hero-card hm-hero-card--center" onclick="go('character')" role="button" tabindex="0" aria-label="Open your character" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();go('character')}">
         <div class="hm-hero-glow"></div>
