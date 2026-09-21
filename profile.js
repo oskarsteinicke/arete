@@ -2497,10 +2497,17 @@ function shareRecap() {
 function buildHeatmapHTML() {
   const days = 91; // ~13 weeks
   const cells = [];
+  // Read the completion history, not lastCompletedDate. That field holds one
+  // date per habit, so a ninety-day grid could never light up more than the
+  // most recent day: everyone's activity map was blank except for today, no
+  // matter how long they had been going.
+  const hist = LS.get('hvi_habit_history', {}) || {};
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i);
     const k = d.toLocaleDateString('en-CA');
-    const count = habits.filter(h => log[h.id]?.lastCompletedDate === k || (k === today() && log[h.id]?.completedToday)).length;
+    const count = habits.filter(h =>
+      (k === today() && log[h.id]?.completedToday) ||
+      (Array.isArray(hist[h.id]) && hist[h.id].includes(k))).length;
     const total = habits.length || 1;
     const pct = count / total;
     const lvl = pct === 0 ? 0 : pct < 0.25 ? 1 : pct < 0.5 ? 2 : pct < 0.75 ? 3 : 4;

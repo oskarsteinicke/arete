@@ -289,5 +289,34 @@ function rest(r) {
     r.check('completed yesterday still survives', run(s, 'log.h1.streak') === 4, `(${run(s, 'log.h1.streak')})`);
   }
 
+  // The ninety-day activity grid read lastCompletedDate, which holds exactly
+  // one date per habit. However long someone had been going, every cell but
+  // the most recent was empty — the feature could not work by construction.
+  r.section('the activity heatmap reflects real history');
+  {
+    // buildHeatmapHTML lives in profile.js, which this suite's sandbox does
+    // not load, so this section builds its own.
+    const s = createSandbox({
+      files: ['data.js', 'app.js', 'connect.js', 'today.js', 'premium.js', 'workout.js',
+              'diet.js', 'integrations.js', 'profile.js'],
+      store: {
+        hvi_habits: JSON.stringify([{ id: 'h1', name: 'Read', schedule: 'daily' }]),
+        hvi_log: JSON.stringify({ h1: { streak: 3, lastCompletedDate: dk(1), completedToday: false } }),
+        hvi_habit_history: JSON.stringify({ h1: [1, 2, 3, 10, 40, 80].map(dk) }),
+      },
+    });
+    run(s, `
+      settings={}; curView='habits'; track=function(){}; go=function(){};
+      habits=JSON.parse(localStorage.getItem('hvi_habits'));
+      log=JSON.parse(localStorage.getItem('hvi_log'));
+      gamification={xp:0}; tdeeProfile=null;
+    `);
+    const html = run(s, 'buildHeatmapHTML()') || '';
+    const lit = (html.match(/hm-heat-[1-4]/g) || []).length;
+    r.check('every logged day is lit', lit === 6, `(${lit} of 6 cells lit)`);
+    r.check('and the rest are empty', (html.match(/hm-heat-0/g) || []).length === 91 - 6,
+      `(${(html.match(/hm-heat-0/g) || []).length} empty)`);
+  }
+
   return r.finish();
 };
