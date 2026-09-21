@@ -223,6 +223,22 @@ module.exports = function () {
     r.check('onboarding is marked done', s.localStorage._d.hvi_onboarded === 'true');
   }
 
+  // The Why was rendered by the spine and again by a card below it, so home
+  // said the same sentence twice — and the second one was clipped mid-word by
+  // the bottom of the screen.
+  r.section('home states the identity line once');
+  {
+    const why = 'I want to be the kind of person who does what he said he would.';
+    const s = sb({ hvi_why: JSON.stringify(why), hvi_goals: JSON.stringify([{ id: 'g1', text: 'Bench 100', done: false }]) },
+      `settings={}; meta.lastOpenedDate=today(); editWhy=function(){ _edited=true; }; _edited=false;`);
+    const html = run(s, `renderHome(); document.getElementById('view').innerHTML`) || '';
+    const count = html.split(why).length - 1;
+    r.check('the Why appears exactly once', count === 1, `(${count} times)`);
+    r.check('and it is editable from there', /editWhy\(\)/.test(html), '(no way to change it)');
+    r.check('the goals screen is still reachable', /go\('goals'\)/.test(html), '(only path to goals was the card)');
+    r.check('the open goal count is shown', /1 active goal\b/.test(html), '(no goal summary)');
+  }
+
   r.section('the spine is on the home screen');
   {
     const src = require('fs').readFileSync(

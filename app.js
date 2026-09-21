@@ -2705,7 +2705,6 @@ function renderHome() {
       </div>
     </div>
 
-    ${typeof whyCardHTML === 'function' ? whyCardHTML() : ''}
     ${typeof todayBriefingHTML === 'function' ? todayBriefingHTML() : ''}
     ${typeof coachInsightCardHTML === 'function' ? coachInsightCardHTML() : ''}
 

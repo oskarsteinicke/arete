@@ -2721,29 +2721,6 @@ function showPhotoCompare() {
 // ══════════════════════════════════════════════════════════════════════════
 
 // ── MY WHY (home card + editor) ─────────────────────────────────────────────
-function whyCardHTML() {
-  const why = LS.get('hvi_why', '');
-  const goals = LS.get('hvi_goals', []);
-  const active = goals.filter(g => !g.done).length;
-  const goalsLabel = goals.length ? `${active} active goal${active === 1 ? '' : 's'}` : 'Set your goals';
-  const goalsLink = `<div class="why-goals-link" onclick="event.stopPropagation();go('goals')">${icon('flag', 14)} ${goalsLabel} ›</div>`;
-  if (!why) {
-    return `<div class="why-card ani">
-      <div onclick="editWhy()" role="button" tabindex="0" style="cursor:pointer">
-        <div class="why-eyebrow">Your Why</div>
-        <div class="why-empty-text">Define the one reason you get up and grind. Tap to set it.</div>
-      </div>
-      ${goalsLink}
-    </div>`;
-  }
-  return `<div class="why-card ani">
-    <div onclick="editWhy()" role="button" tabindex="0" style="cursor:pointer">
-      <div class="why-eyebrow">Your Why <span class="why-edit-hint">✎</span></div>
-      <div class="why-quote">${esc(why)}</div>
-    </div>
-    ${goalsLink}
-  </div>`;
-}
 
 function editWhy() {
   const cur = LS.get('hvi_why', '');

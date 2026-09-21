@@ -165,6 +165,9 @@ function injectTodayStyles() {
     .td-date{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--text-muted)}
     .td-why{font-size:12px;color:var(--text-dim);font-style:italic;margin:4px 0 12px;line-height:1.45}
     .td-why-set{background:none;border:none;color:var(--accent);font:inherit;font-style:normal;cursor:pointer;padding:0;text-decoration:underline}
+    .td-why{cursor:pointer}
+    .td-why-edit{font-style:normal;color:var(--text-muted);font-size:10px;margin-left:2px}
+    .td-goals{font-size:11px;letter-spacing:.4px;color:var(--accent);cursor:pointer;margin:-6px 0 12px}
     .td-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--border);cursor:pointer}
     .td-row:first-of-type{border-top:none}
     .td-row.td-done .td-label,.td-row.done .td-label{opacity:.45;text-decoration:line-through}
@@ -216,9 +219,21 @@ function todaySpineHTML() {
 
     // The identity line is the frame for everything under it. Offering to set
     // one costs a row; nagging for one would cost the screen.
+    //
+    // This is also the only place the Why appears on home now. It used to be
+    // here and again in a card below, where the same sentence was clipped
+    // mid-word by the bottom of the screen — one thought, said twice, badly
+    // the second time. The card's two jobs, editing the Why and reaching the
+    // goals screen, both live on these two rows instead.
+    const edit = (typeof editWhy === 'function') ? 'editWhy()' : `go('goals')`;
     const whyHTML = why
-      ? `<div class="td-why">${esc(why)}</div>`
-      : `<div class="td-why"><button class="td-why-set" onclick="go('goals')">Say who you’re becoming</button> — it shapes what shows up here.</div>`;
+      ? `<div class="td-why" onclick="${edit}" role="button" tabindex="0"
+           onkeydown="if(event.key==='Enter'){${edit}}">${esc(why)} <span class="td-why-edit">✎</span></div>`
+      : `<div class="td-why"><button class="td-why-set" onclick="${edit}">Say who you’re becoming</button> — it shapes what shows up here.</div>`;
+
+    const openGoals = (LS.get('hvi_goals', []) || []).filter(g => g && !g.done).length;
+    const goalsHTML = `<div class="td-goals" onclick="go('goals')" role="button" tabindex="0">${
+      openGoals ? `${openGoals} active goal${openGoals === 1 ? '' : 's'}` : 'Set your goals'} ›</div>`;
 
     const moodHTML = MOOD_FACES.map((f, i) =>
       `<button class="td-mood-btn${mood && mood.mood === i + 1 ? ' on' : ''}" onclick="event.stopPropagation();setTodayMood(${i + 1})"
@@ -232,6 +247,7 @@ function todaySpineHTML() {
     return `<div class="td-spine ani">
       <div class="td-head"><div class="td-title">Today</div><div class="td-date">${dateStr}</div></div>
       ${whyHTML}
+      ${goalsHTML}
       ${priorities.map(_tdRowHTML).join('')}
       <div class="td-foot">
         ${consHTML}
