@@ -969,7 +969,7 @@ function icon(name, size = 18) {
 
 // ── CHARACTER AVATARS ───────────────────────────────────────────────────────
 // Illustrated stage art (PNG). Stage thresholds match LEVEL_TITLES exactly.
-const _AVATAR_V = '2'; // bump to bust caches when art changes
+const _AVATAR_V = '3'; // bump to bust caches when art changes
 function avatarStage(lvl) {
   return lvl >= 20 ? 6 : lvl >= 12 ? 5 : lvl >= 8 ? 4 : lvl >= 5 ? 3 : lvl >= 3 ? 2 : 1;
 }
