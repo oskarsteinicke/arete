@@ -92,7 +92,10 @@ ${(() => {
   const recentDates = Object.keys(workoutLog || {}).sort().reverse().slice(0, 7);
   const recent = recentDates.map(d => {
     const w = workoutLog[d];
-    const vol = w?.exercises ? w.exercises.reduce((s, ex) => s + (ex.sets || []).reduce((ss, set) => ss + (!set.warmup && set.kg && set.reps ? set.kg * set.reps : 0), 0), 0) : 0;
+    // set.weight, not set.kg. A logged set has never had a kg field, so every
+    // session in the coach's context reported "0 kg volume" and it was asked
+    // to comment on training that looked like nothing had been lifted.
+    const vol = w?.exercises ? w.exercises.reduce((s, ex) => s + (ex.sets || []).reduce((ss, set) => ss + (!set.warmup && set.weight && set.reps ? set.weight * set.reps : 0), 0), 0) : 0;
     const dur = w?.duration ? `${w.duration}min` : '';
     return `  ${d}: ${w?.dayName || 'Unknown'} ${dur ? '(' + dur + ')' : ''} | ${vol.toLocaleString()} kg volume`;
   }).join('\n');

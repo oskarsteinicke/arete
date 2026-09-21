@@ -39,6 +39,30 @@ const streak = (s, id) => run(s, `log[${JSON.stringify(id)}] ? log[${JSON.string
 module.exports = function () {
   const r = createReporter('coach');
 
+  // The coach is told to reference the user's real numbers, so the numbers it
+  // is handed have to be real. Volume was summed from set.kg, and a logged set
+  // stores its load in set.weight — so every session in the prompt came out at
+  // "0 kg volume", and the coach was being asked to comment on a month of
+  // training that looked like nothing had been lifted.
+  r.section('recent workouts carry their real volume');
+  {
+    const s = fresh(`
+      workoutLog[today()] = { programId:'ppl', dayName:'Push A', touched:true, duration:57,
+        exercises: [
+          { exerciseId:'bench_press', sets:[
+              { weight:60, reps:10, completed:true, warmup:true },
+              { weight:80, reps:8, completed:true },
+              { weight:80, reps:8, completed:true }] },
+          { exerciseId:'ohp', sets:[{ weight:45, reps:8, completed:true }] },
+        ] };
+    `);
+    const prompt = run(s, 'buildCoachSystemPrompt()');
+    const line = (prompt.split('\n').find(l => /kg volume/.test(l)) || '').trim();
+    r.check('the session is not reported as empty', !/\b0 kg volume/.test(line), `(${line})`);
+    // 80x8 + 80x8 = 1280, plus 45x8 = 360. The warmup set is excluded.
+    r.check('working sets only, warmup excluded', /1,640 kg volume/.test(line), `(${line})`);
+  }
+
   r.section('the coach is given what it is told to use');
   {
     const s = fresh();
