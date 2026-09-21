@@ -270,7 +270,10 @@ function capture(name, view, scrollTo) {
     const out = path.join(OUT, `${name}.png`);
     const child = spawn(CHROME, [
       '--headless=new', '--disable-gpu', '--no-sandbox', '--hide-scrollbars',
-      '--force-device-scale-factor=2', '--window-size=480,960',
+      // 3x, not 2x: the viewport is a phone's CSS size either way, but the
+      // capture is pixel-for-pixel sharp on the 3x screens people actually
+      // hold. 1440x2880 is still well inside Play's 3840 cap.
+      '--force-device-scale-factor=3', '--window-size=480,960',
       // Google Fonts and the analytics script never resolve here, and headless
       // waits for the load event, so the capture stalled on them.
       '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost',
