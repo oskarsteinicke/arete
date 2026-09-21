@@ -271,7 +271,7 @@ nav {
 
 /* HABITS/ROUTINES TOGGLE */
 .hab-toggle { display: flex; gap: 0; padding: 52px 24px 0; }
-.hab-toggle-btn { flex: 1; padding: 10px 0; font-size: 13px; font-family: var(--body); font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-dim); cursor: pointer; transition: all 0.2s; }
+.hab-toggle-btn { flex: 1; padding: 10px 0; font-size: 13px; font-family: var(--display); font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-dim); cursor: pointer; transition: all 0.2s; }
 .hab-toggle-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
 .routine-empty { padding: 16px 24px; font-size: 13px; color: var(--text-dim); font-style: italic; }
 
@@ -896,7 +896,7 @@ nav {
 .hm-card-lbl { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 5px; font-weight: 500; }
 .hm-card-val { font-family: var(--serif); font-size: 17px; color: var(--text); line-height: 1.25; }
 .hm-card-sub { font-size: 10.5px; color: var(--text-dim); margin-top: 3px; line-height: 1.4; }
-.hm-card-badges { font-size: 10px; color: var(--fg3); margin-top: 6px; line-height: 1.6; letter-spacing: .02em; }
+.hm-card-badges { font-size: 10px; color: var(--text-muted); margin-top: 6px; line-height: 1.6; letter-spacing: .02em; }
 .hm-card-status { font-size: 11px; font-weight: 600; margin-top: 10px; }
 .hm-card-bar { height: 3px; background: rgba(255,255,255,.06); border-radius: 2px; overflow: hidden; margin-top: 10px; }
 .hm-card-fill { height: 100%; border-radius: 2px; }
@@ -1742,7 +1742,7 @@ nav {
 }
 .milestone-btn {
   background: var(--accent); color: #0a0908; border: none; border-radius: 100px;
-  font-family: var(--sans); font-size: 13px; font-weight: 600;
+  font-family: var(--display); font-size: 13px; font-weight: 600;
   letter-spacing: 0.08em; text-transform: uppercase;
   padding: 14px 36px; cursor: pointer; width: 100%;
 }
@@ -1776,11 +1776,11 @@ nav {
 .tour-skip {
   flex: 1; background: none; border: 1px solid var(--border); border-radius: 100px;
   color: var(--text-muted); font-size: 12px; padding: 12px 0; cursor: pointer;
-  font-family: var(--sans);
+  font-family: var(--display);
 }
 .tour-next {
   flex: 1; background: var(--accent); color: #0a0908; border: none; border-radius: 100px;
-  font-family: var(--sans); font-size: 12px; font-weight: 600;
+  font-family: var(--display); font-size: 12px; font-weight: 600;
   letter-spacing: 0.06em; text-transform: uppercase; padding: 12px 0; cursor: pointer;
 }
 .hm-risk-text { font-size: 12px; color: var(--text-dim); line-height: 1.4; }
