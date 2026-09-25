@@ -652,9 +652,20 @@ async function cloudPull() {
       habits = LS.get('hvi_habits', habits);
       log = LS.get('hvi_log', log);
       validateStreaks();
-    } catch {}
+    } catch (e) {
+      reportError('sync', e, { step: 'post-merge validate' });
+    }
     return true;
-  } catch(e) { console.warn('[sync] pull error:', e); return false; }
+  } catch (e) {
+    // A pull that fails while offline is not a fault, it is a train tunnel.
+    // One that fails while online means this account is not syncing, which is
+    // invisible to the person it is happening to.
+    console.warn('[sync] pull error:', e);
+    if (typeof navigator === 'undefined' || navigator.onLine !== false) {
+      reportError('sync', e, { step: 'pull' });
+    }
+    return false;
+  }
 }
 
 function schedulePush() {

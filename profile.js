@@ -127,7 +127,13 @@ function checkDailyQuests() {
         done.add(q.id);
         newlyDone.push(q);
       }
-    } catch(e) {}
+    } catch (e) {
+      // Keep going, so one bad quest cannot take the rest of the day's quests
+      // with it — but say so. A check that throws makes its quest permanently
+      // uncompletable, and it takes only one malformed meal to make
+      // getDayMacros throw, which two of these checks call.
+      if (typeof reportError === 'function') reportError('quest', e, { quest: q.id });
+    }
   });
   if (newlyDone.length) {
     gamification.questsCompleted[t] = [...done];

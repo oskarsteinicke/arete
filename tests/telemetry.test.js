@@ -240,6 +240,59 @@ module.exports = async function () {
       /morning/i.test(run(s, `reminderSlots()[0].title`)), `(${run(s, `reminderSlots()[0].title`)})`);
   }
 
+  // A swallowed error is worse than a loud one: it never reaches analytics,
+  // so the exception count understates the problem by however many failures
+  // are being quietly eaten.
+  r.section('a quest whose check throws is reported, and the others still run');
+  {
+    const s = createSandbox({
+      files: ['data.js', 'app.js', 'connect.js', 'today.js', 'premium.js', 'workout.js',
+              'diet.js', 'integrations.js', 'profile.js'],
+      store: { hvi_onboarded: 'true' },
+    });
+    run(s, `
+      _ga=[]; gtag=function(){ _ga.push(Array.prototype.slice.call(arguments)); };
+      settings={}; curView='home'; track=function(){}; go=function(){};
+      habits=[]; log={}; journal={}; workoutLog={}; mealLog={}; prs={};
+      dietMeta={dailyGoals:{}}; workoutMeta={}; achievements=[];
+      gamification={xp:0,questsCompleted:{},questsTotal:0};
+      meta={lastOpenedDate:'',quoteIndex:0,totalPerfectDays:0};
+      showToast=function(){}; awardXP=function(){}; playSound=function(){};
+      launchConfetti=function(){}; haptic=function(){};
+      // One quest blows up, the next one is fine and should still be credited.
+      getDailyQuests=function(){ return [
+        { id:'q_boom', label:'Boom', xp:10, check(){ throw new Error('meal data is malformed'); } },
+        { id:'q_ok',   label:'Fine', xp:20, check(){ return true; } },
+      ]; };
+      checkDailyQuests();
+    `);
+    const ev = JSON.parse(run(s, 'JSON.stringify(_ga)') || '[]');
+    const exc = ev.filter(e => e[1] === 'exception');
+    r.check('the failure is reported', exc.length === 1, `(${exc.length} exceptions)`);
+    r.check('tagged as a quest failure', /quest/.test((exc[0] || [])[2]?.description || ''),
+      `(${(exc[0] || [])[2]?.description})`);
+    r.check('names which quest', /q_boom/.test(JSON.stringify(run(s, 'getErrorLog()'))),
+      `(${JSON.stringify(run(s, 'getErrorLog()'))})`);
+    const doneToday = run(s, `JSON.stringify(gamification.questsCompleted[today()] || [])`);
+    r.check('the working quest still completed', /q_ok/.test(doneToday), `(${doneToday})`);
+  }
+
+  // Offline is a train tunnel, not a bug. Failing while online means this
+  // account is silently not syncing, which the person cannot see.
+  r.section('a sync failure is reported only when the device is online');
+  {
+    const online = sb({ store: { hvi_session: JSON.stringify({ access_token: 't', user: { id: 'u1' } }) } });
+    run(online, `navigator.onLine = true; habits=[]; log={};`);
+    run(online, `reportError('sync', new Error('Failed to fetch'), { step: 'pull' })`);
+    r.check('online failure is reported',
+      JSON.parse(run(online, 'JSON.stringify(_ga)') || '[]').some(e => e[1] === 'exception'));
+
+    const src = require('fs').readFileSync(
+      require('path').join(require('./harness').APP, 'app.js'), 'utf8');
+    r.check('and the offline case is guarded', /navigator\.onLine !== false/.test(src),
+      '(every tunnel would report a sync error)');
+  }
+
   return r.finish();
     });
   }
