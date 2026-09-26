@@ -47,5 +47,43 @@ module.exports = function () {
     }
   }
 
+  // A theme that misses a variable does not fail — it silently inherits the
+  // dark one, which is how you end up with a gold button on a steel screen.
+  r.section('the Winter theme redefines everything it needs to');
+  {
+    const block = sel => {
+      const i = css.indexOf(sel + ' {');
+      return i === -1 ? '' : css.slice(i, css.indexOf('\n}', i));
+    };
+    const vars = b => new Set([...b.matchAll(/(--[\w-]+)\s*:/g)].map(m => m[1]));
+
+    const light = vars(block('[data-theme="light"]'));
+    const winter = vars(block('[data-theme="winter"]'));
+    r.check('the Winter block exists', winter.size > 0, '(no theme defined)');
+
+    const missed = [...light].filter(v => !winter.has(v));
+    r.check('it covers everything the Light theme covers', missed.length === 0,
+      `(${missed.join(', ')} would fall back to the dark palette)`);
+
+    // The gold is spread across 162 literals in the stylesheet, so it is only
+    // swappable at all because those go through channel variables.
+    for (const v of ['--accent-rgb', '--accent-b-rgb', '--accent-d-rgb', '--accent-hi-rgb']) {
+      r.check(`${v} is overridden`, winter.has(v), '(gold would survive into Winter)');
+    }
+  }
+
+  // Colour carries meaning in four places. A theme is allowed to change what
+  // the app is made of, not what it is telling you.
+  r.section('no theme repaints the data colours');
+  {
+    for (const sel of ['[data-theme="light"]', '[data-theme="winter"]']) {
+      const i = css.indexOf(sel + ' {');
+      const b = i === -1 ? '' : css.slice(i, css.indexOf('\n}', i));
+      const repainted = ['--pro', '--carb', '--fat'].filter(v => new RegExp(v + '\\s*:').test(b));
+      r.check(`${sel} leaves protein, carbs and fat alone`, repainted.length === 0,
+        `(${repainted.join(', ')} — the macro rings stop meaning anything)`);
+    }
+  }
+
   return r.finish();
 };

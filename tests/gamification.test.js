@@ -218,5 +218,43 @@ module.exports = function () {
       `(${before} -> ${after} bytes)`);
   }
 
+  // The radar drew the stat name and its number as two separate texts, with
+  // the number always nudged ten pixels down. That offset is unconditional,
+  // so at the two bottom points of the pentagon the number landed on the name
+  // and rendered as "VI93". It was visible in a store screenshot.
+  r.section('radar labels do not collide or run off the edge');
+  {
+    const s = sb({});
+    const size = 210;
+    const svg = run(s, `_buildRadarChart([
+      { key:'STR', name:'Strength',   val: 71, color:'#ef4444' },
+      { key:'WIS', name:'Wisdom',     val: 44, color:'#a78bfa' },
+      { key:'DIS', name:'Discipline', val: 44, color:'#c4a96c' },
+      { key:'VIT', name:'Vitality',   val: 93, color:'#4ade80' },
+      { key:'SPI', name:'Spirit',     val: 58, color:'#f59e0b' },
+    ], ${size})`) || '';
+
+    const texts = svg.match(/<text[\s\S]*?<\/text>/g) || [];
+    r.check('one label per stat, not two', texts.length === 5, `(${texts.length} text elements)`);
+
+    // Each label carries its own number, so there is nothing to overlap with.
+    const pairs = [['STR', 71], ['WIS', 44], ['DIS', 44], ['VIT', 93], ['SPI', 58]];
+    const missing = pairs.filter(([k, v]) =>
+      !texts.some(t => t.includes(k) && t.includes(String(v))));
+    r.check('each label carries its value', missing.length === 0,
+      `(${missing.map(p => p[0]).join(', ')})`);
+
+    // Every label has to fit inside the viewBox or it is clipped.
+    const coords = texts.map(t => [
+      parseFloat((t.match(/x="([\d.]+)"/) || [])[1]),
+      parseFloat((t.match(/y="([\d.]+)"/) || [])[1]),
+    ]);
+    const margin = 22;                      // half the width of the widest label
+    const outside = coords.filter(([x, y]) =>
+      x < margin || x > size - margin || y < 6 || y > size - 6);
+    r.check('all labels sit inside the viewBox', outside.length === 0,
+      `(${JSON.stringify(outside)} outside 0..${size})`);
+  }
+
   return r.finish();
 };

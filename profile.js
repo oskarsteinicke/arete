@@ -612,7 +612,10 @@ function _computeRPGStats() {
 function _buildRadarChart(stats, size) {
   size = size || 140;
   const cx = size / 2, cy = size / 2;
-  const r = size * 0.38;
+  // The labels sit outside the pentagon, so the pentagon has to leave room for
+  // them. At 0.38 the widest label ran past the edge of the viewBox and was
+  // clipped on the left and right points.
+  const r = size * 0.28;
   const n = stats.length;
   const angleOff = -Math.PI / 2; // start from top
 
@@ -637,13 +640,17 @@ function _buildRadarChart(stats, size) {
   // Data polygon
   const dataPts = stats.map((s, i) => point(i, s.val / 100).join(',')).join(' ');
 
-  // Labels
+  // Labels: the name and its number on one line.
+  //
+  // They used to be two separate texts, the name at radius 1.25 and the value
+  // at 1.08 nudged ten pixels down. That offset is always downward, so at the
+  // two bottom points the value landed on the name — "VIT" and "93" printed
+  // over each other as "VI93". One text cannot collide with itself.
   let labels = '';
   stats.forEach((s, i) => {
-    const [x, y] = point(i, 1.25);
-    labels += `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-size="10" fill="var(--text-dim)" font-weight="600">${s.key}</text>`;
-    const [vx, vy] = point(i, 1.08);
-    labels += `<text x="${vx}" y="${vy + 10}" text-anchor="middle" font-size="8" fill="var(--accent-b)">${s.val}</text>`;
+    const [x, y] = point(i, 1.34);
+    labels += `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central"
+      font-size="9" font-weight="600" fill="var(--text-dim)">${s.key} <tspan fill="var(--accent-b)">${s.val}</tspan></text>`;
   });
 
   return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" style="display:block;margin:0 auto" xmlns="http://www.w3.org/2000/svg">
@@ -725,7 +732,7 @@ function renderCharacter() {
 
     <div class="da-section ani" style="margin:0 24px 16px;padding:20px">
       <div class="char-sec-title">Character Stats</div>
-      ${_buildRadarChart(stats, 160)}
+      ${_buildRadarChart(stats, 210)}
       <div class="char-stat-list" style="margin-top:16px">${statBars}</div>
     </div>
 
@@ -1481,6 +1488,7 @@ function renderStats() {
         <div class="unit-toggle">
           <button class="unit-btn${(settings.theme||'dark')==='dark'?' unit-btn-active':''}" onclick="settings.theme='dark';LS.set('hvi_settings',settings);applyTheme();renderStats()">Dark</button>
           <button class="unit-btn${settings.theme==='light'?' unit-btn-active':''}" onclick="settings.theme='light';LS.set('hvi_settings',settings);applyTheme();renderStats()">Light</button>
+          <button class="unit-btn${settings.theme==='winter'?' unit-btn-active':''}" onclick="settings.theme='winter';LS.set('hvi_settings',settings);applyTheme();renderStats()">Winter</button>
         </div>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
