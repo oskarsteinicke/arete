@@ -159,7 +159,7 @@ function injectTodayStyles() {
   const s = document.createElement('style');
   s.id = 'td-styles';
   s.textContent = `
-    .td-spine{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:18px 16px 14px;margin:0 0 14px}
+    .td-spine{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:18px 16px 14px;margin:16px 16px 0}
     .td-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:2px}
     .td-title{font-size:19px;font-weight:700;letter-spacing:-0.2px}
     .td-date{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--text-muted)}
