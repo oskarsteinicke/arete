@@ -224,5 +224,34 @@ module.exports = function () {
       `(${JSON.stringify(targets.filter(t => t < 15))} below the 15.0 minimum)`);
   }
 
+  // A broken image on the landing page is invisible from the app and from
+  // every test that loads the app — it only shows to a first-time visitor.
+  r.section('every image the landing page shows exists');
+  {
+    const html = read('landing.html');
+    const srcs = [...html.matchAll(/<img[^>]+src="([^"]+)"/g)].map(m => m[1].split('?')[0])
+      .filter(src => !/^https?:|^data:/.test(src));
+    const missing = srcs.filter(src => !fs.existsSync(path.join(APP, src)));
+    r.check(`${srcs.length} images, all present`, missing.length === 0, `(${missing.join(', ')})`);
+  }
+
+  // The page advertised a $7.99 Premium plan with a 7-day trial while the
+  // paywall was switched off and nothing could be bought — contradicting its
+  // own structured data, which said free. The page and the product have to
+  // agree on the price.
+  r.section('the landing page does not sell a plan that does not exist');
+  {
+    const premium = fs.readFileSync(path.join(APP, 'premium.js'), 'utf8');
+    const paywallOn = /let PAYWALL_ENABLED\s*=\s*true/.test(premium);
+    const html = read('landing.html');
+    const sells = html.match(/\$\d+\.\d{2}|free trial|\/mo\b|\/yr\b|per month/i);
+    if (!paywallOn) {
+      r.check('no price is advertised while everything is free', !sells,
+        `(page says "${sells && sells[0]}")`);
+    } else {
+      r.check('paywall is on, so a price may be shown', true);
+    }
+  }
+
   return r.finish();
 };

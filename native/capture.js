@@ -51,7 +51,7 @@ async function launch() {
   await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; });
 
   let seq = 0;
-  const pending = new Map(), waiters = [];
+  const pending = new Map(), waiters = [], errors = [];
   ws.onmessage = ev => {
     const msg = JSON.parse(typeof ev.data === 'string' ? ev.data : Buffer.from(ev.data).toString());
     if (msg.id && pending.has(msg.id)) {
@@ -59,6 +59,11 @@ async function launch() {
       pending.delete(msg.id);
       msg.error ? reject(new Error(msg.error.message)) : resolve(msg.result);
     } else if (msg.method) {
+      // Uncaught page exceptions, so a caller can assert a page loaded clean.
+      if (msg.method === 'Runtime.exceptionThrown') {
+        const d = msg.params.exceptionDetails || {};
+        errors.push((d.exception && d.exception.description || d.text || 'error').split('\n')[0]);
+      }
       for (const w of [...waiters]) if (w.method === msg.method) { waiters.splice(waiters.indexOf(w), 1); w.resolve(msg.params); }
     }
   };
@@ -98,6 +103,13 @@ async function launch() {
       const { result } = await send('Runtime.evaluate', { expression: 'document.documentElement.clientWidth' });
       return { layoutWidth: result.value, bytes: fs.statSync(out).size };
     },
+    // Run an expression in the current page and return its value.
+    async evaluate(expression) {
+      const { result, exceptionDetails } = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true });
+      if (exceptionDetails) throw new Error(exceptionDetails.exception?.description || exceptionDetails.text);
+      return result.value;
+    },
+    errors: () => errors.slice(),
     async close() {
       try { ws.close(); } catch {}
       try { chrome.kill('SIGKILL'); } catch {}
