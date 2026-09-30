@@ -1,28 +1,40 @@
-// Regenerates the Play Store screenshots from the real app.
+// Regenerates the store screenshots from the real app.
 //
-//   node native/shoot-store-assets.js
+//   node --experimental-websocket native/shoot-store-assets.js play
+//   node --experimental-websocket native/shoot-store-assets.js ios
 //
-// Needs Google Chrome installed. Serves the app on 4180 with a month of
-// plausible data injected into localStorage, then captures each screen at
-// 480x960 with a 2x device scale, which is the 960x1920 Play asks for.
+// Serves the app with a month of plausible data injected into localStorage,
+// then captures each screen through capture.js at a real phone viewport:
 //
-// Three things here are not optional, each one learned the hard way:
+//   play  480x960 at 3x  -> 1440x2880, inside Play's 3840 limit
+//   ios   440x956 at 3x  -> 1320x2868, the 6.9" iPhone size Apple requires
+//
+// Things here that are not optional, each learned the hard way:
+//   - capture.js drives Chrome's DevTools protocol instead of --window-size,
+//     because headless Chrome will not lay out narrower than 500px and
+//     silently crops the result — both earlier sets lost their right edge;
 //   - the seed runs inside an IIFE, because classic scripts share one global
-//     scope and `const habits` collided with app.js's own binding, killing it
-//     before it could render;
-//   - the capture is async, because execFileSync blocks the event loop and
-//     this process is also the web server answering Chrome;
-//   - a deliberately slow image holds the load event open, because the
-//     screenshot fires on load and the app had not rendered yet.
+//     scope and `const habits` collided with app.js's own binding;
+//   - this process is also the web server, so nothing here may block the
+//     event loop while Chrome is waiting on a response.
 const http = require('http'), fs = require('fs'), path = require('path');
-const { spawn } = require('child_process');
+const { launch } = require('./capture');
+
+const TARGETS = {
+  play: { out: 'store-assets',     width: 480, height: 960 },
+  ios:  { out: 'store-assets-ios', width: 440, height: 956 },
+};
+const target = TARGETS[process.argv[2]];
+if (!target) {
+  console.error('usage: node --experimental-websocket native/shoot-store-assets.js play|ios');
+  process.exit(1);
+}
 
 const ROOT = path.resolve(__dirname, '..');            // the APP directory
-const OUT = path.join(__dirname, 'store-assets');
-const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const OUT = path.join(__dirname, target.out);
 const PORT = 4180;
-const PROFILE = fs.mkdtempSync(path.join(require('os').tmpdir(), 'arete-shot-'));
 
+// [file, view, element to scroll into view first]
 const SHOTS = [
   ['01-home', 'home'],
   ['02-habits', 'habits'],
@@ -33,7 +45,8 @@ const SHOTS = [
 ];
 
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
-  '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
+  '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg',
+  '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
 
 // Everything below is ordinary: numbers a committed person would actually log
 // across a month. Nothing inflated — the store listing should not promise a
@@ -197,60 +210,29 @@ S('hvi_from_landing', '1');
 
 // The app itself, with the seed injected ahead of everything that reads
 // localStorage, and the lazily-loaded modules pulled in up front.
-//
-// The first attempt redirected from a seed page and leaned on
-// --virtual-time-budget to wait for the app to paint; that flag hangs in
-// Chrome's new headless, which is the only headless Chrome 153 has. Loading
-// one page instead means the screenshot lands on the load event, by which
-// point the app has rendered and the images have decoded.
-function shotPage(view, scrollTo) {
+function shotPage(view) {
   let html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
   const inject = `<script>\n${SEED}\nlocation.hash = ${JSON.stringify(view)};\n</script>`;
   html = html.replace('<head>', '<head>\n' + inject);
   // The muscle map only draws once bodymap.js is present, and that normally
-  // arrives on idle — after the screenshot would have been taken. Loading it
-  // early is not enough on its own: the app's idle loader appends the same
-  // files a second time, and re-running a classic script that declares
-  // top-level consts throws "Identifier 'AR_BODY' has already been declared",
-  // which is what put the app's error screen in the first captures. So the
-  // idle loader is replaced rather than raced.
+  // arrives on idle. Loading it early is not enough on its own: the idle
+  // loader appends the same files a second time, and re-running a classic
+  // script that declares top-level consts throws. So the idle loader is
+  // replaced rather than raced.
   html = html.replace(
     /\(window\.requestIdleCallback\|\|function\(cb\)\{setTimeout\(cb,800\)\}\)\(function\(\)\{[\s\S]*?\}\);/,
     '/* lazy loader replaced for capture */');
   html = html.replace('</head>',
     '<script src="coach.js"></script><script src="social.js"></script>' +
     '<script src="bodymap.js"></script>\n</head>');
-  // --screenshot fires on the load event, and the first capture came back with
-  // an empty #view: the shell had loaded but the app had not rendered into it
-  // yet. The load event waits for images, so a slow one holds the shutter open.
-  html = html.replace('</body>', '<img src="/__slow?ms=5000" alt="" style="display:none">\n</body>');
-  // The app scrolls #view, not the window, so scrollIntoView on the element is
-  // the only thing that moves the capture down the page.
-  if (scrollTo) {
-    html = html.replace('</body>', `<script>
-      setTimeout(function () {
-        var el = document.querySelector(${JSON.stringify(scrollTo)});
-        if (el) el.scrollIntoView({ block: 'center' });
-      }, 3000);
-    </script>\n</body>`);
-  }
   return html;
 }
 
 const server = http.createServer((req, res) => {
   const u = new URL(req.url, 'http://localhost');
-  if (u.pathname === '/__slow') {
-    const ms = Math.min(Number(u.searchParams.get('ms')) || 3000, 15000);
-    return setTimeout(() => {
-      res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'no-store' });
-      res.end(Buffer.from(
-        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
-        'base64'));
-    }, ms);
-  }
   if (u.pathname === '/__shot') {
     res.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-store' });
-    return res.end(shotPage(u.searchParams.get('view') || 'home', u.searchParams.get('scroll') || ''));
+    return res.end(shotPage(u.searchParams.get('view') || 'home'));
   }
   let file = path.join(ROOT, u.pathname === '/' ? 'index.html' : u.pathname);
   if (!file.startsWith(ROOT) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
@@ -261,51 +243,33 @@ const server = http.createServer((req, res) => {
   fs.createReadStream(file).pipe(res);
 });
 
-// The server and the browser share one process, so the capture cannot block:
-// execFileSync holds Node's event loop, which meant this server never answered
-// the request Chrome was waiting on. That deadlock is what looked like Chrome
-// hanging. spawn keeps the loop free to serve.
-function capture(name, view, scrollTo) {
-  return new Promise((resolve, reject) => {
-    const out = path.join(OUT, `${name}.png`);
-    const child = spawn(CHROME, [
-      '--headless=new', '--disable-gpu', '--no-sandbox', '--hide-scrollbars',
-      // 3x, not 2x: the viewport is a phone's CSS size either way, but the
-      // capture is pixel-for-pixel sharp on the 3x screens people actually
-      // hold. 1440x2880 is still well inside Play's 3840 cap.
-      '--force-device-scale-factor=3', '--window-size=480,960',
-      // Google Fonts and the analytics script never resolve here, and headless
-      // waits for the load event, so the capture stalled on them.
-      '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost',
-      '--disable-background-networking', '--no-first-run', '--disable-sync',
-      `--screenshot=${out}`, '--user-data-dir=' + PROFILE,
-      `http://localhost:${PORT}/__shot?view=${view}` +
-        (scrollTo ? `&scroll=${encodeURIComponent(scrollTo)}` : ''),
-    ], { stdio: 'ignore' });
-
-    // Chrome writes the screenshot and then does not exit, so the deadline is
-    // the normal path out. Only a missing file counts as a failure.
-    const done = () => {
-      clearTimeout(timer);
-      try { child.kill('SIGKILL'); } catch {}
-      if (!fs.existsSync(out)) return reject(new Error(`${name}: nothing written`));
-      resolve(Math.round(fs.statSync(out).size / 1024));
-    };
-    const timer = setTimeout(done, 16000);
-    child.on('exit', done);
-    child.on('error', reject);
-  });
-}
-
 server.listen(PORT, async () => {
+  fs.mkdirSync(OUT, { recursive: true });
+  const chrome = await launch();
   try {
     for (const [name, view, scrollTo] of SHOTS) {
-      const kb = await capture(name, view, scrollTo);
-      console.log(`  ${name}.png  ${kb} KB`);
+      // The app scrolls #view, not the window, so the element is scrolled
+      // into view directly rather than by scrolling the page.
+      const before = scrollTo
+        ? `(() => { const el = document.querySelector(${JSON.stringify(scrollTo)}); if (el) el.scrollIntoView({ block: 'center' }); })()`
+        : undefined;
+      const r = await chrome.shoot({
+        url: `http://localhost:${PORT}/__shot?view=${view}`,
+        width: target.width, height: target.height, scale: 3,
+        out: path.join(OUT, `${name}.png`), before,
+      });
+      // A layout wider than the viewport is exactly the cropping bug this
+      // script exists to avoid, so treat it as a failure, not a warning.
+      if (r.layoutWidth !== target.width) {
+        throw new Error(`${name}: laid out at ${r.layoutWidth}px, expected ${target.width}px`);
+      }
+      console.log(`  ${name}.png  ${Math.round(r.bytes / 1024)} KB  (laid out at ${r.layoutWidth}px)`);
     }
   } catch (e) {
     console.error('FAILED:', e.message);
     process.exitCode = 1;
+  } finally {
+    await chrome.close();
+    server.close();
   }
-  server.close();
 });
