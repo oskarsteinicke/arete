@@ -115,6 +115,26 @@ module.exports = function () {
       `(streak ${run(s, 'log.h1.streak')})`);
   }
 
+  // The toast is gone in three seconds; the row is where the habit is read.
+  r.section('the covered habit shows its shield for the rest of the day');
+  {
+    const s = sb(Object.assign(daily([2, 3, 4, 5]), {
+      hvi_habits: JSON.stringify([{ id: 'h1', name: 'Read', schedule: 'daily' }, { id: 'h2', name: 'Run', schedule: 'daily' }]),
+    }), `gamification.streakShields = 2;`);
+    run(s, `log.h1.streak = 12; log.h1.lastCompletedDate = ${JSON.stringify(dk(2))}; log.h1.completedToday = false;
+            log.h2 = { streak: 0, lastCompletedDate: '', completedToday: false };`);
+    run(s, `validateStreaks()`);
+    const first = run(s, `habitRowHTML(habits[0])`);
+    const again = run(s, `habitRowHTML(habits[0])`);
+    const other = run(s, `habitRowHTML(habits[1])`);
+    r.check('the covered habit carries the shield', /hi-shield/.test(first), '(no badge on the row)');
+    r.check('it stamps in the first time only', /hi-shield--new/.test(first) && !/hi-shield--new/.test(again),
+      '(the stamp replays on every render)');
+    r.check('an uncovered habit does not', !/hi-shield/.test(other), '(badge on the wrong habit)');
+    run(s, `localStorage.setItem('hvi_shield_saves', JSON.stringify({ date: ${JSON.stringify(dk(1))}, ids: ['h1'] }))`);
+    r.check('and it is gone the next day', !/hi-shield/.test(run(s, `habitRowHTML(habits[0])`)), '(yesterday\'s shield still shown)');
+  }
+
   r.section('with no shield, or a longer gap, the streak still breaks');
   {
     const s = sb(daily([2, 3, 4]), `gamification.streakShields = 0;`);

@@ -209,6 +209,9 @@ function _workoutStats() {
   return { thisWeek, totalSessions, totalVolume, prCount };
 }
 
+// What the last finished session changed elsewhere; renderWorkout shows it
+// once and clears it. Memory only: a relaunch should not replay it.
+let _sessionFed = null;
 function renderWorkout() {
   const prog = findProgram(workoutMeta.activeProgram) || WORKOUT_PROGRAMS[0];
   const dayCount = prog.days.length;
@@ -232,8 +235,14 @@ function renderWorkout() {
   const muscles = [...new Set(day.ex.map(eid => lookupExercise(eid)?.muscle).filter(Boolean))];
   const muscleTagsHTML = muscles.map(m => `<span class="w-muscle-tag">${esc(m)}</span>`).join('');
 
+  // Shown once, on the render straight after finishing a session.
+  const fed = _sessionFed;
+  _sessionFed = null;
+  const fedHTML = (fed && typeof sessionFedHTML === 'function') ? sessionFedHTML(fed) : '';
+
   document.getElementById('view').innerHTML = `
     <div class="page-head ani"><div class="page-title">Workout</div><div class="page-sub">Train with purpose. Build discipline.</div></div>
+    ${fedHTML}
 
     <div class="w-stats-strip ani w-stats-tap" role="button" tabindex="0" aria-label="View progress"
          onclick="go('workoutProgress')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();go('workoutProgress')}">
@@ -266,6 +275,7 @@ function renderWorkout() {
       <button class="w-action-btn" style="margin:0;width:100%" onclick="initBuilder();go('workoutBuilder')">+ Create</button>
       <button class="w-action-btn" style="margin:0;width:100%" onclick="browserContext=null;go('exerciseBrowser')">Exercises</button>
     </div>`;
+  if (fedHTML && typeof animateSessionFed === 'function') animateSessionFed();
 }
 
 function renderWorkoutPicker() {
@@ -828,6 +838,9 @@ function _updateRestTimer() {
 
 function finishWorkout() {
   if (typeof track === 'function') track('workout_complete', { program: workoutMeta?.activeProgram || 'custom' });
+  // Today's targets as planned, before this session counts and before the day
+  // index moves on below — the card on the workout screen compares against it.
+  const fedBefore = (typeof _plannedSession === 'function') ? getTodaysMacroTargets(_plannedSession()) : null;
   const t = today();
   const wl = workoutLog[t];
   // Save duration
@@ -873,6 +886,15 @@ function finishWorkout() {
   // Connected system: fire workout-completed so linked habits auto-complete
   if (window.Arete) window.Arete.emit('workout:completed');
 
+  if (typeof sessionFedSummary === 'function') {
+    try {
+      _sessionFed = sessionFedSummary(fedBefore,
+        typeof _workoutAutoDone !== 'undefined' ? _workoutAutoDone : []);
+      // A milestone overlay lands on top half a second from now; the card
+      // waits under it rather than playing where nobody can see it.
+      if (wMilestones[wCount]) _sessionFed.waitFor = 'milestone';
+    } catch (e) { console.warn('[Arete] session summary error:', e); }
+  }
   go('workout');
 }
 

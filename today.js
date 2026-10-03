@@ -203,7 +203,8 @@ function _tdRowHTML(p) {
       <div class="td-box" id="hctd-${p.id}" aria-hidden="true">✓</div>
       <div class="td-main">
         <div class="td-label">${esc(p.label)}</div>
-        <div class="td-sub${slip ? ' td-slip' : ''}" id="hstd-${p.id}">${esc(p.why || '')}</div>
+        <div class="td-sub${slip ? ' td-slip' : ''}" id="hstd-${p.id}">${esc(p.why || '')}</div>${
+          p.kind === 'habit' && typeof shieldSaveBadge === 'function' ? shieldSaveBadge(p.id) : ''}
       </div>
     </div>`;
 }

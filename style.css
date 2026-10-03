@@ -1822,10 +1822,20 @@ nav {
 .hm-risk-text { font-size: 12px; color: var(--text-dim); line-height: 1.4; }
 
 /* ═══ ANIMATED RINGS ═══════════════════════════════════════════════ */
+/* --ring-from is set when a ring is redrawn in place (refreshPillarRing), so it
+   moves from its old value instead of emptying and refilling. */
 @keyframes ring-fill {
-  from { stroke-dashoffset: var(--ring-c); }
+  from { stroke-dashoffset: var(--ring-from, var(--ring-c)); }
   to { stroke-dashoffset: var(--ring-off); }
 }
+/* Readiness: the first home of the day, and every open of the breakdown */
+.tb-ready--reveal svg circle:last-child,
+.rd-score-ring svg circle:last-child {
+  animation: ring-fill 1.2s cubic-bezier(0.65, 0, 0.25, 1) 0.25s both;
+}
+.rd-score-ring svg circle:last-child { animation-duration: 1s; animation-delay: 0.1s; }
+.tb-ready--reveal .tb-ready-lbl { animation: fade-rise 0.5s ease 1.2s both; }
+@keyframes fade-rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 .d-ring-wrap svg circle:last-child {
   animation: ring-fill 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -2743,8 +2753,16 @@ body {
 .rd-factor-val { font-family: var(--serif); font-size: 16px; color: var(--text); }
 .rd-factor-unit { font-size: 11px; color: var(--text-muted); }
 .rd-bar { height: 7px; background: rgba(255,255,255,0.07); border-radius: 4px; overflow: hidden; }
-.rd-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+.rd-bar-fill { height: 100%; width: 0; border-radius: 4px; transition: width 0.8s cubic-bezier(0.65, 0, 0.25, 1); }
+.rd-visible .rd-bar-fill { width: var(--w); }
+.rd-factor:nth-child(2) .rd-bar-fill { transition-delay: 0.12s; }
+.rd-factor:nth-child(3) .rd-bar-fill { transition-delay: 0.24s; }
+.rd-factor:nth-child(4) .rd-bar-fill { transition-delay: 0.36s; }
 .rd-factor-weight { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+/* The factor holding the score back glows twice once the bars have landed */
+.rd-limiter { color: var(--accent-b); font-weight: 600; }
+.rd-visible .rd-factor--limiter .rd-bar { animation: rd-limit 0.9s ease-in-out 1.2s 2; }
+@keyframes rd-limit { 50% { box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.28); } }
 .rd-vitals { display: flex; gap: 8px; margin-top: 18px; }
 .rd-vital { flex: 1; background: var(--surface2); border-radius: var(--radius-sm); padding: 12px 6px; text-align: center; }
 .rd-vital-ic { color: var(--accent-b); display: flex; justify-content: center; margin-bottom: 5px; }
@@ -2759,6 +2777,61 @@ body {
 }
 .rd-action-btn:active { transform: scale(0.99); }
 .rd-foot { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border2); }
+
+/* ══ CONNECTED SYSTEM: A FINISHED SESSION FEEDING THE DAY ══════════════
+   A gold rail runs down from the session to each module it changed; a spark
+   travels it and each row lands as the spark reaches it (0.35s apart). */
+.sf-card {
+  position: relative; margin: 0 16px 14px; padding: 18px 18px 16px;
+  background: linear-gradient(160deg, rgba(var(--accent-rgb), 0.08), var(--surface) 55%);
+  border: 1px solid rgba(var(--accent-rgb), 0.3); border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  animation: fade-rise 0.4s ease both;
+}
+.sf-x {
+  position: absolute; top: 10px; right: 10px; width: 32px; height: 32px; border: none; border-radius: 50%;
+  background: rgba(255,255,255,0.05); color: var(--text-dim); font-size: 20px; line-height: 1; cursor: pointer;
+}
+.sf-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding-right: 32px; }
+.sf-dot {
+  width: 12px; height: 12px; flex-shrink: 0; border-radius: 50%; margin-left: 10px;
+  background: var(--accent-b); box-shadow: 0 0 0 5px rgba(var(--accent-rgb), 0.18);
+}
+.sf-eyebrow { font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--accent-b); }
+.sf-title { font-family: var(--display); font-size: 17px; color: var(--text); margin-top: 2px; }
+.sf-rows { position: relative; display: flex; flex-direction: column; gap: 10px; padding-left: 0; }
+.sf-rows::before {
+  content: ''; position: absolute; left: 15px; top: -14px; bottom: 18px; width: 2px; border-radius: 1px;
+  background: rgba(var(--accent-rgb), 0.35); transform-origin: top; animation: sf-rail 1.2s cubic-bezier(0.65, 0, 0.35, 1) 0.2s both;
+}
+.sf-rows::after {
+  content: ''; position: absolute; left: 12px; top: -14px; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent-b); box-shadow: 0 0 12px rgba(var(--accent-glow-rgb), 0.8);
+  animation: sf-spark 1.2s cubic-bezier(0.65, 0, 0.35, 1) 0.2s both;
+}
+@keyframes sf-rail { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes sf-spark { 0% { top: -14px; opacity: 1; } 90% { opacity: 1; } 100% { top: calc(100% - 22px); opacity: 0; } }
+.sf-row {
+  position: relative; display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px 10px 0;
+  border-radius: var(--radius-sm);
+  animation: sf-row 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: calc(0.35s + var(--i, 0) * 0.35s);
+}
+.sf-row[role="button"] { cursor: pointer; }
+.sf-row[role="button"]:active { background: rgba(255,255,255,0.03); }
+@keyframes sf-row { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: none; } }
+.sf-ico {
+  position: relative; z-index: 1; width: 32px; height: 32px; flex-shrink: 0; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface2); border: 1px solid rgba(var(--accent-rgb), 0.45); color: var(--accent-b);
+}
+.sf-main { min-width: 0; }
+.sf-lbl { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-dim); }
+.sf-val { font-size: 14px; color: var(--text); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.sf-val b { font-weight: 600; color: var(--accent-b); }
+.sf-val s { color: var(--text-muted); text-decoration-thickness: 1px; }
+.sf-note { font-size: 12px; color: var(--text-dim); line-height: 1.45; margin-top: 3px; }
+[data-theme="light"] .sf-x { background: rgba(0,0,0,0.05); }
+.sf-wait, .sf-wait .sf-row, .sf-wait .sf-rows::before, .sf-wait .sf-rows::after { animation-play-state: paused; }
 
 /* ══ CONNECTED SYSTEM: UNIFIED TODAY BRIEFING ═══════════════════════════ */
 .today-brief {
@@ -3137,4 +3210,36 @@ body {
   opacity: 0; transition: opacity .18s ease, transform .18s ease;
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
-@media (prefers-reduced-motion: reduce) { .toast { transition: opacity .18s ease; } }
+.toast.toast--shield { display: flex; align-items: center; gap: 9px; border-color: rgba(var(--accent-rgb), 0.35); }
+.toast-shield { display: flex; color: var(--accent-b); }
+.toast-shield svg { animation: shield-stamp 0.6s cubic-bezier(0.2, 1.6, 0.4, 1) 0.15s both; }
+.toast-shield svg path:last-child { stroke-dasharray: 12; animation: shield-tick 0.4s ease 0.55s both; }
+@keyframes shield-stamp { from { opacity: 0; transform: scale(1.8) rotate(-12deg); } to { opacity: 1; transform: none; } }
+@keyframes shield-tick { from { stroke-dashoffset: 12; } to { stroke-dashoffset: 0; } }
+
+/* Shield on the habit it covered, for the rest of that day */
+.hi-streak-row { display: flex; align-items: center; gap: 8px; margin-top: 3px; }
+.hi-streak-row .hi-streak { margin-top: 0; }
+.hi-shield {
+  display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px 1px 5px; border-radius: 999px;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.04em; color: var(--accent-b);
+  background: rgba(var(--accent-rgb), 0.1); border: 1px solid rgba(var(--accent-rgb), 0.3);
+}
+.hi-shield .ic { vertical-align: 0; }
+.td-main .hi-shield { margin-top: 5px; }
+.hi-shield--new { animation: shield-stamp 0.6s cubic-bezier(0.2, 1.6, 0.4, 1) 0.4s both; }
+.hi-shield--new svg path:last-child { stroke-dasharray: 12; animation: shield-tick 0.4s ease 0.85s both; }
+
+/* One rule for everyone who asks for less motion: every animation and
+   transition finishes at once, so things land in their end state without
+   moving. Script-driven motion checks motionOK() in app.js. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
+  }
+}

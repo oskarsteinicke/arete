@@ -244,6 +244,13 @@ function classifyTodaySession() {
   if (wl && trained) {
     return { type: _intensityFromDayName(wl.dayName), dayName: wl.dayName || null, source: 'logged' };
   }
+  return _plannedSession();
+}
+
+// What the schedule and the program say about today, ignoring anything logged.
+// It is also what the targets were before a session counted, which is how the
+// finished-workout card can show what the session itself changed.
+function _plannedSession() {
   const dow = new Date().getDay();
   if (!getTrainingDays().includes(dow)) return { type: 'rest', dayName: 'Rest', source: 'schedule' };
   let dayName = null;
@@ -261,7 +268,7 @@ function classifyTodaySession() {
 // Today's macro targets = base goals + carb-cycling modifier (non-destructive;
 // base dietMeta.dailyGoals is never mutated). Hard days: carbs +20%, protein
 // +10%. Rest days: carbs -25%. Normal training day = your set goal unchanged.
-function getTodaysMacroTargets() {
+function getTodaysMacroTargets(sess) {
   const base = (typeof dietMeta !== 'undefined' && dietMeta) ? (dietMeta.dailyGoals || {}) : {};
   let { calories, protein, carbs, fat } = base;
   if (!calories) return { calories, protein, carbs, fat, adjusted: false, type: null, dayName: null };
@@ -269,7 +276,7 @@ function getTodaysMacroTargets() {
   fat = (fat != null) ? fat : Math.round(calories * 0.25 / 9);
   carbs = (carbs != null) ? carbs : Math.max(0, Math.round((calories - protein * 4 - fat * 9) / 4));
 
-  const sess = classifyTodaySession();
+  sess = sess || classifyTodaySession();
   // hard day: carbs +20% / protein +10%; normal training day: carbs +8%; rest: carbs -25%
   const carbMult = sess.type === 'hard' ? 1.20 : sess.type === 'rest' ? 0.75 : 1.08;
   const protMult = sess.type === 'hard' ? 1.10 : 1.0;
@@ -333,15 +340,108 @@ function autoCompleteHabit(id) {
   } catch (e) { console.warn('[Arete] autoCompleteHabit error:', e); return false; }
 }
 
+// ── A FINISHED SESSION, SHOWN FEEDING THE REST OF THE DAY ─────────────────
+// Training moves nutrition, ticks linked habits and adds to tomorrow's load,
+// all silently. The workout screen shows it once, straight after finishing.
+// `before` is the targets as planned, taken before the session counted.
+function sessionFedSummary(before, autoDone) {
+  const after = getTodaysMacroTargets();
+  const rec = (typeof getRecoveryStatus === 'function') ? getRecoveryStatus() : null;
+  let nutrition = null;
+  if (after.calories) {
+    const changed = !!before && (before.carbs !== after.carbs || before.protein !== after.protein);
+    nutrition = {
+      changed,
+      fromRest: changed && before.type === 'rest',
+      carbsFrom: changed ? before.carbs : after.baseCarbs, carbs: after.carbs,
+      proteinFrom: changed ? before.protein : after.baseProtein, protein: after.protein,
+      reason: macroAdjustReason(),
+    };
+  }
+  return {
+    date: today(), dayName: after.dayName || 'Session', type: after.type, nutrition,
+    habits: (autoDone || []).slice(0, 3),
+    load: rec ? { days: rec.days, label: rec.label } : null,
+  };
+}
+
+function sessionFedHTML(s) {
+  if (!s || s.date !== today()) return '';
+  const ic = (n, z) => (typeof icon === 'function' ? icon(n, z) : '');
+  const num = (from, to, unit) => from !== to
+    ? `<s>${from}</s> → <b data-count-from="${from}" data-count-to="${to}">${to}</b>${unit}`
+    : `<b>${to}</b>${unit}`;
+  const rows = [];
+  const n = s.nutrition;
+  if (n) {
+    const note = n.fromRest ? 'Up from a rest-day plan — you trained, so carbs come back up.'
+      : n.changed ? `Raised just now — ${esc(s.dayName)} counts as a ${s.type === 'hard' ? 'heavy' : 'training'} day.`
+      : `${esc(n.reason || 'Training day')}. Already in today's targets.`;
+    rows.push(`<div class="sf-row" role="button" tabindex="0" onclick="go('diet')" onkeydown="if(event.key==='Enter'){go('diet')}">
+        <div class="sf-ico">${ic('utensils', 16)}</div>
+        <div class="sf-main"><div class="sf-lbl">Nutrition</div>
+          <div class="sf-val">Carbs ${num(n.carbsFrom, n.carbs, 'g')} · Protein ${num(n.proteinFrom, n.protein, 'g')}</div>
+          <div class="sf-note">${note}</div></div>
+      </div>`);
+  }
+  if (s.habits.length) {
+    rows.push(`<div class="sf-row">
+        <div class="sf-ico">${ic('check', 16)}</div>
+        <div class="sf-main"><div class="sf-lbl">Habits</div>
+          <div class="sf-val">Ticked for you: <b>${s.habits.map(esc).join(', ')}</b></div></div>
+      </div>`);
+  }
+  if (s.load) {
+    rows.push(`<div class="sf-row">
+        <div class="sf-ico">${ic('battery', 16)}</div>
+        <div class="sf-main"><div class="sf-lbl">Readiness</div>
+          <div class="sf-val"><b>${s.load.days}</b> session${s.load.days === 1 ? '' : 's'} in 7 days · ${esc(s.load.label.toLowerCase())}</div>
+          <div class="sf-note">Tomorrow's score weighs this load.</div></div>
+      </div>`);
+  }
+  if (!rows.length) return '';
+  return `<div class="sf-card${s.waitFor ? ' sf-wait' : ''}" role="status">
+      <button class="sf-x" onclick="this.closest('.sf-card').remove()" aria-label="Dismiss">&times;</button>
+      <div class="sf-head"><span class="sf-dot"></span><div>
+        <div class="sf-eyebrow">Session logged</div>
+        <div class="sf-title">${esc(s.dayName)} fed the rest of your day</div></div></div>
+      <div class="sf-rows">${rows.map((r, i) => r.replace('class="sf-row"', `class="sf-row" style="--i:${i}"`)).join('')}</div>
+    </div>`;
+}
+
+// Numbers in the card tick from the old target to the new one as their row
+// lands. A card held under a milestone overlay starts once that is dismissed.
+function animateSessionFed() {
+  const card = document.querySelector('.sf-card');
+  if (!card) return;
+  let started = false;
+  const start = () => {
+    if (started) return;
+    started = true;
+    card.classList.remove('sf-wait');
+    if (typeof countUp !== 'function') return;
+    card.querySelectorAll('[data-count-to]').forEach(el => {
+      const row = el.closest('.sf-row');
+      const i = row ? +(row.style.getPropertyValue('--i') || 0) : 0;
+      countUp(el, +el.dataset.countTo, 900, 450 + i * 350, +el.dataset.countFrom);
+    });
+  };
+  if (!card.classList.contains('sf-wait') || typeof MutationObserver !== 'function') return start();
+  let seen = false;
+  const mo = new MutationObserver(() => {
+    if (document.querySelector('.milestone-overlay')) seen = true;
+    else if (seen) { mo.disconnect(); start(); }
+  });
+  mo.observe(document.body, { childList: true });
+  // The overlay dismisses itself after 8s; never leave the card hidden for good.
+  setTimeout(() => { mo.disconnect(); start(); }, 10000);
+}
+
+// The ordinary toast. This used to borrow .streak-toast, the centred
+// celebration box, and add bottom:100px on top of its top:50%, which stretched
+// it into a tall panel from mid-screen down to the nav bar.
 function _connectToast(msg) {
-  try {
-    const el = document.createElement('div');
-    el.className = 'streak-toast';
-    el.style.cssText = 'bottom:100px;animation-duration:4s';
-    el.textContent = msg;
-    document.body.appendChild(el);
-    setTimeout(() => el.remove(), 3800);
-  } catch {}
+  if (typeof showToast === 'function') showToast(msg);
 }
 
 function _autoCompleteLinkedHabits(trigger) {
@@ -354,7 +454,9 @@ function _autoCompleteLinkedHabits(trigger) {
     }
   });
   if (done.length) {
-    _connectToast('✓ Auto-completed: ' + done.join(', '));
+    // After a workout the session card on the workout screen names them, and a
+    // toast on top of it would say the same thing twice.
+    if (trigger !== 'workout') _connectToast('✓ Auto-completed: ' + done.join(', '));
     // Refresh a habit-showing view so the tick appears immediately
     if (typeof go === 'function' && (curView === 'home' || curView === 'habits')) {
       try { go(curView, {}, false); } catch {}
@@ -395,7 +497,9 @@ function checkJournalTriggers() {
 
 // Everything that can complete a linked habit now goes through the bus, so a
 // new integration only has to listen rather than find every write site.
-window.Arete.on('workout:completed', () => _autoCompleteLinkedHabits('workout'));
+// Kept so the finished-workout card can name what the session ticked off.
+let _workoutAutoDone = [];
+window.Arete.on('workout:completed', () => { _workoutAutoDone = _autoCompleteLinkedHabits('workout'); });
 window.Arete.on('sleep:logged', checkSleepTriggers);
 window.Arete.on('journal:saved', checkJournalTriggers);
 window.Arete.on('meal:logged', () => { if (typeof checkNutritionTriggers === 'function') checkNutritionTriggers(); });
@@ -593,16 +697,18 @@ function dismissBriefCoach() {
 }
 
 // Breakdown modal: shows the factors that make up the readiness score.
-function _rdFactorRow(glyph, label, val, weight) {
+// The bars fill in turn once the sheet is up (--w, .rd-visible in style.css),
+// and the factor holding the score back is marked so the sheet says what to fix.
+function _rdFactorRow(glyph, label, val, weight, limiter = false) {
   const v = Math.round(val);
   const c = v >= 70 ? 'var(--carb)' : v >= 40 ? '#e0a866' : 'var(--fat)';
-  return `<div class="rd-factor">
+  return `<div class="rd-factor${limiter ? ' rd-factor--limiter' : ''}">
     <div class="rd-factor-top">
       <span class="rd-factor-name">${glyph} ${label}</span>
       <span class="rd-factor-val">${v}<span class="rd-factor-unit">/100</span></span>
     </div>
-    <div class="rd-bar"><div class="rd-bar-fill" style="width:${Math.max(3, v)}%;background:${c}"></div></div>
-    <div class="rd-factor-weight">${weight}</div>
+    <div class="rd-bar"><div class="rd-bar-fill" style="--w:${Math.max(3, v)}%;background:${c}"></div></div>
+    <div class="rd-factor-weight">${weight}${limiter ? ' · <span class="rd-limiter">holding today back</span>' : ''}</div>
   </div>`;
 }
 
@@ -622,16 +728,22 @@ function showReadinessBreakdown() {
       : 'Depleted. Make today a recovery day. Sleep and food come first.';
 
     const ic = (n) => (typeof icon === 'function' ? icon(n, 16) : '');
+    // Same rule as trainingAdvice(): the weakest thing you can act on, and only
+    // when it is actually low. Whoop is a reading, so it is never the limiter.
+    const acts = usingWhoop ? ['sleep', 'load'] : ['load', 'sleep', 'habits', 'nutrition'];
+    let limiter = null, worst = 0.65;
+    acts.forEach(k => { if (typeof f[k] === 'number' && f[k] < worst) { worst = f[k]; limiter = k; } });
+
     const rows = [];
     if (usingWhoop) {
       rows.push(_rdFactorRow(ic('flame'), 'Whoop recovery', f.whoop, 'Leads the score'));
-      rows.push(_rdFactorRow(ic('moon'), 'Sleep', pct(f.sleep), 'Fine-tunes'));
-      rows.push(_rdFactorRow(ic('activity'), 'Training load', pct(f.load), 'Fine-tunes'));
+      rows.push(_rdFactorRow(ic('moon'), 'Sleep', pct(f.sleep), 'Fine-tunes', limiter === 'sleep'));
+      rows.push(_rdFactorRow(ic('activity'), 'Training load', pct(f.load), 'Fine-tunes', limiter === 'load'));
     } else {
-      rows.push(_rdFactorRow(ic('activity'), 'Training load', pct(f.load), '40% of score'));
-      rows.push(_rdFactorRow(ic('moon'), 'Sleep', pct(f.sleep), '30% of score'));
-      rows.push(_rdFactorRow(ic('check'), 'Habit consistency', pct(f.habits), '15% of score'));
-      rows.push(_rdFactorRow(ic('target'), 'Nutrition', pct(f.nutrition), '15% of score'));
+      rows.push(_rdFactorRow(ic('activity'), 'Training load', pct(f.load), '40% of score', limiter === 'load'));
+      rows.push(_rdFactorRow(ic('moon'), 'Sleep', pct(f.sleep), '30% of score', limiter === 'sleep'));
+      rows.push(_rdFactorRow(ic('check'), 'Habit consistency', pct(f.habits), '15% of score', limiter === 'habits'));
+      rows.push(_rdFactorRow(ic('target'), 'Nutrition', pct(f.nutrition), '15% of score', limiter === 'nutrition'));
     }
 
     const slp = getRecentSleep();
@@ -681,7 +793,11 @@ function showReadinessBreakdown() {
     const node = wrap.firstElementChild;
     document.body.appendChild(node);
     node.addEventListener('click', e => { if (e.target === node) closeReadinessBreakdown(); });
+    // Style has to be computed once in the hidden state, or the sheet, the fade
+    // and the bars all appear at their end values with nothing to transition from.
+    void node.offsetWidth;
     requestAnimationFrame(() => node.classList.add('rd-visible'));
+    if (typeof countUp === 'function') countUp(node.querySelector('.rd-score-num'), r.score, 1000, 100);
     if (typeof track === 'function') track('readiness_breakdown_open', { score: r.score });
   } catch (e) { console.warn('[Arete] readiness breakdown error:', e); }
 }
@@ -693,6 +809,7 @@ function closeReadinessBreakdown() {
   setTimeout(() => m.remove(), 250);
 }
 
+let _readyRevealUntil = 0;
 function todayBriefingHTML() {
   try {
     const t = today();
@@ -723,8 +840,22 @@ function todayBriefingHTML() {
     const jToday = (typeof journal !== 'undefined' && journal[t]) || {};
     const jDone = Object.values(jToday).some(v => v && String(v).trim());
 
-    const readyHTML = r ? `<div class="tb-ready" onclick="showReadinessBreakdown()" role="button" tabindex="0" aria-label="Readiness ${r.score}, ${r.label}. Tap for breakdown.">
-        <div class="tb-ready-ring">${(typeof ring === 'function') ? ring(19, r.score / 100, 3, rColor) : ''}<span class="tb-ready-num" style="color:${rColor}">${r.score}</span></div>
+    // The first home of the day fills the ring and counts the score up; every
+    // later render just shows it. Home is drawn several times in the first few
+    // milliseconds of a launch, so renders inside the ring's opening delay keep
+    // the reveal — replacing it then is invisible, where dropping it is not.
+    let reveal = false;
+    if (r && typeof motionOK === 'function' && motionOK() && typeof countUp === 'function') {
+      const now = Date.now();
+      if (LS.get('hvi_ready_revealed', '') !== t) {
+        LS.set('hvi_ready_revealed', t);
+        _readyRevealUntil = now + 250;
+        setTimeout(() => { try { countUp(document.querySelector('.tb-ready--reveal .tb-ready-num'), r.score, 1200); } catch {} }, 250);
+      }
+      reveal = now < _readyRevealUntil;
+    }
+    const readyHTML = r ? `<div class="tb-ready${reveal ? ' tb-ready--reveal' : ''}" onclick="showReadinessBreakdown()" role="button" tabindex="0" aria-label="Readiness ${r.score}, ${r.label}. Tap for breakdown.">
+        <div class="tb-ready-ring">${(typeof ring === 'function') ? ring(19, r.score / 100, 3, rColor) : ''}<span class="tb-ready-num" style="color:${rColor}">${reveal ? 0 : r.score}</span></div>
         <div class="tb-ready-lbl">${r.label}</div>
       </div>` : '';
 

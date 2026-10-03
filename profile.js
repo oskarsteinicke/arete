@@ -484,6 +484,7 @@ function injectGamificationStyles() {
 // CONFETTI
 // ══════════════════════════════════════════════════════════════════════════
 function launchConfetti(originY = 0.35) {
+  if (typeof motionOK === 'function' && !motionOK()) return;
   const existing = document.getElementById('confetti-canvas');
   if (existing) existing.remove();
   const canvas = document.createElement('canvas');

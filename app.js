@@ -940,6 +940,33 @@ function ring(r, pct, sw = 3, color = 'var(--accent)') {
   </svg>`;
 }
 
+// ── MOTION ──────────────────────────────────────────────────────────────────
+// CSS already stills itself under prefers-reduced-motion (end of style.css);
+// this is for the motion that script drives — count-ups, confetti.
+function motionOK() {
+  try { return !window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return true; }
+}
+
+// Counts an element's text from `from` (default 0) to `to`. The element should
+// already hold the final number, so if this never runs the right value shows.
+function countUp(el, to, ms = 1100, delay = 0, from = 0) {
+  if (!el) return;
+  if (!motionOK() || typeof requestAnimationFrame !== 'function') { el.textContent = to; return; }
+  el.textContent = from;
+  const run = () => {
+    let t0 = null;
+    const step = now => {
+      if (typeof now !== 'number') { el.textContent = to; return; }
+      if (t0 === null) t0 = now;
+      const p = Math.min(1, (now - t0) / ms);
+      el.textContent = Math.round(from + (to - from) * (1 - Math.pow(1 - p, 3)));
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  };
+  delay ? setTimeout(run, delay) : run();
+}
+
 // ── ICON SYSTEM ─────────────────────────────────────────────────────────────
 // One consistent line-icon set (Feather/Lucide style) to replace emoji across
 // the app. Workout/diet/habit reuse the exact nav paths so the tab bar and the
@@ -973,6 +1000,7 @@ const _ICONS = {
   heart: '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>',
   footprints: '<path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z"/><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z"/>',
   trend: '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
+  shield: '<path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/>',
 };
 function icon(name, size = 18) {
   return `<svg class="ic" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${_ICONS[name] || ''}</svg>`;
@@ -1080,12 +1108,31 @@ function showToast(msg) {
       document.body.appendChild(el);
     }
     el.textContent = msg;
+    el.classList.remove('toast--shield');
     // Restart the animation even if a toast is already on screen.
     el.classList.remove('show');
     void el.offsetWidth;
     el.classList.add('show');
     clearTimeout(_toastTimer);
     _toastTimer = setTimeout(() => el.classList.remove('show'), 1700);
+  } catch {}
+}
+
+// The shield is the one toast worth a moment: it spent something of theirs to
+// keep the streak, so it holds longer and the shield draws itself in.
+function showShieldToast(msg) {
+  try {
+    showToast(msg);
+    const el = document.getElementById('toast');
+    if (!el) return;
+    el.classList.add('toast--shield');
+    el.innerHTML = `<span class="toast-shield">${icon('shield', 16)}</span>`;
+    el.appendChild(document.createTextNode(msg));
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => {
+      el.classList.remove('show');
+      setTimeout(() => el.classList.remove('toast--shield'), 250);
+    }, 3200);
   } catch {}
 }
 
@@ -2148,7 +2195,7 @@ function validateStreaks() {
   const t = today();
   let changed = false;
   const hist = LS.get('hvi_habit_history', {}) || {};
-  const _shieldsSpent = [];
+  const _shieldsSpent = [], _shieldIds = [];
   (habits || []).forEach(h => {
     const e = log[h.id];
     if (!e || !(e.streak > 0) || !e.lastCompletedDate) return;
@@ -2190,6 +2237,7 @@ function validateStreaks() {
         && typeof useStreakShield === 'function') {
       useStreakShield(h.id);
       _shieldsSpent.push(h.name);
+      _shieldIds.push(h.id);
       changed = true;
       return;
     }
@@ -2199,9 +2247,16 @@ function validateStreaks() {
   if (changed) LS.set('hvi_log', log);
   // Spending something of theirs silently would be worse than letting the
   // streak break, so say what was covered and what it cost.
-  if (_shieldsSpent.length && typeof showToast === 'function') {
+  if (_shieldsSpent.length) {
+    // Remembered for the rest of the day so the habit row can show what was
+    // covered; the row stamps the shield once, the first time it is drawn.
+    const prev = LS.get('hvi_shield_saves', null);
+    const ids = (prev && prev.date === t ? prev.ids : []).concat(_shieldIds);
+    LS.set('hvi_shield_saves', { date: t, ids: [...new Set(ids)] });
     const n = _shieldsSpent.length;
-    showToast(`\u{1F6E1}️ Streak shield used on ${n === 1 ? _shieldsSpent[0] : n + ' habits'} — ${getStreakShields()} left`);
+    const msg = `Streak shield used on ${n === 1 ? _shieldsSpent[0] : n + ' habits'} — ${getStreakShields()} left`;
+    if (typeof showShieldToast === 'function') showShieldToast(msg);
+    else if (typeof showToast === 'function') showToast(msg);
   }
   return changed;
 }
@@ -2375,6 +2430,7 @@ function habitRowHTML(h, suffix = '', editMode = false) {
     ? consistencyText(consistency7(h.id))
     : (s > 0 ? `${s} day streak` : 'Start your streak');
   const _lk = (typeof getHabitLink === 'function' && getHabitLink(h.id)) ? ' <span class="hi-auto" title="Auto-completes from another module">\u26A1</span>' : '';
+  const _sh = shieldSaveBadge(h.id);
   if (!due && !editMode) {
     return `<div class="hi rest-day" id="hi${suffix}-${h.id}" style="opacity:0.4;pointer-events:none">
       <div class="hi-info"><div class="hi-name">${esc(h.name)}</div><div class="hi-streak">Rest day</div></div>
@@ -2392,8 +2448,20 @@ function habitRowHTML(h, suffix = '', editMode = false) {
       </div></div>`;
   }
   return `<div class="hi${e.completedToday?' done':''}" id="hi${suffix}-${h.id}" onclick="tapHabit('${h.id}','${suffix}')" role="checkbox" aria-checked="${!!e.completedToday}" aria-label="${esc(h.name)} \u2014 ${streakTxt}" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();tapHabit('${h.id}','${suffix}')}">
-    <div class="hi-info"><div class="hi-name">${esc(h.name)}${_lk}</div><div class="hi-streak${s>=3?' hot':''}" id="hs${suffix}-${h.id}">${streakTxt}</div></div>
+    <div class="hi-info"><div class="hi-name">${esc(h.name)}${_lk}</div><div class="hi-streak-row"><div class="hi-streak${s>=3?' hot':''}" id="hs${suffix}-${h.id}">${streakTxt}</div>${_sh}</div></div>
     <div class="hi-check" id="hc${suffix}-${h.id}" aria-hidden="true">\u2713</div></div>`;
+}
+
+// A shield spent this morning shows on its habit for the rest of the day, so
+// the covered miss is visible where the habit is \u2014 not only in a toast that
+// was gone before the screen was read. It stamps in the first time it is drawn.
+const _shieldStamped = new Set();
+function shieldSaveBadge(id) {
+  const s = LS.get('hvi_shield_saves', null);
+  if (!s || s.date !== today() || !(s.ids || []).includes(id)) return '';
+  const fresh = !_shieldStamped.has(id);
+  _shieldStamped.add(id);
+  return `<span class="hi-shield${fresh ? ' hi-shield--new' : ''}" title="A streak shield covered yesterday">${icon('shield', 13)}Covered</span>`;
 }
 
 function tapHabit(id, suffix) {
@@ -2478,7 +2546,15 @@ function tapHabit(id, suffix) {
 function refreshPillarRing() {
   const {done,total,pct} = pillarPct(curPillar);
   const r = document.querySelector('.pd-ring');
-  if (r) r.innerHTML = ring(32,pct,3.5) + `<div class="pd-pct">${Math.round(pct*100)}%</div>`;
+  if (r) {
+    // Replacing the ring restarts its fill animation, which used to empty it and
+    // refill from zero on every check-off. Start the new one where the old ended.
+    const prev = r.querySelector('svg circle:last-child');
+    const from = prev && prev.style.getPropertyValue('--ring-off');
+    r.innerHTML = ring(32,pct,3.5) + `<div class="pd-pct">${Math.round(pct*100)}%</div>`;
+    const next = r.querySelector('svg circle:last-child');
+    if (from && next) next.style.setProperty('--ring-from', from);
+  }
   const l = document.querySelector('.pd-lbl');
   if (l) l.textContent = `Habits \u00B7 ${done}/${total}`;
 }

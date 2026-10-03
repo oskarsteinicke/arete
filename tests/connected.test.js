@@ -238,5 +238,81 @@ module.exports = function () {
     r.check('rubbish input returns nothing', run(s4, "computeTDEETargets({weightKg:0})") === null);
   }
 
+  // Training changes nutrition silently. The card after a session has to say
+  // what the session itself changed, and not claim credit for what the plan
+  // had already set that morning.
+  r.section('a finished session reports what it fed');
+  {
+    const dow = new Date().getDay();
+    const logged = JSON.stringify({ [T]: { dayName: 'Legs', exercises: [{ exerciseId: 'squat', sets: [{ weight: 100, reps: 5, completed: true }] }] } });
+    const mk = (trainingDays) => {
+      const s2 = sb({ hvi_habits: '[]', hvi_log: '{}', hvi_workout_log: logged });
+      run(s2, `settings.trainingDays = ${JSON.stringify(trainingDays)};`);
+      return s2;
+    };
+
+    const rest = mk([0, 1, 2, 3, 4, 5, 6].filter(d => d !== dow));   // today was a planned rest day
+    const before = run(rest, 'JSON.stringify(getTodaysMacroTargets(_plannedSession()))');
+    const sum = run(rest, `sessionFedSummary(JSON.parse(${JSON.stringify(before)}), ['Gym'])`);
+    r.check('training on a rest day is reported as a change', sum.nutrition.changed && sum.nutrition.fromRest,
+      `(${JSON.stringify(sum.nutrition)})`);
+    r.check('carbs rise from the rest-day number', sum.nutrition.carbs > sum.nutrition.carbsFrom,
+      `(${sum.nutrition.carbsFrom} -> ${sum.nutrition.carbs})`);
+    r.check('the habit it ticked is named', sum.habits[0] === 'Gym', `(${JSON.stringify(sum.habits)})`);
+    const html = run(rest, `sessionFedHTML(sessionFedSummary(JSON.parse(${JSON.stringify(before)}), []))`);
+    r.check('the card shows the old number struck through', /<s>\d+<\/s> → <b data-count-from/.test(html), '(no before → after)');
+
+    const planned = mk([dow]);   // planned training day, and it was trained
+    run(planned, `workoutMeta = { activeProgram: 'custom-legs', currentDayIndex: 0 };
+                  findProgram = function(){ return { days: [{ name: 'Legs' }] }; };`);
+    const pBefore = run(planned, 'JSON.stringify(getTodaysMacroTargets(_plannedSession()))');
+    const same = run(planned, `sessionFedSummary(JSON.parse(${JSON.stringify(pBefore)}), [])`);
+    r.check('a session the plan already expected is not claimed as a change', !same.nutrition.changed,
+      `(${JSON.stringify(same.nutrition)})`);
+    r.check('it shows the adjustment against the base goal instead',
+      same.nutrition.carbsFrom === 280 && same.nutrition.carbs > 280, `(${same.nutrition.carbsFrom} -> ${same.nutrition.carbs})`);
+
+    const stale = run(rest, `sessionFedHTML(Object.assign(sessionFedSummary(null, []), { date: '2000-01-01' }))`);
+    r.check('a summary from another day renders nothing', stale === '', '(stale card shown)');
+  }
+
+  // The card names the habits a session ticked, so a toast on top of it would
+  // say the same thing twice, over the card it is repeating.
+  r.section('a workout ticks its linked habit for the card, without a toast');
+  {
+    const s = sb({
+      hvi_habits: JSON.stringify(H),
+      hvi_log: JSON.stringify({ h1: { streak: 0, lastCompletedDate: '', completedToday: false } }),
+      hvi_habit_links: JSON.stringify({ h1: 'workout' }),
+    });
+    run(s, "window.Arete.emit('workout:completed')");
+    r.check('the linked habit completed itself', run(s, 'log.h1.completedToday') === true);
+    r.check('and is kept for the session card', run(s, 'JSON.stringify(_workoutAutoDone)') === JSON.stringify([H[0].name]),
+      `(${run(s, 'JSON.stringify(_workoutAutoDone)')})`);
+    r.check('with no toast over the card', run(s, '_tracked.some(function(t){return t[0]==="toast"})') === false,
+      '(toast shown after a workout)');
+  }
+
+  // The count-up is a morning moment. Replaying it on every trip back to home
+  // would turn it into noise, and the score has to be right without it.
+  r.section('the readiness reveal plays once a day');
+  {
+    const s = sb({ hvi_habits: '[]', hvi_log: '{}',
+      hvi_sleep_log: JSON.stringify({ [T]: { hours: 8, quality: 4 } }) });
+    run(s, `sleepLog=JSON.parse(localStorage.getItem('hvi_sleep_log'));`);
+    const score = run(s, 'getReadiness().score');
+    const first = run(s, 'todayBriefingHTML()');
+    const burst = run(s, 'todayBriefingHTML()');
+    run(s, '_readyRevealUntil = 0');   // the launch's opening burst of renders is over
+    const second = run(s, 'todayBriefingHTML()');
+    r.check('the first home of the day reveals it', /tb-ready--reveal/.test(first), '(no reveal class)');
+    r.check('a re-render in the same launch burst keeps it', /tb-ready--reveal/.test(burst), '(reveal cut off at launch)');
+    r.check('later ones do not', !/tb-ready--reveal/.test(second), '(reveal replays)');
+    r.check('the real score is announced while it counts',
+      new RegExp(`aria-label="Readiness ${score},`).test(first), `(score ${score} missing)`);
+    r.check('and shown outright once the reveal is spent',
+      new RegExp(`tb-ready-num[^>]*>${score}<`).test(second), `(score ${score} missing)`);
+  }
+
   return r.finish();
 };
