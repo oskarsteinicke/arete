@@ -103,6 +103,12 @@ async function launch() {
       const { result } = await send('Runtime.evaluate', { expression: 'document.documentElement.clientWidth' });
       return { layoutWidth: result.value, bytes: fs.statSync(out).size };
     },
+    // Capture the page as it is now, without reloading it, so a caller can
+    // photograph a state it drove the page into.
+    async snap(out) {
+      const { data } = await send('Page.captureScreenshot', { format: 'png' });
+      fs.writeFileSync(out, Buffer.from(data, 'base64'));
+    },
     // Run an expression in the current page and return its value.
     async evaluate(expression) {
       const { result, exceptionDetails } = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true });
