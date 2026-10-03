@@ -459,6 +459,7 @@ function renderWorkoutActive() {
     const canMoveUp = ei > 0;
     const canMoveDown = ei < wl.exercises.length - 1;
     const allDone = we.sets.length > 0 && we.sets.every(s => s.completed);
+    const rest = restFor(we.exerciseId);
     return `<div class="w-ex ani${allDone ? ' w-ex-done' : ''}" id="w-ex-${ei}">
       <div class="w-ex-head" onclick="toggleExInfo(${ei})"><div><div class="w-ex-name" id="w-ex-name-${ei}">${esc(name)}</div><div class="w-ex-muscle" id="w-ex-muscle-${ei}">${esc(muscle)}${muscles || desc ? ' <span style=&quot;font-size:9px;opacity:0.5&quot;>ⓘ</span>' : ''}</div></div>${buildExerciseSparkline(we.exerciseId)}</div>
       <div class="w-ex-actions">
@@ -473,7 +474,11 @@ function renderWorkoutActive() {
       <div class="w-set-actions">
         <button class="w-add-set" onclick="addSet(${ei})">+ Add Set</button>
         <button class="w-add-set" id="w-rm-${ei}" style="color:var(--fat);opacity:0.5;${canRemove ? '' : 'display:none'}" onclick="removeSet(${ei})">− Remove Set</button>
-      </div></div>`;
+        <button class="w-rest-chip" id="w-rest-${ei}" onclick="toggleRestPicker(${ei})" aria-expanded="false" aria-controls="w-rest-pick-${ei}" aria-label="${_restAria(rest)}">${icon('timer', 13)}<span>${_fmtRest(rest)}</span></button>
+      </div>
+      <div class="w-rest-pick" id="w-rest-pick-${ei}" role="group" aria-label="Rest between sets" hidden>${
+        REST_CHOICES.map(sec => `<button class="w-rest-opt${sec === rest ? ' on' : ''}" data-sec="${sec}" aria-pressed="${sec === rest}" onclick="pickRest(${ei},${sec})">${_fmtRest(sec)}</button>`).join('')
+      }</div></div>`;
   }).join('');
 
   // Removing every exercise used to leave a blank screen with no route forward:
@@ -498,8 +503,10 @@ function renderWorkoutActive() {
       <button class="rt-preset-btn" onclick="startRestTimer(90)">1:30</button>
       <button class="rt-preset-btn" onclick="startRestTimer(120)">2:00</button>
       <button class="rt-preset-btn" onclick="startRestTimer(180)">3:00</button>
-      <button class="rt-preset-btn" onclick="showPlateCalc()" style="margin-left:auto;background:var(--surface2);border:1px solid var(--border2)">Plates</button>
-      <button class="rt-preset-btn" onclick="show1RMCalc()" style="background:var(--surface2);border:1px solid var(--border2)">1RM</button>
+      <span class="rt-tools">
+        <button class="rt-preset-btn" onclick="showPlateCalc()" style="background:var(--surface2);border:1px solid var(--border2)">Plates</button>
+        <button class="rt-preset-btn" onclick="show1RMCalc()" style="background:var(--surface2);border:1px solid var(--border2)">1RM</button>
+      </span>
     </div>
     <div class="w-notes-wrap">
       <div class="j-lbl" style="padding:0 0 8px">Workout Notes</div>
@@ -566,8 +573,13 @@ function toggleSet(ei, si) {
       }
     }
   }
-  // Auto-start rest timer when completing a set
-  if (set.completed) startRestTimer(restTimerDur);
+  // Rest for this exercise's own time. This used to pass restTimerDur, which
+  // is whatever ran last, so a 1:30 tapped once after curls became the rest
+  // for squats too. Off arms nothing.
+  if (set.completed) {
+    const sec = restFor(wl.exercises[ei].exerciseId);
+    if (sec > 0) startRestTimer(sec);
+  }
 }
 
 function addSet(ei) {
@@ -800,6 +812,57 @@ function _updateWorkoutElapsed() {
 }
 
 // ── REST TIMER ──────────────────────────────────────────────────────────
+// Each exercise keeps its own rest, remembered across sessions, because heavy
+// squats want longer than curls. Unset means DEFAULT_REST_SEC; 0 means no
+// timer. The preset row under the session starts a one-off timer and changes
+// nobody's rest, so the chip on each card always says what will run.
+const REST_CHOICES = [45, 60, 90, 120, 150, 180, 240, 300, 0];
+function restFor(eid) {
+  const v = (LS.get('hvi_rest_by_exercise', {}) || {})[String(eid)];
+  return (typeof v === 'number' && v >= 0) ? v : DEFAULT_REST_SEC;
+}
+function setExerciseRest(eid, sec) {
+  const m = LS.get('hvi_rest_by_exercise', {}) || {};
+  m[String(eid)] = Math.max(0, Math.round(sec) || 0);
+  LS.set('hvi_rest_by_exercise', m);
+}
+function _fmtRest(sec) {
+  return sec > 0 ? `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}` : 'Off';
+}
+function _restAria(sec) {
+  return sec > 0 ? `Rest between sets ${_fmtRest(sec)}. Change` : 'No rest timer. Change';
+}
+function toggleRestPicker(ei) {
+  const pick = document.getElementById(`w-rest-pick-${ei}`);
+  const chip = document.getElementById(`w-rest-${ei}`);
+  if (!pick) return;
+  pick.hidden = !pick.hidden;
+  if (chip) chip.setAttribute('aria-expanded', String(!pick.hidden));
+}
+function pickRest(ei, sec) {
+  const wl = workoutLog[today()];
+  const we = wl && wl.exercises[ei];
+  if (!we) return;
+  setExerciseRest(we.exerciseId, sec);
+  // The same exercise can be in a session twice; every card for it follows.
+  wl.exercises.forEach((w, i) => {
+    if (String(w.exerciseId) !== String(we.exerciseId)) return;
+    const chip = document.getElementById(`w-rest-${i}`);
+    if (chip) {
+      const label = chip.querySelector('span');
+      if (label) label.textContent = _fmtRest(sec);
+      chip.setAttribute('aria-label', _restAria(sec));
+    }
+    const pick = document.getElementById(`w-rest-pick-${i}`);
+    if (pick) pick.querySelectorAll('.w-rest-opt').forEach(b => {
+      const on = +b.dataset.sec === sec;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+  });
+  toggleRestPicker(ei);
+  haptic(8);
+}
 function startRestTimer(dur) {
   restTimerDur = dur || DEFAULT_REST_SEC;
   restTimerEnd = Date.now() + restTimerDur * 1000;

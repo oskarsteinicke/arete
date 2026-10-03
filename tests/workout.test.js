@@ -293,6 +293,42 @@ module.exports = function () {
       `(${run(s, 'restTimerDur')})`);
   }
 
+  // Completing a set used to arm restTimerDur, which is whatever ran last: a
+  // 1:30 tapped once after curls became the rest for squats too.
+  r.section('each exercise rests for its own time');
+  {
+    const open = (w, r2) => ({ weight: w, reps: r2, completed: false });
+    const s = sb({ hvi_workout_log: JSON.stringify({ [T]: { programId: 'ppl', dayIndex: 0, touched: true, exercises: [
+      { exerciseId: 'squat', sets: [open(100, 5), open(100, 5)] },
+      { exerciseId: 'barbell_curl', sets: [open(30, 10), open(30, 10), open(30, 10)] } ] } }) });
+    run(s, `_armed = []; startRestTimer = function (d) { _armed.push(d); restTimerDur = d; };`);
+    const armed = () => run(s, 'JSON.stringify(_armed)');
+
+    run(s, 'toggleSet(1, 0)');
+    r.check('an exercise with no rest of its own gets the default', armed() === '[180]', armed());
+
+    run(s, `setExerciseRest('squat', 240); toggleSet(0, 0)`);
+    r.check('one with its own rest gets that', armed() === '[180,240]', armed());
+
+    run(s, 'restTimerDur = 90; toggleSet(1, 1)');   // a one-off 1:30 from the preset row just ran
+    r.check('a one-off timer does not become the next exercise\'s rest', armed() === '[180,240,180]', armed());
+
+    run(s, `setExerciseRest('barbell_curl', 0); toggleSet(1, 2)`);
+    r.check('Off arms nothing', armed() === '[180,240,180]', armed());
+    r.check('unticking a set arms nothing either', (run(s, 'toggleSet(0, 0)'), armed()) === '[180,240,180]', armed());
+
+    run(s, 'renderWorkoutActive()');
+    const html = run(s, `document.getElementById('view').innerHTML`) || '';
+    r.check('the squat card says 4:00', /id="w-rest-0"[^>]*>[\s\S]*?<span>4:00<\/span>/.test(html), '(chip missing or wrong)');
+    r.check('the curl card says Off', /id="w-rest-1"[^>]*>[\s\S]*?<span>Off<\/span>/.test(html), '(chip missing or wrong)');
+
+    const again = sb({ hvi_rest_by_exercise: s.localStorage._d['hvi_rest_by_exercise'] });
+    r.check('it is remembered for the next session', run(again, `restFor('squat')`) === 240 && run(again, `restFor('barbell_curl')`) === 0,
+      `(${s.localStorage._d['hvi_rest_by_exercise']})`);
+    r.check('and follows you to another device',
+      run(again, `SYNC_KEYS.includes('hvi_rest_by_exercise') && MERGE_KEYS.includes('hvi_rest_by_exercise')`) === true);
+  }
+
   // Two separate places moved the program on. finishWorkout advanced the day
   // and stamped lastWorkoutDate; the next morning checkReset saw that stamp
   // and advanced again. Nothing else ever writes lastWorkoutDate — synced
