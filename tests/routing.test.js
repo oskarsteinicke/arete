@@ -133,5 +133,42 @@ module.exports = function () {
       `(${leaked.join(', ')} would throw before any screen could render)`);
   }
 
+  // The page changed on a 60px drag, and the sideways test only had to pass
+  // for a moment, so a slightly crooked scroll moved you to another tab.
+  r.section('only a deliberate swipe changes the page');
+  {
+    const s = boot(EAGER);
+    const W = 390;
+    const swipe = (g) => run(s, `_isPageSwipe(${JSON.stringify(Object.assign({ dy: 0, maxDy: 0, ms: 250 }, g))}, ${W})`);
+    r.check('a quick, straight swipe across the screen does', swipe({ dx: -180, dy: 12, maxDy: 18 }) === true);
+    r.check('in either direction', swipe({ dx: 180, dy: -10, maxDy: 14 }) === true);
+    r.check('the old 60px trigger does not', swipe({ dx: 70, dy: 8, maxDy: 8 }) === false);
+    r.check('nor a short flick', swipe({ dx: 130, dy: 5, maxDy: 5, ms: 120 }) === false);
+    r.check('nor a scroll that drifts sideways', swipe({ dx: 200, dy: 60, maxDy: 90 }) === false);
+    r.check('nor one that went up and came back', swipe({ dx: 200, dy: 4, maxDy: 55 }) === false);
+    r.check('nor a slow drag while reading', swipe({ dx: 220, dy: 6, maxDy: 10, ms: 1500 }) === false);
+    r.check('nor two fingers', swipe({ dx: -200, multi: true }) === false);
+    r.check('nor one that started on something with its own gesture', swipe({ dx: -200, blocked: true }) === false);
+    r.check('on a wider screen it takes 40% of the width',
+      run(s, `_isPageSwipe({ dx: 200, dy: 0, maxDy: 0, ms: 250 }, 768)`) === false &&
+      run(s, `_isPageSwipe({ dx: 320, dy: 0, maxDy: 0, ms: 250 }, 768)`) === true);
+
+    // Fake nodes, parent-linked up to #view, standing in for the real DOM.
+    run(s, `
+      getComputedStyle = function (n) { return { overflowX: n._ox || 'visible' }; };
+      _node = function (cls, parent, extra) { return Object.assign({ id: '', parentElement: parent, scrollWidth: 300, clientWidth: 300,
+        matches: function (sel) { return sel.split(',').some(function (q) { return q.trim() === cls; }); } }, extra || {}); };
+      _view = _node('', null, { id: 'view' });
+      _card = _node('.card', _view);
+    `);
+    r.check('a touch on an ordinary card can swipe', run(s, `_swipeBlocked(_node('.label', _card))`) === false);
+    r.check('a habit row keeps its swipe-to-complete', run(s, `_swipeBlocked(_node('.hi-name', _node('.hi', _card)))`) === true);
+    r.check('a field keeps its text selection', run(s, `_swipeBlocked(_node('input', _card))`) === true);
+    r.check('a row that scrolls sideways keeps its scroll',
+      run(s, `_swipeBlocked(_node('.chip', _node('.wp-chips', _card, { scrollWidth: 620, clientWidth: 390, _ox: 'auto' })))`) === true);
+    r.check('but one that fits does not block',
+      run(s, `_swipeBlocked(_node('.chip', _node('.wp-chips', _card, { scrollWidth: 390, clientWidth: 390, _ox: 'auto' })))`) === false);
+  }
+
   return r.finish();
 };

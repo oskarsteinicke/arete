@@ -3318,29 +3318,64 @@ function saveHabit() {
 }
 
 // ── SWIPE NAVIGATION ─────────────────────────────────────────────────────
+// Swiping sideways moves between the main tabs. It used to fire on a 60px
+// drag, and the "is it sideways" test only had to pass for one moment, so a
+// scroll that drifted, a habit row swiped to complete it, or a scrolled row of
+// chips all changed the page. It now takes a quick, straight swipe across 40%
+// of the screen, started somewhere that has no sideways gesture of its own.
 const _NAV_ORDER = ['home', 'habits', 'workout', 'diet', 'library', 'stats'];
-let _swipeX0 = null, _swipeY0 = null, _swiping = false;
+const _SWIPE = { minFrac: 0.4, minPx: 140, maxDrift: 40, ratio: 3, maxMs: 800 };
+let _swipe = null;
+
+// g: { dx, dy, maxDy, ms, multi, blocked } for one finished touch.
+function _isPageSwipe(g, viewW) {
+  if (!g || g.blocked || g.multi) return false;
+  const adx = Math.abs(g.dx);
+  if (adx < Math.max(_SWIPE.minPx, (viewW || 0) * _SWIPE.minFrac)) return false;
+  if (g.maxDy > _SWIPE.maxDrift) return false;           // it moved up or down: a scroll
+  if (adx < Math.abs(g.dy) * _SWIPE.ratio) return false;  // not straight enough
+  if (g.ms > _SWIPE.maxMs) return false;                  // a slow drift, not a swipe
+  return true;
+}
+
+// Habit rows swipe to complete, fields select text, and some rows scroll
+// sideways. A touch that starts on any of those is theirs, not the page's.
+function _swipeBlocked(el) {
+  for (let n = el; n && n.id !== 'view'; n = n.parentElement) {
+    if (n.matches && n.matches('.hi, input, textarea, select, [contenteditable="true"], [data-no-swipe]')) return true;
+    if (n.scrollWidth > n.clientWidth + 1) {
+      const ox = getComputedStyle(n).overflowX;
+      if (ox === 'auto' || ox === 'scroll') return true;
+    }
+  }
+  return false;
+}
 
 function initSwipeNav() {
   const view = document.getElementById('view');
   view.addEventListener('touchstart', e => {
-    _swipeX0 = e.touches[0].clientX;
-    _swipeY0 = e.touches[0].clientY;
-    _swiping = false;
+    const t = e.touches[0];
+    // A second finger starts a fresh record with multi set, which cancels it.
+    _swipe = { x0: t.clientX, y0: t.clientY, t0: Date.now(), maxDy: 0,
+               multi: e.touches.length > 1, blocked: _swipeBlocked(e.target) };
   }, { passive: true });
 
   view.addEventListener('touchmove', e => {
-    if (_swipeX0 === null) return;
-    const dx = e.touches[0].clientX - _swipeX0;
-    const dy = e.touches[0].clientY - _swipeY0;
-    if (Math.abs(dx) > Math.abs(dy) * 1.5 && Math.abs(dx) > 30) _swiping = true;
+    if (!_swipe) return;
+    if (e.touches.length > 1) _swipe.multi = true;
+    _swipe.maxDy = Math.max(_swipe.maxDy, Math.abs(e.touches[0].clientY - _swipe.y0));
   }, { passive: true });
 
+  view.addEventListener('touchcancel', () => { _swipe = null; }, { passive: true });
+
   view.addEventListener('touchend', e => {
-    if (!_swiping || _swipeX0 === null) { _swipeX0 = null; return; }
-    const dx = e.changedTouches[0].clientX - _swipeX0;
-    _swipeX0 = null; _swiping = false;
-    if (Math.abs(dx) < 60) return;
+    const g = _swipe;
+    _swipe = null;
+    if (!g) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - g.x0;
+    const swipe = { dx, dy: t.clientY - g.y0, maxDy: g.maxDy, ms: Date.now() - g.t0, multi: g.multi, blocked: g.blocked };
+    if (!_isPageSwipe(swipe, view.clientWidth || window.innerWidth)) return;
     const base = NAV_PARENT[curView] || curView;
     const idx = _NAV_ORDER.indexOf(base);
     if (idx === -1) return;
