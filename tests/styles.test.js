@@ -108,5 +108,45 @@ module.exports = function () {
     r.check('the shell is as tall as what is visible, not 100vh', /height:\s*100%/.test(app) && !/height:\s*100vh/.test(app.replace(/\/\*[\s\S]*?\*\//g, '')), '(off-screen bottom on iOS)');
   }
 
+
+  // The same rule home follows, on the two tabs people log in: nothing smaller
+  // than 12.5px and no labels in capitals. Both pages were full of 10px
+  // letterspaced captions ("THIS WEEK", "VOLUME KG", "14-DAY CALORIES").
+  r.section('workout and nutrition have no tiny text');
+  {
+    const fs = require('fs'), path = require('path');
+    const read = f => fs.readFileSync(path.join(require('./harness').APP, f), 'utf8');
+    const sheet = css.replace(/\/\*[\s\S]*?\*\//g, '');
+    const injected = read('diet.js');     // the nutrition cards carry their own styles
+    const check = (source, classes) => {
+      const bad = [];
+      for (const cls of classes) {
+        const re = new RegExp('(^|[\\s,}])\\.' + cls + '\\s*(,[^{]*)?\\{([^}]*)\\}', 'g');
+        let m, found = false;
+        while ((m = re.exec(source))) {
+          found = true;
+          const size = /font-size:\s*([\d.]+)px/.exec(m[3]);
+          if (size && +size[1] < 12.5) bad.push(`${cls} ${size[1]}px`);
+          if (/text-transform:\s*uppercase/.test(m[3])) bad.push(`${cls} in capitals`);
+        }
+        if (!found) bad.push(`${cls} (no rule)`);
+      }
+      return bad;
+    };
+    const workout = check(sheet, ['w-stat-val', 'w-stat-lbl', 'w-day-label', 'w-hero-day', 'w-hero-focus', 'w-hero-cta',
+      'w-ex-preview-name', 'w-ex-preview-muscle', 'w-advice-head', 'w-advice-detail']);
+    r.check('the workout tab', workout.length === 0, `(${workout.join(', ')})`);
+    const nutrition = check(sheet, ['d-ring-val', 'd-ring-label', 'd-water-label', 'd-water-count', 'd-adjust-main', 'd-adjust-base',
+      'd-meal-name', 'd-meal-macros', 'd-mi-name', 'd-mi-p', 'd-mi-cal'])
+      .concat(check(injected, ['da-h', 'da-stat-val', 'da-stat-lbl', 'da-goal-btn', 'da-apply', 'da-rec-val', 'da-rec-lbl',
+        'dw-logged', 'dw-log-btn', 'dw-history', 'dw-trend-link', 'dw-drift-text']));
+    r.check('the nutrition tab', nutrition.length === 0, `(${nutrition.join(', ')})`);
+    r.check('no letterspaced caption is left on either page',
+      !/class="sec-lbl"/.test(read('workout.js').slice(read('workout.js').indexOf('function renderWorkout() {'), read('workout.js').indexOf('function renderWorkoutPicker()'))) &&
+      !/class="sec-lbl"/.test(injected.slice(injected.indexOf('function renderDiet() {'), injected.indexOf('function renderDietAddMeal()'))) &&
+      !/class="sec-lbl"/.test(injected.slice(injected.indexOf('function _buildCalorieTrendChart'), injected.indexOf('const ML_PER_GLASS'))),
+      '(an old caption is back)');
+  }
+
   return r.finish();
 };

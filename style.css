@@ -213,6 +213,11 @@ nav {
 .page-head { padding: 52px 24px 28px; }
 .page-title { font-family: var(--display); font-size: 26px; color: var(--text); margin-bottom: 4px; font-weight: 400; letter-spacing: 0.5px; }
 .page-sub { font-size: 13px; color: var(--text-dim); line-height: 1.5; }
+/* A section heading on the main tabs: a heading, not letterspaced capitals.
+   An optional <span> sits at the right as a quiet note. */
+.sec-h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 22px 24px 10px; }
+.sec-h h2 { font-family: var(--display); font-size: 18px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); margin: 0; }
+.sec-h span { font-size: 13px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
 
 /* HOME */
 .h-head { padding: 48px 24px 28px; }
@@ -373,21 +378,25 @@ nav {
 .w-stats-strip { display: flex; justify-content: space-around; padding: 0 24px 16px; gap: 8px; }
 .w-stat-item { text-align: center; flex: 1; }
 .w-stat-val { font-family: var(--display); font-size: 22px; color: var(--accent-b); font-weight: 700; letter-spacing: 0.3px; }
-.w-stat-lbl { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.2px; margin-top: 2px; }
+.w-stat-lbl { font-size: 13px; color: var(--text-dim); margin-top: 2px; }
 
 /* Workout hero card */
 .w-hero-card { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); padding: 24px; margin: 0 24px 16px; cursor: pointer; transition: background 0.2s, border-color 0.2s, transform 0.15s; position: relative; overflow: hidden; }
 .w-hero-card:active { transform: scale(0.98); }
 .w-hero-glow { position: absolute; top: -40px; right: -40px; width: 140px; height: 140px; background: radial-gradient(circle, rgba(var(--accent-rgb),0.08) 0%, transparent 70%); pointer-events: none; }
-.w-muscle-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-.w-muscle-tag { font-size: 10px; color: var(--accent); background: rgba(var(--accent-rgb),0.08); border: 1px solid rgba(var(--accent-rgb),0.15); padding: 3px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.8px; }
-.w-hero-cta { margin-top: 14px; font-size: 13px; font-weight: 600; letter-spacing: 0.5px; color: var(--accent); }
-.w-hero-cta.done { color: var(--accent-b); }
+.w-hero-day { font-family: var(--display); font-size: 26px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); margin: 0 0 2px; line-height: 1.15; }
+.w-hero-focus { font-size: 15px; color: var(--text-dim); }
+/* Reads as the button it is. The whole card is the tap target. */
+.w-hero-cta {
+  margin-top: 16px; padding: 14px 16px; border-radius: 14px; text-align: center;
+  background: var(--accent); color: #0a0908; font-size: 15px; font-weight: 700;
+}
+.w-hero-cta.done { background: none; border: 1px solid var(--border2); color: var(--accent-b); font-weight: 600; }
 
-.w-ex-preview-list { margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px; display: flex; flex-direction: column; gap: 6px; }
-.w-ex-preview-item { display: flex; justify-content: space-between; align-items: center; }
-.w-ex-preview-name { font-size: 12px; color: var(--text-dim); }
-.w-ex-preview-muscle { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
+.w-ex-preview-list { margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 6px; display: flex; flex-direction: column; }
+.w-ex-preview-item { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 7px 0; }
+.w-ex-preview-name { font-size: 15px; color: var(--text); }
+.w-ex-preview-muscle { font-size: 13px; color: var(--text-dim); white-space: nowrap; }
 
 .w-day-nav {
   display: flex;
@@ -395,13 +404,8 @@ nav {
   justify-content: space-between;
   padding: 0 24px 12px;
 }
-.w-day-label {
-  font-size: 11px;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  font-weight: 600;
-}
+.w-day-label { font-size: 13px; color: var(--text-dim); text-align: center; min-width: 0; padding: 0 10px; }
+.w-day-label b { display: block; font-size: 15px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .w-day-arrow {
   background: var(--surface);
   border: 1px solid var(--border2);
@@ -422,10 +426,8 @@ nav {
   display: inline-block;
   background: rgba(var(--accent-rgb),0.10);
   color: var(--accent-b);
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 600;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
   padding: 4px 12px;
   border-radius: 20px;
   margin-bottom: 8px;
@@ -699,11 +701,12 @@ nav {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--text);
+  font-variant-numeric: tabular-nums;
 }
-.d-ring-label { font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-dim); font-weight: 500; }
+.d-ring-label { font-size: 13px; color: var(--text-dim); }
 
 .d-meal {
   background: var(--surface);
@@ -712,15 +715,21 @@ nav {
   margin: 0 24px 10px;
   padding: 14px 16px;
 }
-.d-meal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-.d-meal-name { font-size: 14px; color: var(--text); font-weight: 500; }
-.d-meal-cal { font-size: 12px; color: var(--accent); }
-.d-meal-macros { font-size: 11px; color: var(--text-dim); }
-.d-meal-item { font-size: 12px; color: var(--text-dim); padding: 3px 0; border-top: 1px solid var(--border2); margin-top: 6px; }
-.d-meal-item:first-of-type { margin-top: 8px; }
+.d-meal-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
+.d-meal-name { font-size: 17px; color: var(--text); font-weight: 600; }
+.d-meal-macros { font-size: 13px; color: var(--accent-b); margin-top: 2px; font-variant-numeric: tabular-nums; }
+/* One food per line: its name, then protein and calories lined up on the right */
+.d-meal-item { display: flex; align-items: baseline; gap: 12px; padding: 9px 0; border-top: 1px solid var(--border2); font-variant-numeric: tabular-nums; }
+.d-mi-name { flex: 1; min-width: 0; font-size: 15px; color: var(--text); }
+.d-mi-p { font-size: 13px; color: var(--text-dim); white-space: nowrap; }
+.d-mi-cal { font-size: 14px; color: var(--text-dim); white-space: nowrap; min-width: 62px; text-align: right; }
+.d-meal-empty { padding: 0 24px; font-size: 15px; color: var(--text-dim); }
+/* On the narrowest phones the food name needs the room more than a second number does */
+@media (max-width: 359px) { .d-mi-p { display: none; } }
 
 .d-del-btn {
-  background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px; padding: 0 4px;
+  background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 20px; line-height: 1;
+  width: 32px; height: 32px; margin: -4px -8px 0 0; border-radius: 50%; flex-shrink: 0;
 }
 .d-del-btn:hover { color: var(--fat); }
 
@@ -2978,8 +2987,8 @@ body {
   background: var(--surface2); border: 1px solid var(--border2); border-left-width: 3px;
   border-radius: 10px;
 }
-.d-adjust-main { font-size: 12px; color: var(--text); font-weight: 500; }
-.d-adjust-base { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+.d-adjust-main { font-size: 14px; color: var(--text); font-weight: 500; }
+.d-adjust-base { font-size: 13px; color: var(--text-dim); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .hi-auto { font-size: 11px; opacity: 0.65; margin-left: 3px; }
 
 /* ══ PAYWALL / PREMIUM ══════════════════════════════════════════════════ */
@@ -3201,8 +3210,8 @@ body {
   font-family: var(--display); font-size: 16px; font-weight: 700;
 }
 .w-advice-text { flex: 1; min-width: 0; }
-.w-advice-head { font-size: 13.5px; font-weight: 600; color: var(--text); }
-.w-advice-detail { font-size: 11.5px; color: var(--text-dim); line-height: 1.45; margin-top: 2px; }
+.w-advice-head { font-size: 15px; font-weight: 600; color: var(--text); }
+.w-advice-detail { font-size: 13.5px; color: var(--text-dim); line-height: 1.45; margin-top: 2px; }
 
 
 /* ── Water row ──────────────────────────────────────────────────────────────
@@ -3218,12 +3227,9 @@ body {
   display: flex; align-items: baseline; justify-content: space-between;
   gap: 8px; margin-bottom: 6px;
 }
-.d-water-label {
-  font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
-  color: var(--text-muted);
-}
+.d-water-label { font-size: 14px; color: var(--text); }
 .d-water-count {
-  font-size: 11px; color: var(--text-dim);
+  font-size: 13px; color: var(--text-dim); font-variant-numeric: tabular-nums;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .d-water-track {

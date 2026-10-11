@@ -429,31 +429,35 @@ function injectAdaptiveStyles() {
   s.id = 'diet-adaptive-styles';
   s.textContent = `
     .da-section{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);padding:16px;margin:16px 24px}
-    .da-stat{text-align:center}
-    .da-stat-val{font-size:20px;font-weight:700;color:var(--accent-b);font-family:var(--serif)}
-    .da-stat-lbl{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px}
+    .da-h{font-family:var(--display);font-size:17px;font-weight:700;letter-spacing:-0.02em;color:var(--text);margin:0 0 12px}
+    .da-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .da-stat{background:var(--surface2);border-radius:var(--radius-sm);padding:14px}
+    .da-stat-val{font-size:22px;font-weight:700;color:var(--accent-b);font-family:var(--display);letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
+    .da-stat-lbl{font-size:13px;color:var(--text-dim);margin-top:3px;line-height:1.35}
     .da-goal-btns{display:flex;gap:6px;margin:12px 0 8px}
-    .da-goal-btn{flex:1;padding:10px 0;border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:transparent;color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s}
+    .da-goal-btn{flex:1;padding:10px 0;border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:transparent;color:var(--text-dim);font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
     .da-goal-btn.active{background:rgba(154,130,86,0.15);border-color:var(--accent);color:var(--accent-b)}
-    .da-apply{display:inline-block;margin-top:8px;padding:8px 20px;border:1px solid var(--accent);border-radius:10px;background:rgba(154,130,86,0.1);color:var(--accent-b);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s}
+    .da-apply{display:inline-block;margin-top:8px;padding:8px 20px;border:1px solid var(--accent);border-radius:10px;background:rgba(154,130,86,0.1);color:var(--accent-b);font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
     .da-apply:active{transform:scale(0.97)}
     .da-rec{display:flex;gap:16px;justify-content:center;margin-top:10px}
     .da-rec-item{text-align:center}
-    .da-rec-val{font-size:16px;font-weight:700;font-family:var(--serif)}
-    .da-rec-lbl{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px}
-    .dw-section{background:var(--surface2);border-radius:14px;padding:16px;margin:16px 24px}
-    .dw-logged{font-size:14px;color:var(--text);margin-bottom:10px}
+    .da-rec-val{font-size:19px;font-weight:700;font-family:var(--display);letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
+    .da-rec-lbl{font-size:13px;color:var(--text-dim)}
+    .dw-section{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);padding:16px;margin:16px 24px}
+    .dw-logged{font-size:15px;color:var(--text);margin-bottom:10px}
+    .dw-empty{font-size:14px;color:var(--text-dim)}
     .dw-input-row{display:flex;gap:8px;align-items:center}
     .dw-input{flex:1;padding:10px 12px;border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:var(--surface);color:var(--text);font-size:14px}
-    .dw-log-btn{padding:10px 18px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer}
+    .dw-log-btn{padding:10px 18px;border:none;border-radius:10px;background:var(--accent);color:#0a0908;font-size:14px;font-weight:700;cursor:pointer}
     .dw-log-btn:active{transform:scale(0.97)}
     .dw-drift{margin-top:12px;padding:12px 14px;background:rgba(176,132,72,0.08);border:1px solid rgba(217,180,106,0.28);border-radius:12px}
-    .dw-drift-text{font-size:12px;line-height:1.5;color:var(--text-dim)}
+    .dw-drift-text{font-size:14px;line-height:1.5;color:var(--text-dim)}
     .dw-drift-text strong{color:var(--text)}
     .dw-drift-arrow{color:var(--accent-b);font-weight:700}
-    .dw-history{margin-top:10px;font-size:12px;color:var(--text-dim)}
-    .dw-history-item{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
-    .dw-trend-link{display:block;margin-top:10px;font-size:12px;color:var(--accent-b);cursor:pointer;text-align:right}
+    .dw-history{margin-top:12px;font-size:14px;color:var(--text-dim);font-variant-numeric:tabular-nums}
+    .dw-history-item{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+    .dw-history-item:last-child{border-bottom:none}
+    .dw-trend-link{display:block;margin-top:10px;font-size:14px;font-weight:600;color:var(--accent-b);cursor:pointer;text-align:right}
     .dt-chart{margin:16px 24px;background:var(--surface2);border-radius:14px;padding:16px;overflow:hidden}
     .dt-placeholder{padding:32px 24px;text-align:center;font-size:13px;color:var(--text-dim)}
     .fs-row{background:var(--surface2);border-radius:8px;padding:10px 14px;margin-bottom:4px;cursor:pointer;border:1px solid transparent;transition:all .2s}
@@ -498,11 +502,11 @@ function _buildCalorieTrendChart() {
   const y = v => H - 8 - ((v / maxCal) * (H - 16));
   const pts = data.map((d, i) => `${x(i).toFixed(1)},${y(d.cal).toFixed(1)}`).join(' ');
   const goalY = y(goal).toFixed(1);
-  return `<div class="da-section ani" style="margin:0 24px 8px;padding:12px 12px 8px">
-    <div class="sec-lbl" style="padding:0 0 6px;font-size:9px">14-DAY CALORIES</div>
+  return `<div class="da-section ani">
+    <h2 class="da-h">Calories, last 14 days</h2>
     <svg viewBox="0 0 ${W} ${H}" style="width:100%;display:block">
       <line x1="${ML}" y1="${goalY}" x2="${W-MR}" y2="${goalY}" stroke="var(--accent)" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.5"/>
-      <text x="${W-MR}" y="${goalY-3}" fill="var(--accent)" font-size="7" text-anchor="end" opacity="0.6">goal</text>
+      <text x="${W-MR}" y="${goalY-3}" fill="var(--accent)" font-size="9" text-anchor="end" opacity="0.7">goal</text>
       <polyline points="${pts}" fill="none" stroke="var(--cal)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
       ${data.map((d,i) => d.cal > 0 ? `<circle cx="${x(i).toFixed(1)}" cy="${y(d.cal).toFixed(1)}" r="2" fill="var(--cal)"/>` : '').join('')}
     </svg>
@@ -620,23 +624,23 @@ function renderDiet() {
   const adaptive = computeAdaptiveTarget(tdee, goalType, weightLog);
 
   const goalBtns = ['cut','maintain','bulk'].map(g =>
-    `<button class="da-goal-btn${g===goalType?' active':''}" onclick="setGoalType('${g}')">${g.toUpperCase()}</button>`
+    `<button class="da-goal-btn${g===goalType?' active':''}" onclick="setGoalType('${g}')">${g[0].toUpperCase() + g.slice(1)}</button>`
   ).join('');
 
   let adaptiveRec = '';
   if (adaptive) {
     adaptiveRec = `<div class="da-rec">
-      <div class="da-rec-item"><div class="da-rec-val" style="color:var(--cal)">${adaptive.calories}</div><div class="da-rec-lbl">Cal Target</div></div>
-      <div class="da-rec-item"><div class="da-rec-val" style="color:var(--pro)">${adaptive.protein}g</div><div class="da-rec-lbl">Protein</div></div>
+      <div class="da-rec-item"><div class="da-rec-val" style="color:var(--cal)">${adaptive.calories.toLocaleString()}</div><div class="da-rec-lbl">Suggested calories</div></div>
+      <div class="da-rec-item"><div class="da-rec-val" style="color:var(--pro)">${adaptive.protein}g</div><div class="da-rec-lbl">Suggested protein</div></div>
     </div>
-    <div style="text-align:center"><button class="da-apply" onclick="applyAdaptiveTarget()">APPLY</button></div>`;
+    <div style="text-align:center"><button class="da-apply" onclick="applyAdaptiveTarget()">Use these targets</button></div>`;
   }
 
   const expenditureHTML = `<div class="da-section ani">
-    <div class="sec-lbl" style="padding:0 0 10px">Expenditure</div>
-    <div class="s-grid" style="margin:0">
-      <div class="s-card da-stat"><div class="da-stat-val">${tdee !== null ? tdee.toLocaleString() : '—'}</div><div class="da-stat-lbl">${tdee !== null ? 'Est. TDEE' : 'Log 7+ days to unlock'}</div></div>
-      <div class="s-card da-stat"><div class="da-stat-val">${avgCal !== null ? avgCal.toLocaleString() : '—'}</div><div class="da-stat-lbl">Avg Cal (7d)</div></div>
+    <h2 class="da-h">Energy in and out</h2>
+    <div class="da-stats">
+      <div class="da-stat"><div class="da-stat-val">${tdee !== null ? tdee.toLocaleString() : '—'}</div><div class="da-stat-lbl">${tdee !== null ? 'Est. daily burn' : 'Log 7 days to see this'}</div></div>
+      <div class="da-stat"><div class="da-stat-val">${avgCal !== null ? avgCal.toLocaleString() : '—'}</div><div class="da-stat-lbl">Eaten, 7-day avg</div></div>
     </div>
     <div class="da-goal-btns">${goalBtns}</div>
     ${adaptiveRec}
@@ -648,43 +652,53 @@ function renderDiet() {
   const recentWeights = Object.entries(weightLog).sort((a,b) => b[0].localeCompare(a[0])).slice(0, 7);
   const recentHTML = recentWeights.length ? recentWeights.map(([d, w]) =>
     `<div class="dw-history-item"><span>${fmtDate(d)}</span><span>${w} ${wtUnit()}</span></div>`
-  ).join('') : '<div style="font-size:12px;color:var(--text-dim)">No weights logged yet.</div>';
+  ).join('') : '<div class="dw-empty">No weights logged yet.</div>';
 
   const weightHTML = `<div class="dw-section ani">
-    <div class="sec-lbl" style="padding:0 0 10px">Weight</div>
+    <h2 class="da-h">Weight</h2>
     ${todayWeight ? `<div class="dw-logged">Today: <strong>${todayWeight} ${wtUnit()}</strong></div>` : ''}
     <div class="dw-input-row">
       <input class="dw-input" type="number" step="0.1" min="20" max="600" id="wt-input" placeholder="Weight (${wtUnit()})" ${todayWeight ? `value="${todayWeight}"` : ''}>
-      <button class="dw-log-btn" onclick="logWeight()">LOG WEIGHT</button>
+      <button class="dw-log-btn" onclick="logWeight()">Log weight</button>
     </div>
     <div class="dw-history">${recentHTML}</div>
     ${bodyweightDriftHTML()}
-    ${Object.keys(weightLog).length >= 3 ? `<div class="dw-trend-link" onclick="go('dietTrend')">VIEW TREND \u2192</div>` : ''}
+    ${Object.keys(weightLog).length >= 3 ? `<div class="dw-trend-link" onclick="go('dietTrend')" role="button" tabindex="0">View trend</div>` : ''}
   </div>`;
 
   const mealsHTML = meals.length ? meals.map((ml, mi) => {
     const mCal = ml.items.reduce((s,i) => s + (i.calories||0), 0);
     const mP = ml.items.reduce((s,i) => s + (i.protein||0), 0);
-    const itemsHTML = ml.items.map(it => `<div class="d-meal-item">${esc(it.name)} \u2014 ${it.calories}cal, ${it.protein}P, ${it.carbs}C, ${it.fat}F</div>`).join('');
-    return `<div class="d-meal"><div class="d-meal-head"><div class="d-meal-name">${esc(ml.name)}</div><div style="display:flex;align-items:center;gap:8px"><div class="d-meal-cal">${mCal} cal</div><button class="d-del-btn" onclick="deleteMeal(${mi},'${esc(ml.id || '')}')">\u00D7</button></div></div>
-      <div class="d-meal-macros">${mP}P</div>${itemsHTML}</div>`;
-  }).join('') : '<p style="padding:0 24px;font-size:13px;color:var(--text-dim)">No meals logged today.</p>';
+    // One food per line, the name on the left and its numbers lined up on the
+    // right. Each line used to read "Oats, 80g — 300cal, 11P, 54C, 6F".
+    const itemsHTML = ml.items.map(it => `<div class="d-meal-item">
+        <span class="d-mi-name">${esc(it.name)}</span>
+        <span class="d-mi-p">${it.protein || 0}g protein</span>
+        <span class="d-mi-cal">${(it.calories || 0).toLocaleString()} cal</span>
+      </div>`).join('');
+    return `<div class="d-meal">
+      <div class="d-meal-head">
+        <div><div class="d-meal-name">${esc(ml.name)}</div><div class="d-meal-macros">${mCal.toLocaleString()} cal, ${mP}g protein</div></div>
+        <button class="d-del-btn" onclick="deleteMeal(${mi},'${esc(ml.id || '')}')" aria-label="Delete ${esc(ml.name)}">×</button>
+      </div>
+      ${itemsHTML}</div>`;
+  }).join('') : '<p class="d-meal-empty">Nothing logged yet today.</p>';
 
   document.getElementById('view').innerHTML = `
-    <div class="page-head ani"><div class="page-title">Nutrition</div><div class="page-sub">Fuel your body with intention.</div></div>
+    <div class="page-head ani"><div class="page-title">Nutrition</div></div>
     <div class="d-rings ani">${rings}</div>
     ${waterRowHTML()}
     ${typeof macroAdjustBadgeHTML === 'function' ? macroAdjustBadgeHTML() : ''}
-    ${_buildCalorieTrendChart()}
-    ${expenditureHTML}
-    <div class="sec-lbl">Today's Meals</div>
+    <div class="sec-h ani"><h2>Today's meals</h2></div>
     <div class="ani">${mealsHTML}</div>
-    <div style="display:flex;gap:8px;padding:16px 24px 8px">
+    <div style="display:flex;gap:8px;padding:14px 24px 8px">
       <button class="w-action-btn" style="margin:0;flex:1" onclick="go('dietAddMeal')">+ Add Meal</button>
       <button class="w-action-btn" style="margin:0;flex:1" onclick="go('dietRecipes')">Recipes</button>
     </div>
-    <button class="w-action-btn" onclick="go('dietGoals')">Edit Daily Goals</button>
-    ${weightHTML}`;
+    ${_buildCalorieTrendChart()}
+    ${expenditureHTML}
+    ${weightHTML}
+    <button class="w-action-btn" style="margin-bottom:8px" onclick="go('dietGoals')">Edit Daily Goals</button>`;
   // After a meal the rings move on from where they were, not from empty.
   if (typeof carryRings === 'function') carryRings('diet', '.d-ring-wrap', '.d-ring-val');
   // Connected system: auto-complete habits linked to protein/calorie targets
@@ -1840,7 +1854,7 @@ function bodyweightDriftHTML() {
         <span class="dw-drift-arrow">${arrow}</span> from ${d.current.toLocaleString()}.
       </div>
       <button class="w-action-btn" style="margin:10px 0 0;width:100%"
-        onclick="applyBodyweightDrift()">UPDATE MY TARGETS</button>
+        onclick="applyBodyweightDrift()">Update my targets</button>
     </div>`;
 }
 

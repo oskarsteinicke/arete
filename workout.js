@@ -232,41 +232,36 @@ function renderWorkout() {
       }).filter(Boolean).join('')}
     </div>` : '';
 
-  const muscles = [...new Set(day.ex.map(eid => lookupExercise(eid)?.muscle).filter(Boolean))];
-  const muscleTagsHTML = muscles.map(m => `<span class="w-muscle-tag">${esc(m)}</span>`).join('');
-
   // Shown once, on the render straight after finishing a session.
   const fed = _sessionFed;
   _sessionFed = null;
   const fedHTML = (fed && typeof sessionFedHTML === 'function') ? sessionFedHTML(fed) : '';
 
   document.getElementById('view').innerHTML = `
-    <div class="page-head ani"><div class="page-title">Workout</div><div class="page-sub">Train with purpose. Build discipline.</div></div>
+    <div class="page-head ani"><div class="page-title">Workout</div></div>
     ${fedHTML}
 
     <div class="w-stats-strip ani w-stats-tap" role="button" tabindex="0" aria-label="View progress"
          onclick="go('workoutProgress')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();go('workoutProgress')}">
       <div class="w-stat-item"><div class="w-stat-val">${stats.thisWeek}</div><div class="w-stat-lbl">This week</div></div>
-      <div class="w-stat-item"><div class="w-stat-val">${stats.totalSessions}</div><div class="w-stat-lbl">Total</div></div>
-      <div class="w-stat-item"><div class="w-stat-val">${stats.totalVolume >= 1000 ? (stats.totalVolume/1000).toFixed(0)+'k' : stats.totalVolume}</div><div class="w-stat-lbl">Volume ${wtUnit()}</div></div>
-      <div class="w-stat-item"><div class="w-stat-val">${stats.prCount}</div><div class="w-stat-lbl">PRs</div></div>
+      <div class="w-stat-item"><div class="w-stat-val">${stats.totalSessions}</div><div class="w-stat-lbl">Sessions</div></div>
+      <div class="w-stat-item"><div class="w-stat-val">${stats.totalVolume >= 1000 ? (stats.totalVolume/1000).toFixed(0)+'k' : stats.totalVolume}</div><div class="w-stat-lbl">${wtUnit()} lifted</div></div>
+      <div class="w-stat-item"><div class="w-stat-val">${stats.prCount}</div><div class="w-stat-lbl">Records</div></div>
     </div>
 
     ${typeof trainingAdviceHTML === 'function' ? trainingAdviceHTML() : ''}
 
     <div class="w-day-nav ani">
       <button class="w-day-arrow" onclick="shiftWorkoutDay(-1)">&#8249;</button>
-      <div class="w-day-label">Day ${dayIdx + 1} of ${dayCount}</div>
+      <div class="w-day-label"><b>${esc(prog.name)}</b>Day ${dayIdx + 1} of ${dayCount}</div>
       <button class="w-day-arrow" onclick="shiftWorkoutDay(1)">&#8250;</button>
     </div>
     <div class="w-hero-card ani" onclick="go('workoutActive')">
       <div class="w-hero-glow"></div>
-      <div class="w-day-badge">${esc(day.name)}</div>
-      <div class="w-card-name" style="font-size:22px;margin:4px 0 2px">${esc(prog.name)}</div>
-      <div class="w-card-desc">${esc(day.focus)}</div>
-      ${muscleTagsHTML ? `<div class="w-muscle-tags">${muscleTagsHTML}</div>` : ''}
+      <h2 class="w-hero-day">${esc(day.name)}</h2>
+      <div class="w-hero-focus">${esc(day.focus)}</div>
       ${exPreviewHTML}
-      <div class="w-hero-cta ${workoutDoneToday() ? 'done' : ''}">${workoutDoneToday() ? '✓ Workout logged today' : '→ Start today\'s workout'}</div>
+      <div class="w-hero-cta ${workoutDoneToday() ? 'done' : ''}">${workoutDoneToday() ? 'Logged today. Open session' : 'Start workout'}</div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 24px 8px">
       <button class="w-action-btn w-progress-btn" style="margin:0;width:100%;grid-column:1/-1" onclick="go('workoutProgress')">${typeof icon === 'function' ? icon('trend', 16) : ''} Progress</button>
