@@ -296,5 +296,35 @@ module.exports = function () {
       /id="td-cons-n"/.test(run(s, 'todaySpineHTML()')) && /id="td-bar-fill"/.test(run(s, 'todaySpineHTML()')));
   }
 
+
+  // Twelve starter habits, installed a minute ago, read "0 of 84 kept this
+  // week": seven days of misses for habits that did not exist yet.
+  r.section('a habit is judged from the day it was first kept');
+  {
+    const H = [1, 2, 3, 4].map(n => ({ id: 'h' + n, name: 'Habit ' + n, schedule: 'daily' }));
+    const blank = {}; H.forEach(h => { blank[h.id] = { streak: 0, lastCompletedDate: '', completedToday: false }; });
+    const s = sb({ hvi_habits: JSON.stringify(H), hvi_log: JSON.stringify(blank), hvi_habit_history: '{}' });
+    const all = () => JSON.parse(run(s, 'JSON.stringify(overallConsistency7())'));
+    r.check('a new user is not behind on anything', all().due === 0, `(${JSON.stringify(all())})`);
+    r.check('so the card does not count against them', /Your first days build the picture/.test(run(s, 'todaySpineHTML()')) && !/of 28/.test(run(s, 'todaySpineHTML()')),
+      '(a day-one total is shown)');
+    run(s, `tapHabit('h1', 'td')`);
+    r.check('the first tick is one of one', all().done === 1 && all().due === 1, `(${JSON.stringify(all())})`);
+    r.check('and its row says it started today', run(s, `consistencyText(consistency7('h1'))`) === 'Started today', run(s, `consistencyText(consistency7('h1'))`));
+    r.check('the untouched ones still say so', run(s, `consistencyText(consistency7('h2'))`) === 'Not started yet');
+
+    // First kept three days ago, then again yesterday: four days on the books.
+    const s2 = sb({ hvi_habits: JSON.stringify([H[0]]), hvi_log: JSON.stringify({ h1: { streak: 1, lastCompletedDate: dk(1), completedToday: false } }),
+      hvi_habit_history: JSON.stringify({ h1: [dk(3), dk(1)] }) });
+    const c = JSON.parse(run(s2, `JSON.stringify(consistency7('h1'))`));
+    r.check('days before the first one are not misses', c.done === 2 && c.due === 4, `(${JSON.stringify(c)})`);
+    r.check('and it reads as a count, not a verdict', run(s2, `consistencyText(consistency7('h1'))`) === '2 of last 4');
+
+    const s3 = sb({ hvi_habits: JSON.stringify([H[0]]), hvi_log: JSON.stringify({ h1: { streak: 0, lastCompletedDate: dk(20), completedToday: false } }),
+      hvi_habit_history: JSON.stringify({ h1: [dk(20)] }) });
+    const old = JSON.parse(run(s3, `JSON.stringify(consistency7('h1'))`));
+    r.check('a habit started long ago is still judged on all seven', old.done === 0 && old.due === 7, `(${JSON.stringify(old)})`);
+  }
+
   return r.finish();
 };

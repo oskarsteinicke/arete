@@ -51,7 +51,10 @@ body {
 #app {
   max-width: 480px;
   margin: 0 auto;
-  height: 100vh;
+  /* 100%, not 100vh. On iOS 100vh is the largest the viewport can ever be:
+     taller than what is visible in Safari with its toolbar showing, and in
+     the native app's inset web view. The bottom of the shell was off screen. */
+  height: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -195,7 +198,12 @@ nav {
   from { transform: translateX(var(--view-dx, 24px)) scale(0.983); opacity: 0; filter: blur(4px); }
   to   { transform: translateX(0) scale(1); opacity: 1; filter: blur(0); }
 }
-.view-slide-in { animation: viewSlide 0.42s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+/* No fill mode, on purpose. With `forwards` the view kept an identity
+   transform and filter for good, and either one makes an element the
+   containing block for its position:fixed children. The view is also the
+   scroller, so the rest-timer pill ("always visible") was fixed to the page
+   instead of the screen and scrolled away with the content. */
+.view-slide-in { animation: viewSlide 0.42s cubic-bezier(0.16, 1, 0.3, 1); }
 /* Cards enter only while a screen is arriving (go() holds .view-arriving for
    about a second). Redrawn in place, they are simply there. */
 #view:not(.view-arriving) .ani { animation: none; }
@@ -743,6 +751,13 @@ nav {
   transition: border-color 0.2s;
 }
 .d-input:focus { border-color: rgba(var(--accent-rgb),0.4); }
+/* iOS gives time and date inputs a width of their own that they will not
+   shrink below, so two side by side pushed the second one out of its card.
+   Without the native appearance they size like any other field; the value
+   keeps a line of height so an empty one does not collapse. */
+input.d-input[type="time"], input.d-input[type="date"] { min-width: 0; max-width: 100%; -webkit-appearance: none; appearance: none; }
+input.d-input[type="time"]::-webkit-date-and-time-value,
+input.d-input[type="date"]::-webkit-date-and-time-value { text-align: left; min-height: 1.3em; }
 .d-input::placeholder { color: var(--text-muted); }
 
 .d-input-row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; margin-top: 8px; }
@@ -1241,7 +1256,10 @@ nav {
   bottom: calc(var(--nav-h) + 14px);
   left: 50%;
   transform: translateX(-50%);
-  width: min(calc(100% - 40px), 408px);
+  /* Between the two round buttons that share this row (42px wide, 12px in
+     from each side), not across them: at full width they covered the first
+     digit of the time and half of Skip. */
+  width: min(calc(100% - 124px), 356px);
   background: rgba(26,26,30,0.92);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -1253,6 +1271,7 @@ nav {
   z-index: 95;
 }
 .rt-row { display: flex; align-items: center; gap: 12px; }
+@media (max-width: 359px) { .rt-bar { padding: 9px 12px; } .rt-row { gap: 8px; } .rt-time { min-width: 46px; font-size: 20px; } }
 .rt-time {
   font-size: 22px;
   color: var(--accent-b);

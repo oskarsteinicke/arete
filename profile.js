@@ -1988,7 +1988,9 @@ function renderOnboarding(step) {
       <div class="ob-eyebrow">${stepLbl}</div>
       <div class="ob-title">What is your name?</div>
       <div class="ob-sub">Knowing yourself is the beginning of all wisdom.</div>
-      <input class="ob-input" type="text" id="ob-name-input" placeholder="Your first name" maxlength="30" value="${esc(_obName)}" oninput="_obName=this.value.trim()">`;
+      <input class="ob-input" type="text" id="ob-name-input" placeholder="Your first name" maxlength="30" value="${esc(_obName)}" oninput="_obName=this.value.trim()"
+        autocomplete="given-name" autocapitalize="words" enterkeyhint="next"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();obNext(1)}">`;
 
   } else if (step === 2) {
     content = `

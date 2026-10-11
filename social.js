@@ -242,11 +242,11 @@ function renderSleep() {
     <div class="da-section ani" style="margin:0 24px 16px;padding:20px">
       <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px">Last Night's Sleep</div>
       <div style="display:flex;gap:12px;align-items:flex-end;margin-bottom:14px">
-        <div style="flex:1">
+        <div style="flex:1;min-width:0">
           <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Bedtime</div>
           <input class="d-input" type="time" value="${entry.bedtime||''}" style="margin:0" oninput="saveSleepField('bedtime',this.value)">
         </div>
-        <div style="flex:1">
+        <div style="flex:1;min-width:0">
           <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Wake time</div>
           <input class="d-input" type="time" value="${entry.wake||''}" style="margin:0" oninput="saveSleepField('wake',this.value)">
         </div>

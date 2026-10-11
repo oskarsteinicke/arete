@@ -38,10 +38,22 @@ function consistency7(habitId) {
     ? habits.find(x => x && x.id === habitId) : null;
   if (!h) return { done: 0, due: 0, pct: 0 };
 
+  // Whether there is any history to summarise at all. Without this a habit
+  // added this morning reads "0 of last 7", which is both untrue and the exact
+  // discouragement this replaced the streak to avoid.
+  const hist = LS.get('hvi_habit_history', {}) || {};
+  const days = Array.isArray(hist[h.id]) ? hist[h.id] : [];
+  const ever = !!(log[h.id] && log[h.id].lastCompletedDate) || days.length > 0;
+  // A habit is judged from the day it was first kept. Someone who starts on
+  // Thursday has not missed Monday to Wednesday; counting those made a first
+  // tick read "1 of last 7", and twelve starter habits "0 of 84" on day one.
+  const first = days.length ? days.reduce((a, b) => (b < a ? b : a)) : '';
+
   const weekly = h.schedule === 'weekly';
   let done = 0, due = 0;
   for (let i = 0; i < CONSISTENCY_DAYS; i++) {
     const key = _tdKey(i);
+    if (first && key < first) continue;
     // A weekly habit has no particular due day, so every day counts as a
     // chance to do it and the target comes from perWeek below.
     if (!weekly && typeof _wasDueOn === 'function' && !_wasDueOn(h, key)) continue;
@@ -50,19 +62,15 @@ function consistency7(habitId) {
   }
   if (weekly) due = Math.min(h.perWeek || 7, CONSISTENCY_DAYS);
 
-  // Whether there is any history to summarise at all. Without this a habit
-  // added this morning reads "0 of last 7", which is both untrue and the exact
-  // discouragement this replaced the streak to avoid.
-  const hist = LS.get('hvi_habit_history', {}) || {};
-  const ever = !!(log[h.id] && log[h.id].lastCompletedDate) ||
-    (Array.isArray(hist[h.id]) && hist[h.id].length > 0);
-
-  return { done: Math.min(done, due), due, ever, pct: due > 0 ? Math.min(1, done / due) : 0 };
+  return { done: Math.min(done, due), due, ever, fresh: !!first && first === _tdKey(0),
+           pct: due > 0 ? Math.min(1, done / due) : 0 };
 }
 
+// Across every habit that has been started. One never kept yet says "Not
+// started yet" on its own row and does not count against the week.
 function overallConsistency7() {
   const list = (typeof habits !== 'undefined' && Array.isArray(habits))
-    ? habits.map(h => consistency7(h.id)) : [];
+    ? habits.map(h => consistency7(h.id)).filter(c => c.ever) : [];
   const done = list.reduce((s, c) => s + c.done, 0);
   const due = list.reduce((s, c) => s + c.due, 0);
   return { done, due, pct: due > 0 ? done / due : 0 };
@@ -73,6 +81,7 @@ function overallConsistency7() {
 function consistencyText(c) {
   if (!c || c.due === 0) return 'New';
   if (!c.ever) return 'Not started yet';
+  if (c.fresh) return 'Started today';
   if (c.done === c.due) return `${c.done} of ${c.due} · all of them`;
   return `${c.done} of last ${c.due}`;
 }

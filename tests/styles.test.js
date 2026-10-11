@@ -96,5 +96,17 @@ module.exports = function () {
     r.check('cards enter only while a screen is arriving', /#view:not\(\.view-arriving\) \.ani\s*\{\s*animation:\s*none/.test(css), '(redraws replay every entrance)');
   }
 
+
+  // position:fixed is relative to the screen only while no ancestor has a
+  // transform or filter. The scrolling view kept both from its arrival
+  // animation, so the rest-timer pill scrolled away with the page.
+  r.section('nothing pins fixed elements to the scrolling page');
+  {
+    const slide = (css.match(/\.view-slide-in\s*\{([^}]*)\}/) || [])[1] || '';
+    r.check('the arrival animation leaves nothing behind', /viewSlide/.test(slide) && !/\b(forwards|both)\b/.test(slide), `(${slide.trim()})`);
+    const app = (css.match(/#app\s*\{([^}]*)\}/) || [])[1] || '';
+    r.check('the shell is as tall as what is visible, not 100vh', /height:\s*100%/.test(app) && !/height:\s*100vh/.test(app.replace(/\/\*[\s\S]*?\*\//g, '')), '(off-screen bottom on iOS)');
+  }
+
   return r.finish();
 };

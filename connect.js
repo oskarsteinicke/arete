@@ -164,7 +164,8 @@ function trainingAdvice() {
     headline = 'Depleted — deload today';
     detail = 'Same movements at roughly 60% load. Moving well beats moving heavy.';
   }
-  if (limiter && worst < 0.65) detail += ` ${limiter} is what is holding this back.`;
+  // "Habits" is the one plural among them.
+  if (limiter && worst < 0.65) detail += ` ${limiter} ${/s$/.test(limiter) ? 'are' : 'is'} what is holding this back.`;
   return { score: r.score, label: r.label, color: readinessColor(r.score), headline, detail };
 }
 

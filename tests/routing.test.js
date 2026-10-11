@@ -213,5 +213,21 @@ module.exports = function () {
       run(s, `_ringMemo.t.day = '2000-01-01'; _draw('60.00', 2000)._c._st['--ring-from']`) === undefined);
   }
 
+
+  // Inside the store build the web view is not "standalone", so the app told
+  // people to add the app they were already using to their home screen.
+  r.section('the install hint is for the web, not the store build');
+  {
+    const shown = (capacitor) => {
+      const s = createSandbox({ files: ['data.js', 'app.js'], store: { hvi_onboarded: 'true' }, capacitor,
+        userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15' });
+      run(s, `var _byId = document.getElementById; document.getElementById = function (id) { return id === 'install-banner' ? null : _byId.call(document, id); };
+              _seen = []; track = function (n) { _seen.push(n); }; _showInstallBanner();`);
+      return run(s, `_seen.indexOf('install_banner_shown') !== -1`);
+    };
+    r.check('Safari on an iPhone is offered it', shown(undefined) === true, '(the web hint is gone too)');
+    r.check('the native app is not', shown({ platform: 'ios' }) === false, '(native app asks to be installed)');
+  }
+
   return r.finish();
 };

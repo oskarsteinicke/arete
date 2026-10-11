@@ -2071,11 +2071,11 @@ function showSleepPrompt() {
         <div style="font-family:var(--serif);font-size:26px;color:var(--text);margin-bottom:4px">How did you sleep?</div>
         <div style="font-size:13px;color:var(--text-dim);margin-bottom:20px">Set the two times. The rest works itself out.</div>
         <div style="display:flex;gap:12px;margin-bottom:18px">
-          <div style="flex:1;text-align:left">
+          <div style="flex:1;min-width:0;text-align:left">
             <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Bedtime</div>
             <input class="d-input" id="sp-bed" type="time" value="${d.bedtime}" style="margin:0" oninput="updateSleepPromptTotal()">
           </div>
-          <div style="flex:1;text-align:left">
+          <div style="flex:1;min-width:0;text-align:left">
             <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Wake time</div>
             <input class="d-input" id="sp-wake" type="time" value="${d.wake}" style="margin:0" oninput="updateSleepPromptTotal()">
           </div>
@@ -3568,6 +3568,10 @@ window.addEventListener('appinstalled', () => {
 });
 
 function _showInstallBanner() {
+  // The store build is already installed. Its web view is not "standalone" by
+  // either test below, so it was telling people to add the app they were
+  // using to their home screen.
+  if (window.Capacitor) return;
   if (navigator.standalone || window.matchMedia('(display-mode: standalone)').matches) return;
   if (document.getElementById('install-banner')) return;
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
