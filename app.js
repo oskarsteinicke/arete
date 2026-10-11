@@ -1965,8 +1965,8 @@ function showMilestonePrompt(o) {
   modal.id = 'milestone-prompt';
   const act = o.arg ? `${o.onAction}('${o.arg}')` : `${o.onAction}()`;
   modal.innerHTML = `
-    <div style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:4000;display:flex;align-items:center;justify-content:center;padding:24px" onclick="dismissMilestonePrompt()">
-      <div style="background:var(--bg);border:1px solid var(--border2);border-radius:24px;padding:32px 24px;max-width:360px;width:100%;text-align:center" onclick="event.stopPropagation()">
+    <div class="pop-backdrop" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:4000;display:flex;align-items:center;justify-content:center;padding:24px" onclick="dismissMilestonePrompt()">
+      <div class="pop-card" style="background:var(--bg);border:1px solid var(--border2);border-radius:24px;padding:32px 24px;max-width:360px;width:100%;text-align:center" onclick="event.stopPropagation()">
         <div style="font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">${o.eyebrow}</div>
         <div style="font-family:var(--serif);font-size:32px;color:var(--text);margin-bottom:10px">${o.title}</div>
         <div style="font-size:13px;color:var(--text-dim);line-height:1.5;margin-bottom:24px">${o.body}</div>
@@ -2065,8 +2065,8 @@ function showSleepPrompt() {
   const modal = document.createElement('div');
   modal.id = 'sleep-prompt';
   modal.innerHTML = `
-    <div style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:4000;display:flex;align-items:center;justify-content:center;padding:24px" onclick="dismissSleepPrompt()">
-      <div style="background:var(--bg);border:1px solid var(--border2);border-radius:24px;padding:28px 24px;max-width:360px;width:100%;text-align:center" onclick="event.stopPropagation()">
+    <div class="pop-backdrop" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:4000;display:flex;align-items:center;justify-content:center;padding:24px" onclick="dismissSleepPrompt()">
+      <div class="pop-card" style="background:var(--bg);border:1px solid var(--border2);border-radius:24px;padding:28px 24px;max-width:360px;width:100%;text-align:center" onclick="event.stopPropagation()">
         <div style="font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Last Night</div>
         <div style="font-family:var(--serif);font-size:26px;color:var(--text);margin-bottom:4px">How did you sleep?</div>
         <div style="font-size:13px;color:var(--text-dim);margin-bottom:20px">Set the two times. The rest works itself out.</div>
@@ -2623,6 +2623,29 @@ function tapHabit(id, suffix) {
   if (chk) { chk.classList.remove('pop'); void chk.offsetWidth; chk.classList.add('pop'); }
   if (typeof refreshTodayWeek === 'function') refreshTodayWeek();
   if (curView === 'pillar') refreshPillarRing();
+  if (curView === 'home') refreshHomePillars();
+}
+
+// On home, a tick moves its pillar's ring on from where it stood. The strip
+// used to stay on the old figure until the screen was redrawn.
+function refreshHomePillars() {
+  try {
+    PILLARS.forEach(p => {
+      const card = document.getElementById(`hm-pc-${p.id}`);
+      const old = card && card.querySelector && card.querySelector('.hm-pc-ring svg');
+      if (!old) return;
+      const pr = pillarPct(p.id);
+      const tmp = document.createElement('div');
+      tmp.innerHTML = ring(23, pr.pct, 2.5);
+      const next = tmp.firstElementChild;
+      const was = old.querySelector('circle:last-child').style.getPropertyValue('--ring-off');
+      const arc = next.querySelector('circle:last-child');
+      if (was === arc.style.getPropertyValue('--ring-off')) return;
+      arc.style.setProperty('--ring-from', was);
+      old.replaceWith(next);
+      card.classList.toggle('hm-pc-active', pr.done > 0);
+    });
+  } catch {}
 }
 
 function refreshPillarRing() {
@@ -2785,7 +2808,7 @@ function renderHome() {
     const pr = pillarPct(p.id);
     const ms = Math.max(0, ...pillarHabits(p.id).map(h => log[h.id]?.streak || 0));
     const active = pr.done > 0 ? ' hm-pc-active' : '';
-    return `<div class="hm-pc${active}" onclick="go('pillar',{pillar:'${p.id}'})">
+    return `<div class="hm-pc${active}" id="hm-pc-${p.id}" onclick="go('pillar',{pillar:'${p.id}'})">
       <div class="hm-pc-ring">${ring(23, pr.pct, 2.5)}<div class="hm-pc-icon">${p.icon}</div></div>
       <div class="hm-pc-name">${p.name}</div>
       ${ms > 0 ? `<div class="hm-pc-streak">${ms}d</div>` : ''}
@@ -2871,6 +2894,7 @@ function renderHome() {
         <div class="avatar-frame hm-hero-portrait">${avatarImg(homeLvl)}</div>
         <div class="hm-hero-name">${greeting()}${userName() ? ', ' + userName() : ''}.</div>
         <div class="hm-hero-lvl">Lv.${homeLvl} · ${getLevelTitle(homeLvl)}</div>
+        <div class="hm-hero-xp" role="img" aria-label="${progress.toLocaleString()} of ${needed.toLocaleString()} XP to level ${lvl + 1}"><span id="hm-xp-fill" style="width:${xpPct}%"></span></div>
       </div>
     </div>
 
@@ -2972,6 +2996,9 @@ function renderHome() {
 
     ${getEveningReminder()}
   `;
+  // Coming back after ticking something elsewhere, the pillar rings move on
+  // from where they stood.
+  carryRings('home-pillars', '.hm-pc-ring');
 }
 
 

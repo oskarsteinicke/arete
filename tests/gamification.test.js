@@ -256,5 +256,47 @@ module.exports = function () {
       `(${JSON.stringify(outside)} outside 0..${size})`);
   }
 
+
+  // Reaching a level was a sound and nothing on screen. It now gets a moment,
+  // and only once: unticking and re-ticking a habit across the line must not
+  // bring it back.
+  r.section('reaching a level is shown, once');
+  {
+    const s = sb({});
+    run(s, `gamification = { xp: 3595, level: 6, pillarXP: {} }; _q = []; queueLevelUp = function (a, b) { _q.push(levelUpFrom(a, b)); };`);
+    run(s, `awardXP(10, 'body')`);                       // 3605 XP is level 7
+    r.check('crossing into level 7 asks for the screen, counting from 6', run(s, 'JSON.stringify(_q)') === '[6]', run(s, 'JSON.stringify(_q)'));
+    r.check('and the level is remembered as shown', JSON.parse(s.localStorage._d['hvi_gamification']).lvlSeen === 7);
+    run(s, `awardXP(-10, 'body'); awardXP(10, 'body')`); // untick, tick again
+    r.check('crossing the same line again does not', run(s, 'JSON.stringify(_q)') === '[6,0]', run(s, 'JSON.stringify(_q)'));
+    run(s, `awardXP(10, 'body')`);
+    r.check('a gain inside a level asks for nothing', run(s, '_q.length') === 2, `(${run(s, '_q.length')})`);
+
+    run(s, `_made = []; var _ce = document.createElement; document.createElement = function (t) { var e = _ce.call(document, t); _made.push(e); return e; };
+            document.querySelectorAll = function () { return []; };`);
+    const made = code => { run(s, `_made = []; ${code}`); return run(s, `_made.length ? _made[0].innerHTML : ''`); };
+    const plain = made('showLevelUp(6, 7)');
+    r.check('an ordinary level says so and shows the new number', /Level up/.test(plain) && /id="lvl-num">7</.test(plain), '(wrong or missing)');
+    r.check('with the title for that level', />Hoplite</.test(plain), '(no title)');
+    r.check('and no old figure to replace', !/lvl-old/.test(plain));
+    const evo = made('showLevelUp(7, 8)');
+    r.check('a new stage is announced as an evolution', /Your character evolved/.test(evo), '(not announced)');
+    r.check('the old figure hands over to the new one', /lvl-old[\s\S]*avatar-m-3\.png[\s\S]*lvl-new[\s\S]*avatar-m-4\.png/.test(evo), '(figures missing or out of order)');
+    r.check('and the old title gives way to the new', /<s>Hoplite<\/s>Strategos/.test(evo), '(titles wrong)');
+    r.check('no level gained, no screen', made('showLevelUp(8, 8)') === '');
+  }
+
+  // The character screen had a second set of stage names (Recruit, Initiate,
+  // Warrior, Champion...) beside the level titles, so the two disagreed.
+  r.section('the character screen uses the same names as the level');
+  {
+    const s = sb({});
+    run(s, `gamification = { xp: 3700, level: 7, pillarXP: {} }; achievements = []; userName = function () { return 'Oskar'; };`);
+    const html = run(s, `renderCharacter(); document.getElementById('view').innerHTML`) || '';
+    r.check('the level and its title', /Lv\.7 Hoplite/.test(html), '(missing)');
+    r.check('the next form is the next title', /Next form: Strategos at Lv\.8/.test(html), `(${(html.match(/char-stage">([^<]*)/) || [])[1]})`);
+    r.check('none of the old second set remains', !/Recruit|Initiate|Champion|Philosopher\b/.test(html));
+  }
+
   return r.finish();
 };

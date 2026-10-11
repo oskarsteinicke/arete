@@ -257,6 +257,9 @@ module.exports = function () {
     r.check('and it is editable from there', /editWhy\(\)/.test(html), '(no way to change it)');
     r.check('the goals screen is still reachable', /go\('goals'\)/.test(html), '(only path to goals was the card)');
     r.check('the open goal count is shown', /1 active goal\b/.test(html), '(no goal summary)');
+    // What the in-place updates look for after a tick.
+    r.check('the XP bar under the figure can be found', /id="hm-xp-fill" style="width:[\d.]+%"/.test(html), '(XP gains have nowhere to land)');
+    r.check('and so can each pillar ring', (html.match(/id="hm-pc-/g) || []).length === run(s, 'PILLARS.length'), '(pillar rings cannot be refreshed)');
   }
 
   r.section('the spine is on the home screen');

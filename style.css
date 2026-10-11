@@ -257,7 +257,7 @@ nav {
 .hi:hover { background: var(--surface2); }
 .hi:last-child { border-bottom: none; }
 .hi-info { flex: 1; min-width: 0; }
-.hi-name { font-size: 15px; color: var(--text); line-height: 1.3; transition: color 0.2s; }
+.hi-name { font-size: 15px; color: var(--text); line-height: 1.3; text-decoration: line-through; text-decoration-color: transparent; transition: color 0.3s ease, text-decoration-color 0.3s ease; }
 .hi-streak { font-size: 11px; color: var(--text-dim); margin-top: 3px; }
 .hi-streak.hot { color: var(--accent); }
 .hi-check { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.14); background: none; display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; color: transparent; font-size: 11px; transition: all 0.25s; pointer-events: none; }
@@ -893,6 +893,10 @@ nav {
 .hm-hero-date { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; font-weight: 500; }
 .hm-hero-name { font-family: var(--display); font-size: 22px; color: var(--text); line-height: 1.15; margin-bottom: 2px; letter-spacing: 0.3px; }
 .hm-hero-greet { font-size: 12px; color: var(--text-dim); margin-bottom: 8px; }
+/* XP toward the next level, under the figure; it moves with every gain */
+.hm-hero-xp { position: relative; z-index: 1; width: 112px; height: 3px; margin: 9px auto 0; border-radius: 2px; background: rgba(255,255,255,0.08); overflow: hidden; }
+.hm-hero-xp span { display: block; height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--accent), var(--accent-b)); transition: width 0.7s cubic-bezier(0.3, 1.2, 0.5, 1); }
+#view.view-arriving .hm-hero-xp span { animation: bar-from 0.9s cubic-bezier(0.3, 1.1, 0.5, 1) 0.35s both; }
 .hm-hero-lvl { display: inline-flex; align-items: center; gap: 5px; background: rgba(var(--accent-rgb),.10); border: 1px solid rgba(var(--accent-rgb),.18); border-radius: 20px; padding: 3px 10px; font-size: 10px; color: var(--accent-b); font-weight: 600; letter-spacing: .04em; }
 .hm-xp-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
 .hm-xp-track { flex: 1; height: 4px; background: rgba(255,255,255,.07); border-radius: 2px; overflow: hidden; }
@@ -912,8 +916,8 @@ nav {
 /* Pillar strip */
 .hm-pillars { display: flex; gap: 2px; padding: 14px 12px 4px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
 .hm-pillars::-webkit-scrollbar { display: none; }
-.hm-pc { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; padding: 10px 4px; border-radius: 14px; border: 1px solid transparent; transition: all .15s; }
-.hm-pc:active { background: rgba(255,255,255,.03); }
+.hm-pc { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; padding: 10px 4px; border-radius: 14px; border: 1px solid transparent; transition: background .15s, border-color .3s, transform .18s cubic-bezier(0.3, 1.4, 0.5, 1); }
+.hm-pc:active { background: rgba(255,255,255,.03); transform: scale(0.94); }
 .hm-pc-active { border-color: rgba(var(--accent-rgb),.20); background: rgba(var(--accent-rgb),.04); }
 .hm-pc-ring { position: relative; width: 44px; height: 44px; }
 .hm-pc-ring > svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
@@ -1473,7 +1477,9 @@ nav {
 
 /* ═══ HABIT CHECK ANIMATION ═══════════════════════════════════════════════ */
 .hi-check { position: relative; overflow: visible; }
-.hi.done .hi-check::after {
+/* Keyed on .pop, which the tap adds. Keyed on .done alone, every finished
+   habit rippled again each time the list was drawn. */
+.hi.done .hi-check.pop::after {
   content: ''; position: absolute; inset: -8px; border-radius: 50%;
   background: rgba(var(--accent-rgb),0.25);
   animation: ripple-out 0.5s ease-out forwards;
@@ -2145,6 +2151,67 @@ nav {
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
 }
 .avatar-img { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+/* Character screen, on arrival: the figure settles, the bars grow one after
+   another, and the chart opens from its centre. */
+#view.view-arriving .char-avatar .avatar-img { animation: lvl-arrive 0.7s cubic-bezier(0.2, 1.2, 0.4, 1) 0.1s both; }
+#view.view-arriving .char-xp-fill { animation: bar-from 0.9s cubic-bezier(0.3, 1.1, 0.5, 1) 0.35s both; }
+#view.view-arriving .char-stat-fill { animation: bar-from 0.8s cubic-bezier(0.3, 1.1, 0.5, 1) both; animation-delay: calc(0.45s + var(--i, 0) * 0.07s); }
+#view.view-arriving .radar-data { transform-box: view-box; transform-origin: 50% 50%; animation: radar-open 0.8s cubic-bezier(0.2, 1.1, 0.4, 1) 0.4s both; }
+#view.view-arriving .radar-dot { animation: pop-fade 0.3s ease 1s both; }
+@keyframes radar-open { from { transform: scale(0); opacity: 0; } }
+
+/* ══ POP-UPS AND SHEETS ══════════════════════════════════════════════════
+   They arrive the same way everywhere: the backdrop fades, a centred card
+   rises a little and settles, a bottom sheet slides up. */
+@keyframes pop-fade { from { opacity: 0; } }
+@keyframes pop-rise { from { opacity: 0; transform: translateY(18px) scale(0.96); } }
+@keyframes sheet-up { from { transform: translateY(100%); } }
+@keyframes why-rise { from { opacity: 0; transform: translate(-50%, calc(-50% + 18px)) scale(0.96); } }
+.pop-backdrop, .edit-habit-backdrop, .why-modal-backdrop { animation: pop-fade 0.22s ease both; }
+.pop-card { animation: pop-rise 0.36s cubic-bezier(0.2, 1.2, 0.4, 1) both; }
+.edit-habit-sheet { animation: sheet-up 0.34s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+.why-modal-sheet { animation: why-rise 0.36s cubic-bezier(0.2, 1.2, 0.4, 1) both; }
+.milestone-card { animation: pop-rise 0.45s cubic-bezier(0.2, 1.2, 0.4, 1) 0.05s both; }
+
+/* ══ LEVEL UP ════════════════════════════════════════════════════════════ */
+.lvl-overlay {
+  position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 24px;
+  background: rgba(0,0,0,0.86); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  animation: pop-fade 0.3s ease both; transition: opacity 0.25s ease;
+}
+.lvl-overlay.lvl-out { opacity: 0; }
+.lvl-card {
+  position: relative; width: 100%; max-width: 340px; text-align: center; padding: 34px 28px 28px;
+  background: var(--surface); border: 1px solid rgba(var(--accent-b-rgb), 0.22); border-radius: 28px;
+  animation: pop-rise 0.5s cubic-bezier(0.2, 1.2, 0.4, 1) 0.05s both;
+}
+.lvl-eyebrow { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--accent-b); animation: fade-rise 0.4s ease 0.25s both; }
+.lvl-figure { position: relative; width: 132px; height: 198px; margin: 20px auto 16px; }
+.lvl-frame { position: absolute; inset: 0; }
+.lvl-new, .lvl-old { position: absolute; inset: 0; }
+.lvl-new { animation: lvl-arrive 0.7s cubic-bezier(0.2, 1.2, 0.4, 1) 0.2s both; }
+.lvl-evolved .lvl-old { animation: lvl-leave 0.9s ease 0.6s both; }
+.lvl-evolved .lvl-new { animation: lvl-evolve 1s cubic-bezier(0.2, 1.1, 0.4, 1) 1.1s both; }
+@keyframes lvl-arrive { from { opacity: 0; transform: scale(0.9); } }
+@keyframes lvl-leave { to { opacity: 0; transform: scale(0.92); filter: brightness(2.2) blur(3px); } }
+@keyframes lvl-evolve { from { opacity: 0; transform: scale(1.12); filter: brightness(2.4) blur(4px); } }
+.lvl-ring {
+  position: absolute; left: 50%; top: 50%; width: 170px; height: 170px; margin: -85px 0 0 -85px; border-radius: 50%;
+  border: 1.5px solid rgba(var(--accent-b-rgb), 0.55); opacity: 0; pointer-events: none;
+  animation: lvl-ring 1.4s ease-out 0.45s both;
+}
+.lvl-ring-2 { animation-delay: 0.75s; }
+.lvl-evolved .lvl-ring { animation-delay: 1.2s; }
+.lvl-evolved .lvl-ring-2 { animation-delay: 1.5s; }
+@keyframes lvl-ring { from { opacity: 0.8; transform: scale(0.6); } to { opacity: 0; transform: scale(1.7); } }
+.lvl-num { font-family: var(--display); font-size: 44px; line-height: 1; color: var(--text); font-variant-numeric: tabular-nums; animation: fade-rise 0.4s ease 0.3s both; }
+.lvl-num b { color: var(--accent-b); font-weight: inherit; }
+.lvl-title { font-size: 15px; color: var(--text-dim); margin-top: 8px; letter-spacing: 0.5px; animation: fade-rise 0.4s ease 0.45s both; }
+.lvl-title s { color: var(--text-muted); margin-right: 8px; }
+.lvl-xp { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.07); overflow: hidden; margin: 22px 0 8px; }
+.lvl-xp span { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--accent-b)); animation: bar-from 0.9s cubic-bezier(0.3, 1.1, 0.5, 1) 0.9s both; }
+.lvl-next { font-size: 11.5px; color: var(--text-muted); margin-bottom: 20px; }
 .char-set-row { display: flex; gap: 8px; justify-content: center; margin: 12px 0 14px; }
 .char-set-btn { background: none; border: 1px solid var(--border); color: var(--text-dim); font: inherit; font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; padding: 7px 18px; border-radius: 999px; cursor: pointer; transition: border-color .15s, color .15s; }
 .char-set-btn:hover { color: var(--text); }

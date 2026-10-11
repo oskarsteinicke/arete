@@ -234,9 +234,105 @@ function awardXP(amount, pillarId) {
   }
   LS.set('hvi_gamification', gamification);
   const newLvl = getLevel(gamification.xp || 0);
-  if (newLvl > prevLvl && amount > 0) { playSound('levelup'); haptic([30, 20, 30, 20, 60]); }
+  if (newLvl > prevLvl && amount > 0) { playSound('levelup'); haptic([30, 20, 30, 20, 60]); queueLevelUp(prevLvl, newLvl); }
   showXPToast('+' + amount + ' XP');
+  refreshHeroXP();
   checkAchievements();
+}
+
+// The bar under the figure on home moves with every gain, so XP lands
+// somewhere you can see rather than only in a toast.
+function refreshHeroXP() {
+  try {
+    const fill = document.getElementById('hm-xp-fill');
+    if (!fill) return;
+    const { progress, needed } = xpToNextLevel(gamification.xp || 0);
+    fill.style.width = (needed > 0 ? Math.min(100, progress / needed * 100) : 100).toFixed(1) + '%';
+  } catch {}
+}
+
+// ── LEVEL UP ─────────────────────────────────────────────────────────────
+// Reaching a level used to be a sound and a buzz and nothing on screen. It is
+// the moment the character exists for, so it gets one: the level counts up,
+// the bar fills, and when the stage changes the old figure gives way to the
+// new. gamification.lvlSeen is the highest level already shown, so unticking
+// and re-ticking a habit across a threshold does not replay it.
+let _lvlUpTimer = 0, _lvlUpFrom = 0, _lvlUpClose = 0;
+
+// The level a celebration should count up from, or 0 when this level has
+// been shown before. Records the new level as shown.
+function levelUpFrom(prevLvl, newLvl) {
+  const seen = Math.max(gamification.lvlSeen || 0, prevLvl);
+  if (newLvl <= seen) return 0;
+  gamification.lvlSeen = newLvl;
+  LS.set('hvi_gamification', gamification);
+  return seen;
+}
+
+function queueLevelUp(prevLvl, newLvl) {
+  const seen = levelUpFrom(prevLvl, newLvl);
+  if (!seen) return;
+  if (!_lvlUpFrom) _lvlUpFrom = seen;   // several gains in one burst: one screen, first level to last
+  clearTimeout(_lvlUpTimer);
+  const tryShow = n => {
+    // Wait out anything already covering the screen, for a while.
+    const busy = !!document.querySelector('.milestone-overlay, .lvl-overlay')
+      || (typeof _promptSlotFree === 'function' && !_promptSlotFree());
+    if (busy && n < 24) { _lvlUpTimer = setTimeout(() => tryShow(n + 1), 500); return; }
+    const from = _lvlUpFrom;
+    _lvlUpFrom = 0;
+    showLevelUp(from, getLevel(gamification.xp || 0));
+  };
+  _lvlUpTimer = setTimeout(() => tryShow(0), 700);
+}
+
+function showLevelUp(from, to) {
+  try {
+    if (!(to > from)) return;
+    document.querySelectorAll('.lvl-overlay').forEach(e => e.remove());
+    const { progress, needed } = xpToNextLevel(gamification.xp || 0);
+    const pct = needed > 0 ? Math.min(100, progress / needed * 100) : 100;
+    const evolved = avatarStage(to) > avatarStage(from);
+    const title = getLevelTitle(to);
+    const el = document.createElement('div');
+    el.className = 'lvl-overlay' + (evolved ? ' lvl-evolved' : '');
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-modal', 'true');
+    el.setAttribute('aria-label', `Level ${to}, ${title}`);
+    el.innerHTML = `
+      <div class="lvl-card">
+        <div class="lvl-eyebrow">${evolved ? 'Your character evolved' : 'Level up'}</div>
+        <div class="lvl-figure">
+          <span class="lvl-ring"></span><span class="lvl-ring lvl-ring-2"></span>
+          <div class="lvl-frame avatar-frame">
+            ${evolved ? `<div class="lvl-old">${avatarImg(from)}</div>` : ''}
+            <div class="lvl-new">${avatarImg(to)}</div>
+          </div>
+        </div>
+        <div class="lvl-num">Lv.<b id="lvl-num">${to}</b></div>
+        <div class="lvl-title">${evolved ? `<s>${esc(getLevelTitle(from))}</s>` : ''}${esc(title)}</div>
+        <div class="lvl-xp"><span style="width:${pct.toFixed(1)}%"></span></div>
+        <div class="lvl-next">${Math.max(0, needed - progress).toLocaleString()} XP to Lv.${to + 1}</div>
+        <button class="milestone-btn" onclick="closeLevelUp()">Continue</button>
+      </div>`;
+    el.addEventListener('click', e => { if (e.target === el) closeLevelUp(); });
+    document.body.appendChild(el);
+    if (typeof countUp === 'function') countUp(document.getElementById('lvl-num'), to, 700, 350, from);
+    if (evolved && typeof launchConfetti === 'function') setTimeout(() => launchConfetti(), 1100);
+    if (typeof track === 'function') track('level_up', { level: to, evolved });
+    clearTimeout(_lvlUpClose);
+    _lvlUpClose = setTimeout(closeLevelUp, evolved ? 11000 : 8000);
+  } catch (e) { if (typeof reportError === 'function') reportError('level-up', e); }
+}
+
+function closeLevelUp() {
+  clearTimeout(_lvlUpClose);
+  const el = document.querySelector('.lvl-overlay');
+  if (!el || !el.classList) return;
+  el.classList.add('lvl-out');
+  setTimeout(() => { if (el.remove) el.remove(); }, 260);
+  // The screen behind may still show the old level or the old figure.
+  if (typeof go === 'function' && (curView === 'home' || curView === 'character')) go(curView, {}, false);
 }
 
 function checkAchievements() {
@@ -656,10 +752,10 @@ function _buildRadarChart(stats, size) {
 
   return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" style="display:block;margin:0 auto" xmlns="http://www.w3.org/2000/svg">
     ${grid}
-    <polygon points="${dataPts}" fill="rgba(196,169,108,0.15)" stroke="var(--accent-b)" stroke-width="1.5" stroke-linejoin="round"/>
+    <polygon class="radar-data" points="${dataPts}" fill="rgba(196,169,108,0.15)" stroke="var(--accent-b)" stroke-width="1.5" stroke-linejoin="round"/>
     ${stats.map((s, i) => {
       const [x, y] = point(i, s.val / 100);
-      return `<circle cx="${x}" cy="${y}" r="3" fill="${s.color}" stroke="var(--bg)" stroke-width="1"/>`;
+      return `<circle class="radar-dot" cx="${x}" cy="${y}" r="3" fill="${s.color}" stroke="var(--bg)" stroke-width="1"/>`;
     }).join('')}
     ${labels}
   </svg>`;
@@ -677,8 +773,9 @@ function renderCharacter() {
 
   // Avatar stage info
   const stage = lvl >= 20 ? 6 : lvl >= 12 ? 5 : lvl >= 8 ? 4 : lvl >= 5 ? 3 : lvl >= 3 ? 2 : 1;
-  const stageNames = ['', 'Recruit', 'Initiate', 'Warrior', 'Champion', 'Philosopher', 'Arete'];
-  const nextStage = stage < 6 ? stageNames[stage + 1] : null;
+  // The same six names the level shows. This screen used to have a second set
+  // (Recruit, Initiate, Warrior...), so "Lv.8 Strategos" sat above "Champion".
+  const nextStage = stage < 6 ? LEVEL_TITLES[stage].title : null;
   const nextStageLevel = [0, 3, 5, 8, 12, 20, 999][stage];
 
   // Gear/equipment based on achievements
@@ -702,8 +799,8 @@ function renderCharacter() {
   ).join('') : '<div style="color:var(--text-muted);font-size:12px;padding:8px 0">Complete achievements to unlock gear.</div>';
 
   // Stat bars
-  const statBars = stats.map(s =>
-    `<div class="char-stat-row">
+  const statBars = stats.map((s, i) =>
+    `<div class="char-stat-row" style="--i:${i}">
       <div class="char-stat-icon">${s.icon}</div>
       <div class="char-stat-info">
         <div class="char-stat-name">${s.name}</div>
@@ -723,12 +820,12 @@ function renderCharacter() {
       </div>
       <div class="char-name">${userName() || 'Warrior'}</div>
       <div class="char-title">Lv.${lvl} ${title}</div>
-      <div class="char-stage">${stageNames[stage]}${nextStage ? ` → ${nextStage} at Lv.${nextStageLevel}` : ' (Max Stage)'}</div>
+      <div class="char-stage">${nextStage ? `Next form: ${nextStage} at Lv.${nextStageLevel}` : 'Final form'}</div>
       <div class="char-xp-row">
         <div class="char-xp-track"><div class="char-xp-fill" style="width:${xpPct}%"></div></div>
         <div class="char-xp-label">${progress.toLocaleString()} / ${needed.toLocaleString()} XP</div>
       </div>
-      <div class="char-power">⚡ Power: ${totalPower}</div>
+      <div class="char-power">⚡ Power: <span id="char-power-n">${totalPower}</span></div>
     </div>
 
     <div class="da-section ani" style="margin:0 24px 16px;padding:20px">
@@ -751,6 +848,12 @@ function renderCharacter() {
     </div>
 
     <button class="w-action-btn ani" style="margin:0 24px 32px" onclick="shareCharacterCard()">${icon('share')} Share Character Card</button>`;
+  // On arrival the numbers count up beside their bars. Redrawn in place (the
+  // male/female switch), they are simply there.
+  if (typeof _arriving !== 'undefined' && _arriving && typeof countUp === 'function') {
+    document.querySelectorAll('#view .char-stat-val').forEach((n, i) => countUp(n, +n.textContent || 0, 700, 450 + i * 70));
+    countUp(document.getElementById('char-power-n'), totalPower, 900, 300);
+  }
 }
 
 // ── Shareable Character Card (Canvas) ────────────────────────────────────
@@ -2359,8 +2462,8 @@ function showWeeklyRecap() {
   const modal = document.createElement('div');
   modal.id = 'weekly-recap-modal';
   modal.innerHTML = `
-    <div style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:4000;display:flex;align-items:center;justify-content:center;padding:24px" onclick="this.remove()">
-      <div style="background:var(--bg);border:1px solid var(--border2);border-radius:24px;padding:32px 24px;max-width:360px;width:100%;text-align:center" onclick="event.stopPropagation()">
+    <div class="pop-backdrop" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:4000;display:flex;align-items:center;justify-content:center;padding:24px" onclick="this.remove()">
+      <div class="pop-card" style="background:var(--bg);border:1px solid var(--border2);border-radius:24px;padding:32px 24px;max-width:360px;width:100%;text-align:center" onclick="event.stopPropagation()">
         <div style="font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Weekly Recap</div>
         <div style="font-family:var(--serif);font-size:28px;color:var(--text);margin-bottom:4px">Great week!</div>
         <div style="font-size:13px;color:var(--text-dim);margin-bottom:24px">Here's how you showed up.</div>

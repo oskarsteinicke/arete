@@ -85,5 +85,16 @@ module.exports = function () {
     }
   }
 
+
+  // An animation keyed on a state class replays every time that state is
+  // drawn: with the ripple on .done, every finished habit rippled again each
+  // time the list rendered. It belongs to the tap.
+  r.section('the habit ripple belongs to the tap');
+  {
+    r.check('it is not keyed on the finished state alone', !/\.hi\.done \.hi-check::after\s*\{/.test(css), '(replays on every render)');
+    r.check('it is keyed on the tap', /\.hi\.done \.hi-check\.pop::after\s*\{[^}]*ripple-out/.test(css), '(ripple missing)');
+    r.check('cards enter only while a screen is arriving', /#view:not\(\.view-arriving\) \.ani\s*\{\s*animation:\s*none/.test(css), '(redraws replay every entrance)');
+  }
+
   return r.finish();
 };
