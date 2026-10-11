@@ -229,5 +229,24 @@ module.exports = function () {
     r.check('the native app is not', shown({ platform: 'ios' }) === false, '(native app asks to be installed)');
   }
 
+
+  // Found by running the store build: things that only make sense on the web.
+  r.section('the store build does not offer what it cannot do');
+  {
+    const src = f => fs.readFileSync(path.join(APP, f), 'utf8');
+    r.check('the privacy policy opens the live page, not a file the bundle lacks',
+      /window\.open\('https:\/\/get-arete\.com\/privacy\.html'/.test(src('profile.js')) && !/window\.open\('\/privacy\.html'/.test(src('profile.js')),
+      '(dead link in the native app)');
+    r.check('no leftover upgrade prompt with a price nobody can pay', !/showProPrompt|\$4\.99\/MONTH/.test(src('app.js')), '(dead Pro prompt is back)');
+
+    const web = createSandbox({ files: ['data.js', 'app.js', 'integrations.js'], store: {} });
+    const native = createSandbox({ files: ['data.js', 'app.js', 'integrations.js'], store: {}, capacitor: { platform: 'ios' } });
+    r.check('connected devices are offered on the web', /Connected Devices/.test(run(web, 'renderIntegrationsSection()') || ''), '(section gone from the web too)');
+    r.check('and not in the native app, where the sign-in round trip cannot return', run(native, 'renderIntegrationsSection()') === '', '(Connect buttons that dead-end)');
+    // "Version: dev" and an Update button that clears a service-worker cache
+    // the store build does not have.
+    r.check('the cache-clearing Update row is web only', /\$\{window\.Capacitor \? '' : `<div[^`]*>Version<\/div>/.test(src('profile.js')), '(Update button shown in the store build)');
+  }
+
   return r.finish();
 };

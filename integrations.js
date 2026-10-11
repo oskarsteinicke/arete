@@ -580,6 +580,12 @@ function disconnectAppleHealth() {
 }
 
 function renderIntegrationsSection() {
+  // Not in the store build yet. Each Connect starts an OAuth round trip whose
+  // return address is this page's own URL, and inside the native app that is
+  // capacitor://localhost, which no provider accepts: the button led to a
+  // dead end in Safari. It comes back with proper deep links (and HealthKit
+  // for Apple Health, rather than a Shortcut).
+  if (typeof window !== 'undefined' && window.Capacitor) return '';
   const int = _getIntegrations();
 
   // Apple Health row

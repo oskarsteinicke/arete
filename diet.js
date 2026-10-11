@@ -24,6 +24,9 @@ function _getCachedMeal(text) {
 }
 
 async function _aiFetch(messages, { timeout = 30000, retries = 1, model = 'openai', jsonMode = false } = {}) {
+  // The one door every AI request goes through. Without permission it stays
+  // shut; the screens that lead here ask first (withAIConsent in app.js).
+  if (typeof aiAllowed === 'function' && !aiAllowed()) throw new Error('ai-consent');
   if (!navigator.onLine) throw new Error('offline');
   let lastErr;
   const _hasImages = messages.some(m => Array.isArray(m.content) && m.content.some(p => p.type === 'image_url'));
@@ -836,6 +839,7 @@ function _extractJsonArray(str) {
 }
 
 async function calculateMealDescription() {
+  if (typeof aiAllowed === 'function' && !aiAllowed()) { withAIConsent(calculateMealDescription); return; }
   const ta = document.getElementById('describe-textarea');
   const out = document.getElementById('describe-output');
   const btn = document.getElementById('calc-macros-btn');
@@ -1122,6 +1126,8 @@ function triggerFoodPhoto() {
 async function handleFoodPhoto(input) {
   const file = input.files?.[0];
   if (!file) return;
+  // The photo is already chosen; it goes nowhere until they agree.
+  if (typeof aiAllowed === 'function' && !aiAllowed()) { withAIConsent(() => handleFoodPhoto(input)); return; }
 
   const out = document.getElementById('photo-output');
   if (out) out.innerHTML = '<p class="dm-hint" style="text-align:center">‣ Analyzing photo…</p>';

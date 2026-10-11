@@ -109,16 +109,27 @@ Answer per data type. This mirrors what the app actually sends.
 |---|---|---|---|---|
 | Email address | Yes, accounts only | Yes | No | App functionality |
 | Name | Yes, accounts only | Yes | No | App functionality |
+| User ID | Yes, accounts only | Yes | No | App functionality, Analytics |
 | Health & Fitness | Yes | Yes, with an account | No | App functionality |
 | Photos | Yes, meal and progress photos | Yes, with an account | No | App functionality |
-| Product interaction | Yes | No | No | Analytics |
-| Crash data | Yes | No | No | Analytics |
+| Other user content | Yes, journal entries and coach messages | Yes, with an account | No | App functionality |
+| Product interaction | Yes | Yes, with an account | No | Analytics |
+| Crash data / other diagnostics | Yes | Yes, with an account | No | Analytics |
 
-- **Third party:** meal photos are sent to Google Gemini, through the app's own
-  Cloudflare Worker, to estimate calories and macros.
+Why "linked" on the analytics rows: for someone signed in, the app sends
+Google Analytics a pseudonymous account identifier (the privacy policy says
+so). Without an account none of it is linked. Answer for the linked case.
+
+- **Third-party AI:** the coach, the daily focus, meal descriptions and meal
+  photos are sent through the app's own Cloudflare Worker to **Google Gemini**
+  and **Groq**. Nothing is sent until the person allows it: the app shows what
+  is sent and to whom the first time, and there is an on/off switch in Profile
+  (guideline 5.1.2(i)).
 - **Tracking:** No. Arete does not track across apps or websites, so there is
   no App Tracking Transparency prompt and no need for one.
 - **Deletion:** in the app, Profile then Delete account.
+- **Privacy manifest:** `ios/App/App/PrivacyInfo.xcprivacy` declares the same
+  data types and no tracking. Keep the two in step.
 
 ## Three Apple rules this app already satisfies
 
@@ -138,6 +149,8 @@ Answer per data type. This mirrors what the app actually sends.
 Arete requires no account. Open the app and everything is available immediately — habits, training, nutrition, sleep and the AI coach all work without signing in. An account is optional and only enables sync across devices.
 
 The camera is used for the meal scanner (photograph a meal to estimate its calories and macros) and for progress photos. Both are user-initiated from within the app.
+
+The AI features (coach, daily focus, meal description and meal photo scan) send data to Google Gemini and Groq through our own server. The app asks for permission the first time any of them is used, explaining what is sent and to whom, and nothing is sent before that. They can be turned off in Profile > Settings > "AI coach and meal scan".
 
 There are no in-app purchases and nothing is for sale.
 ```

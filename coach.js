@@ -207,6 +207,8 @@ function openCoach() {
     if (typeof showUpgradeModal === 'function') showUpgradeModal('coach');
     return;
   }
+  // Ask before the chat opens, not after the first message has been typed.
+  if (typeof aiAllowed === 'function' && !aiAllowed()) { withAIConsent(openCoach); return; }
   _loadCoachHistory();
   const overlay = document.getElementById('coach-overlay');
   const fab = document.getElementById('coach-fab');

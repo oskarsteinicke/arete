@@ -53,12 +53,12 @@
   <a class="back" href="/">&larr; Arete</a>
 
   <h1>Privacy Policy</h1>
-  <div class="updated">Last updated: 29 July 2026</div>
+  <div class="updated">Last updated: 11 October 2026</div>
 
   <p class="lede">Arete works without an account. If you never sign up, your data never leaves your device.</p>
 
   <div class="card">
-    <p><strong>The short version.</strong> Everything you track is stored locally on your device first. Creating an account syncs it so you can use Arete on more than one device. AI features send the specific text or photo you're asking about to an AI provider. We don't sell your data, and there are no advertising trackers.</p>
+    <p><strong>The short version.</strong> Everything you track is stored locally on your device first. Creating an account syncs it so you can use Arete on more than one device. The AI features are off until you allow them. When they are on, they send what you ask about, and for the coach a summary of your recent logs, to an AI provider. We don't sell your data, and there are no advertising trackers.</p>
   </div>
 
   <h2>Who we are</h2>
@@ -78,15 +78,16 @@
   <p>This data is stored with <strong>Supabase</strong> (Postgres hosting) and is protected by row-level security rules so that your records are only readable by your own authenticated account, except where you deliberately share them via a leaderboard group.</p>
 
   <h2>AI features</h2>
-  <p>Three features send data to an AI model on request. Each one is triggered by you, never in the background.</p>
+  <p>Four features use an AI model. <strong>None of them sends anything until you have allowed it.</strong> The first time you open the coach, tap the daily focus or use the meal tools, Arete explains what will be sent and to whom, and asks. You can turn the AI features off again at any time under Profile, in Settings; when they are off, nothing is sent.</p>
   <table>
     <tr><th>Feature</th><th>What is sent</th></tr>
-    <tr><td>AI Coach chat</td><td>Your message, plus a short summary of your current context — readiness score, calories and protein for the day, how many habits you have completed, and the names and streak lengths of habits at risk.</td></tr>
-    <tr><td>Coach's Focus</td><td>The same context summary, without a chat message.</td></tr>
+    <tr><td>AI Coach chat</td><td>Your message, plus a summary of your current context: readiness score, calories and protein for the day, recent training, sleep, habits, journal entries and goals.</td></tr>
+    <tr><td>Coach's Focus (daily)</td><td>The same context summary, without a chat message. Once you have allowed the AI features, this is requested automatically the first time you open the home screen each day.</td></tr>
+    <tr><td>Describe a meal</td><td>The description you type.</td></tr>
     <tr><td>Food photo scan</td><td>The photo you choose, resized to a smaller image before sending.</td></tr>
   </table>
-  <p>These requests pass through our own proxy on <strong>Cloudflare Workers</strong> and are processed by <strong>Google's Gemini API</strong>. The proxy exists so our API key is never exposed in the app; it forwards your request and returns the answer. Arete does not keep a copy of your photos or chat messages on the server — coach conversation history is stored locally on your device only.</p>
-  <p>Your use of these features is subject to Google's handling of API data. If you would rather not send anything to an AI provider, simply don't use the coach or the photo scanner; every other part of Arete works without them.</p>
+  <p>These requests pass through our own proxy on <strong>Cloudflare Workers</strong> and are processed by <strong>Google's Gemini API</strong> and by <strong>Groq</strong>, which runs open models. The proxy exists so our API keys are never exposed in the app; it forwards your request and returns the answer. Arete does not keep a copy of your photos or chat messages on the server. Coach conversation history is stored locally on your device only.</p>
+  <p>Your use of these features is subject to how Google and Groq handle API data. Arete does not use this data for advertising. If you would rather not send anything to an AI provider, leave the AI features off; every other part of Arete works without them.</p>
 
   <h2>Connected apps and devices</h2>
   <p>You can optionally connect <strong>Apple Health, Google Fit, Strava, Fitbit</strong> or <strong>Whoop</strong>. These connections are read-only: Arete imports figures such as bodyweight, steps, workouts and recovery, and never writes anything back. You authorise each one yourself and can disconnect it at any time in the app.</p>

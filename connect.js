@@ -611,6 +611,9 @@ function _coachInsightContext() {
 }
 
 async function fetchCoachInsight(force) {
+  // This one runs by itself when home is drawn, so it never asks: no
+  // permission, no request.
+  if (typeof aiAllowed === 'function' && !aiAllowed()) throw new Error('ai-consent');
   const t = today();
   let cached = null;
   try { cached = JSON.parse(localStorage.getItem('hvi_coach_insight') || 'null'); } catch {}
@@ -641,6 +644,16 @@ function coachInsightCardHTML() {
       return `<div class="ci-card ci-locked ani" onclick="if(typeof showUpgradeModal==='function')showUpgradeModal('coach')" role="button" tabindex="0" aria-label="Coach's Focus — Premium feature">
         <div class="ci-head"><span class="ci-label">Coach's Focus</span><span class="ci-lock">Premium</span></div>
         <div class="ci-text ci-teaser">A daily, personal focus from your AI coach — built from your readiness, training, nutrition and habits.</div>
+      </div>`;
+    }
+    // Not yet asked: offer it, and send nothing. Turned off: stay out of the way.
+    const consent = (typeof aiConsent === 'function') ? aiConsent() : 'yes';
+    if (consent === 'no') return '';
+    if (consent !== 'yes') {
+      return `<div class="ci-card ani" onclick="withAIConsent()" role="button" tabindex="0" aria-label="Turn on the coach's daily focus"
+          onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();withAIConsent()}">
+        <div class="ci-head"><span class="ci-label">Coach's Focus</span><span class="ci-lock">Turn on</span></div>
+        <div class="ci-text ci-teaser">One line each morning on what to do today, from your readiness, training, nutrition and habits. It uses AI, so it asks first.</div>
       </div>`;
     }
     let cached = null;

@@ -3630,33 +3630,78 @@ function dismissInstall() {
   if (banner) banner.remove();
 }
 
-// ── PRO UPGRADE PROMPT ───────────────────────────────────────────────────
-function showProPrompt() {
-  let el = document.getElementById('pro-overlay');
-  if (!el) { el = document.createElement('div'); el.id = 'pro-overlay'; document.body.appendChild(el); }
-  el.innerHTML = `
-    <div class="pro-overlay" onclick="closeProPrompt()">
-      <div class="pro-card" onclick="event.stopPropagation()">
-        <div class="pro-star"><svg viewBox="0 0 120 120" width="52" height="52" xmlns="http://www.w3.org/2000/svg"><g fill="#c4a96c"><ellipse cx="35" cy="12" rx="3.5" ry="8" transform="rotate(-65,35,12)"/><ellipse cx="25" cy="22" rx="4" ry="9" transform="rotate(-50,25,22)"/><ellipse cx="17" cy="34" rx="4.5" ry="10" transform="rotate(-38,17,34)"/><ellipse cx="13" cy="48" rx="5" ry="11" transform="rotate(-22,13,48)"/><ellipse cx="13" cy="62" rx="5" ry="11" transform="rotate(-8,13,62)"/><ellipse cx="17" cy="76" rx="5" ry="11" transform="rotate(10,17,76)"/><ellipse cx="25" cy="88" rx="4.5" ry="10" transform="rotate(26,25,88)"/><ellipse cx="36" cy="97" rx="4" ry="9" transform="rotate(40,36,97)"/><ellipse cx="48" cy="102" rx="3.5" ry="8" transform="rotate(55,48,102)"/><ellipse cx="85" cy="12" rx="3.5" ry="8" transform="rotate(65,85,12)"/><ellipse cx="95" cy="22" rx="4" ry="9" transform="rotate(50,95,22)"/><ellipse cx="103" cy="34" rx="4.5" ry="10" transform="rotate(38,103,34)"/><ellipse cx="107" cy="48" rx="5" ry="11" transform="rotate(22,107,48)"/><ellipse cx="107" cy="62" rx="5" ry="11" transform="rotate(8,107,62)"/><ellipse cx="103" cy="76" rx="5" ry="11" transform="rotate(-10,103,76)"/><ellipse cx="95" cy="88" rx="4.5" ry="10" transform="rotate(-26,95,88)"/><ellipse cx="84" cy="97" rx="4" ry="9" transform="rotate(-40,84,97)"/><ellipse cx="72" cy="102" rx="3.5" ry="8" transform="rotate(-55,72,102)"/></g><path d="M52 106 Q56 112 60 114 Q64 112 68 106" fill="none" stroke="#c4a96c" stroke-width="2.5" stroke-linecap="round"/></svg></div>
-        <div class="pro-title">Arete Pro</div>
-        <div class="pro-sub">Unlock the full system to accelerate your progress.</div>
-        <div class="pro-features">
-          <div class="pro-feat"><span class="pro-feat-icon">🤖</span> Unlimited AI Coach conversations</div>
-          <div class="pro-feat"><span class="pro-feat-icon">🔍</span> Food database search (millions of foods)</div>
-          <div class="pro-feat"><span class="pro-feat-icon">📸</span> Progress photo timeline & comparison</div>
-          <div class="pro-feat"><span class="pro-feat-icon">☁️</span> Cloud sync across all devices</div>
-          <div class="pro-feat"><span class="pro-feat-icon">📊</span> Advanced analytics & trends</div>
-          <div class="pro-feat"><span class="pro-feat-icon">📤</span> Shareable weekly recaps</div>
-        </div>
-        <button class="pro-btn" onclick="alert('Coming soon!')">UPGRADE — $4.99/MONTH</button>
-        <button class="pro-skip" onclick="closeProPrompt()">Maybe later</button>
-      </div>
-    </div>`;
+// ── AI PERMISSION ───────────────────────────────────────────────────────
+// The coach, the daily focus on home and the meal scanner are run by AI
+// models at Google (Gemini) and Groq. Using them sends what the person typed
+// or photographed, and for the coach a summary of their recent logs, through
+// Arete's server to those companies. That is health data going to a third
+// party, so nothing is sent until they have said yes, once, in so many words.
+// The daily focus used to send a summary on every first open of home without
+// asking. hvi_ai_consent holds the answer ('yes' or 'no') for this device.
+const AI_CONSENT_KEY = 'hvi_ai_consent';
+function aiConsent() { try { return localStorage.getItem(AI_CONSENT_KEY) || ''; } catch { return ''; } }
+function aiAllowed() { return aiConsent() === 'yes'; }
+function setAIConsent(yes) {
+  try { localStorage.setItem(AI_CONSENT_KEY, yes ? 'yes' : 'no'); } catch {}
+  // Turning it off also drops the last answer that came back.
+  if (!yes) { try { localStorage.removeItem('hvi_coach_insight'); } catch {} }
+  if (typeof track === 'function') track('ai_consent', { allowed: !!yes });
 }
 
-function closeProPrompt() {
-  const el = document.getElementById('pro-overlay');
-  if (el) el.remove();
+// Runs fn if AI use is allowed; otherwise asks first and runs it on a yes.
+// For things the person tapped. Background work checks aiAllowed() and stays
+// silent instead of asking.
+let _aiConsentThen = null;
+function withAIConsent(fn) {
+  if (aiAllowed()) { if (typeof fn === 'function') fn(); return; }
+  _aiConsentThen = (typeof fn === 'function') ? fn : null;
+  showAIConsent();
+}
+
+function showAIConsent() {
+  try {
+    let el = document.getElementById('ai-consent');
+    if (el && el.remove) el.remove();
+    el = document.createElement('div');
+    el.id = 'ai-consent';
+    el.innerHTML = `
+      <div class="pop-backdrop" style="position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:9000;display:flex;align-items:center;justify-content:center;padding:24px" onclick="answerAIConsent(false)">
+        <div class="pop-card" role="dialog" aria-modal="true" aria-labelledby="ai-consent-title" style="background:var(--bg);border:1px solid var(--border2);border-radius:24px;padding:26px 22px 20px;max-width:380px;width:100%;max-height:calc(100% - 24px);overflow-y:auto" onclick="event.stopPropagation()">
+          <div style="font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Your data and AI</div>
+          <div id="ai-consent-title" style="font-family:var(--serif);font-size:23px;color:var(--text);line-height:1.2;margin-bottom:10px">Allow the AI features?</div>
+          <div style="font-size:13px;color:var(--text-dim);line-height:1.55">
+            The coach, the daily focus on your home screen and the meal scanner are run by AI models from <b style="color:var(--text)">Google (Gemini)</b> and <b style="color:var(--text)">Groq</b>. To answer, Arete sends them:
+            <ul style="margin:10px 0 10px 18px;padding:0;display:grid;gap:5px">
+              <li>the message or meal description you type</li>
+              <li>the meal photo you choose</li>
+              <li>for the coach and the daily focus, a summary of your recent habits, training, nutrition, sleep, journal and goals</li>
+            </ul>
+            It goes through Arete's server, which passes it on and returns the answer. It is never used for advertising. Everything else in Arete works without this, and you can turn it off in Profile at any time.
+          </div>
+          <div style="display:flex;gap:10px;margin-top:18px">
+            <button class="w-action-btn" style="flex:1;margin:0" onclick="answerAIConsent(false)">Not now</button>
+            <button class="w-action-btn" style="flex:1.3;margin:0;background:var(--accent);color:#0a0908;border-color:var(--accent)" onclick="answerAIConsent(true)">Allow</button>
+          </div>
+          <div style="text-align:center;margin-top:12px"><a href="https://get-arete.com/privacy.html" target="_blank" rel="noopener" style="font-size:11.5px;color:var(--text-muted)">Privacy policy</a></div>
+        </div>
+      </div>`;
+    document.body.appendChild(el);
+  } catch (e) { if (typeof reportError === 'function') reportError('ai-consent', e); }
+}
+
+function answerAIConsent(yes) {
+  const then = _aiConsentThen;
+  _aiConsentThen = null;
+  const el = document.getElementById('ai-consent');
+  if (el && el.remove) el.remove();
+  // "Not now" on a first ask is not a standing refusal: only a yes, or the
+  // switch in Profile, is recorded. Asking again next time they tap is fine.
+  if (yes) setAIConsent(true);
+  if (yes && then) { try { then(); } catch (e) { if (typeof reportError === 'function') reportError('ai-consent', e); } }
+  // The home card and the Profile switch both show the current answer.
+  if (yes && typeof go === 'function' && typeof curView !== 'undefined' && (curView === 'home' || curView === 'stats')) {
+    try { go(curView, {}, false); } catch {}
+  }
 }
 
 // ── SMART SYNC (only changed keys) ───────────────────────────────────────

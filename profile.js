@@ -1618,6 +1618,14 @@ function renderStats() {
       </div>
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px">Once on the first open of each day, unless it's already logged.</div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div style="font-size:14px;color:var(--text)">AI coach and meal scan</div>
+        <div class="unit-toggle">
+          <button class="unit-btn${aiAllowed()?' unit-btn-active':''}" onclick="if(!aiAllowed())showAIConsent()">On</button>
+          <button class="unit-btn${!aiAllowed()?' unit-btn-active':''}" onclick="setAIConsent(false);renderStats()">Off</button>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px">When on, your messages, meal photos and a summary of your logs are sent to Google Gemini and Groq to produce answers. Off sends nothing.</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
         <div style="font-size:14px;color:var(--text)">Milestone prompts</div>
         <div class="unit-toggle">
           <button class="unit-btn${settings.milestonePrompts!==false?' unit-btn-active':''}" onclick="settings.milestonePrompts=true;LS.set('hvi_settings',settings);renderStats()">On</button>
@@ -1637,14 +1645,14 @@ function renderStats() {
         </div>
       </div>
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px">Leave empty to estimate it from your bodyweight.</div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      ${window.Capacitor ? '' : `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
         <div style="font-size:14px;color:var(--text)">Version</div>
         <div style="display:flex;align-items:center;gap:10px">
           <span style="font-size:13px;color:var(--text-dim);font-variant-numeric:tabular-nums">${typeof APP_VERSION !== 'undefined' ? APP_VERSION : '?'}</span>
           <button class="unit-btn" onclick="forceUpdate()">Update</button>
         </div>
       </div>
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px">If a change seems missing, this clears the cache and reloads.</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px">If a change seems missing, this clears the cache and reloads.</div>`}
       ${(() => {
         const native = typeof _nativeNotifier === 'function' && !!_nativeNotifier();
         const push = typeof pushSupported === 'function' && pushSupported();
@@ -1729,7 +1737,7 @@ function renderStats() {
     <button class="w-action-btn" style="margin:0 24px 8px" onclick="go('challenges')">${icon('swords')} Challenge a Friend</button>
     <button class="w-action-btn" style="margin:0 24px 8px" onclick="shareInvite()">${icon('link')} Invite a Friend</button>
     <button class="w-action-btn" style="margin:0 24px 8px" onclick="window.open('https://forms.gle/QMHZaYy2grUNmCpJ7','_blank');track('feedback_click')">${icon('edit')} Send Feedback</button>
-    <button class="w-action-btn" style="margin:0 24px 8px" onclick="window.open('/privacy.html','_blank')">Privacy Policy</button>
+    <button class="w-action-btn" style="margin:0 24px 8px" onclick="window.open('https://get-arete.com/privacy.html','_blank')">Privacy Policy</button>
     ${(typeof isGuest === 'function' && isGuest())
       ? `<div class="guest-cta" style="margin:0 24px 8px">
            <div class="guest-cta-text">You're using Arete as a guest. Your data lives only on this device.</div>
