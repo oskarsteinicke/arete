@@ -7,9 +7,17 @@ const path = require('path');
 
 const APP = path.resolve(__dirname, '..');
 
+// Inline style, with the two custom-property methods every browser has.
+function makeStyle() {
+  const style = {};
+  Object.defineProperty(style, 'setProperty', { value(k, v) { this[k] = String(v); } });
+  Object.defineProperty(style, 'getPropertyValue', { value(k) { return this[k] || ''; } });
+  return style;
+}
+
 function makeEl(id) {
   const el = {
-    id, style: {}, value: '', textContent: '', _h: '', disabled: false, files: [],
+    id, style: makeStyle(), value: '', textContent: '', _h: '', disabled: false, files: [],
     classList: { toggle() {}, add() {}, remove() {}, contains() { return false; } },
     setAttribute() {}, removeAttribute() {}, remove() {}, appendChild() {},
     // Enough canvas for confetti, share cards and sparklines to run. Without it

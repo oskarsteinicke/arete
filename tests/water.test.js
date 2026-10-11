@@ -198,5 +198,22 @@ module.exports = function () {
     r.check('and tapping it does not throw', true);
   }
 
+
+  // The row is redrawn on every tap, so the bar needs to be told where it was.
+  r.section('the bar grows from where it stood');
+  {
+    const s = sb({});
+    const from = () => (run(s, 'waterRowHTML()').match(/--from:([\d.]+)%/) || [])[1];
+    const to = () => (run(s, 'waterRowHTML()').match(/width:([\d.]+)%/) || [])[1];
+    r.check('the first draw of the day grows from empty', from() === '0');
+    run(s, 'addWater(1)');
+    const w1 = to();
+    r.check('the next draw starts from the last one', Number(w1) > 0 && from() === w1, `(from ${from()}, to ${w1})`);
+    run(s, 'addWater(1)');
+    const html = run(s, 'waterRowHTML()');
+    const f = Number((html.match(/--from:([\d.]+)%/) || [])[1]), t = Number((html.match(/width:([\d.]+)%/) || [])[1]);
+    r.check('and after a tap it moves on from there', f === Number(w1) && t > f, `(from ${f} to ${t})`);
+  }
+
   return r.finish();
 };

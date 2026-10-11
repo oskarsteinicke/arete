@@ -571,12 +571,17 @@ function waterLabel(ml, goalMl) {
   return { now: fmt(ml), goal: fmt(goalMl), unit: 'L', step: '250 ml' };
 }
 
+// Where the bar stood the last time it was drawn today, so the next draw
+// grows from there instead of appearing at its new width.
+let _waterBarWas = { day: '', pct: 0 };
 function waterRowHTML() {
   const ml = getWaterMl();
   const goalMl = waterGoalMl();
   const { now, goal, unit, step } = waterLabel(ml, goalMl);
   const pct = Math.min(100, goalMl ? (ml / goalMl) * 100 : 0);
   const done = ml >= goalMl;
+  const from = _waterBarWas.day === today() ? _waterBarWas.pct : 0;
+  _waterBarWas = { day: today(), pct };
   return `<div class="d-water ani">
     <button class="d-water-btn" onclick="addWater(-1)" aria-label="Remove ${step}"${ml <= 0 ? ' disabled' : ''}>\u2212</button>
     <div class="d-water-mid">
@@ -584,7 +589,7 @@ function waterRowHTML() {
         <span class="d-water-label">Water</span>
         <span class="d-water-count">${now} / ${goal} ${unit}</span>
       </div>
-      <div class="d-water-track"><div class="d-water-fill${done ? ' done' : ''}" style="width:${pct}%"></div></div>
+      <div class="d-water-track"><div class="d-water-fill${done ? ' done' : ''}" style="width:${pct}%;--from:${from}%"></div></div>
     </div>
     <button class="d-water-btn" onclick="addWater(1)" aria-label="Add ${step}">+</button>
   </div>`;
@@ -677,6 +682,8 @@ function renderDiet() {
     </div>
     <button class="w-action-btn" onclick="go('dietGoals')">Edit Daily Goals</button>
     ${weightHTML}`;
+  // After a meal the rings move on from where they were, not from empty.
+  if (typeof carryRings === 'function') carryRings('diet', '.d-ring-wrap', '.d-ring-val');
   // Connected system: auto-complete habits linked to protein/calorie targets
   if (typeof checkNutritionTriggers === 'function') checkNutritionTriggers();
 }

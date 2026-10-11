@@ -552,6 +552,13 @@ function toggleSet(ei, si) {
   if (chk) {
     chk.classList.toggle('done', set.completed);
     chk.setAttribute('aria-checked', String(!!set.completed));
+    chk.classList.remove('w-pop');
+    if (set.completed) { void chk.offsetWidth; chk.classList.add('w-pop'); }
+  }
+  const setRow = document.getElementById(`w-set-${ei}-${si}`);
+  if (setRow) {
+    setRow.classList.remove('w-set-flash');
+    if (set.completed) { void setRow.offsetWidth; setRow.classList.add('w-set-flash'); }
   }
   _refreshExDone(ei);
 
@@ -864,9 +871,13 @@ function pickRest(ei, sec) {
   haptic(8);
 }
 function startRestTimer(dur) {
+  const wasResting = !!restTimer;
   restTimerDur = dur || DEFAULT_REST_SEC;
   restTimerEnd = Date.now() + restTimerDur * 1000;
   _updateRestTimer();
+  // Rise into place when a rest begins; a restart while resting stays put.
+  const bar = document.getElementById('rest-timer-bar');
+  if (bar && !wasResting) { bar.classList.remove('rt-in'); void bar.offsetWidth; bar.classList.add('rt-in'); }
   if (restTimer) clearInterval(restTimer);
   restTimer = setInterval(_updateRestTimer, 250);
   haptic(12);

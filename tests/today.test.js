@@ -272,5 +272,26 @@ module.exports = function () {
     r.check('and precached', /today\.js/.test(sw), '(offline would serve a home screen without it)');
   }
 
+
+  // Ticking a row left "N of M kept this week" on the old count until
+  // something else redrew the screen.
+  r.section('ticking a row moves the weekly count with it');
+  {
+    const s = sb(daily([1, 2, 3]));
+    const c0 = run(s, 'JSON.stringify(overallConsistency7())');
+    run(s, `document.getElementById('td-cons-n').textContent = 'stale'; tapHabit('h1', 'td');`);
+    const c1 = JSON.parse(run(s, 'JSON.stringify(overallConsistency7())'));
+    r.check('the completion counts', c1.done === JSON.parse(c0).done + 1, `(${c0} -> ${JSON.stringify(c1)})`);
+    r.check('the count on the card follows', run(s, `document.getElementById('td-cons-n').textContent`) === `${c1.done} of ${c1.due}`,
+      `(${run(s, `document.getElementById('td-cons-n').textContent`)})`);
+    r.check('and so does the bar', run(s, `document.getElementById('td-bar-fill').style.width`) === Math.round(c1.pct * 100) + '%',
+      `(${run(s, `document.getElementById('td-bar-fill').style.width`)})`);
+    run(s, `tapHabit('h1', 'td')`);
+    r.check('unticking takes it back', run(s, `document.getElementById('td-cons-n').textContent`) === `${JSON.parse(c0).done} of ${JSON.parse(c0).due}`,
+      `(${run(s, `document.getElementById('td-cons-n').textContent`)})`);
+    r.check('the card marks the count and bar so they can be found',
+      /id="td-cons-n"/.test(run(s, 'todaySpineHTML()')) && /id="td-bar-fill"/.test(run(s, 'todaySpineHTML()')));
+  }
+
   return r.finish();
 };

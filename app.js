@@ -953,18 +953,47 @@ function countUp(el, to, ms = 1100, delay = 0, from = 0) {
   if (!el) return;
   if (!motionOK() || typeof requestAnimationFrame !== 'function') { el.textContent = to; return; }
   el.textContent = from;
+  let landed = false;
   const run = () => {
     let t0 = null;
     const step = now => {
-      if (typeof now !== 'number') { el.textContent = to; return; }
+      if (landed) return;
+      if (typeof now !== 'number') { landed = true; el.textContent = to; return; }
       if (t0 === null) t0 = now;
       const p = Math.min(1, (now - t0) / ms);
       el.textContent = Math.round(from + (to - from) * (1 - Math.pow(1 - p, 3)));
-      if (p < 1) requestAnimationFrame(step);
+      if (p < 1) requestAnimationFrame(step); else landed = true;
     };
     requestAnimationFrame(step);
   };
   delay ? setTimeout(run, delay) : run();
+  // Frames stop in a hidden tab or a backgrounded web view. These are real
+  // numbers (calories, a score), so they land on the right value regardless.
+  setTimeout(() => { if (!landed) { landed = true; el.textContent = to; } }, delay + ms + 250);
+}
+
+// Rings redrawn after a change sweep from where they stood to where they are
+// now, and their numbers count across, instead of emptying and refilling.
+// `key` names the set (one per screen). On arrival an unchanged ring still
+// makes its entrance; redrawn in place it stays put. Nothing carries overnight.
+const _ringMemo = {};
+function carryRings(key, wrapSel, valSel) {
+  try {
+    const prev = _ringMemo[key];
+    const now = { day: today(), offs: [], vals: [] };
+    document.querySelectorAll(wrapSel).forEach((w, i) => {
+      const c = w.querySelector('svg circle:last-child');
+      const v = valSel ? w.querySelector(valSel) : null;
+      const off = c ? c.style.getPropertyValue('--ring-off') : '';
+      const val = v ? parseFloat(v.textContent) : NaN;
+      now.offs[i] = off; now.vals[i] = val;
+      if (!c || !prev || prev.day !== now.day || prev.offs[i] === undefined) return;
+      if (prev.offs[i] !== off) c.style.setProperty('--ring-from', prev.offs[i]);
+      else if (!_arriving) c.style.animation = 'none';
+      if (v && isFinite(val) && isFinite(prev.vals[i]) && prev.vals[i] !== val) countUp(v, val, 700, 0, prev.vals[i]);
+    });
+    _ringMemo[key] = now;
+  } catch {}
 }
 
 // ── ICON SYSTEM ─────────────────────────────────────────────────────────────
@@ -2315,6 +2344,39 @@ const LAZY_VIEWS = {
 };
 const _lazyViewTries = {};
 
+// Which side a screen arrives from: +1 from the right, -1 from the left.
+// Tabs follow their order in the bar. Inside one tab, going deeper comes from
+// the right and coming back out comes from the left.
+let _viewShown = false, _arriving = false, _arriveTimer = 0;
+function _viewDir(prev, next) {
+  const a = _NAV_ORDER.indexOf(NAV_PARENT[prev] || prev);
+  const b = _NAV_ORDER.indexOf(NAV_PARENT[next] || next);
+  if (a !== -1 && b !== -1 && a !== b) return b > a ? 1 : -1;
+  return (NAV_PARENT[prev] && !NAV_PARENT[next]) ? -1 : 1;
+}
+
+// The highlight behind the active tab is one element that slides between
+// tabs, instead of a background that blinks off one and on the next.
+function _moveNavPill() {
+  try {
+    const nav = document.getElementById('nav');
+    const active = nav && nav.querySelector('.ni.active');
+    if (!active || !active.offsetWidth) return;   // hidden, or nothing to measure yet
+    let pill = document.getElementById('nav-pill');
+    if (!pill || !pill.isConnected) {
+      pill = document.createElement('span');
+      pill.id = 'nav-pill';
+      pill.setAttribute('aria-hidden', 'true');
+      nav.insertBefore(pill, nav.firstChild);
+    }
+    const placed = nav.classList.contains('has-pill');
+    if (!placed) pill.style.transition = 'none';   // appear in place, do not fly in
+    pill.style.width = active.offsetWidth + 'px';
+    pill.style.transform = `translateX(${active.offsetLeft}px)`;
+    if (!placed) { void pill.offsetWidth; pill.style.transition = ''; nav.classList.add('has-pill'); }
+  } catch {}
+}
+
 function go(view, params = {}, pushState = true) {
   // Paywall: gate premium sections for free (post-trial) users
   if (typeof isPremium === 'function' && !isPremium()) {
@@ -2324,6 +2386,7 @@ function go(view, params = {}, pushState = true) {
   }
   clearInterval(qTimer);
   closeQuickLog();
+  const prevView = curView;
   curView = view;
   curPillar = params.pillar || null;
   curRecipeId = params.recipeId || null;
@@ -2338,9 +2401,24 @@ function go(view, params = {}, pushState = true) {
   document.querySelectorAll('.ni').forEach(el => el.classList.toggle('active', el.dataset.n === navKey));
   const viewEl = document.getElementById('view');
   viewEl.scrollTop = 0;
+  // Redrawing the screen you are already on is not an arrival. Replaying the
+  // slide and every card's entrance made a sync or a mood tap look like a page
+  // change. A real move slides in from the side it is heading to.
+  const redraw = _viewShown && prevView === view && !pushState;
+  _viewShown = true;
   viewEl.classList.remove('view-slide-in');
-  void viewEl.offsetWidth;
-  viewEl.classList.add('view-slide-in');
+  clearTimeout(_arriveTimer);
+  viewEl.classList.toggle('view-arriving', !redraw);
+  if (!redraw) {
+    viewEl.style.setProperty('--view-dx', (_viewDir(prevView, view) * 24) + 'px');
+    void viewEl.offsetWidth;
+    viewEl.classList.add('view-slide-in');
+    // Cards make their entrance only while arriving (style.css keys .ani on
+    // this class). A redraw later on, such as logging water or ticking a goal,
+    // changes what is there without replaying it.
+    _arriveTimer = setTimeout(() => viewEl.classList.remove('view-arriving'), 1100);
+  }
+  _moveNavPill();
 
   // Only screens whose script is loaded eagerly may be named directly here. An
   // object literal resolves every identifier the moment it is built, so listing
@@ -2375,7 +2453,9 @@ function go(view, params = {}, pushState = true) {
     }
     _lazyViewTries[view] = 0;
   }
-  (typeof render === 'function' ? render : renderHome)();
+  _arriving = !redraw;
+  try { (typeof render === 'function' ? render : renderHome)(); }
+  finally { _arriving = false; }
 }
 
 window.addEventListener('popstate', e => {
@@ -2541,6 +2621,7 @@ function tapHabit(id, suffix) {
     if (/^hi-streak/.test(stk.className)) stk.className = `hi-streak${s >= 3 ? ' hot' : ''}`;
   }
   if (chk) { chk.classList.remove('pop'); void chk.offsetWidth; chk.classList.add('pop'); }
+  if (typeof refreshTodayWeek === 'function') refreshTodayWeek();
   if (curView === 'pillar') refreshPillarRing();
 }
 
@@ -3771,4 +3852,6 @@ document.addEventListener('DOMContentLoaded', () => {
   init();
   initSwipeNav();
   initPullToRefresh();
+  // The tab highlight is placed by measurement, so re-place it when the bar resizes.
+  window.addEventListener('resize', _moveNavPill);
 });

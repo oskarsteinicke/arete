@@ -190,11 +190,15 @@ nav {
 .ani:nth-child(6) { animation-delay: 0.32s; }
 .ani:nth-child(7) { animation-delay: 0.37s; }
 .ani:nth-child(8) { animation-delay: 0.41s; }
+/* --view-dx is set by go(): +24px arriving from the right, -24px from the left */
 @keyframes viewSlide {
-  from { transform: translateX(24px) scale(0.983); opacity: 0; filter: blur(4px); }
+  from { transform: translateX(var(--view-dx, 24px)) scale(0.983); opacity: 0; filter: blur(4px); }
   to   { transform: translateX(0) scale(1); opacity: 1; filter: blur(0); }
 }
 .view-slide-in { animation: viewSlide 0.42s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+/* Cards enter only while a screen is arriving (go() holds .view-arriving for
+   about a second). Redrawn in place, they are simply there. */
+#view:not(.view-arriving) .ani { animation: none; }
 
 /* SHARED */
 .sec-lbl { font-family: var(--display); font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--text-dim); padding: 16px 24px 8px; font-weight: 500; }
@@ -477,6 +481,18 @@ nav {
   margin-left: auto;
 }
 .w-set-check.done { background: rgba(var(--accent-hi-rgb),0.16); border-color: var(--accent); color: var(--accent-b); }
+/* A set ticked off: the check springs, a ring leaves it, the row warms for a
+   moment. Classes are added on the tap (toggleSet), so a redraw replays nothing. */
+.w-set-check { position: relative; }
+.w-set-check.w-pop { animation: w-check-pop 0.42s cubic-bezier(0.3, 1.6, 0.5, 1); }
+.w-set-check.w-pop::after {
+  content: ''; position: absolute; inset: -1.5px; border-radius: 50%; pointer-events: none;
+  border: 1.5px solid var(--accent); animation: w-burst 0.55s ease-out both;
+}
+@keyframes w-check-pop { 0% { transform: scale(0.82); } 60% { transform: scale(1.16); } 100% { transform: scale(1); } }
+@keyframes w-burst { from { transform: scale(1); opacity: 0.75; } to { transform: scale(1.9); opacity: 0; } }
+.w-set.w-set-flash { animation: w-set-flash 0.8s ease-out; }
+@keyframes w-set-flash { from { background-color: rgba(var(--accent-rgb), 0.16); } }
 
 .w-add-set {
   padding: 12px 16px 14px;
@@ -1255,6 +1271,9 @@ nav {
   animation: rt-pulse 0.5s ease;
 }
 @keyframes rt-pulse { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+/* The pill rises into place when a rest starts (class set in startRestTimer) */
+.rt-bar.rt-in { animation: rt-in 0.45s cubic-bezier(0.2, 1.25, 0.4, 1) both; }
+@keyframes rt-in { from { transform: translate(-50%, 28px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
 /* Centred and unwrapped, this was 419px wide on a 390px phone and clipped at
    both ends: the "Rest" label and the 1RM button were cut in half. */
 .rt-presets {
@@ -2305,6 +2324,23 @@ nav {
   box-shadow: 0 0 8px rgba(var(--accent-b-rgb),0.5);
 }
 
+/* One highlight that slides between tabs (placed by _moveNavPill in app.js).
+   Until it has been placed, the active tab keeps its own background and bar. */
+#nav-pill {
+  position: absolute; top: 6px; bottom: 6px; left: 0; width: 0; z-index: -1;
+  border-radius: 25px; background: rgba(255,255,255,0.07); pointer-events: none;
+  transition: transform 0.42s cubic-bezier(0.3, 1.25, 0.45, 1), width 0.3s ease;
+}
+#nav-pill::before {
+  content: ''; position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
+  width: 22px; height: 2px; background: var(--accent-b); border-radius: 0 0 3px 3px;
+  box-shadow: 0 0 8px rgba(var(--accent-b-rgb),0.5);
+}
+nav.has-pill .ni.active { background: none; }
+nav.has-pill .ni.active::before { display: none; }
+.ni svg { transition: stroke-width 0.2s, transform 0.35s cubic-bezier(0.3, 1.5, 0.5, 1); }
+.ni.active svg { transform: translateY(-1px) scale(1.08); }
+
 /* Pillar ring track — subtle accent tint */
 .pc-ring svg circle:first-child,
 .pd-ring svg circle:first-child {
@@ -3205,10 +3241,13 @@ body {
 .d-water-track {
   height: 4px; border-radius: 2px; background: rgba(255,255,255,0.07); overflow: hidden;
 }
+/* The row is redrawn on every tap, so a transition never had a starting
+   point. --from is where the bar stood before (waterRowHTML). */
 .d-water-fill {
   height: 100%; border-radius: 2px; background: #4a9fd8;
-  transition: width .25s ease;
+  animation: bar-from 0.5s cubic-bezier(0.3, 1.2, 0.5, 1) both;
 }
+@keyframes bar-from { from { width: var(--from, 0%); } }
 .d-water-fill.done { background: var(--accent-b); }
 .d-water-btn {
   width: 32px; height: 32px; flex: 0 0 32px;

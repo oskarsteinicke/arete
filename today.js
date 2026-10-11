@@ -149,8 +149,34 @@ function setTodayMood(v) {
   LS.set('hvi_mood_log', all);
   if (typeof track === 'function') track('mood_logged', { mood: n });
   if (typeof haptic === 'function') haptic(10);
-  if (typeof curView !== 'undefined' && curView === 'home' && typeof renderHome === 'function') renderHome();
+  if (typeof curView !== 'undefined' && curView === 'home') {
+    // In place where the buttons are on screen: redrawing all of home for one
+    // tap replayed every card's entrance.
+    const btns = (typeof document !== 'undefined' && document.querySelectorAll('.td-mood-btn')) || [];
+    if (btns.length) {
+      btns.forEach((b, i) => { b.classList.toggle('on', i + 1 === n); b.classList.toggle('picked', i + 1 === n); });
+      const lbl = document.querySelector('.td-mood-lbl');
+      if (lbl && lbl.remove) lbl.remove();
+    } else if (typeof renderHome === 'function') renderHome();
+  }
   return all[today()];
+}
+
+// The foot of the card, brought up to date where it stands. Checking a row
+// used to leave "9 of 21 kept this week" on the old count until something else
+// redrew the screen. The bar moves and the count bumps when it changes.
+function refreshTodayWeek() {
+  try {
+    const n = document.getElementById('td-cons-n'), fill = document.getElementById('td-bar-fill');
+    if (!n || !fill) return;
+    const c = overallConsistency7();
+    const text = `${c.done} of ${c.due}`;
+    if (n.textContent !== text) {
+      n.textContent = text;
+      n.classList.remove('bump'); void n.offsetWidth; n.classList.add('bump');
+    }
+    fill.style.width = Math.round(c.pct * 100) + '%';
+  } catch {}
 }
 
 // ── RENDER ────────────────────────────────────────────────────────────────
@@ -170,22 +196,28 @@ function injectTodayStyles() {
     .td-goals{font-size:11px;letter-spacing:.4px;color:var(--accent);cursor:pointer;margin:-6px 0 12px}
     .td-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--border);cursor:pointer}
     .td-row:first-of-type{border-top:none}
-    .td-row.td-done .td-label,.td-row.done .td-label{opacity:.45;text-decoration:line-through}
-    .td-box{width:22px;height:22px;flex-shrink:0;border-radius:7px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;color:transparent}
+    .td-row.td-done .td-label,.td-row.done .td-label{opacity:.45;text-decoration-color:currentColor}
+    .td-box{position:relative;width:22px;height:22px;flex-shrink:0;border-radius:7px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;color:transparent;transition:background .2s ease,border-color .2s ease,color .15s ease .08s}
+    .td-row.done .td-box.pop::after{content:'';position:absolute;inset:-1.5px;border-radius:8px;border:1.5px solid var(--accent);pointer-events:none;animation:td-burst .55s ease-out both}
+    @keyframes td-burst{from{transform:scale(1);opacity:.75}to{transform:scale(2);opacity:0}}
     .td-row.td-done .td-box,.td-row.done .td-box{background:var(--accent);border-color:var(--accent);color:var(--bg)}
     .td-main{min-width:0;flex:1}
-    .td-label{font-size:14.5px;font-weight:600;line-height:1.3}
+    .td-label{font-size:14.5px;font-weight:600;line-height:1.3;text-decoration:line-through;text-decoration-color:transparent;transition:opacity .3s ease,text-decoration-color .3s ease}
     .td-sub{font-size:11px;color:var(--text-muted);margin-top:2px}
     .td-sub.td-slip{color:var(--accent-b)}
     .td-foot{display:flex;align-items:center;justify-content:space-between;gap:10px 14px;flex-wrap:wrap;margin-top:12px;padding-top:11px;border-top:1px solid var(--border)}
     .td-cons{font-size:11.5px;color:var(--text-dim)}
-    .td-cons b{color:var(--text);font-weight:700}
+    .td-cons b{display:inline-block;color:var(--text);font-weight:700;transform-origin:left bottom}
+    .td-cons b.bump{animation:td-bump .45s ease}
+    @keyframes td-bump{40%{transform:translateY(-2px) scale(1.07);color:var(--accent-b)}}
     .td-bar{height:4px;border-radius:2px;background:var(--border);overflow:hidden;margin-top:6px;width:104px}
-    .td-bar span{display:block;height:100%;background:var(--accent);border-radius:2px}
+    .td-bar span{display:block;height:100%;background:var(--accent);border-radius:2px;transition:width .6s cubic-bezier(.3,1.2,.5,1)}
     .td-mood{display:flex;align-items:center;gap:6px}
     .td-mood-btn{background:none;border:none;font-size:18px;line-height:1;cursor:pointer;padding:2px 1px;opacity:.38;transition:opacity .15s,transform .15s}
     .td-mood-btn:hover{opacity:.8;transform:scale(1.12)}
     .td-mood-btn.on{opacity:1;transform:scale(1.15)}
+    .td-mood-btn.picked{animation:td-mood .45s cubic-bezier(.3,1.6,.5,1)}
+    @keyframes td-mood{0%{transform:scale(.8)}60%{transform:scale(1.4)}100%{transform:scale(1.15)}}
     .td-mood-lbl{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-muted);margin-right:2px;white-space:nowrap}
     @media (max-width:400px){.td-mood-lbl{display:none}.td-mood-btn{font-size:17px;padding:2px 0}}
   `;
@@ -241,8 +273,8 @@ function todaySpineHTML() {
          aria-label="Mood ${i + 1} of 5" title="${i + 1} of 5">${f}</button>`).join('');
 
     const consHTML = c.due > 0
-      ? `<div><div class="td-cons"><b>${c.done} of ${c.due}</b> kept this week</div>
-           <div class="td-bar"><span style="width:${Math.round(c.pct * 100)}%"></span></div></div>`
+      ? `<div><div class="td-cons"><b id="td-cons-n">${c.done} of ${c.due}</b> kept this week</div>
+           <div class="td-bar"><span id="td-bar-fill" style="width:${Math.round(c.pct * 100)}%"></span></div></div>`
       : `<div class="td-cons">Your first days build the picture</div>`;
 
     return `<div class="td-spine ani">

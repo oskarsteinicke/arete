@@ -170,5 +170,48 @@ module.exports = function () {
       run(s, `_swipeBlocked(_node('.chip', _node('.wp-chips', _card, { scrollWidth: 390, clientWidth: 390, _ox: 'auto' })))`) === false);
   }
 
+
+  // Every screen used to slide in from the right, whichever way you were going,
+  // and a redraw of the screen you were on replayed the whole arrival.
+  r.section('a screen arrives from the side it is heading to');
+  {
+    const s = boot(EAGER);
+    const dir = (a, b) => run(s, `_viewDir(${JSON.stringify(a)}, ${JSON.stringify(b)})`);
+    r.check('a tab further along the bar comes from the right', dir('home', 'diet') === 1);
+    r.check('one further back comes from the left', dir('diet', 'habits') === -1);
+    r.check('a sub-screen counts as its tab', dir('workoutActive', 'home') === -1 && dir('dietAddMeal', 'stats') === 1);
+    r.check('going deeper inside a tab comes from the right', dir('workout', 'workoutActive') === 1);
+    r.check('and coming back out comes from the left', dir('workoutActive', 'workout') === -1);
+
+    run(s, `_seen = []; renderHome = function () { _seen.push(_arriving); }; renderHabits = function () { _seen.push(_arriving); };`);
+    run(s, `go('home'); go('home', {}, false); go('habits'); go('habits', {}, false); go('home', {}, false);`);
+    r.check('the first draw of a screen is an arrival', run(s, '_seen[0]') === true);
+    r.check('a redraw of the same screen is not', run(s, '_seen[1]') === false && run(s, '_seen[3]') === false, run(s, 'JSON.stringify(_seen)'));
+    r.check('moving to another screen is, even from the back button', run(s, '_seen[2]') === true && run(s, '_seen[4]') === true, run(s, 'JSON.stringify(_seen)'));
+    r.check('and the flag does not outlive the draw', run(s, '_arriving') === false);
+    r.check('the direction is handed to the stylesheet', run(s, `document.getElementById('view').style.getPropertyValue('--view-dx')`) === '-24px',
+      run(s, `document.getElementById('view').style.getPropertyValue('--view-dx')`));
+  }
+
+  // Redrawn rings emptied and refilled from zero. After a meal they should move
+  // on from where they were.
+  r.section('rings carry on from where they stood');
+  {
+    const s = boot(EAGER);
+    run(s, `
+      _ring = function (off, val) { var st = { '--ring-off': off }; var c = { style: { animation: '', getPropertyValue: function (k) { return st[k] || ''; }, setProperty: function (k, v) { st[k] = v; } }, _st: st };
+        var v = { textContent: String(val) }; return { _c: c, _v: v, querySelector: function (sel) { return /circle/.test(sel) ? c : v; } }; };
+      _draw = function (off, val) { _w = [_ring(off, val)]; document.querySelectorAll = function () { return _w; }; carryRings('t', '.wrap', '.val'); return _w[0]; };
+    `);
+    r.check('the first draw has nothing to carry', run(s, `_draw('140.43', 420)._c._st['--ring-from']`) === undefined);
+    r.check('after a change it starts from the old position', run(s, `_draw('105.50', 1060)._c._st['--ring-from']`) === '140.43');
+    r.check('and its number counts on from the old one', run(s, `_w[0]._v.textContent`) == 420, `(${run(s, '_w[0]._v.textContent')})`);
+    r.check('unchanged and redrawn in place, it stays put', run(s, `_draw('105.50', 1060)._c.style.animation`) === 'none');
+    r.check('unchanged on arrival, it still makes its entrance',
+      run(s, `_arriving = true; var a = _draw('105.50', 1060)._c.style.animation; _arriving = false; a`) === '');
+    r.check('nothing carries over from another day',
+      run(s, `_ringMemo.t.day = '2000-01-01'; _draw('60.00', 2000)._c._st['--ring-from']`) === undefined);
+  }
+
   return r.finish();
 };
