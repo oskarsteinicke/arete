@@ -243,36 +243,61 @@ module.exports = function () {
     r.check('onboarding is marked done', s.localStorage._d.hvi_onboarded === 'true');
   }
 
-  // The Why was rendered by the spine and again by a card below it, so home
-  // said the same sentence twice — and the second one was clipped mid-word by
-  // the bottom of the screen.
-  r.section('home states the identity line once');
+  // Home opens on the character, not on a Today box. The box was removed at
+  // the owner's request: with the readiness card below it, home said "Today"
+  // twice and led with a block of small text.
+  r.section('home opens on the character, with no Today box above it');
   {
     const why = 'I want to be the kind of person who does what he said he would.';
     const s = sb({ hvi_why: JSON.stringify(why), hvi_goals: JSON.stringify([{ id: 'g1', text: 'Bench 100', done: false }]) },
       `settings={}; meta.lastOpenedDate=today(); editWhy=function(){ _edited=true; }; _edited=false;`);
     const html = run(s, `renderHome(); document.getElementById('view').innerHTML`) || '';
-    const count = html.split(why).length - 1;
-    r.check('the Why appears exactly once', count === 1, `(${count} times)`);
-    r.check('and it is editable from there', /editWhy\(\)/.test(html), '(no way to change it)');
-    r.check('the goals screen is still reachable', /go\('goals'\)/.test(html), '(only path to goals was the card)');
-    r.check('the open goal count is shown', /1 active goal\b/.test(html), '(no goal summary)');
+    r.check('the Today box is not drawn', !/td-spine/.test(html), '(the box is back)');
+    r.check('the first thing on the page is the character', /^\s*<div class="hm-hero/.test(html), `(${html.trim().slice(0, 40)})`);
+    r.check('home says "Today" once', (html.match(/>Today</g) || []).length === 1, `(${(html.match(/>Today</g) || []).length} times)`);
     // What the in-place updates look for after a tick.
     r.check('the XP bar under the figure can be found', /id="hm-xp-fill" style="width:[\d.]+%"/.test(html), '(XP gains have nowhere to land)');
     r.check('and so can each pillar ring', (html.match(/id="hm-pc-/g) || []).length === run(s, 'PILLARS.length'), '(pillar rings cannot be refreshed)');
+
+    // The Why and the goals lived on that box. They must still be reachable.
+    const profile = require('fs').readFileSync(require('path').join(require('./harness').APP, 'profile.js'), 'utf8');
+    r.check('goals are one tap from Profile', /onclick="go\('goals'\)"[^>]*>[^<]*\$\{icon\('flag'\)\} My Goals/.test(profile), '(no way to reach goals)');
+    r.check('and the Why is edited from the goals screen', /class="goals-why[^"]*" onclick="editWhy\(\)"/.test(profile), '(no way to change the Why)');
   }
 
-  r.section('the spine is on the home screen');
+  // Nothing on home may be smaller than body text. It had a dozen 10px
+  // letterspaced capitals labels; the complaint was "small text everywhere".
+  r.section('home has no tiny text');
   {
-    const src = require('fs').readFileSync(
-      require('path').join(require('./harness').APP, 'app.js'), 'utf8');
-    r.check('renderHome calls it', /todaySpineHTML\(\)/.test(src), '(home never renders the spine)');
+    const css = require('fs').readFileSync(require('path').join(require('./harness').APP, 'style.css'), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '');
+    const HOME = ['hm-hero-date', 'hm-hero-lvl', 'hm-pc-name', 'hm-sec-title', 'hm-sec-note', 'tb-title', 'tb-ready-lbl',
+      'tb-cell-val', 'tb-cell-sub', 'tb-cell-lbl', 'ci-label', 'ci-lock', 'ci-text', 'hm-quest-lbl', 'hm-quest-xp',
+      'hm-chal-lbl', 'hm-chal-ct', 'hm-quote-text', 'hm-quote-auth'];
+    const small = [], caps = [];
+    for (const cls of HOME) {
+      const re = new RegExp('(^|[\\s,}])\\.' + cls + '\\s*(,[^{]*)?\\{([^}]*)\\}', 'g');
+      let m, found = false;
+      while ((m = re.exec(css))) {
+        found = true;
+        const size = /font-size:\s*([\d.]+)px/.exec(m[3]);
+        if (size && +size[1] < 12.5) small.push(`${cls} ${size[1]}px`);
+        if (/text-transform:\s*uppercase/.test(m[3])) caps.push(cls);
+      }
+      if (!found) small.push(`${cls} (no rule)`);
+    }
+    r.check('every label is at least 12.5px', small.length === 0, `(${small.join(', ')})`);
+    r.check('and none is set in capitals', caps.length === 0, `(${caps.join(', ')})`);
+  }
+
+  r.section('the consistency maths is still loaded');
+  {
     const idx = require('fs').readFileSync(
       require('path').join(require('./harness').APP, 'index.html'), 'utf8');
     r.check('the script is loaded', /today\.js/.test(idx), '(file exists but is never loaded)');
     const sw = require('fs').readFileSync(
       require('path').join(require('./harness').APP, 'service-worker.js'), 'utf8');
-    r.check('and precached', /today\.js/.test(sw), '(offline would serve a home screen without it)');
+    r.check('and precached', /today\.js/.test(sw), '(offline would serve habit rows without it)');
   }
 
 

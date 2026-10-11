@@ -150,14 +150,10 @@ function checkDailyQuests() {
     const qEl = document.getElementById('quest-section');
     if (qEl) {
       const _qd2 = new Set((gamification.questsCompleted || {})[today()] || []);
-      qEl.innerHTML = getDailyQuests().map(q => {
-        const qd = _qd2.has(q.id);
-        return `<div class="hm-quest${qd?' hm-quest-done':''}">
-          <div class="hm-quest-ico">${q.icon}</div>
-          <div class="hm-quest-body"><div class="hm-quest-lbl">${q.label}</div><div class="hm-quest-xp">+${q.xp} XP</div></div>
-          <div class="hm-quest-done-row"><div class="hm-quest-cb${qd?' hm-quest-cb-done':''}">${qd?'✓':''}</div></div>
-        </div>`;
-      }).join('');
+      const _qs = getDailyQuests();
+      qEl.innerHTML = _qs.map(q => questRowHTML(q, _qd2.has(q.id))).join('');
+      const _qc = document.getElementById('quest-count');
+      if (_qc) _qc.textContent = `${_qs.filter(q => _qd2.has(q.id)).length} of ${_qs.length}`;
     }
   }
 }

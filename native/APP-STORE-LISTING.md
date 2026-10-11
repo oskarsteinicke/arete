@@ -24,7 +24,7 @@ Your day, in one calm place
 ## Promotional text (170 max — editable without a new review)
 
 ```
-New: a Today screen that shows the one to three things that matter, and consistency over the last seven days instead of a streak that one missed day destroys.
+Your day in four numbers: training, calories, habits and sleep. Consistency over the last seven days, not a streak that one missed day destroys.
 ```
 
 ## Keywords (100 max, comma separated, no spaces after commas)
@@ -44,7 +44,7 @@ Most self-improvement apps do one thing and charge you every month for it. Arete
 Habits, training, nutrition, sleep and an AI coach in one place. The parts talk to each other. Log a workout and your recovery updates. Sleep badly and today's training advice changes with it.
 
 TODAY
-Open the app and see the one to three things that actually matter today, drawn from your habits and your goals. One tap each. Underneath, how consistent you have been over the last seven days — not a streak that one missed day sets to zero.
+Open the app and see your day in four numbers: training, calories, habits and sleep, with a readiness score built from all of them. Tap one to log it. Habits show how consistent you have been over the last seven days — not a streak that one missed day sets to zero.
 
 HABITS
 Build across five areas: body, mind, spirit, craft and connection. Daily, weekly, or specific days of the week. Weekly habits are judged on the week, not on whether you opened the app.
@@ -91,7 +91,7 @@ iPhone size App Store Connect requires. No alpha channel, which Apple rejects.
 
 | File | Shows |
 |---|---|
-| `01-home.png` | Today: priorities, consistency, character |
+| `01-home.png` | Home: character, readiness, today's four numbers |
 | `02-habits.png` | Habits and the activity map |
 | `03-workout.png` | Training and today's session |
 | `04-diet.png` | Nutrition, macros, water |

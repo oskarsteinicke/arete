@@ -642,7 +642,7 @@ function coachInsightCardHTML() {
     const premium = (typeof isPremium === 'function') ? isPremium() : false;
     if (!premium) {
       return `<div class="ci-card ci-locked ani" onclick="if(typeof showUpgradeModal==='function')showUpgradeModal('coach')" role="button" tabindex="0" aria-label="Coach's Focus — Premium feature">
-        <div class="ci-head"><span class="ci-label">Coach's Focus</span><span class="ci-lock">Premium</span></div>
+        <div class="ci-head"><span class="ci-label">Coach's focus</span><span class="ci-lock">Premium</span></div>
         <div class="ci-text ci-teaser">A daily, personal focus from your AI coach — built from your readiness, training, nutrition and habits.</div>
       </div>`;
     }
@@ -652,8 +652,8 @@ function coachInsightCardHTML() {
     if (consent !== 'yes') {
       return `<div class="ci-card ani" onclick="withAIConsent()" role="button" tabindex="0" aria-label="Turn on the coach's daily focus"
           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();withAIConsent()}">
-        <div class="ci-head"><span class="ci-label">Coach's Focus</span><span class="ci-lock">Turn on</span></div>
-        <div class="ci-text ci-teaser">One line each morning on what to do today, from your readiness, training, nutrition and habits. It uses AI, so it asks first.</div>
+        <div class="ci-head"><span class="ci-label">Coach's focus</span><span class="ci-lock">Turn on</span></div>
+        <div class="ci-text ci-teaser">One line each morning on what to do today. It uses AI, so it asks first.</div>
       </div>`;
     }
     let cached = null;
@@ -661,7 +661,7 @@ function coachInsightCardHTML() {
     const fresh = cached && cached.date === today() && cached.text;
     if (!fresh) setTimeout(() => _fillCoachInsight(false), 400);
     return `<div class="ci-card ani">
-      <div class="ci-head"><span class="ci-label">Coach's Focus</span>
+      <div class="ci-head"><span class="ci-label">Coach's focus</span>
         <button class="ci-refresh" onclick="_fillCoachInsight(true)" aria-label="Get a new insight" title="New insight">${(typeof icon === 'function') ? icon('refresh', 13) : '↻'}</button>
       </div>
       <div class="ci-text" id="ci-text">${fresh ? esc(cached.text) : 'Reading your day…'}</div>
@@ -688,21 +688,6 @@ async function _fillCoachInsight(force) {
 // readiness, today's training, the adjusted nutrition target, habit status, a
 // journaling prompt, and one coach line. Folds in the standalone readiness card
 // and coach nudge so home reads as a single connected briefing.
-const _JOURNAL_PROMPTS = [
-  'What did you do today that your future self will thank you for?',
-  'Where did you fall short, and what will you do differently tomorrow?',
-  'What is one thing fully within your control right now?',
-  'What drained you today, and what gave you energy?',
-  'If today repeated for a year, where would it take you?',
-  'What did you avoid that you know you should face?',
-  'What are you grateful for that you usually overlook?',
-];
-function _journalPrompt() {
-  const d = new Date();
-  const doy = Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 86400000);
-  return _JOURNAL_PROMPTS[doy % _JOURNAL_PROMPTS.length];
-}
-
 function dismissBriefCoach() {
   try { localStorage.setItem('hvi_nudge_dismissed', today()); } catch {}
   if (typeof go === 'function' && typeof curView !== 'undefined' && curView === 'home') {
@@ -842,17 +827,12 @@ function todayBriefingHTML() {
 
     const calTarget = (mt && mt.calories) ? mt.calories
       : ((typeof dietMeta !== 'undefined' && dietMeta.dailyGoals && dietMeta.dailyGoals.calories) || 0);
-    const fuelLbl = (mt && mt.adjusted) ? (mt.type === 'hard' ? 'Heavy day' : mt.type === 'rest' ? 'Rest day' : 'Training day') : 'Fuel';
 
     const doneH = Array.isArray(habits) ? habits.filter(h => log[h.id] && log[h.id].completedToday).length : 0;
     const totalH = Array.isArray(habits) ? habits.length : 0;
 
     const dismissed = (function () { try { return localStorage.getItem('hvi_nudge_dismissed') === t; } catch { return false; } })();
     const nudge = dismissed ? null : getCoachNudge();
-
-    const prompt = _journalPrompt();
-    const jToday = (typeof journal !== 'undefined' && journal[t]) || {};
-    const jDone = Object.values(jToday).some(v => v && String(v).trim());
 
     // The first home of the day fills the ring and counts the score up; every
     // later render just shows it. Home is drawn several times in the first few
@@ -884,31 +864,26 @@ function todayBriefingHTML() {
         </div>
       </div>` : '';
 
+    // Four tiles, one glance. Sleep used to be a line of small text with a
+    // button under three tiles, and a journal prompt in italics under that.
+    const slp = (typeof sleepLog !== 'undefined' && sleepLog) ? (sleepLog[t] || null) : null;
+    const slpLogged = !!(slp && (slp.hours || slp.quality));
+    const slpVal = slpLogged ? (slp.hours ? `${slp.hours}h` : `${slp.quality}/5`) : 'Log';
+    const of = n => `<span class="tb-cell-sub"> / ${n}</span>`;
+    const cell = (view, icoName, val, lbl) => `<div class="tb-cell" onclick="go('${view}')" role="button" tabindex="0"
+          onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();go('${view}')}">
+        <div class="tb-cell-ico">${ic(icoName, 20)}</div>
+        <div class="tb-cell-main"><div class="tb-cell-val">${val}</div><div class="tb-cell-lbl">${lbl}</div></div>
+      </div>`;
     return `<div class="today-brief ani">
-      <div class="tb-head"><div class="tb-eyebrow">Today</div>${readyHTML}</div>
+      <div class="tb-head"><h2 class="tb-title">Today</h2>${readyHTML}</div>
       <div class="tb-grid">
-        <div class="tb-cell" onclick="go('workout')"><div class="tb-cell-ico">${ic('activity')}</div><div class="tb-cell-val">${esc(String(trainVal))}</div><div class="tb-cell-lbl">${trainLbl}</div></div>
-        <div class="tb-cell" onclick="go('diet')"><div class="tb-cell-ico">${ic('target')}</div><div class="tb-cell-val">${m.cal.toLocaleString()}<span class="tb-cell-sub">/${calTarget ? calTarget.toLocaleString() : '—'}</span></div><div class="tb-cell-lbl">${fuelLbl}</div></div>
-        <div class="tb-cell" onclick="go('habits')"><div class="tb-cell-ico">${ic('check')}</div><div class="tb-cell-val">${doneH}/${totalH}</div><div class="tb-cell-lbl">Habits</div></div>
+        ${cell('workout', 'activity', esc(String(trainVal)), trainLbl)}
+        ${cell('diet', 'target', m.cal.toLocaleString(), calTarget ? `of ${calTarget.toLocaleString()} cal` : 'Calories')}
+        ${cell('habits', 'check', doneH + of(totalH), 'Habits')}
+        ${cell('sleep', 'moon', slpVal, 'Sleep')}
       </div>
       ${coachHTML}
-      ${(() => {
-        // Slim sleep row: a log prompt until last night is entered, then an
-        // at-a-glance stat. Keeps sleep one tap from home without a big card.
-        const slp = (typeof sleepLog !== 'undefined' && sleepLog) ? (sleepLog[t] || null) : null;
-        const slpLogged = !!(slp && (slp.hours || slp.quality));
-        const info = slpLogged
-          ? `<span class="tb-sleep-val">${slp.hours || '?'}h</span>${slp.quality ? ' · quality ' + slp.quality + '/5' : ''}`
-          : `Last night's sleep — not logged`;
-        return `<div class="tb-sleep">
-        <span class="tb-sleep-info">${ic('moon', 14)} <span>${info}</span></span>
-        <button class="tb-journal-btn" onclick="go('sleep')">${slpLogged ? 'Edit' : 'Log'}</button>
-      </div>`;
-      })()}
-      <div class="tb-journal">
-        <span class="tb-journal-prompt">${ic('book', 15)} ${esc(prompt)}</span>
-        <button class="tb-journal-btn" onclick="libTab='journal';go('library')">${jDone ? 'Edit' : 'Reflect'}</button>
-      </div>
     </div>`;
   } catch (e) { console.warn('[Arete] briefing error:', e); return ''; }
 }

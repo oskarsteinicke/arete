@@ -2777,6 +2777,17 @@ function getWelcomeBack() {
   return diff;
 }
 
+// One quest, one line: done or not, what it is, what it is worth. Home draws
+// these and profile.js redraws them when one completes, so the row lives here
+// rather than in two places.
+function questRowHTML(q, done) {
+  return `<div class="hm-quest${done ? ' hm-quest-done' : ''}">
+      <div class="hm-quest-cb${done ? ' hm-quest-cb-done' : ''}">${done ? '✓' : ''}</div>
+      <div class="hm-quest-lbl">${q.label}</div>
+      <div class="hm-quest-xp">+${q.xp} XP</div>
+    </div>`;
+}
+
 function renderHome() {
   const {done, total, pct} = totalPct();
   const homeLvl = getLevel(gamification.xp || 0);
@@ -2806,12 +2817,10 @@ function renderHome() {
   // Pillar strip
   const pillarStrip = PILLARS.map(p => {
     const pr = pillarPct(p.id);
-    const ms = Math.max(0, ...pillarHabits(p.id).map(h => log[h.id]?.streak || 0));
     const active = pr.done > 0 ? ' hm-pc-active' : '';
     return `<div class="hm-pc${active}" id="hm-pc-${p.id}" onclick="go('pillar',{pillar:'${p.id}'})">
       <div class="hm-pc-ring">${ring(23, pr.pct, 2.5)}<div class="hm-pc-icon">${p.icon}</div></div>
       <div class="hm-pc-name">${p.name}</div>
-      ${ms > 0 ? `<div class="hm-pc-streak">${ms}d</div>` : ''}
     </div>`;
   }).join('');
 
@@ -2857,36 +2866,24 @@ function renderHome() {
   // Quests
   const _questDone = new Set((gamification.questsCompleted || {})[today()] || []);
   const quests = getDailyQuests();
-  const questHTML = quests.map(q => {
-    const qDone = _questDone.has(q.id);
-    return `<div class="hm-quest${qDone ? ' hm-quest-done' : ''}">
-      <div class="hm-quest-ico">${q.icon}</div>
-      <div class="hm-quest-body">
-        <div class="hm-quest-lbl">${q.label}</div>
-        <div class="hm-quest-xp">+${q.xp} XP</div>
-      </div>
-      <div class="hm-quest-done-row">
-        <div class="hm-quest-cb${qDone ? ' hm-quest-cb-done' : ''}">${qDone ? '✓' : ''}</div>
-      </div>
-    </div>`;
-  }).join('');
+  const questHTML = quests.map(q => questRowHTML(q, _questDone.has(q.id))).join('');
+  const questsDone = quests.filter(q => _questDone.has(q.id)).length;
 
   // Challenges
   const challenges = getWeeklyChallenges();
   const chalHTML = challenges.map(c => {
     const cDone = c.current >= c.goal;
     const cPct = Math.min(1, c.current / c.goal);
-    return `<div class="hm-chal">
+    return `<div class="hm-chal${cDone ? ' hm-chal-done' : ''}">
       <div class="hm-chal-head">
-        <span class="hm-chal-lbl">${c.icon} ${c.label}</span>
-        <span class="hm-chal-ct" style="${cDone ? 'color:var(--accent-b)' : ''}">${c.current}/${c.goal}${cDone ? ' ✓' : ''}</span>
+        <span class="hm-chal-lbl">${c.label}</span>
+        <span class="hm-chal-ct">${c.current} of ${c.goal}</span>
       </div>
       <div class="hm-chal-track"><div class="hm-chal-fill" style="width:${(cPct*100).toFixed(0)}%;${cDone ? 'background:var(--accent-b)' : ''}"></div></div>
     </div>`;
   }).join('');
 
   document.getElementById('view').innerHTML = `
-    ${typeof todaySpineHTML === 'function' ? todaySpineHTML() : ''}
     <div class="hm-hero ani">
       <div class="hm-hero-card hm-hero-card--center" onclick="go('character')" role="button" tabindex="0" aria-label="Open your character" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();go('character')}">
         <div class="hm-hero-glow"></div>
@@ -2902,12 +2899,6 @@ function renderHome() {
     ${typeof coachInsightCardHTML === 'function' ? coachInsightCardHTML() : ''}
 
     <div class="hm-pillars ani">${pillarStrip}</div>
-
-    ${_overallStreak >= 2 ? `<div class="hm-streak-banner ani">
-      <div class="hm-streak-fire">🔥</div>
-      <div class="hm-streak-num">${_overallStreak}</div>
-      <div class="hm-streak-lbl">day streak</div>
-    </div>` : ''}
 
     ${(() => {
       const wb = getWelcomeBack();
@@ -2927,27 +2918,16 @@ function renderHome() {
       </div>`;
     })()}
 
-    ${(() => {
-      const atRisk = getStreaksAtRisk();
-      if (!atRisk.length) return '';
-      const top = atRisk.sort((a,b) => b.streak - a.streak).slice(0, 3);
-      return `<div class="hm-risk-banner ani" onclick="go('habits')">
-        <div class="hm-risk-icon">⚠️</div>
-        <div class="hm-risk-body">
-          <div class="hm-risk-title">Streaks at risk</div>
-          <div class="hm-risk-text">${top.map(h => `${esc(h.name)} (${h.streak}d)`).join(', ')}</div>
-        </div>
-      </div>`;
-    })()}
-
     <div class="hm-sec ani">
-      <div class="hm-sec-title">Quests &amp; Trials</div>
+      <h2 class="hm-sec-title">Today's quests</h2>
+      <div class="hm-sec-note" id="quest-count">${questsDone} of ${quests.length}</div>
     </div>
     <div class="hm-quest-list ani" id="quest-section">${questHTML}</div>
-    ${challenges.length ? `<div class="hm-chal-list ani" style="margin-top:8px">${chalHTML}</div>` : ''}
+    ${challenges.length ? `<div class="hm-sec ani"><h2 class="hm-sec-title">This week</h2></div>
+    <div class="hm-chal-list ani">${chalHTML}</div>` : ''}
 
     <!-- Daily quote -->
-    <div class="hm-quote ani" style="margin-top:16px">
+    <div class="hm-quote ani">
       <div class="hm-quote-text">"${esc(QUOTES[meta.quoteIndex % QUOTES.length].text)}"</div>
       <div class="hm-quote-auth">— ${esc(QUOTES[meta.quoteIndex % QUOTES.length].author)}</div>
     </div>
