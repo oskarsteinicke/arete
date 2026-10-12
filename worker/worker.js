@@ -131,6 +131,8 @@ async function handleOAuthRefresh(body, env, origin) {
     client_id: cfg.clientId,
     client_secret: cfg.clientSecret
   });
+  // Whoop's refresh request carries the offline scope again.
+  if (service === 'whoop') params.set('scope', 'offline');
 
   const headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
   if (service === 'fitbit') {

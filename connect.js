@@ -758,6 +758,7 @@ function showReadinessBreakdown() {
     if (_steps) _vit.push([ic('footprints'), _steps.toLocaleString(), 'Steps']);
     if (_energy) _vit.push([ic('flame'), _energy, 'kcal active']);
     if (_slToday.restingHR) _vit.push([ic('heart'), _slToday.restingHR, 'Resting HR']);
+    if (_slToday.hrv) _vit.push([ic('activity'), _slToday.hrv + ' ms', 'HRV']);
     const vitalsHTML = _vit.length
       ? `<div class="rd-vitals">${_vit.map(v => `<div class="rd-vital"><div class="rd-vital-ic">${v[0]}</div><div class="rd-vital-val">${v[1]}</div><div class="rd-vital-lbl">${v[2]}</div></div>`).join('')}</div>`
       : '';

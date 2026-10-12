@@ -30,7 +30,9 @@ const INTEGRATIONS = {
   whoop: {
     name: 'Whoop',
     icon: '<svg viewBox="0 0 24 24" width="20" height="20"><path d="M4 8c0-2.2 1.8-4 4-4s4 1.8 4 4c0 2.2 1.8 4 4 4s4-1.8 4-4" fill="none" stroke="#1A1A1A" stroke-width="2.5" stroke-linecap="round"/><path d="M4 14c0-2.2 1.8-4 4-4s4 1.8 4 4c0 2.2 1.8 4 4 4s4-1.8 4-4" fill="none" stroke="#1A1A1A" stroke-width="2.5" stroke-linecap="round"/></svg>',
-    scopes: 'read:recovery read:sleep read:workout read:body_measurement',
+    // offline is what makes Whoop hand back a refresh token. Without it the
+    // connection dies when the first access token does, an hour in.
+    scopes: 'read:recovery read:sleep read:workout offline',
     authUrl: 'https://api.prod.whoop.com/oauth/oauth2/auth',
     tokenUrl: 'https://api.prod.whoop.com/oauth/oauth2/token',
     provides: ['sleep', 'workouts', 'recovery']
@@ -145,26 +147,19 @@ function connectIntegration(service) {
   if (!clientId) { alert('Integration not configured. Set up client ID in settings.'); return; }
 
   const state = service + '_' + Math.random().toString(36).slice(2);
-  sessionStorage.setItem('oauth_state', state);
-  sessionStorage.setItem('oauth_service', service);
+  _rememberOAuth(state, service);
 
-  const redirectUri = window.location.origin + window.location.pathname;
   const params = new URLSearchParams({
     client_id: clientId,
-    redirect_uri: redirectUri,
+    redirect_uri: _oauthRedirectUri(),
     response_type: 'code',
     scope: cfg.scopes,
-    state: state,
-    access_type: 'offline',
-    prompt: 'consent'
+    state: state
   });
 
-  // Strava uses slightly different param name
-  if (service === 'strava') {
-    params.set('approval_prompt', 'force');
-    params.delete('access_type');
-    params.delete('prompt');
-  }
+  // Each provider has its own way of asking for a refresh token.
+  if (service === 'googlefit') { params.set('access_type', 'offline'); params.set('prompt', 'consent'); }
+  if (service === 'strava') params.set('approval_prompt', 'force');
   // Fitbit needs response_type=code and code_challenge for PKCE (optional, use basic for now)
   if (service === 'fitbit') {
     params.set('response_type', 'code');
@@ -173,7 +168,42 @@ function connectIntegration(service) {
   window.location.href = cfg.authUrl + '?' + params.toString();
 }
 
+// The address the provider sends people back to. It has to match what is
+// registered with the provider character for character, so it is the site
+// root and never whatever path the app happened to be opened on.
+function _oauthRedirectUri() { return window.location.origin + '/'; }
+
+// The state travels out to the provider and back. sessionStorage is the right
+// home for it, but an installed web app can come back in a fresh session, so
+// a copy is kept in localStorage for fifteen minutes as well.
+function _rememberOAuth(state, service) {
+  try { sessionStorage.setItem('oauth_state', state); sessionStorage.setItem('oauth_service', service); } catch {}
+  try { localStorage.setItem('hvi_oauth_pending', JSON.stringify({ state, service, at: Date.now() })); } catch {}
+}
+function _recallOAuth() {
+  let state = null, service = null;
+  try { state = sessionStorage.getItem('oauth_state'); service = sessionStorage.getItem('oauth_service'); } catch {}
+  if (!state || !service) {
+    try {
+      const p = JSON.parse(localStorage.getItem('hvi_oauth_pending') || 'null');
+      if (p && Date.now() - p.at < 15 * 60000) { state = p.state; service = p.service; }
+    } catch {}
+  }
+  return { state, service };
+}
+function _forgetOAuth() {
+  try { sessionStorage.removeItem('oauth_state'); sessionStorage.removeItem('oauth_service'); } catch {}
+  try { localStorage.removeItem('hvi_oauth_pending'); } catch {}
+}
+
+// Whoop asks that access be revoked when someone disconnects, not just
+// forgotten on this side.
+function _revokeWhoop() {
+  try { _authedFetch('whoop', `${WHOOP_API}/user/access`, { method: 'DELETE' }).catch(() => {}); } catch {}
+}
+
 function disconnectIntegration(service) {
+  if (service === 'whoop') _revokeWhoop();   // sent with the token before it is dropped
   _removeToken(service);
   renderStats();
 }
@@ -186,17 +216,19 @@ function _handleOAuthCallback() {
 
   if (!code || !state) return;
 
-  const savedState = sessionStorage.getItem('oauth_state');
-  const service = sessionStorage.getItem('oauth_service');
+  const { state: savedState, service } = _recallOAuth();
 
   if (state !== savedState || !service) {
+    // This used to fail silently: the person was sent back with nothing
+    // connected and no word why.
     console.warn('[integrations] OAuth state mismatch');
+    _forgetOAuth();
     _clearUrlParams();
+    setTimeout(() => { if (typeof showToast === 'function') showToast('That connection could not be finished here. Open Profile and tap Connect again.'); }, 1200);
     return;
   }
 
-  sessionStorage.removeItem('oauth_state');
-  sessionStorage.removeItem('oauth_service');
+  _forgetOAuth();
   _clearUrlParams();
 
   // Exchange code for token via worker proxy
@@ -210,7 +242,7 @@ function _clearUrlParams() {
 }
 
 async function _exchangeCode(service, code) {
-  const redirectUri = window.location.origin + window.location.pathname;
+  const redirectUri = _oauthRedirectUri();
   try {
     const res = await fetch(_OAUTH_PROXY + '/oauth/exchange', {
       method: 'POST',
@@ -488,75 +520,144 @@ async function _syncFitbit() {
   }
 }
 
-// ── WHOOP ────────────────────────────────────────────────────────────────
-async function _syncWhoop() {
-  const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+// ── WHOOP (API v2) ───────────────────────────────────────────────────────
+// Recovery, sleep and workouts. Whoop retired v1 of its API; this was written
+// against v1 and had never connected to anything, so it also had three quiet
+// faults: nights were filed under the day they began rather than the day you
+// woke, hours were read from a field that does not exist, and a recovery of
+// 60 was written into the sleep-quality rating as a 3.
+const WHOOP_API = 'https://api.prod.whoop.com/developer/v2';
+// Whoop logs the walk to class and the commute as workouts too. Below this
+// strain a Whoop-only activity is not counted as a training day in Arete.
+const WHOOP_MIN_STRAIN = 4;
 
-  // Recovery
-  const recRes = await _authedFetch('whoop',
-    'https://api.prod.whoop.com/developer/v1/recovery?start=' + weekAgo
-  );
-  if (recRes?.ok) {
-    const data = await recRes.json();
-    (data.records || []).forEach(r => {
-      const dateKey = r.created_at?.slice(0, 10) || r.cycle?.days?.[0];
-      if (!dateKey) return;
-      const score = r.score?.recovery_score;
-      if (score != null && !sleepLog[dateKey]?.whoopRecovery) {
-        sleepLog[dateKey] = {
-          ...sleepLog[dateKey],
-          whoopRecovery: score,
-          quality: Math.round(score / 20), // map 0-100 to 1-5
-          source: 'whoop'
-        };
-      }
-    });
-    LS.set('hvi_sleep_log', sleepLog);
-  }
-
-  // Sleep
-  const sleepRes = await _authedFetch('whoop',
-    'https://api.prod.whoop.com/developer/v1/activity/sleep?start=' + weekAgo
-  );
-  if (sleepRes?.ok) {
-    const data = await sleepRes.json();
-    (data.records || []).forEach(s => {
-      const dateKey = s.start?.slice(0, 10);
-      if (!dateKey) return;
-      const hours = s.score?.total_in_bed_time_milli ? (s.score.total_in_bed_time_milli / 3600000).toFixed(1) : null;
-      if (hours && (!sleepLog[dateKey] || !sleepLog[dateKey].hours)) {
-        sleepLog[dateKey] = { ...sleepLog[dateKey], hours: parseFloat(hours), source: 'whoop' };
-      }
-    });
-    LS.set('hvi_sleep_log', sleepLog);
-  }
-
-  // Workouts
-  const wkRes = await _authedFetch('whoop',
-    'https://api.prod.whoop.com/developer/v1/activity/workout?start=' + weekAgo
-  );
-  if (wkRes?.ok) {
-    const data = await wkRes.json();
-    (data.records || []).forEach(w => {
-      const dateKey = w.start?.slice(0, 10);
-      if (!dateKey || workoutLog[dateKey]) return;
-      const dur = w.score?.distance_meter ? null : Math.round(((new Date(w.end) - new Date(w.start)) / 60000));
-      workoutLog[dateKey] = {
-        dayName: _whoopSportName(w.sport_id) || 'Whoop Activity',
-        duration: dur || 0,
-        exercises: [],
-        source: 'whoop',
-        strain: w.score?.strain,
-        avgHr: w.score?.average_heart_rate || null
-      };
-    });
-    LS.set('hvi_workout_log', workoutLog);
-  }
+// The calendar day a Whoop timestamp fell on, where it was recorded. Whoop
+// sends UTC plus the offset in force at the time.
+function _whoopDay(iso, offset) {
+  const t = Date.parse(iso);
+  if (!isFinite(t)) return null;
+  const m = /^([+-])(\d{2}):(\d{2})$/.exec(offset || '');
+  const mins = m ? (m[1] === '-' ? -1 : 1) * (+m[2] * 60 + +m[3]) : 0;
+  return new Date(t + mins * 60000).toISOString().slice(0, 10);
 }
 
-function _whoopSportName(id) {
-  const names = { 0:'Activity', 1:'Running', 33:'Cycling', 52:'Weightlifting', 63:'HIIT', 71:'Yoga', 43:'Swimming' };
-  return names[id] || 'Workout';
+function _whoopSport(name) {
+  const n = String(name || '').replace(/[_-]+/g, ' ').trim();
+  return n ? n.charAt(0).toUpperCase() + n.slice(1) : 'Whoop activity';
+}
+
+// Whoop's sleep performance (0-100) on Arete's 1-5 rating.
+function _whoopQuality(perf) {
+  return perf >= 90 ? 5 : perf >= 80 ? 4 : perf >= 70 ? 3 : perf >= 55 ? 2 : 1;
+}
+
+// Folds one sync's worth of Whoop records into the sleep and workout logs it
+// is handed, and reports what it took. The rules:
+//  - a night belongs to the day you woke up on
+//  - Whoop's own readings (recovery, HRV, resting heart rate) always update
+//  - hours or a rating you entered yourself are never overwritten
+//  - a session logged in Arete keeps its sets and gains Whoop's strain reading
+//  - naps, and anything Whoop has not finished scoring, are left alone
+function applyWhoopData(data, sleeps, workouts) {
+  const took = { nights: 0, recoveries: 0, workouts: 0 };
+  const dayOfSleep = {};
+  let lastOffset = null;
+
+  (data.sleeps || []).forEach(s => {
+    if (!s || s.nap || s.score_state !== 'SCORED' || !s.score) return;
+    const day = _whoopDay(s.end, s.timezone_offset);
+    if (!day) return;
+    dayOfSleep[s.id] = day;
+    lastOffset = s.timezone_offset;
+    const st = s.score.stage_summary || {};
+    const asleepMs = (st.total_in_bed_time_milli || 0) - (st.total_awake_time_milli || 0);
+    const cur = sleeps[day] || {};
+    const next = { ...cur };
+    const perf = s.score.sleep_performance_percentage;
+    if (typeof perf === 'number') next.sleepPerf = Math.round(perf);
+    // Hours typed in by hand, or brought in from another device, stay.
+    if (asleepMs > 0 && !(cur.hours > 0 && cur.source !== 'whoop')) {
+      next.hours = Math.round(asleepMs / 360000) / 10;
+      next.source = 'whoop';
+    }
+    if (typeof perf === 'number' && (!cur.quality || cur.qualityFrom === 'whoop')) {
+      next.quality = _whoopQuality(perf);
+      next.qualityFrom = 'whoop';
+    }
+    sleeps[day] = next;
+    took.nights++;
+  });
+
+  (data.recoveries || []).forEach(r => {
+    if (!r || r.score_state !== 'SCORED' || !r.score || typeof r.score.recovery_score !== 'number') return;
+    // A recovery has no time of its own; it hangs off the night it scored.
+    const day = dayOfSleep[r.sleep_id] || _whoopDay(r.created_at, lastOffset);
+    if (!day) return;
+    const cur = sleeps[day] || {};
+    const next = { ...cur, whoopRecovery: Math.round(r.score.recovery_score) };
+    if (typeof r.score.resting_heart_rate === 'number') next.restingHR = Math.round(r.score.resting_heart_rate);
+    if (typeof r.score.hrv_rmssd_milli === 'number') next.hrv = Math.round(r.score.hrv_rmssd_milli);
+    sleeps[day] = next;
+    took.recoveries++;
+  });
+
+  (data.workouts || []).forEach(w => {
+    if (!w || w.score_state !== 'SCORED' || !w.score) return;
+    const day = _whoopDay(w.start, w.timezone_offset);
+    if (!day) return;
+    const strain = Math.round((w.score.strain || 0) * 10) / 10;
+    const minutes = Math.max(0, Math.round((Date.parse(w.end) - Date.parse(w.start)) / 60000));
+    const reading = {
+      id: w.id, sport: _whoopSport(w.sport_name), strain, minutes,
+      avgHr: w.score.average_heart_rate || null, maxHr: w.score.max_heart_rate || null,
+      calories: w.score.kilojoule ? Math.round(w.score.kilojoule / 4.184) : null,
+    };
+    const cur = workouts[day];
+    if (cur && cur.source !== 'whoop') {
+      // Logged here: the sets are the record. Whoop adds what it measured.
+      if (!cur.whoop || reading.strain >= (cur.whoop.strain || 0)) cur.whoop = reading;
+      took.workouts++;
+      return;
+    }
+    if (strain < WHOOP_MIN_STRAIN) return;
+    // Two Whoop activities on one day: the harder one stands for the day.
+    if (cur && cur.whoopId !== w.id && (cur.strain || 0) >= strain) return;
+    workouts[day] = {
+      dayName: reading.sport, duration: minutes, exercises: [], source: 'whoop', whoopId: w.id,
+      strain, avgHr: reading.avgHr, calories: reading.calories,
+      distance: w.score.distance_meter ? (w.score.distance_meter / 1000).toFixed(1) + ' km' : null,
+    };
+    took.workouts++;
+  });
+
+  return took;
+}
+
+async function _whoopGet(path, startISO) {
+  const res = await _authedFetch('whoop', `${WHOOP_API}${path}?limit=25&start=${encodeURIComponent(startISO)}`);
+  if (!res || !res.ok) throw new Error(`Whoop ${path} ${res ? res.status : 'no token'}`);
+  const data = await res.json();
+  return data.records || [];
+}
+
+async function _syncWhoop() {
+  // Ten days back: enough to fill a week and to pick up a night Whoop was
+  // still scoring the last time this ran.
+  const since = new Date(Date.now() - 10 * 86400000).toISOString();
+  // One after another, not together: the first call may refresh the token, and
+  // Whoop cancels a refresh token the moment it is used.
+  const sleeps = await _whoopGet('/activity/sleep', since);
+  const recoveries = await _whoopGet('/recovery', since);
+  const workouts = await _whoopGet('/activity/workout', since);
+
+  const took = applyWhoopData({ sleeps, recoveries, workouts }, sleepLog, workoutLog);
+  LS.set('hvi_sleep_log', sleepLog);
+  LS.set('hvi_workout_log', workoutLog);
+  // The score on home is built from this; show the new one without a relaunch.
+  if ((took.nights || took.recoveries) && typeof go === 'function' && typeof curView !== 'undefined' && curView === 'home') {
+    try { go('home', {}, false); } catch {}
+  }
+  return took;
 }
 
 // ── UI RENDERING ─────────────────────────────────────────────────────────

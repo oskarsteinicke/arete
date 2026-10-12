@@ -2043,6 +2043,9 @@ function checkSleepPrompt(_tries) {
     if (localStorage.getItem('hvi_sleep_prompt_day') === t) return;   // asked already
     const e = (sleepLog || {})[t];
     if (e && e.hours > 0) return;                 // already logged, or synced in
+    // A connected Whoop logs the night by itself. Its sync lands a few seconds
+    // after launch, so without this the question popped up first, every day.
+    if (typeof _getIntegrations === 'function' && _getIntegrations().whoop) return;
     if (document.getElementById('sleep-prompt')) return;
     // Never stack on top of another modal. The weekly recap fires on the same
     // launch on Mondays; wait it out rather than covering it.
