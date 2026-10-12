@@ -2,8 +2,9 @@
 // Arete — Diet Module
 // ══════════════════════════════════════════════════════════════════════════
 
-// ── AI FETCH HELPER (Gemini primary, Pollinations fallback) ──────────────
+// ── AI FETCH HELPER (Groq for text, Gemini for photos and as the fallback) ──
 const _GEMINI_PROXY = 'https://arete-ai.oskarsteinicke.workers.dev';
+const GROQ_MODEL = 'openai/gpt-oss-120b';
 
 // ── MEAL CACHE (skip AI for repeated meals) ─────────────────────────────
 const _mealCache = (() => {
@@ -23,7 +24,10 @@ function _getCachedMeal(text) {
   return null;
 }
 
-async function _aiFetch(messages, { timeout = 30000, retries = 1, model = 'openai', jsonMode = false } = {}) {
+// maxTokens and temperature are for the callers that need a long or a varied
+// answer (a whole training program, a second attempt at one). Everything else
+// keeps the short, repeatable default.
+async function _aiFetch(messages, { timeout = 30000, jsonMode = false, maxTokens = 1024, temperature = 0 } = {}) {
   // The one door every AI request goes through. Without permission it stays
   // shut; the screens that lead here ask first (withAIConsent in app.js).
   if (typeof aiAllowed === 'function' && !aiAllowed()) throw new Error('ai-consent');
@@ -52,7 +56,7 @@ async function _aiFetch(messages, { timeout = 30000, retries = 1, model = 'opena
   // ── Text requests: Groq first ────────────────────────────────────────
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const result = await _groqRequest(messages, { timeout, jsonMode });
+      const result = await _groqRequest(messages, { timeout, jsonMode, maxTokens, temperature });
       if (result) return result;
     } catch (e) {
       lastErr = e;
@@ -62,46 +66,27 @@ async function _aiFetch(messages, { timeout = 30000, retries = 1, model = 'opena
 
   // ── Fallback: Gemini via proxy ───────────────────────────────────────
   try {
-    const result = await _geminiRequest(messages, { timeout, jsonMode });
+    const result = await _geminiRequest(messages, { timeout, jsonMode, maxTokens, temperature });
     if (result) return result;
   } catch (e) { lastErr = e; }
 
-  // ── Last resort: Pollinations ────────────────────────────────────────
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    const ac = new AbortController();
-    const to = setTimeout(() => ac.abort(), timeout);
-    try {
-      const body = { messages, model: 'openai', seed: 42, temperature: 0, private: true };
-      if (jsonMode) body.jsonMode = true;
-      const res = await fetch('https://text.pollinations.ai/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: ac.signal,
-        body: JSON.stringify(body)
-      });
-      clearTimeout(to);
-      if (!res.ok) { lastErr = new Error(`HTTP ${res.status}`); continue; }
-      const text = await res.text();
-      if (!text || text.length < 2 || text.includes('"error"')) { lastErr = new Error('Bad response'); continue; }
-      return text;
-    } catch (e) {
-      clearTimeout(to);
-      lastErr = e;
-      if (e.name === 'AbortError' && attempt < retries) continue;
-      break;
-    }
-  }
-  throw lastErr;
+  // There is no third provider. A last-resort call used to go straight from
+  // the phone to text.pollinations.ai with the same messages, which is a
+  // company the person was never told about and a path that skipped Arete's
+  // server. If Groq and Gemini are both down, the request fails and says so.
+  throw lastErr || new Error('AI unavailable');
 }
 
-async function _groqRequest(messages, { timeout = 20000, jsonMode = false, vision = false } = {}) {
+async function _groqRequest(messages, { timeout = 20000, jsonMode = false, maxTokens = 1024, temperature = 0 } = {}) {
   const ac = new AbortController();
-  const actualTimeout = vision ? 45000 : timeout;
-  const to = setTimeout(() => ac.abort(), actualTimeout);
+  const to = setTimeout(() => ac.abort(), timeout);
   try {
-    const model = vision ? 'llama-3.2-11b-vision-preview' : 'llama-3.3-70b-versatile';
-    const body = { messages, model, temperature: 0, max_tokens: 1024 };
-    if (jsonMode && !vision) body.response_format = { type: 'json_object' };
+    // The models named here before (llama-3.3-70b-versatile, and a vision one)
+    // were withdrawn by Groq, so every text request failed twice and fell
+    // through to the slower fallback. Photos never came this way; they go to
+    // Gemini. Low reasoning effort keeps the token budget for the answer.
+    const body = { messages, model: GROQ_MODEL, temperature, max_tokens: maxTokens, reasoning_effort: 'low' };
+    if (jsonMode) body.response_format = { type: 'json_object' };
     const res = await fetch(_GEMINI_PROXY + '/groq', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -110,7 +95,7 @@ async function _groqRequest(messages, { timeout = 20000, jsonMode = false, visio
     });
     clearTimeout(to);
     if (!res.ok) {
-      console.warn('[groq] vision request failed:', res.status);
+      console.warn('[groq] request failed:', res.status);
       return null;
     }
     const data = await res.json();
@@ -123,7 +108,7 @@ async function _groqRequest(messages, { timeout = 20000, jsonMode = false, visio
   }
 }
 
-async function _geminiRequest(messages, { timeout = 30000, jsonMode = false } = {}) {
+async function _geminiRequest(messages, { timeout = 30000, jsonMode = false, maxTokens = 0, temperature = 0 } = {}) {
   // Convert OpenAI-style messages to Gemini format
   const systemParts = messages.filter(m => m.role === 'system').map(m => m.content).join('\n');
   const contents = messages.filter(m => m.role !== 'system').map(m => {
@@ -143,7 +128,11 @@ async function _geminiRequest(messages, { timeout = 30000, jsonMode = false } = 
     return { role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] };
   });
 
-  const genConfig = { temperature: 0 };
+  const genConfig = { temperature };
+  // With a ceiling set, switch Gemini's "thinking" off: it is counted against
+  // the same ceiling, and a 2,200-token program came back cut off after 250
+  // characters because the rest had been spent thinking.
+  if (maxTokens) { genConfig.maxOutputTokens = maxTokens; genConfig.thinkingConfig = { thinkingBudget: 0 }; }
   if (jsonMode) genConfig.responseMimeType = 'application/json';
 
   const body = { contents, generationConfig: genConfig };

@@ -78,13 +78,14 @@
   <p>This data is stored with <strong>Supabase</strong> (Postgres hosting) and is protected by row-level security rules so that your records are only readable by your own authenticated account, except where you deliberately share them via a leaderboard group.</p>
 
   <h2>AI features</h2>
-  <p>Four features use an AI model. <strong>None of them sends anything until you have allowed it.</strong> The first time you open the coach, tap the daily focus or use the meal tools, Arete explains what will be sent and to whom, and asks. You can turn the AI features off again at any time under Profile, in Settings; when they are off, nothing is sent.</p>
+  <p>Five features use an AI model. <strong>None of them sends anything until you have allowed it.</strong> The first time you open the coach, tap the daily focus, use the meal tools or build a program, Arete explains what will be sent and to whom, and asks. You can turn the AI features off again at any time under Profile, in Settings; when they are off, nothing is sent.</p>
   <table>
     <tr><th>Feature</th><th>What is sent</th></tr>
     <tr><td>AI Coach chat</td><td>Your message, plus a summary of your current context: readiness score, calories and protein for the day, recent training, sleep, habits, journal entries and goals.</td></tr>
     <tr><td>Coach's Focus (daily)</td><td>The same context summary, without a chat message. Once you have allowed the AI features, this is requested automatically the first time you open the home screen each day.</td></tr>
     <tr><td>Describe a meal</td><td>The description you type.</td></tr>
     <tr><td>Food photo scan</td><td>The photo you choose, resized to a smaller image before sending.</td></tr>
+    <tr><td>Program builder</td><td>The training goal you describe and the four choices you make (days a week, session length, equipment, experience). Your logs are not sent.</td></tr>
   </table>
   <p>These requests pass through our own proxy on <strong>Cloudflare Workers</strong> and are processed by <strong>Google's Gemini API</strong> and by <strong>Groq</strong>, which runs open models. The proxy exists so our API keys are never exposed in the app; it forwards your request and returns the answer. Arete does not keep a copy of your photos or chat messages on the server. Coach conversation history is stored locally on your device only.</p>
   <p>Your use of these features is subject to how Google and Groq handle API data. Arete does not use this data for advertising. If you would rather not send anything to an AI provider, leave the AI features off; every other part of Arete works without them.</p>

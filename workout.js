@@ -225,9 +225,10 @@ function renderWorkout() {
       ${day.ex.map(eid => {
         const ex = lookupExercise(eid);
         if (!ex) return '';
+        const rx = programRx(day, eid);
         return `<div class="w-ex-preview-item">
           <span class="w-ex-preview-name">${esc(ex.name)}</span>
-          <span class="w-ex-preview-muscle">${esc(ex.muscle)}</span>
+          <span class="w-ex-preview-muscle">${rx ? `${rx[0]} × ${rx[1]}` : esc(ex.muscle)}</span>
         </div>`;
       }).filter(Boolean).join('')}
     </div>` : '';
@@ -267,7 +268,7 @@ function renderWorkout() {
       <button class="w-action-btn w-progress-btn" style="margin:0;width:100%;grid-column:1/-1" onclick="go('workoutProgress')">${typeof icon === 'function' ? icon('trend', 16) : ''} Progress</button>
       <button class="w-action-btn" style="margin:0;width:100%" onclick="go('workoutPicker')">Programs</button>
       <button class="w-action-btn" style="margin:0;width:100%" onclick="go('workoutHistory')">History</button>
-      <button class="w-action-btn" style="margin:0;width:100%" onclick="initBuilder();go('workoutBuilder')">+ Create</button>
+      <button class="w-action-btn" style="margin:0;width:100%" onclick="go('workoutAI')">+ Create</button>
       <button class="w-action-btn" style="margin:0;width:100%" onclick="browserContext=null;go('exerciseBrowser')">Exercises</button>
     </div>`;
   if (fedHTML && typeof animateSessionFed === 'function') animateSessionFed();
@@ -295,12 +296,17 @@ function renderWorkoutPicker() {
 
   document.getElementById('view').innerHTML = `
     <button class="back" onclick="go('workout')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
-    <div class="page-head ani"><div class="page-title">Programs</div><div class="page-sub">Choose your training split.</div></div>
+    <div class="page-head ani"><div class="page-title">Programs</div></div>
+    <div class="w-card w-card-ai ani" onclick="go('workoutAI')" role="button" tabindex="0"
+         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();go('workoutAI')}">
+      <div class="w-card-name">Build one from your goal</div>
+      <div class="w-card-desc">Say what you are training for. Arete writes the program.</div>
+    </div>
     ${builtIn}${custom}
     <div class="w-card ani" style="text-align:center;border-style:dashed" onclick="initBuilder();go('workoutBuilder')">
       <div style="font-size:24px;color:var(--accent);margin-bottom:4px">+</div>
-      <div class="w-card-name">Create Program</div>
-      <div class="w-card-desc">Build your own custom split.</div>
+      <div class="w-card-name">Build it by hand</div>
+      <div class="w-card-desc">Pick the days and exercises yourself.</div>
     </div>`;
 }
 
@@ -392,8 +398,11 @@ function renderWorkoutActive() {
     if (needsInit) {
       workoutLog[t] = { programId: prog.id, dayIndex: workoutMeta.currentDayIndex, exercises: day0.ex.map(eid => {
         const ex = lookupExercise(eid);
-        const ds = ex ? ex.ds : 3;
-        const dr = ex ? ex.dr : 10;
+        // A program may prescribe its own sets and reps (day.rx, written by the
+        // AI builder). Without one, the exercise's defaults apply.
+        const rx = programRx(day0, eid);
+        const ds = rx ? rx[0] : (ex ? ex.ds : 3);
+        const dr = rx ? rx[1] : (ex ? ex.dr : 10);
         // Auto-fill weight/reps from last session
         // Prefill from one real set, not a mix of two. This used to take the
         // heaviest weight from anywhere in the session and the reps from
@@ -402,7 +411,9 @@ function renderWorkoutActive() {
         const last = getLastExerciseSession(eid);
         const top = topWorkingSet(last?.ex.sets);
         const lastW = top ? top.weight : 0;
-        const lastR = top ? top.reps : dr;
+        // A prescribed rep target wins over whatever was done last time: five
+        // heavy reps is the point of a strength block, not a suggestion.
+        const lastR = rx ? rx[1] : (top ? top.reps : dr);
         return { exerciseId: eid, sets: Array.from({length: ds}, () => ({weight: lastW, reps: lastR, completed: false})) };
       })};
       LS.set('hvi_workout_log', workoutLog);
@@ -1154,8 +1165,268 @@ function saveCustomProgram() {
   if (idx >= 0) progs[idx] = builderProg;
   else progs.push(builderProg);
   LS.set('hvi_custom_programs', progs);
+  // A draft from the goal builder that was edited and saved here is done with.
+  if (_aiProg && _aiProg.draft && _aiProg.draft.id === builderProg.id) _aiProg.draft = null;
   selectProgram(builderProg.id);
   builderProg = null;
+}
+
+// ── A PROGRAM FROM A GOAL ───────────────────────────────────────────────
+// The person says what they are training for; the AI answers with a program
+// built only from exercises this app has. Nothing it returns is trusted: every
+// id is checked against the library, every number is clamped, every string is
+// cut to length, and a reply that does not survive that is refused rather
+// than half-shown. Only the goal and the four choices below are sent, never
+// the person's logs.
+const AI_PROG = {
+  days:      { label: 'Days a week', choices: [[2, '2'], [3, '3'], [4, '4'], [5, '5'], [6, '6']], def: 4 },
+  minutes:   { label: 'Minutes a session', choices: [[30, '30'], [45, '45'], [60, '60'], [75, '75']], def: 60 },
+  equipment: { label: 'Equipment', choices: [['gym', 'Full gym'], ['dumbbells', 'Dumbbells'], ['bodyweight', 'Bodyweight']], def: 'gym' },
+  level:     { label: 'Experience', choices: [['new', 'New to it'], ['some', '1–2 years'], ['experienced', '3+ years']], def: 'some' },
+};
+const AI_PROG_EQUIPMENT = {
+  gym: 'A full commercial gym: barbells, racks, dumbbells, cables and machines.',
+  dumbbells: 'Dumbbells and a bench only. No barbell, no cables, no machines. Bodyweight exercises are fine.',
+  bodyweight: 'No equipment at all. Bodyweight exercises only (a pull-up bar is available).',
+};
+const AI_PROG_LEVEL = {
+  new: 'New to training. Simple, stable movements; nothing that needs a lot of technique.',
+  some: 'One to two years of consistent training.',
+  experienced: 'Several years of training. Can handle more volume and harder variations.',
+};
+// What can be done without a full gym. The library carries no equipment field,
+// and left to guess from names the model gave a no-equipment program dumbbell
+// curls. So the model is only ever shown exercises that fit, and anything else
+// it returns is dropped. Anything not listed here needs a gym.
+const EX_BODYWEIGHT = ('pullup chinup hanging_raise muscle_up pushup diamond_pu archer_pu pike_pu hspu nordic_curl copenhagen ' +
+  'lunge bulgarian sissy_squat pistol_squat calf_raise plank side_plank russian_twist dragon_flag v_up toe_touch bicycle lsit ' +
+  'dead_bug hollow_hold burpee mountain_climb sprint').split(' ');
+const EX_DUMBBELL = ('incline_db lateral_raise overhead_ext rear_delt_fly hammer_curl incline_curl arnold_press rear_delt_row ' +
+  'db_flat_press db_fly db_row db_ohp front_raise db_shrug spider_curl conc_curl zottman db_curl cross_curl tricep_kick db_tri_ext ' +
+  'goblet_squat db_lunge step_up rdl chest_row farmers_walk suitcase_carry').split(' ');
+function exercisesFor(equipment) {
+  const all = Object.keys(EXERCISES);
+  if (equipment === 'bodyweight') return all.filter(id => EX_BODYWEIGHT.includes(id));
+  if (equipment === 'dumbbells') return all.filter(id => EX_BODYWEIGHT.includes(id) || EX_DUMBBELL.includes(id));
+  return all;
+}
+
+let _aiProg = null;
+
+function _aiProgState() {
+  if (!_aiProg) {
+    const last = LS.get('hvi_ai_program_last', null) || {};
+    const pick = k => (AI_PROG[k].choices.some(c => c[0] === last[k]) ? last[k] : AI_PROG[k].def);
+    _aiProg = { goal: typeof last.goal === 'string' ? last.goal.slice(0, 400) : '',
+                days: pick('days'), minutes: pick('minutes'), equipment: pick('equipment'), level: pick('level'),
+                draft: null, busy: false, error: '', tries: 0 };
+  }
+  return _aiProg;
+}
+
+// The sets and reps a program prescribes for one exercise on one day, or null.
+function programRx(day, eid) {
+  const rx = day && day.rx && day.rx[eid];
+  return (Array.isArray(rx) && rx[0] > 0 && rx[1] > 0) ? rx : null;
+}
+
+function aiProgramMessages(goal, o) {
+  const library = exercisesFor(o.equipment).map(id => `${id}|${EXERCISES[id].name}|${EXERCISES[id].muscle}`).join('\n');
+  const perDay = o.minutes <= 30 ? '3 to 4' : o.minutes <= 45 ? '4 to 5' : o.minutes <= 60 ? '5 to 6' : '6 to 7';
+  const system = `You design strength and conditioning programs. Reply with JSON only, in exactly this shape:
+{"name":"...","desc":"...","days":[{"name":"...","focus":"...","ex":[["exercise_id",sets,reps]]}]}
+
+Rules:
+- Use only exercise ids from the list below, spelled exactly. Never invent an id.
+- Exactly ${o.days} training days. ${perDay} exercises a day, to fit ${o.minutes} minutes.
+- Equipment: ${AI_PROG_EQUIPMENT[o.equipment]} The list below is already limited to what that allows.
+- Experience: ${AI_PROG_LEVEL[o.level]}
+- sets is 2 to 5. reps is 3 to 20. Big compound lifts first, smaller work after.
+- Strength goals: 3 to 6 reps on the compound lifts. Muscle: 6 to 12. Conditioning or endurance: 12 to 20.
+- Cover the whole body across the week unless the goal says otherwise, and do not train the same muscle hard two days running.
+- If the goal mentions an injury, pain, or something to avoid, leave out exercises that load it.
+- "name": at most 4 words. "desc": one plain sentence, at most 18 words, saying who the program is for.
+- Day "name": at most 3 words. "focus": at most 5 words.
+
+Exercises (id|name|muscle):
+${library}`;
+  const user = `Goal: ${String(goal).trim().slice(0, 400)}`;
+  return [{ role: 'system', content: system }, { role: 'user', content: user }];
+}
+
+// Turns whatever came back into a program this app can run, or null.
+// `allowed` is the exercise ids on offer (those that fit the equipment).
+function normalizeAIProgram(raw, goal, allowed) {
+  const ok = Array.isArray(allowed) ? allowed : Object.keys(EXERCISES);
+  let o = raw;
+  if (typeof o === 'string') {
+    const m = o.match(/\{[\s\S]*\}/);            // models sometimes wrap JSON in prose or a code fence
+    try { o = JSON.parse(m ? m[0] : o); } catch { return null; }
+  }
+  if (!o || typeof o !== 'object' || !Array.isArray(o.days)) return null;
+  const text = (v, max, fb) => {
+    const t = (typeof v === 'string' ? v : '').replace(/[\u0000-\u001f<>]/g, ' ').replace(/\s+/g, ' ').trim();
+    return (t || fb).slice(0, max);
+  };
+  // A number, or a string of one. null and '' are missing, not zero.
+  const whole = (v, lo, hi, fb) => {
+    const n = (typeof v === 'number' || (typeof v === 'string' && v.trim() !== '')) ? Math.round(Number(v)) : NaN;
+    return Number.isFinite(n) ? Math.max(lo, Math.min(hi, n)) : fb;
+  };
+
+  const days = [];
+  o.days.slice(0, 7).forEach((d, di) => {
+    if (!d || typeof d !== 'object') return;
+    const list = Array.isArray(d.ex) ? d.ex : Array.isArray(d.exercises) ? d.exercises : [];
+    const ex = [], rx = {};
+    list.forEach(item => {
+      const id = Array.isArray(item) ? item[0] : item && (item.id || item.exercise_id);
+      if (typeof id !== 'string' || !ok.includes(id) || !Object.prototype.hasOwnProperty.call(EXERCISES, id)) return;   // not ours, or not for this equipment
+      if (ex.includes(id) || ex.length >= 10) return;
+      const def = EXERCISES[id];
+      ex.push(id);
+      rx[id] = [whole(Array.isArray(item) ? item[1] : item.sets, 1, 6, def.ds),
+                whole(Array.isArray(item) ? item[2] : item.reps, 1, 30, def.dr)];
+    });
+    if (ex.length < 2) return;                    // a day of one exercise is not a day
+    days.push({ name: text(d.name, 24, `Day ${di + 1}`), focus: text(d.focus, 44, ''), ex, rx });
+  });
+  if (!days.length) return null;
+  return { id: genId('cp'), name: text(o.name, 40, 'My program'), desc: text(o.desc, 160, ''),
+           ai: true, goal: text(goal, 400, ''), days };
+}
+
+function setAIProgramChoice(key, value) {
+  const st = _aiProgState();
+  if (!AI_PROG[key] || !AI_PROG[key].choices.some(c => c[0] === value)) return;
+  const ta = document.getElementById('aip-goal');
+  if (ta) st.goal = ta.value;
+  st[key] = value;
+  renderWorkoutAI();
+}
+
+async function generateAIProgram(again) {
+  const st = _aiProgState();
+  const ta = document.getElementById('aip-goal');
+  if (ta) st.goal = ta.value;
+  st.goal = String(st.goal || '').trim().slice(0, 400);
+  if (st.busy) return;
+  if (st.goal.length < 8) { st.error = 'Say a little more about what you are training for.'; renderWorkoutAI(); _aiProgSettle(); return; }
+  // Ask before anything is sent, and carry on from here on a yes.
+  if (typeof aiAllowed === 'function' && !aiAllowed()) { withAIConsent(() => generateAIProgram(again)); return; }
+
+  LS.set('hvi_ai_program_last', { goal: st.goal, days: st.days, minutes: st.minutes, equipment: st.equipment, level: st.level });
+  st.busy = true; st.error = '';
+  st.tries = again ? st.tries + 1 : 0;
+  renderWorkoutAI();
+  if (typeof track === 'function') track('ai_program_request', { days: st.days, minutes: st.minutes, equipment: st.equipment, level: st.level, again: !!again });
+  try {
+    const raw = await _aiFetch(aiProgramMessages(st.goal, st),
+      // A second go is allowed to differ from the first.
+      { jsonMode: true, maxTokens: 2200, timeout: 45000, temperature: st.tries ? 0.7 : 0.2 });
+    const prog = normalizeAIProgram(raw, st.goal, exercisesFor(st.equipment));
+    if (!prog) throw new Error('unusable');
+    st.draft = prog;
+    if (typeof track === 'function') track('ai_program_built', { days: prog.days.length });
+  } catch (e) {
+    st.draft = st.draft && again ? st.draft : null;
+    st.error = (e && e.message === 'offline') ? 'You are offline. Building a program needs a connection.'
+      : 'That did not come back as a usable program. Try again, or add a little more detail.';
+    if (typeof reportError === 'function' && !(e && /offline|unusable|ai-consent/.test(e.message))) reportError('ai-program', e);
+  }
+  st.busy = false;
+  if (curView === 'workoutAI') { renderWorkoutAI(); _aiProgSettle(); }
+}
+
+// The button that was tapped sits at the bottom of the form, so the page is
+// scrolled there when the answer lands. A new program is read from the top;
+// a failure has to be brought into view or it goes unseen.
+function _aiProgSettle() {
+  const view = document.getElementById('view');
+  const err = _aiProgState().error ? document.querySelector('.aip-error') : null;
+  if (err && err.scrollIntoView) err.scrollIntoView({ block: 'center' });
+  else if (view) view.scrollTop = 0;
+}
+
+function useAIProgram() {
+  const st = _aiProgState();
+  if (!st.draft) return;
+  const progs = LS.get('hvi_custom_programs', []);
+  const at = progs.findIndex(p => p.id === st.draft.id);
+  if (at >= 0) progs[at] = st.draft; else progs.push(st.draft);
+  LS.set('hvi_custom_programs', progs);
+  if (typeof track === 'function') track('ai_program_used', { days: st.draft.days.length });
+  const id = st.draft.id;
+  st.draft = null;
+  selectProgram(id);
+  if (typeof showToast === 'function') showToast('Program saved. Day 1 is ready.');
+}
+
+// Opens the draft in the hand builder, where days and exercises can be changed.
+function editAIProgram() {
+  const st = _aiProgState();
+  if (!st.draft) return;
+  builderProg = JSON.parse(JSON.stringify(st.draft));
+  builderDayIdx = 0;
+  builderSearch = '';
+  go('workoutBuilder');
+}
+
+function discardAIProgram() {
+  const st = _aiProgState();
+  st.draft = null; st.error = '';
+  renderWorkoutAI();
+  _aiProgSettle();
+}
+
+function renderWorkoutAI() {
+  const st = _aiProgState();
+  const back = `<button class="back" onclick="go('workoutPicker')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>`;
+
+  if (st.draft) {
+    const p = st.draft;
+    const daysHTML = p.days.map((d, i) => `<div class="aip-day">
+        <div class="aip-day-head"><h3>${esc(d.name)}</h3><span>${d.focus ? esc(d.focus) : `Day ${i + 1}`}</span></div>
+        ${d.ex.map(eid => {
+          const ex = lookupExercise(eid), rx = programRx(d, eid);
+          return `<div class="aip-ex"><span>${esc(ex ? ex.name : eid)}</span><span>${rx ? `${rx[0]} × ${rx[1]}` : ''}</span></div>`;
+        }).join('')}
+      </div>`).join('');
+    document.getElementById('view').innerHTML = `
+      ${back}
+      <div class="page-head ani"><div class="page-title">${esc(p.name)}</div>${p.desc ? `<div class="aip-desc">${esc(p.desc)}</div>` : ''}</div>
+      <div class="aip-goal ani">Built for: ${esc(p.goal)}</div>
+      ${st.error ? `<div class="aip-error ani" role="alert">${esc(st.error)}</div>` : ''}
+      <div class="ani">${daysHTML}</div>
+      <div class="aip-actions ani">
+        <button class="aip-go" onclick="useAIProgram()" ${st.busy ? 'disabled' : ''}>Use this program</button>
+        <div class="aip-row">
+          <button class="aip-alt" onclick="generateAIProgram(true)" ${st.busy ? 'disabled' : ''}>${st.busy ? 'Building…' : 'Build another'}</button>
+          <button class="aip-alt" onclick="editAIProgram()" ${st.busy ? 'disabled' : ''}>Edit it</button>
+        </div>
+        <button class="aip-link" onclick="discardAIProgram()">Change what I asked for</button>
+      </div>`;
+    return;
+  }
+
+  const chips = key => `<div class="aip-field">
+      <div class="aip-label" id="aip-l-${key}">${AI_PROG[key].label}</div>
+      <div class="aip-chips" role="group" aria-labelledby="aip-l-${key}">${AI_PROG[key].choices.map(([v, l]) =>
+        `<button class="aip-chip${st[key] === v ? ' on' : ''}" aria-pressed="${st[key] === v}" onclick="setAIProgramChoice('${key}', ${typeof v === 'number' ? v : `'${v}'`})">${l}</button>`).join('')}</div>
+    </div>`;
+  document.getElementById('view').innerHTML = `
+    ${back}
+    <div class="page-head ani"><div class="page-title">Build a program</div></div>
+    <div class="aip-form ani">
+      <label class="aip-label" for="aip-goal">What are you training for?</label>
+      <textarea class="j-ta aip-goal-input" id="aip-goal" rows="4" maxlength="400" ${st.busy ? 'disabled' : ''}
+        placeholder="Stronger and faster for soccer, without adding much size. My left knee does not like deep squats.">${esc(st.goal)}</textarea>
+      ${chips('days')}${chips('minutes')}${chips('equipment')}${chips('level')}
+      ${st.error ? `<div class="aip-error" role="alert">${esc(st.error)}</div>` : ''}
+      <button class="aip-go" onclick="generateAIProgram()" ${st.busy ? 'disabled' : ''}>${st.busy ? 'Building your program…' : 'Build my program'}</button>
+      <div class="aip-note">This uses AI. It is sent what you wrote here and these four choices, not your logs.</div>
+      <button class="aip-link" onclick="initBuilder();go('workoutBuilder')">Build it by hand instead</button>
+    </div>`;
 }
 
 let _workoutHistorySearch = '';

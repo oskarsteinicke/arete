@@ -102,5 +102,27 @@ module.exports = async function () {
     r.check('and requests are refused', run(s, '_e') === 'ai-consent' && aiCalls(s).length === 0, `(${run(s, '_e')}, ${aiCalls(s).length} sent)`);
   }
 
+
+  // The permission sheet names two companies. A "last resort" used to send the
+  // same messages straight from the phone to a third, text.pollinations.ai.
+  r.section('AI requests go to Arete\'s server and nowhere else');
+  {
+    const down = createSandbox({
+      files: FILES, store: { hvi_onboarded: 'true', hvi_ai_consent: 'yes' },
+      fetch: () => Promise.resolve({ ok: false, status: 503, json: () => Promise.resolve({}), text: () => Promise.resolve('') }),
+    });
+    run(down, `settings={}; track=function(){}; AbortController=function(){ this.signal = {}; this.abort = function(){}; };
+               _e = ''; _aiFetch([{ role: 'user', content: 'hi' }]).catch(function (e) { _e = e.message || 'failed'; });`);
+    await wait(900);   // one retry after 500ms, then the fallback
+    const hosts = [...new Set(down._fetches.map(f => { try { return new URL(f.url).host; } catch { return f.url; } }))];
+    r.check('with both providers down it fails rather than trying someone else', run(down, '_e') !== '', '(no error surfaced)');
+    r.check('every request went to the one server', hosts.length === 1 && hosts[0] === 'arete-ai.oskarsteinicke.workers.dev', `(${hosts.join(', ')})`);
+    const fs = require('fs'), path = require('path'), APP = require('./harness').APP;
+    const shipped = fs.readdirSync(APP).filter(f => /\.js$/.test(f) && f !== 'service-worker.js');
+    const strays = shipped.filter(f => /pollinations|api\.openai\.com|api\.groq\.com|generativelanguage\.googleapis/i.test(
+      fs.readFileSync(path.join(APP, f), 'utf8').replace(/\/\/.*$/gm, '')));
+    r.check('no app script calls an AI company directly', strays.length === 0, `(${strays.join(', ')})`);
+  }
+
   return r.finish();
 };

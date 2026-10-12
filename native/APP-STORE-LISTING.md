@@ -120,8 +120,8 @@ Why "linked" on the analytics rows: for someone signed in, the app sends
 Google Analytics a pseudonymous account identifier (the privacy policy says
 so). Without an account none of it is linked. Answer for the linked case.
 
-- **Third-party AI:** the coach, the daily focus, meal descriptions and meal
-  photos are sent through the app's own Cloudflare Worker to **Google Gemini**
+- **Third-party AI:** the coach, the daily focus, meal descriptions, meal
+  photos and the program builder's goal text are sent through the app's own Cloudflare Worker to **Google Gemini**
   and **Groq**. Nothing is sent until the person allows it: the app shows what
   is sent and to whom the first time, and there is an on/off switch in Profile
   (guideline 5.1.2(i)).
@@ -150,7 +150,7 @@ Arete requires no account. Open the app and everything is available immediately 
 
 The camera is used for the meal scanner (photograph a meal to estimate its calories and macros) and for progress photos. Both are user-initiated from within the app.
 
-The AI features (coach, daily focus, meal description and meal photo scan) send data to Google Gemini and Groq through our own server. The app asks for permission the first time any of them is used, explaining what is sent and to whom, and nothing is sent before that. They can be turned off in Profile > Settings > "AI coach and meal scan".
+The AI features (coach, daily focus, meal description, meal photo scan and the program builder) send data to Google Gemini and Groq through our own server. The app asks for permission the first time any of them is used, explaining what is sent and to whom, and nothing is sent before that. They can be turned off in Profile > Settings > "AI coach and meal scan".
 
 There are no in-app purchases and nothing is for sale.
 ```

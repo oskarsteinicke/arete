@@ -1663,7 +1663,7 @@ function findProgram(id) { return allPrograms().find(p => p.id === id); }
 const NAV_PARENT = {
   pillar: 'home',
   habitCreate: 'habits',
-  workoutPicker: 'workout', workoutActive: 'workout', workoutHistory: 'workout', workoutBuilder: 'workout', exerciseBrowser: 'workout', prHistory: 'workout', workoutProgress: 'workout',
+  workoutPicker: 'workout', workoutAI: 'workout', workoutActive: 'workout', workoutHistory: 'workout', workoutBuilder: 'workout', exerciseBrowser: 'workout', prHistory: 'workout', workoutProgress: 'workout',
   dietAddMeal: 'diet', dietRecipes: 'diet', dietRecipeDetail: 'diet', dietGoals: 'diet', dietTrend: 'diet', dietTDEE: 'diet',
   calendar: 'stats', progressPhotos: 'stats', challenges: 'home', leaderboard: 'home', character: 'home', goals: 'stats',
 };
@@ -1851,7 +1851,7 @@ async function init() {
     return;
   } else {
     (() => {
-      const validViews = ['home','pillar','habits','habitCreate','stats','progressPhotos','workout','workoutPicker','workoutActive','workoutHistory','workoutProgress','workoutBuilder','exerciseBrowser','diet','dietAddMeal','dietRecipes','dietRecipeDetail','dietGoals','dietTrend','dietTDEE','library','calendar','sleep','challenges','goals','character','leaderboard'];
+      const validViews = ['home','pillar','habits','habitCreate','stats','progressPhotos','workout','workoutPicker','workoutAI','workoutActive','workoutHistory','workoutProgress','workoutBuilder','exerciseBrowser','diet','dietAddMeal','dietRecipes','dietRecipeDetail','dietGoals','dietTrend','dietTDEE','library','calendar','sleep','challenges','goals','character','leaderboard'];
       const hash = location.hash.replace(/^#/, '');
       // pushState writes only the view name to the URL; the identifier these
       // screens need travels in history state, which a cold launch does not
@@ -2432,7 +2432,7 @@ function go(view, params = {}, pushState = true) {
   // throwing.
   const renders = {
     home: renderHome, pillar: renderPillar, habits: renderHabits, habitCreate: renderHabitCreate, stats: renderStats,
-    workout: renderWorkout, workoutPicker: renderWorkoutPicker, workoutActive: renderWorkoutActive, workoutHistory: renderWorkoutHistory, workoutBuilder: renderWorkoutBuilder, exerciseBrowser: renderExerciseBrowser, prHistory: renderPRHistory, workoutProgress: renderWorkoutProgress,
+    workout: renderWorkout, workoutPicker: renderWorkoutPicker, workoutAI: renderWorkoutAI, workoutActive: renderWorkoutActive, workoutHistory: renderWorkoutHistory, workoutBuilder: renderWorkoutBuilder, exerciseBrowser: renderExerciseBrowser, prHistory: renderPRHistory, workoutProgress: renderWorkoutProgress,
     diet: renderDiet, dietAddMeal: renderDietAddMeal, dietRecipes: renderDietRecipes, dietRecipeDetail: renderDietRecipeDetail, dietGoals: renderDietGoals, dietTrend: renderDietTrend, dietTDEE: renderDietTDEE,
     progressPhotos: renderProgressPhotos, character: renderCharacter, goals: renderGoals,
     calendar: () => { window._statsSubView = 'calendar'; renderStats(); },
@@ -3614,8 +3614,8 @@ function dismissInstall() {
 }
 
 // ── AI PERMISSION ───────────────────────────────────────────────────────
-// The coach, the daily focus on home and the meal scanner are run by AI
-// models at Google (Gemini) and Groq. Using them sends what the person typed
+// The coach, the daily focus on home, the meal scanner and the program builder
+// are run by AI models at Google (Gemini) and Groq. Using them sends what the person typed
 // or photographed, and for the coach a summary of their recent logs, through
 // Arete's server to those companies. That is health data going to a third
 // party, so nothing is sent until they have said yes, once, in so many words.
@@ -3653,9 +3653,9 @@ function showAIConsent() {
           <div style="font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Your data and AI</div>
           <div id="ai-consent-title" style="font-family:var(--serif);font-size:23px;color:var(--text);line-height:1.2;margin-bottom:10px">Allow the AI features?</div>
           <div style="font-size:13px;color:var(--text-dim);line-height:1.55">
-            The coach, the daily focus on your home screen and the meal scanner are run by AI models from <b style="color:var(--text)">Google (Gemini)</b> and <b style="color:var(--text)">Groq</b>. To answer, Arete sends them:
+            The coach, the daily focus on your home screen, the meal scanner and the program builder are run by AI models from <b style="color:var(--text)">Google (Gemini)</b> and <b style="color:var(--text)">Groq</b>. To answer, Arete sends them:
             <ul style="margin:10px 0 10px 18px;padding:0;display:grid;gap:5px">
-              <li>the message or meal description you type</li>
+              <li>the message, meal description or training goal you type</li>
               <li>the meal photo you choose</li>
               <li>for the coach and the daily focus, a summary of your recent habits, training, nutrition, sleep, journal and goals</li>
             </ul>

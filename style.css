@@ -371,8 +371,8 @@ nav {
 .w-card:hover { background: var(--surface2); border-color: var(--border); }
 .w-card:active { transform: scale(0.98); }
 .w-card-name { font-family: var(--display); font-size: 18px; color: var(--text); margin-bottom: 4px; letter-spacing: 0.3px; }
-.w-card-desc { font-size: 12px; color: var(--text-dim); line-height: 1.5; }
-.w-card-days { font-size: 11px; color: var(--text-dim); margin-top: 8px; }
+.w-card-desc { font-size: 14px; color: var(--text-dim); line-height: 1.5; }
+.w-card-days { font-size: 13px; color: var(--text-dim); margin-top: 8px; }
 .w-card.active { border-color: rgba(var(--accent-rgb),0.4); background: rgba(var(--accent-rgb),0.04); }
 /* Workout stats strip */
 .w-stats-strip { display: flex; justify-content: space-around; padding: 0 24px 16px; gap: 8px; }
@@ -2122,6 +2122,53 @@ input.d-input[type="date"]::-webkit-date-and-time-value { text-align: left; min-
 #view.view-arriving .radar-data { transform-box: view-box; transform-origin: 50% 50%; animation: radar-open 0.8s cubic-bezier(0.2, 1.1, 0.4, 1) 0.4s both; }
 #view.view-arriving .radar-dot { animation: pop-fade 0.3s ease 1s both; }
 @keyframes radar-open { from { transform: scale(0); opacity: 0; } }
+
+/* ══ A PROGRAM FROM A GOAL ════════════════════════════════════════════════
+   The form (what are you training for, four choices) and the preview of what
+   came back. Sentence case and readable sizes throughout, like the tabs. */
+.w-card-ai { border-color: rgba(var(--accent-rgb), 0.45); background: linear-gradient(160deg, rgba(var(--accent-rgb), 0.10), var(--surface) 60%); }
+.aip-form { padding: 0 24px 24px; }
+.aip-label { display: block; font-size: 15px; font-weight: 600; color: var(--text); margin: 0 0 8px; }
+.aip-goal-input { width: 100%; font-size: 16px; line-height: 1.45; min-height: 108px; }
+.aip-field { margin-top: 20px; }
+.aip-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.aip-chip {
+  background: var(--surface); border: 1px solid var(--border2); color: var(--text-dim);
+  font-size: 14px; padding: 10px 16px; border-radius: 100px; cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.aip-chip.on { border-color: var(--accent); color: var(--accent-b); background: rgba(var(--accent-rgb), 0.12); font-weight: 600; }
+.aip-go {
+  display: block; width: 100%; margin-top: 24px; padding: 16px; border: none; border-radius: 14px;
+  background: var(--accent); color: #0a0908; font-size: 16px; font-weight: 700; cursor: pointer;
+  transition: transform 0.12s, opacity 0.2s;
+}
+.aip-go:active { transform: scale(0.98); }
+.aip-go:disabled, .aip-alt:disabled { opacity: 0.55; cursor: default; }
+.aip-alt {
+  flex: 1; min-height: 48px; padding: 0 12px; border-radius: var(--radius); cursor: pointer;
+  background: var(--surface); border: 1px solid var(--border2); color: var(--text);
+  font-family: inherit; font-size: 15px; font-weight: 600;
+}
+.aip-alt:active { transform: scale(0.98); }
+.aip-note { font-size: 13px; color: var(--text-dim); line-height: 1.5; margin-top: 12px; text-align: center; }
+.aip-error {
+  margin-top: 16px; padding: 12px 14px; border-radius: 12px; font-size: 14px; line-height: 1.45; color: var(--text);
+  background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.3);
+}
+.aip-desc { font-size: 15px; color: var(--text-dim); line-height: 1.5; margin-top: 6px; }
+.aip-goal { margin: 0 24px 16px; font-size: 13.5px; color: var(--text-dim); line-height: 1.5; }
+.aip-goal + .aip-error { margin: 0 24px 16px; }
+.aip-day { margin: 0 24px 10px; padding: 16px 16px 8px; background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); }
+.aip-day-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 12px; margin-bottom: 6px; }
+.aip-day-head h3 { font-family: var(--display); font-size: 18px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); margin: 0; }
+.aip-day-head span { font-size: 13px; color: var(--text-dim); text-align: right; }
+.aip-ex { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 9px 0; border-top: 1px solid rgba(255,255,255,0.05); font-size: 15px; color: var(--text); }
+.aip-ex span:last-child { font-size: 14px; color: var(--accent-b); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.aip-actions { padding: 8px 24px 24px; }
+.aip-actions .aip-go { margin-top: 8px; }
+.aip-row { display: flex; gap: 8px; margin-top: 10px; }
+.aip-link { display: block; margin: 14px auto 0; background: none; border: none; color: var(--text-dim); font-size: 14px; cursor: pointer; text-decoration: underline; }
 
 /* ══ POP-UPS AND SHEETS ══════════════════════════════════════════════════
    They arrive the same way everywhere: the backdrop fades, a centred card
