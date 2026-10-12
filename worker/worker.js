@@ -28,6 +28,12 @@ const ALLOWED_ORIGINS = [
   'https://get-arete.com',
   'https://www.get-arete.com',
   'https://oskarsteinicke.github.io',
+  // The store builds. Their pages are served from inside the app, at these
+  // addresses, so without them the web view throws away every answer this
+  // worker gives: the coach, the meal scan and account deletion all failed
+  // in the iPhone build while working on the website.
+  'capacitor://localhost',   // iOS
+  'https://localhost',       // Android
   'http://localhost:3000',
   'http://localhost:8080',
   'http://127.0.0.1:5500'
