@@ -215,6 +215,7 @@ function openCoach() {
   if (overlay) overlay.classList.remove('coach-hidden');
   if (fab) fab.classList.add('coach-hidden');
   _renderCoachMsgs();
+  _coachFit();
   setTimeout(() => {
     const input = document.getElementById('coach-input');
     if (input) input.focus();
@@ -224,8 +225,44 @@ function openCoach() {
 function closeCoach() {
   const overlay = document.getElementById('coach-overlay');
   const fab = document.getElementById('coach-fab');
-  if (overlay) overlay.classList.add('coach-hidden');
+  // Put the keyboard away with the chat, or it stays up over the page behind.
+  const input = document.getElementById('coach-input');
+  if (input && input.blur) input.blur();
+  if (overlay) {
+    overlay.classList.add('coach-hidden');
+    overlay.classList.remove('coach-kb');
+    overlay.style.top = overlay.style.bottom = overlay.style.height = '';
+  }
   if (fab) fab.classList.remove('coach-hidden');
+}
+
+// ── KEEPING THE CHAT ON SCREEN ───────────────────────────────────────────
+// An iPhone does not shrink the page for the keyboard. It keeps the page its
+// full height and slides it up, and anything fixed to the page goes with it:
+// measured on a 778pt page, the keyboard left 416pt in view and the chat's
+// header sat 300pt above the top of the screen, Close button and all. So
+// while the chat is open it is sized to the part of the page that can be seen.
+const COACH_KB_BELOW = 0.72;    // less of the screen than this in view means the keyboard is up
+function _coachFit() {
+  const ov = document.getElementById('coach-overlay');
+  const vv = window.visualViewport;
+  if (!ov || !vv || ov.classList.contains('coach-hidden')) return;
+  const h = Math.round(vv.height) + 'px';
+  const resized = ov.style.height !== h;
+  ov.style.top = Math.round(vv.offsetTop) + 'px';
+  ov.style.bottom = 'auto';
+  ov.style.height = h;
+  const screenH = (window.screen && window.screen.height) || vv.height;
+  ov.classList.toggle('coach-kb', vv.height < screenH * COACH_KB_BELOW);
+  // An installed web app on an iPhone draws under the status bar, so the
+  // chat stops short of it. Everywhere else the page already starts below.
+  ov.style.setProperty('--coach-gap', (navigator.standalone ? 56 : 8) + 'px');
+  if (resized) { const el = document.getElementById('coach-msgs'); if (el) el.scrollTop = el.scrollHeight; }
+}
+if (window.visualViewport && !window._coachFitBound) {
+  window._coachFitBound = true;
+  window.visualViewport.addEventListener('resize', _coachFit);
+  window.visualViewport.addEventListener('scroll', _coachFit);
 }
 
 function clearCoachHistory() {

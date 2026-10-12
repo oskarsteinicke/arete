@@ -3914,3 +3914,35 @@ document.addEventListener('DOMContentLoaded', () => {
   // The tab highlight is placed by measurement, so re-place it when the bar resizes.
   window.addEventListener('resize', _moveNavPill);
 });
+
+// ── THE KEYBOARD IN THE STORE BUILD ──────────────────────────────────────
+// The store build shrinks the page to sit above the keyboard (the Keyboard
+// plugin, see native/capacitor.config.json), where the website lets the phone
+// slide the page up instead. The tab bar and the floating buttons are fixed
+// to the bottom of the page, so they rode up with it and took a third of what
+// was left to type in. They step aside while the keyboard is up.
+// The phone also stops scrolling the focused field into view there, so that
+// is done here, once the page has its new height.
+function _kbOpen() { document.documentElement.classList.add('kb-open'); }
+function _kbClosed() { document.documentElement.classList.remove('kb-open'); }
+function _kbShown() {
+  setTimeout(() => {
+    const el = document.activeElement;
+    if (el && el.scrollIntoView && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) el.scrollIntoView({ block: 'nearest' });
+  }, 300);
+}
+// A tab bar that stayed hidden would leave no way around the app, so it comes
+// back on every sign the keyboard has gone, not only the first.
+function _kbFocusLeft() {
+  setTimeout(() => {
+    const el = document.activeElement;
+    if (!el || !/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) _kbClosed();
+  }, 400);
+}
+if (window.Capacitor) {
+  window.addEventListener('keyboardWillShow', _kbOpen);
+  window.addEventListener('keyboardDidShow', _kbShown);
+  window.addEventListener('keyboardWillHide', _kbClosed);
+  window.addEventListener('keyboardDidHide', _kbClosed);
+  document.addEventListener('focusout', _kbFocusLeft);
+}

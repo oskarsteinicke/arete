@@ -5,5 +5,10 @@
   "backgroundColor": "#0c0c0d",
   "ios": {
     "contentInset": "always"
+  },
+  "plugins": {
+    "Keyboard": {
+      "resize": "native"
+    }
   }
 }

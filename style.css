@@ -1094,9 +1094,15 @@ input.d-input[type="date"]::-webkit-date-and-time-value { text-align: left; min-
   display: flex;
   flex-direction: column;
   height: 82vh;
-  max-height: 82vh;
+  max-height: 100%;
   overflow: hidden;
 }
+/* Keyboard up in the store build: the bottom chrome steps aside (app.js). */
+.kb-open #nav, .kb-open .coach-fab, .kb-open .quick-log-fab, .kb-open .rt-bar { display: none !important; }
+.kb-open input, .kb-open textarea, .kb-open select { scroll-margin: 16px 0 20px; }
+/* Keyboard up: the overlay is sized to what is left in view (coach.js), and
+   the chat takes nearly all of it instead of four fifths. */
+.coach-overlay.coach-kb .coach-panel { height: calc(100% - var(--coach-gap, 8px)); }
 
 .coach-hdr {
   display: flex;
@@ -1214,8 +1220,8 @@ input.d-input[type="date"]::-webkit-date-and-time-value { text-align: left; min-
   border: 1px solid var(--border2);
   border-radius: 14px;
   color: var(--text);
-  font-size: 14px;
-  padding: 11px 14px;
+  font-size: 16px;
+  padding: 10px 14px;
   resize: none;
   overflow: hidden;
   font-family: inherit;
