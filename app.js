@@ -2142,7 +2142,8 @@ function saveSleepPrompt() {
   if (typeof track === 'function') track('sleep_logged', { hours: sleepLog[t].hours, via: 'prompt' });
   const m = document.getElementById('sleep-prompt');
   if (m) m.remove();
-  if (curView === 'home' || curView === 'sleep') go(curView, {}, false);
+  // Last night now decides today's sets, so the workout screens redraw too.
+  if (['home', 'sleep', 'workout', 'workoutActive'].includes(curView)) go(curView, {}, false);
 }
 
 function dismissSleepPrompt() {
@@ -3887,8 +3888,11 @@ function getRecoveryStatus() {
     }
   }
 
-  // Consecutive training days ending today/yesterday
-  for (let i = 0; i < 7; i++) {
+  // Consecutive training days ending today, or yesterday when today has not
+  // been trained yet. Starting from today always broke on the first step
+  // before a session, so a hard week read as rested until it was too late to
+  // change the session (todaysTrainingCall in connect.js reads this).
+  for (let i = trainedOnDay(today()) ? 0 : 1; i < 8; i++) {
     const d = new Date(now); d.setDate(d.getDate() - i);
     const key = dateKey(d);
     if (trainedOnDay(key)) consecutiveDays++;

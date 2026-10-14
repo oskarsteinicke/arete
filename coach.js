@@ -120,6 +120,16 @@ ${(() => {
   if (!slDates.length) return '  No sleep data logged';
   return slDates.map(d => `  ${d}: ${sl[d].hours || '?'}h | quality ${sl[d].quality || '?'}/5`).join('\n');
 })()}
+${(() => {
+  // The app already adjusts today's sets from last night. The coach has to
+  // know, or it tells someone on a deload to go for a record.
+  const c = typeof todaysTrainingCall === 'function' ? todaysTrainingCall() : null;
+  if (!c) return '';
+  const wl = (typeof workoutLog !== 'undefined' && workoutLog) ? workoutLog[today()] : null;
+  const built = wl && wl.exercises ? (wl.asPlanned ? 'full' : (wl.tier || 'full')) : c.tier;
+  const what = { full: 'as planned', trim: 'lighter: one set and two reps fewer per lift, same weights', deload: 'a deload: same sets at about 60% of the weight' }[built];
+  return `TODAY'S SESSION: ${what}. Based on: ${c.why}${built === 'full' && c.tier !== 'full' ? ' (the app suggested a lighter session; the user chose the full plan)' : ''}\n  Do not tell them to push harder than this.`;
+})()}
 ${lastJ ? `\nLAST JOURNAL (${jKeys[0]}):
   Win: ${lastJ.win || '—'}
   Struggle: ${lastJ.struggle || '—'}

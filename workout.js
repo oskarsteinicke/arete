@@ -193,7 +193,9 @@ function getProgressionTip(exerciseId) {
 // RENDER: WORKOUT
 // ══════════════════════════════════════════════════════════════════════════
 function _workoutStats() {
-  const dates = Object.keys(workoutLog).sort().reverse();
+  // Only days with a completed set. An opened session with nothing logged
+  // (or one prepared from the Workout tab) is not a session.
+  const dates = Object.keys(workoutLog).filter(d => trainedOnDay(d)).sort().reverse();
   const thisWeek = dates.filter(d => {
     const diff = (new Date(today() + 'T12:00') - new Date(d + 'T12:00')) / 86400000;
     return diff >= 0 && diff < 7;
@@ -219,13 +221,17 @@ function renderWorkout() {
   const day = prog.days[dayIdx];
   const todayLog = workoutLog[today()];
   const stats = _workoutStats();
+  // What today's session is (or will be) built with, so the list matches it.
+  const previewTier = _wIsTouched(todayLog) ? (todayLog.tier || 'full')
+    : (todayLog && todayLog.asPlanned) ? 'full' : _todaysTier();
 
   const exPreviewHTML = day.ex.length ? `
     <div class="w-ex-preview-list">
       ${day.ex.map(eid => {
         const ex = lookupExercise(eid);
         if (!ex) return '';
-        const rx = programRx(day, eid);
+        let rx = programRx(day, eid);
+        if (rx && previewTier !== 'full') { const p = adjustPrescription(rx[0], rx[1], 0, previewTier); rx = [p.sets, p.reps]; }
         return `<div class="w-ex-preview-item">
           <span class="w-ex-preview-name">${esc(ex.name)}</span>
           <span class="w-ex-preview-muscle">${rx ? `${rx[0]} × ${rx[1]}` : esc(ex.muscle)}</span>
@@ -373,6 +379,68 @@ function _wSave(wl) {
   LS.set('hvi_workout_log', workoutLog);
 }
 
+// ── TODAY'S SETS FROM SLEEP AND RECOVERY ─────────────────────────────────
+// todaysTrainingCall() (connect.js) reads last night and the last week; this
+// is what it does to the sets. A trim drops a set and a couple of reps and
+// keeps the weight; a deload keeps the sets and takes the weight to about 60%.
+// Nothing here ever adds weight, however good the night was.
+function adjustPrescription(sets, reps, weight, tier) {
+  if (tier === 'trim') {
+    return { sets: sets > 2 ? sets - 1 : sets, reps: reps > 5 ? reps - 2 : reps > 1 ? reps - 1 : reps, weight };
+  }
+  if (tier === 'deload') {
+    const inc = (typeof isImperial === 'function' && isImperial()) ? 5 : 2.5;
+    return { sets, reps, weight: weight > inc ? Math.max(inc, Math.round(weight * 0.6 / inc) * inc) : weight };
+  }
+  return { sets, reps, weight };
+}
+
+function _todaysTier() {
+  const call = typeof todaysTrainingCall === 'function' ? todaysTrainingCall() : null;
+  return call ? call.tier : 'full';
+}
+
+// One day of a program as today's session, before anything is logged.
+function _buildSession(prog, dayIndex, tier, asPlanned) {
+  const day0 = prog.days[dayIndex % prog.days.length];
+  const entry = { programId: prog.id, dayIndex, tier: tier || 'full', exercises: day0.ex.map(eid => {
+    const ex = lookupExercise(eid);
+    // A program may prescribe its own sets and reps (day.rx, written by the
+    // AI builder). Without one, the exercise's defaults apply.
+    const rx = programRx(day0, eid);
+    const ds = rx ? rx[0] : (ex ? ex.ds : 3);
+    const dr = rx ? rx[1] : (ex ? ex.dr : 10);
+    // Auto-fill weight/reps from last session
+    // Prefill from one real set, not a mix of two. This used to take the
+    // heaviest weight from anywhere in the session and the reps from
+    // whichever set happened to be last, so 100x8, 100x8, 80x15 prefilled
+    // 100x15 — a set that was never performed and cannot be.
+    const last = getLastExerciseSession(eid);
+    const top = topWorkingSet(last?.ex.sets);
+    const lastW = top ? top.weight : 0;
+    // A prescribed rep target wins over whatever was done last time: five
+    // heavy reps is the point of a strength block, not a suggestion.
+    const lastR = rx ? rx[1] : (top ? top.reps : dr);
+    const p = adjustPrescription(ds, lastR, lastW, tier);
+    return { exerciseId: eid, sets: Array.from({length: p.sets}, () => ({weight: p.weight, reps: p.reps, completed: false})) };
+  })};
+  if (asPlanned) entry.asPlanned = true;
+  return entry;
+}
+
+// "Train as planned" and back. Only before anything is logged: a started
+// session is never rebuilt.
+function setSessionPlan(asPlanned) {
+  const t = today();
+  if (_wIsTouched(workoutLog[t])) return;
+  const prog = findProgram(workoutMeta.activeProgram) || WORKOUT_PROGRAMS[0];
+  workoutLog[t] = _buildSession(prog, workoutMeta.currentDayIndex, asPlanned ? 'full' : _todaysTier(), asPlanned);
+  LS.set('hvi_workout_log', workoutLog);
+  if (typeof track === 'function') track('session_plan', { as_planned: !!asPlanned, tier: _todaysTier() });
+  if (curView === 'workoutActive') rerenderWorkoutActive();
+  else if (curView === 'workout') renderWorkout();
+}
+
 function renderWorkoutActive() {
   let prog = findProgram(workoutMeta.activeProgram) || WORKOUT_PROGRAMS[0];
   const t = today();
@@ -391,31 +459,16 @@ function renderWorkoutActive() {
     }
   } else {
     // Nothing logged yet, so it's safe to (re)build for the current day
-    const day0 = prog.days[workoutMeta.currentDayIndex % prog.days.length];
+    // Sleep or a Whoop score can land after the screen was first opened.
+    // Nothing has been logged yet, so the sets can still follow it.
+    const asPlanned = !!(existing && existing.asPlanned);
+    const tier = asPlanned ? 'full' : _todaysTier();
     const needsInit = !existing ||
       existing.programId !== prog.id ||
-      existing.dayIndex !== workoutMeta.currentDayIndex;
+      existing.dayIndex !== workoutMeta.currentDayIndex ||
+      (existing.tier || 'full') !== tier;
     if (needsInit) {
-      workoutLog[t] = { programId: prog.id, dayIndex: workoutMeta.currentDayIndex, exercises: day0.ex.map(eid => {
-        const ex = lookupExercise(eid);
-        // A program may prescribe its own sets and reps (day.rx, written by the
-        // AI builder). Without one, the exercise's defaults apply.
-        const rx = programRx(day0, eid);
-        const ds = rx ? rx[0] : (ex ? ex.ds : 3);
-        const dr = rx ? rx[1] : (ex ? ex.dr : 10);
-        // Auto-fill weight/reps from last session
-        // Prefill from one real set, not a mix of two. This used to take the
-        // heaviest weight from anywhere in the session and the reps from
-        // whichever set happened to be last, so 100x8, 100x8, 80x15 prefilled
-        // 100x15 — a set that was never performed and cannot be.
-        const last = getLastExerciseSession(eid);
-        const top = topWorkingSet(last?.ex.sets);
-        const lastW = top ? top.weight : 0;
-        // A prescribed rep target wins over whatever was done last time: five
-        // heavy reps is the point of a strength block, not a suggestion.
-        const lastR = rx ? rx[1] : (top ? top.reps : dr);
-        return { exerciseId: eid, sets: Array.from({length: ds}, () => ({weight: lastW, reps: lastR, completed: false})) };
-      })};
+      workoutLog[t] = _buildSession(prog, workoutMeta.currentDayIndex, tier, asPlanned);
       LS.set('hvi_workout_log', workoutLog);
     }
   }
@@ -501,6 +554,7 @@ function renderWorkoutActive() {
       <div class="workout-elapsed-pill"><span class="workout-elapsed-dot"></span><span id="workout-elapsed">0:00</span></div>
     </div>
     <div class="page-head ani"><div class="w-day-badge">${day.name}</div><div class="page-title">${prog.name}</div><div class="page-sub">${day.focus}</div></div>
+    ${typeof trainingAdviceHTML === 'function' ? trainingAdviceHTML('session') : ''}
     ${exHTML}${emptyHTML}
     <div id="rest-timer-bar" class="rt-bar" style="display:none"></div>
     <div class="rt-presets">

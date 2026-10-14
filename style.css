@@ -3251,20 +3251,23 @@ body {
   display: flex; align-items: center; gap: 14px;
   margin: 0 24px 14px; padding: 14px 16px;
   background: var(--surface); border: 1px solid var(--border2);
-  border-radius: var(--radius); cursor: pointer;
-  transition: border-color 0.2s, background 0.2s;
+  border-radius: var(--radius);
 }
-.w-advice:active { background: var(--surface2); }
-.w-advice:hover { border-color: var(--border); }
 .w-advice-score {
-  flex: 0 0 44px; height: 44px; border-radius: 50%;
+  flex: 0 0 48px; height: 48px; border-radius: 50%; align-self: flex-start;
   border: 2px solid currentColor;
   display: flex; align-items: center; justify-content: center;
-  font-family: var(--display); font-size: 16px; font-weight: 700;
+  font-family: var(--display); font-size: 15px; font-weight: 700; letter-spacing: -0.02em;
 }
 .w-advice-text { flex: 1; min-width: 0; }
 .w-advice-head { font-size: 15px; font-weight: 600; color: var(--text); }
-.w-advice-detail { font-size: 13.5px; color: var(--text-dim); line-height: 1.45; margin-top: 2px; }
+.w-advice-detail { font-size: 14px; color: var(--text-dim); line-height: 1.45; margin-top: 2px; }
+.w-advice-btn {
+  margin-top: 10px; min-height: 40px; padding: 0 14px; border-radius: 10px; cursor: pointer;
+  background: var(--surface2); border: 1px solid var(--border2); color: var(--text);
+  font-family: inherit; font-size: 14px; font-weight: 600;
+}
+.w-advice-btn:active { transform: scale(0.98); }
 
 
 /* ── Water row ──────────────────────────────────────────────────────────────

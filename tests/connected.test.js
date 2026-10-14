@@ -52,9 +52,10 @@ module.exports = function () {
     r.check('a rating with no hours scores on the rating', qualityOnly === 1, `(${qualityOnly})`);
   }
 
-  // Readiness was computed from sleep, load, habits and nutrition but only ever
-  // shown on the home screen — the workout screen never saw it.
-  r.section('readiness becomes advice for today\'s session');
+  // The workout card used to read the whole-day score, habits and meals
+  // included. It now says what today's sets were built for, from sleep and
+  // recovery only (tests/trainingday.test.js covers the sets themselves).
+  r.section('the workout card speaks for today\'s session');
   {
     const rested = sb({
       hvi_habits: '[]', hvi_log: '{}',
@@ -62,16 +63,16 @@ module.exports = function () {
     });
     const good = JSON.parse(run(rested, 'JSON.stringify(trainingAdvice())') || 'null');
     r.check('advice is produced once there is a signal', !!good, '(none)');
-    r.check('a rested day says go heavy', /heavy|as planned/i.test(good.headline), `(${good.headline})`);
+    r.check('a rested night says train as planned', /as planned/i.test(good.headline), `(${good.headline})`);
+    r.check('and shows the night it is based on', good.value === '8.5h' && /8h 30m of sleep/.test(good.detail), JSON.stringify(good));
 
     const wrecked = sb({
       hvi_habits: '[]', hvi_log: '{}',
       hvi_sleep_log: JSON.stringify({ [T]: { hours: 3, quality: 1 } }),
     });
     const bad = JSON.parse(run(wrecked, 'JSON.stringify(trainingAdvice())') || 'null');
-    r.check('a bad night lowers the score', bad.score < good.score, `(${bad.score} vs ${good.score})`);
-    r.check('and changes the instruction', bad.headline !== good.headline, `(${bad.headline})`);
-    r.check('it names the limiting factor', /sleep/i.test(bad.detail), `(${bad.detail})`);
+    r.check('a bad night changes the instruction', bad.headline !== good.headline && /deload/i.test(bad.headline), `(${bad.headline})`);
+    r.check('it says why', /3h of sleep/.test(bad.detail), `(${bad.detail})`);
     r.check('it renders on the workout screen', /w-advice/.test(run(wrecked, 'trainingAdviceHTML()') || ''));
   }
 

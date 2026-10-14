@@ -132,52 +132,108 @@ function getReadiness() {
   };
 }
 
-// ── READINESS -> TRAINING ADVICE ──────────────────────────────────────────
-// Readiness is built from sleep, training load, habit adherence and nutrition,
-// but it only ever appeared on the home screen. The workout screen — the one
-// place it should change what you actually do — never saw it. This turns the
-// score into a concrete instruction for today's session, and names the factor
-// holding it back so the advice is actionable rather than mystical.
-function trainingAdvice() {
-  if (!hasReadinessSignal()) return null;
-  const r = getReadiness();
+// ── SLEEP AND RECOVERY -> TODAY'S SETS ──────────────────────────────────────
+// Readiness only ever became a sentence on the workout screen. The session
+// itself came out the same after four hours of sleep as after eight. This
+// decides what today's session should be, and workout.js builds the sets
+// from it (_buildSession).
+//
+// Only what the body brings counts: last night's sleep, a Whoop recovery
+// score when there is one, and how hard the last week was. Habits and meals
+// stay out. They belong in the day's score on Home, but an unticked reading
+// habit is no reason to do fewer squats.
+//
+// "Last night" is today's entry. Yesterday's is the night before, and a
+// session is not cut on a stale reading.
+const TRAIN_TIERS = ['full', 'trim', 'deload'];
+function todaysTrainingCall() {
+  const sl = (typeof sleepLog !== 'undefined' && sleepLog && sleepLog[today()]) || {};
+  const whoop = typeof sl.whoopRecovery === 'number' ? Math.round(sl.whoopRecovery) : null;
+  const hours = sl.hours > 0 ? sl.hours : null;
+  const quality = sl.quality > 0 ? sl.quality : null;
+  let load = null;
+  try { if (typeof getRecoveryStatus === 'function') load = getRecoveryStatus(); } catch {}
+  const fatigued = !!(load && load.status === 'fatigued');
 
-  // The weakest input is what to fix; Whoop is a reading, not something you do
-  const named = { sleep: 'Sleep', load: 'Training load', habits: 'Habits', nutrition: 'Nutrition' };
-  let limiter = null, worst = 1.1;
-  Object.keys(named).forEach(k => {
-    const v = r.factors[k];
-    if (typeof v === 'number' && v < worst) { worst = v; limiter = named[k]; }
-  });
-
-  let headline, detail;
-  if (r.score >= 75) {
-    headline = 'Primed — go heavy';
-    detail = 'Push top sets. A PR attempt is well timed today.';
-  } else if (r.score >= 50) {
-    headline = 'Steady — train as planned';
-    detail = 'Hit your normal loads and rep targets.';
-  } else if (r.score >= 30) {
-    headline = 'Run down — hold intensity, cut volume';
-    detail = 'Keep the weights, drop a set per exercise and stop two reps short.';
+  let level = 0, value = '';
+  const why = [];
+  if (whoop !== null) {
+    // Whoop's own bands: red is under 34, and the low end of yellow trims.
+    // Its score already counts the night and the strain, so nothing is added.
+    level = whoop < 34 ? 2 : whoop < 50 ? 1 : 0;
+    why.push(`Whoop recovery ${whoop}%.`);
+    value = `${whoop}%`;
   } else {
-    headline = 'Depleted — deload today';
-    detail = 'Same movements at roughly 60% load. Moving well beats moving heavy.';
+    if (hours === null && quality === null && !fatigued) return null;
+    const short = hours === null ? 0 : hours < 4.5 ? 2 : hours < 6 ? 1 : 0;
+    const poor = quality !== null && quality <= 2 ? 1 : 0;
+    level = Math.max(short, poor);
+    if (hours !== null) why.push(`${typeof formatSleep === 'function' ? formatSleep(hours) : hours + 'h'} of sleep.`);
+    if (poor && !short) why.push(`You rated the night ${quality} of 5.`);
+    if (fatigued) {
+      // A hard week on top of a short night is a deload; on its own, a trim.
+      level = level ? 2 : 1;
+      why.push(load.consecutive >= 4 ? `${load.consecutive} days of training in a row.` : `${load.days} sessions in the last week.`);
+    }
+    value = hours !== null ? `${Math.round(hours * 10) / 10}h` : quality !== null ? `${quality}/5` : `${load.days}/7`;
   }
-  // "Habits" is the one plural among them.
-  if (limiter && worst < 0.65) detail += ` ${limiter} ${/s$/.test(limiter) ? 'are' : 'is'} what is holding this back.`;
-  return { score: r.score, label: r.label, color: readinessColor(r.score), headline, detail };
+  return { tier: TRAIN_TIERS[level], level, why: why.join(' '), value };
 }
 
-function trainingAdviceHTML() {
+const TRAIN_LIGHTER = {
+  trim: 'Each lift loses a set and a couple of reps. The weights stay the same.',
+  deload: 'Same exercises and sets at about 60% of the weight.',
+};
+
+// Someone who logs sleep but has not yet today is asked, since it now
+// changes the session. Someone who never logs it is not nagged.
+function _loggedSleepLately() {
+  const sl = (typeof sleepLog !== 'undefined' && sleepLog) ? sleepLog : {};
+  for (let i = 1; i <= 14; i++) { const e = sl[_cnDateKey(i)]; if (e && (e.hours || e.quality)) return true; }
+  return false;
+}
+
+// What the readiness card on the workout screens says. Once anything has been
+// logged the session is what it is, so the card describes it and offers no
+// switch; before that it says what today's sets were built for and lets the
+// person train the full plan instead.
+function trainingAdvice() {
+  const call = todaysTrainingCall();
+  const wl = (typeof workoutLog !== 'undefined' && workoutLog) ? workoutLog[today()] : null;
+  const touched = !!(wl && typeof _wIsTouched === 'function' && _wIsTouched(wl));
+  if (!call) {
+    const done = typeof workoutDoneToday === 'function' && workoutDoneToday();
+    if (!touched && !done && _loggedSleepLately()) {
+      return { kind: 'ask', value: '?', color: 'var(--text-dim)', headline: 'How did you sleep?',
+        detail: 'Log last night and today’s sets will match it.', action: { label: 'Log sleep', fn: 'showSleepPrompt()' } };
+    }
+    return null;
+  }
+  const color = readinessColor(call.level === 0 ? 80 : call.level === 1 ? 40 : 20);
+  const base = { kind: call.tier, tier: call.tier, value: call.value, color };
+  // A started session keeps what it was built with.
+  const built = touched ? (wl.tier || 'full') : (wl && wl.asPlanned ? 'full' : call.tier);
+  if (built !== 'full') {
+    return Object.assign(base, { headline: built === 'deload' ? 'Deload today' : 'Lighter session today',
+      detail: `${call.why} ${TRAIN_LIGHTER[built]}`,
+      action: touched ? null : { label: 'Train as planned', fn: 'setSessionPlan(true)' } });
+  }
+  if (call.level === 0) return Object.assign(base, { headline: 'Recovered. Train as planned.', detail: call.why, action: null });
+  return Object.assign(base, { headline: 'Training as planned', detail: touched ? call.why : `${call.why} A lighter session is ready if you want it.`,
+    action: touched ? null : { label: 'Use the lighter session', fn: 'setSessionPlan(false)' } });
+}
+
+function trainingAdviceHTML(where) {
   const a = trainingAdvice();
   if (!a) return '';
-  return `<div class="w-advice ani" onclick="go('home')" role="button" tabindex="0"
-      onkeydown="if(event.key==='Enter'){go('home')}" aria-label="Readiness ${a.score} of 100. ${esc(a.headline)}">
-      <div class="w-advice-score" style="color:${a.color};border-color:${a.color}">${a.score}</div>
+  // Inside the session there is nothing to say on a normal day.
+  if (where === 'session' && (a.kind === 'full' || a.kind === 'ask')) return '';
+  return `<div class="w-advice ani" role="status">
+      <div class="w-advice-score" style="color:${a.color};border-color:${a.color}">${esc(a.value)}</div>
       <div class="w-advice-text">
         <div class="w-advice-head">${esc(a.headline)}</div>
         <div class="w-advice-detail">${esc(a.detail)}</div>
+        ${a.action ? `<button class="w-advice-btn" onclick="event.stopPropagation();${a.action.fn}">${esc(a.action.label)}</button>` : ''}
       </div>
     </div>`;
 }
@@ -727,7 +783,7 @@ function showReadinessBreakdown() {
       : 'Depleted. Make today a recovery day. Sleep and food come first.';
 
     const ic = (n) => (typeof icon === 'function' ? icon(n, 16) : '');
-    // Same rule as trainingAdvice(): the weakest thing you can act on, and only
+    // The weakest thing you can act on, and only
     // when it is actually low. Whoop is a reading, so it is never the limiter.
     const acts = usingWhoop ? ['sleep', 'load'] : ['load', 'sleep', 'habits', 'nutrition'];
     let limiter = null, worst = 0.65;
