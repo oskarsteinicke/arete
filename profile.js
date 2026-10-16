@@ -486,9 +486,12 @@ function injectGamificationStyles() {
     .g-weekly{padding:0 24px 8px}
     .w-set-del{background:none;border:none;color:var(--text-dim);font-size:14px;padding:4px 6px;cursor:pointer;flex-shrink:0;opacity:0.4;margin-left:auto}
     .w-set-del:active{opacity:1;color:var(--fat)}
-    .w-ex-tip{font-size:11.5px;line-height:1.45;margin:2px 12px 8px;padding:8px 12px;border-radius:10px;background:var(--surface2);border:1px solid var(--border2);color:var(--text-dim);display:flex;align-items:center;gap:8px}
+    .w-ex-tip{font-size:14px;line-height:1.45;margin:2px 12px 8px;padding:10px 12px;border-radius:10px;background:var(--surface2);border:1px solid var(--border2);color:var(--text-dim);display:flex;align-items:center;flex-wrap:wrap;gap:8px}
     .w-ex-tip::before{content:"";width:6px;height:6px;border-radius:50%;flex-shrink:0;background:var(--text-muted)}
     .w-ex-tip-increase::before{background:var(--carb)}
+    .w-ex-tip-up{color:var(--text)}
+    .w-ex-tip-up::before{background:var(--accent-b)}
+    .w-ex-tip > span{flex:1 1 180px;min-width:0}
     .w-ex-tip-maintain::before{background:var(--accent-b)}
     .w-ex-tip-first::before{background:var(--pro)}
     /* Calendar */

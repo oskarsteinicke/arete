@@ -102,16 +102,74 @@ function injectExerciseBrowserStyles() {
 }
 
 // ── Progression helpers ────────────────────────────────────────────────────
+// The last session that tested the plan. Sessions built lighter on purpose
+// (todaysTrainingCall, from sleep and recovery) are passed over: a deload's
+// 60% weight would otherwise become the next starting weight, and a lighter
+// session's missing reps would hold back an increase already earned. Only
+// when nothing else exists is a lighter one used.
 function getLastExerciseSession(exerciseId) {
   const t = today();
   const eid = String(exerciseId);
   const dates = Object.keys(workoutLog).filter(d => d !== t).sort().reverse();
+  let lighter = null;
   for (const d of dates) {
-    const ex = (workoutLog[d].exercises || []).find(e => String(e.exerciseId) === eid);
-    if (ex && ex.sets?.some(s => s.completed)) return { date: d, ex };
+    const wl = workoutLog[d];
+    const ex = (wl.exercises || []).find(e => String(e.exerciseId) === eid);
+    if (!ex || !ex.sets?.some(s => s.completed)) continue;
+    if (wl.tier === 'trim' || wl.tier === 'deload') { if (!lighter) lighter = { date: d, ex }; continue; }
+    return { date: d, ex };
   }
-  return null;
+  return lighter;
 }
+
+// ── PROGRESSION ──────────────────────────────────────────────────────────
+// Every prescribed rep on every set last time earns the next weight today.
+// The tip on each exercise and the weight a session starts at both come from
+// progressionCall, so they cannot disagree.
+const PROGRESS_STALE_DAYS = 21;   // longer away than this and the weight is held
+
+// The smallest jump a gym actually offers: dumbbells come in 2 kg (5 lb)
+// steps, a bar takes 1.25 kg plates either side once the load is light.
+function weightStep(exerciseId, w) {
+  const lb = typeof isImperial === 'function' && isImperial();
+  if (typeof EX_DUMBBELL !== 'undefined' && EX_DUMBBELL.includes(exerciseId)) return lb ? 5 : 2;
+  return lb ? (w >= 90 ? 5 : 2.5) : (w >= 40 ? 2.5 : 1.25);
+}
+
+function progressionCall(exerciseId, day) {
+  const last = getLastExerciseSession(exerciseId);
+  if (!last) return { kind: 'first' };
+  const working = (last.ex.sets || []).filter(s => !s.warmup);
+  const done = working.filter(s => s.completed);
+  const weighted = done.filter(s => s.weight > 0 && s.reps > 0);
+  const daysAgo = Math.max(1, Math.round((new Date(today()) - new Date(last.date)) / 86400000));
+  const base = { last, working, done, daysAgo };
+  if (!weighted.length) return Object.assign(base, { kind: done.some(s => s.reps > 0) ? 'bodyweight' : 'none' });
+
+  const from = Math.max(...weighted.map(s => s.weight));
+  const top = weighted.filter(s => s.weight === from);
+  // The target belongs to the program: its own prescription when it has one,
+  // otherwise the exercise's. Read from last time, it chased itself.
+  const rx = day && typeof programRx === 'function' ? programRx(day, exerciseId) : null;
+  const meta = lookupExercise(exerciseId);
+  const targetReps = rx ? rx[1] : (meta && meta.dr) || working[0]?.reps || 8;
+  const allSets = done.length >= working.length && (!rx || top.length >= rx[0]);
+  const allReps = top.every(s => s.reps >= targetReps);
+  const to = +(from + weightStep(exerciseId, from)).toFixed(2);
+  Object.assign(base, { from, to, top, targetReps });
+  if (!allSets) return Object.assign(base, { kind: 'hold', why: 'sets' });
+  if (!allReps) return Object.assign(base, { kind: 'hold', why: 'reps' });
+  if (daysAgo > PROGRESS_STALE_DAYS) return Object.assign(base, { kind: 'hold', why: 'stale' });
+  return Object.assign(base, { kind: 'earned' });
+}
+
+// "8 × 3", or "8, 8, 5" when the sets differ. Never an average: 8, 8, 5 is
+// not "7".
+function _repsLabel(sets) {
+  const reps = sets.map(s => s.reps);
+  return reps.every(r => r === reps[0]) ? `${reps[0]}${reps.length > 1 ? ` \u00d7 ${reps.length}` : ''}` : reps.join(', ');
+}
+function _fmtW(w) { return String(+(+w).toFixed(2)); }
 
 // The single best working set: heaviest, and among equal weights the one with
 // the most reps. Prefill used to take the heaviest weight from anywhere in the
@@ -127,66 +185,63 @@ function topWorkingSet(sets) {
   return top;
 }
 
-function getProgressionTip(exerciseId) {
-  const last = getLastExerciseSession(exerciseId);
-  if (!last) return { type: 'first', msg: 'First time — focus on form, pick a manageable weight' };
-
-  const { date, ex } = last;
-  // Warmups are excluded everywhere else that judges performance — volume and
-  // PR detection both skip them — but not here. A light warm-up set counted as
-  // a working set: it padded "all sets complete", and if it happened to be
-  // first it supplied the rep target below.
-  const allSets = (ex.sets || []).filter(s => !s.warmup);
-  const completedSets = allSets.filter(s => s.completed);
-  const weightedSets = completedSets.filter(s => s.weight > 0 && s.reps > 0);
-  const bwSets = completedSets.filter(s => s.weight === 0 && s.reps > 0);
-
-  // Days ago label
-  const t = today();
-  const msAgo = new Date(t) - new Date(date);
-  const daysAgo = Math.max(1, Math.round(msAgo / 86400000));
-  const dLabel = daysAgo === 1 ? 'yesterday' : daysAgo <= 6 ? `${daysAgo}d ago` : `${Math.floor(daysAgo / 7)}w ago`;
-
-  // Bodyweight exercise
-  if (!weightedSets.length && bwSets.length) {
-    const maxReps = Math.max(...bwSets.map(s => s.reps));
-    const allDone = completedSets.length >= allSets.length;
-    if (allDone) return { type: 'increase', msg: `Last: ${maxReps} reps/set ${dLabel} — try +1 rep per set today` };
-    return { type: 'maintain', msg: `${completedSets.length}/${allSets.length} sets ${dLabel} — hit all sets before adding reps` };
+function getProgressionTip(exerciseId, day) {
+  const c = progressionCall(exerciseId, day);
+  if (c.kind === 'first') return { type: 'first', msg: 'First time — focus on form, pick a manageable weight' };
+  if (c.kind === 'none') return null;
+  const n = c.daysAgo;
+  const dLabel = n === 1 ? 'yesterday' : n <= 6 ? `${n}d ago` : `${Math.floor(n / 7)}w ago`;
+  if (c.kind === 'bodyweight') {
+    const bw = c.done.filter(s => s.reps > 0);
+    const maxReps = Math.max(...bw.map(s => s.reps));
+    if (c.done.length >= c.working.length) return { type: 'increase', msg: `Last: ${maxReps} reps/set ${dLabel} — try +1 rep per set today` };
+    return { type: 'maintain', msg: `${c.done.length}/${c.working.length} sets ${dLabel} — hit all sets before adding reps` };
   }
-
-  if (!weightedSets.length) return null;
-
-  const maxW = Math.max(...weightedSets.map(s => s.weight));
-  const topSets = weightedSets.filter(s => s.weight === maxW);
-
-  // Report what was actually done. An average hid the shape of the session:
-  // 8, 8, 5 became "avg 7", a number that was never performed on any set.
-  const repsList = topSets.map(s => s.reps);
-  const uniform = repsList.every(r => r === repsList[0]);
-  const repsLabel = uniform
-    ? `${repsList[0]}${repsList.length > 1 ? ` \u00d7 ${repsList.length}` : ''}`
-    : repsList.join(', ');
-
-  // The rep target belongs to the program, not to whatever happened to be done
-  // on the first set last time. Reading it from the last session made the goal
-  // chase itself: hit 12 once and it asked for 12 from then on.
-  const meta = lookupExercise(exerciseId);
-  const targetReps = (meta && meta.dr) || allSets[0]?.reps || 8;
-
-  const allSetsComplete = completedSets.length >= allSets.length;
-  const allRepsHit = topSets.every(s => s.reps >= targetReps);
   const u = wtUnit();
+  const label = _repsLabel(c.top);
+  if (c.kind === 'earned') return { type: 'increase', msg: `All sets hit (${_fmtW(c.from)} ${u} \u00d7 ${label}) ${dLabel} — try ${_fmtW(c.to)} ${u} today` };
+  if (c.why === 'stale') return { type: 'maintain', msg: `Last: ${_fmtW(c.from)} ${u} \u00d7 ${label} ${dLabel} — it has been a while, so the same weight today` };
+  if (c.why === 'reps') return { type: 'maintain', msg: `Last: ${_fmtW(c.from)} ${u} \u00d7 ${label} ${dLabel} — hit ${c.targetReps} before going heavier` };
+  return { type: 'maintain', msg: `${c.done.length}/${c.working.length} sets at ${_fmtW(c.from)} ${u} ${dLabel} — complete all sets first` };
+}
 
-  if (allSetsComplete && allRepsHit) {
-    const inc = maxW >= 40 ? 2.5 : 1.25;
-    const next = +(maxW + inc).toFixed(2).replace(/\.?0+$/, '');
-    return { type: 'increase', msg: `All sets hit (${maxW} ${u} \u00d7 ${repsLabel}) ${dLabel} — try ${next} ${u} today` };
+// What the note on an exercise in today's session says. A raised weight says
+// why and can be taken back until its sets are done.
+function progressionNoteHTML(we, ei, day, wl) {
+  const u = wtUnit();
+  const open = we.sets.some(s => !s.completed && !s.warmup);
+  if (we.raised) {
+    const r = we.raised;
+    const msg = r.kept
+      ? `Kept at ${_fmtW(r.from)} ${u}. You earned ${_fmtW(r.to)} ${u} last time.`
+      : `Up to ${_fmtW(r.to)} ${u}. Every rep at ${_fmtW(r.from)} ${u} last time.`;
+    const btn = open ? `<button class="w-ex-tip-btn" onclick="event.stopPropagation();setRaise(${ei}, ${r.kept ? 'true' : 'false'})">${r.kept ? `Go up to ${_fmtW(r.to)} ${u}` : `Keep ${_fmtW(r.from)} ${u}`}</button>` : '';
+    return `<div class="w-ex-tip w-ex-tip-${r.kept ? 'maintain' : 'up'}"><span>${msg}</span>${btn}</div>`;
   }
-  if (allSetsComplete && !allRepsHit) {
-    return { type: 'maintain', msg: `Last: ${maxW} ${u} \u00d7 ${repsLabel} ${dLabel} — hit ${targetReps} before going heavier` };
+  let c = null;
+  try { c = progressionCall(we.exerciseId, day); } catch (e) {}
+  // Earned, but today was built lighter or the full plan was chosen on a short night.
+  if (c && c.kind === 'earned' && wl && (wl.tier === 'trim' || wl.tier === 'deload' || wl.asPlanned)) {
+    return `<div class="w-ex-tip w-ex-tip-maintain"><span>You earned ${_fmtW(c.to)} ${u} last time. It waits for a better night.</span></div>`;
   }
-  return { type: 'maintain', msg: `${completedSets.length}/${allSets.length} sets at ${maxW} ${u} ${dLabel} — complete all sets first` };
+  let tip = null;
+  try { tip = getProgressionTip(we.exerciseId, day); } catch (e) {}
+  return tip ? `<div class="w-ex-tip w-ex-tip-${tip.type}"><span>${tip.msg}</span></div>` : '';
+}
+
+// Take a raise back, or put it back. Only sets not yet done are changed, and
+// only ones still at the weight the raise set, so a hand-typed weight stays.
+function setRaise(ei, on) {
+  const wl = workoutLog[today()];
+  const we = wl && wl.exercises[ei];
+  if (!we || !we.raised) return;
+  const want = on ? we.raised.to : we.raised.from;
+  const was = on ? we.raised.from : we.raised.to;
+  we.sets.forEach(s => { if (!s.completed && !s.warmup && s.weight === was) s.weight = want; });
+  we.raised.kept = !on;
+  _wSave(wl);
+  if (typeof track === 'function') track('progression_choice', { raise: !!on });
+  if (curView === 'workoutActive') rerenderWorkoutActive();
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -224,6 +279,16 @@ function renderWorkout() {
   // What today's session is (or will be) built with, so the list matches it.
   const previewTier = _wIsTouched(todayLog) ? (todayLog.tier || 'full')
     : (todayLog && todayLog.asPlanned) ? 'full' : _todaysTier();
+  // Lifts that start heavier than last time: from the session once it exists
+  // for this day, otherwise from what it will be built with.
+  let upCount = 0;
+  try {
+    if (todayLog && todayLog.programId === prog.id && todayLog.dayIndex === workoutMeta.currentDayIndex && todayLog.exercises) {
+      upCount = todayLog.exercises.filter(e => e.raised && !e.raised.kept).length;
+    } else if (previewTier === 'full') {
+      upCount = day.ex.filter(eid => progressionCall(eid, day).kind === 'earned').length;
+    }
+  } catch (e) {}
 
   const exPreviewHTML = day.ex.length ? `
     <div class="w-ex-preview-list">
@@ -267,6 +332,7 @@ function renderWorkout() {
       <div class="w-hero-glow"></div>
       <h2 class="w-hero-day">${esc(day.name)}</h2>
       <div class="w-hero-focus">${esc(day.focus)}</div>
+      ${upCount ? `<div class="w-hero-up">Heavier on ${upCount} ${upCount === 1 ? 'lift' : 'lifts'} today</div>` : ''}
       ${exPreviewHTML}
       <div class="w-hero-cta ${workoutDoneToday() ? 'done' : ''}">${workoutDoneToday() ? 'Logged today. Open session' : 'Start workout'}</div>
     </div>
@@ -417,12 +483,19 @@ function _buildSession(prog, dayIndex, tier, asPlanned) {
     // 100x15 — a set that was never performed and cannot be.
     const last = getLastExerciseSession(eid);
     const top = topWorkingSet(last?.ex.sets);
-    const lastW = top ? top.weight : 0;
+    // Every rep last time earns the next weight, on a day built as planned.
+    // A lighter day, or the full plan chosen on a short night, waits.
+    const call = progressionCall(eid, day0);
+    const raise = !!(tier === 'full' && !asPlanned && call.kind === 'earned');
+    const lastW = raise ? call.to : (top ? top.weight : 0);
     // A prescribed rep target wins over whatever was done last time: five
-    // heavy reps is the point of a strength block, not a suggestion.
-    const lastR = rx ? rx[1] : (top ? top.reps : dr);
+    // heavy reps is the point of a strength block, not a suggestion. A new
+    // weight starts back at the target, not at last time's extra reps.
+    const lastR = rx ? rx[1] : raise ? call.targetReps : (top ? top.reps : dr);
     const p = adjustPrescription(ds, lastR, lastW, tier);
-    return { exerciseId: eid, sets: Array.from({length: p.sets}, () => ({weight: p.weight, reps: p.reps, completed: false})) };
+    const entry = { exerciseId: eid, sets: Array.from({length: p.sets}, () => ({weight: p.weight, reps: p.reps, completed: false})) };
+    if (raise) entry.raised = { from: call.from, to: call.to };
+    return entry;
   })};
   if (asPlanned) entry.asPlanned = true;
   return entry;
@@ -501,9 +574,7 @@ function renderWorkoutActive() {
     const ex = lookupExercise(we.exerciseId);
     const name = ex ? ex.name : 'Exercise data loading…';
     const muscle = ex ? ex.muscle : '';
-    let tip = null;
-    try { tip = getProgressionTip(we.exerciseId); } catch(e) {}
-    const tipHTML = tip ? `<div class="w-ex-tip w-ex-tip-${tip.type}">${tip.msg}</div>` : '';
+    const tipHTML = progressionNoteHTML(we, ei, day, wl);
     const setsHTML = we.sets.map((s, si) => _setRowHTML(ei, si, s)).join('');
     const canRemove = we.sets.length > 1;
     const muscles = ex && ex.muscles && ex.muscles.length ? ex.muscles.join(', ') : '';

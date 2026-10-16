@@ -386,6 +386,12 @@ nav {
 .w-hero-glow { position: absolute; top: -40px; right: -40px; width: 140px; height: 140px; background: radial-gradient(circle, rgba(var(--accent-rgb),0.08) 0%, transparent 70%); pointer-events: none; }
 .w-hero-day { font-family: var(--display); font-size: 26px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); margin: 0 0 2px; line-height: 1.15; }
 .w-hero-focus { font-size: 15px; color: var(--text-dim); }
+.w-hero-up { margin-top: 10px; font-size: 14px; font-weight: 600; color: var(--accent-b); }
+.w-ex-tip-btn {
+  margin-left: 14px; min-height: 36px; padding: 0 12px; border-radius: 9px; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--border2); color: var(--text);
+  font-family: inherit; font-size: 14px; font-weight: 600; white-space: nowrap;
+}
 /* Reads as the button it is. The whole card is the tap target. */
 .w-hero-cta {
   margin-top: 16px; padding: 14px 16px; border-radius: 14px; text-align: center;

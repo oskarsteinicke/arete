@@ -236,11 +236,13 @@ module.exports = function () {
     const src = fs.readFileSync(path.join(require('./harness').APP, 'workout.js'), 'utf8');
     const block = src.slice(src.indexOf('// Prefill from one real set'),
                             src.indexOf('const lastR', src.indexOf('// Prefill from one real set')) + 90);
-    // A program's own rep target (rx) may stand in front; behind it, the reps
-    // still come from the same set as the weight.
+    // A program's own rep target (rx), or an earned raise (which starts back at
+    // the target), may stand in front; behind them, the reps still come from
+    // the same set as the weight.
     r.check('prefill reads weight and reps off one set',
       /const top = topWorkingSet\(/.test(block) &&
-      /lastW = top \?/.test(block) && /lastR = (rx \? rx\[1\] : \()?top \? top\.reps/.test(block),
+      /lastW = (raise \? call\.to : \()?top \?/.test(block) &&
+      /lastR = (rx \? rx\[1\] : )?(raise \? call\.targetReps : )?\(?top \? top\.reps/.test(block),
       '(weight and reps sourced separately again)');
     r.check('and does not scan for a max independently',
       !/Math\.max\(\.\.\.lastSets/.test(block), '(back to mixing two sets)');
