@@ -656,15 +656,21 @@ function renderDiet() {
   </div>`;
 
   const mealsHTML = meals.length ? meals.map((ml, mi) => {
-    const mCal = ml.items.reduce((s,i) => s + (i.calories||0), 0);
-    const mP = ml.items.reduce((s,i) => s + (i.protein||0), 0);
+    const mCal = _mealCal(ml.items);
+    const mP = _mealProtein(ml.items);
     // One food per line, the name on the left and its numbers lined up on the
     // right. Each line used to read "Oats, 80g — 300cal, 11P, 54C, 6F".
-    const itemsHTML = ml.items.map(it => `<div class="d-meal-item">
-        <span class="d-mi-name">${esc(it.name)}</span>
-        <span class="d-mi-p">${it.protein || 0}g protein</span>
-        <span class="d-mi-cal">${(it.calories || 0).toLocaleString()} cal</span>
-      </div>`).join('');
+    // Tap a food to change how much of it there was.
+    const ref = ml.id || ('#' + mi);
+    const itemsHTML = ml.items.map((it, ii) => {
+      const key = `l:${ref}:${ii}`, open = _foodEditKey === key;
+      return `<div class="d-meal-item${open ? ' open' : ''}" role="button" tabindex="0" aria-expanded="${open}"
+          onclick="toggleFoodEditor('${esc(key)}')" onkeydown="if(event.key==='Enter'){toggleFoodEditor('${esc(key)}')}">
+        <span class="d-mi-name">${esc(it.name)}${_portionBadge(it)}</span>
+        <span class="d-mi-p">${_round1(it.protein || 0)}g protein</span>
+        <span class="d-mi-cal">${Math.round(it.calories || 0).toLocaleString()} cal</span>
+      </div>${open ? _foodEditorHTML(it, key) : ''}`;
+    }).join('');
     return `<div class="d-meal">
       <div class="d-meal-head">
         <div><div class="d-meal-name">${esc(ml.name)}</div><div class="d-meal-macros">${mCal.toLocaleString()} cal, ${mP}g protein</div></div>
@@ -680,8 +686,9 @@ function renderDiet() {
     ${typeof macroAdjustBadgeHTML === 'function' ? macroAdjustBadgeHTML() : ''}
     <div class="sec-h ani"><h2>Today's meals</h2></div>
     <div class="ani">${mealsHTML}</div>
+    ${nextMealHTML()}
     <div style="display:flex;gap:8px;padding:14px 24px 8px">
-      <button class="w-action-btn" style="margin:0;flex:1" onclick="go('dietAddMeal')">+ Add Meal</button>
+      <button class="w-action-btn" style="margin:0;flex:1" onclick="openAddMeal()">+ Add Meal</button>
       <button class="w-action-btn" style="margin:0;flex:1" onclick="go('dietRecipes')">Recipes</button>
     </div>
     ${_buildCalorieTrendChart()}
@@ -1239,19 +1246,32 @@ function renderDietAddMeal() {
   const types = ['Breakfast','Lunch','Dinner','Snack'];
   const typeBtns = types.map(t => `<button class="d-type-btn${t===curMealType?' active':''}" onclick="setMealType('${t}')">${t}</button>`).join('');
 
-  const itemsList = curMealItems.length ? curMealItems.map((it, i) =>
-    `<div class="d-fi"><span>${esc(it.name)}</span><div style="display:flex;align-items:center;gap:8px"><span class="d-fi-macros">${it.calories}cal ${it.protein}P ${it.carbs}C ${it.fat}F</span><button class="d-del-btn" onclick="removeFoodItem(${i})">\u00D7</button></div></div>`
-  ).join('') : '<p style="font-size:12px;color:var(--text-muted);padding:8px 0">No items added yet.</p>';
+  // Tap a food to change its amount, as on the Nutrition page.
+  const itemsList = curMealItems.map((it, i) => {
+    const key = `b:${i}`, open = _foodEditKey === key;
+    return `<div class="d-fi${open ? ' open' : ''}" role="button" tabindex="0" aria-expanded="${open}"
+        onclick="toggleFoodEditor('${key}')" onkeydown="if(event.key==='Enter'){toggleFoodEditor('${key}')}">
+        <span class="d-fi-text"><span class="d-fi-name">${esc(it.name)}${_portionBadge(it)}</span>
+        <span class="d-fi-macros">${Math.round(it.calories || 0)} cal, ${_round1(it.protein || 0)}g protein</span></span>
+        <button class="d-del-btn" onclick="event.stopPropagation();removeFoodItem(${i})" aria-label="Remove ${esc(it.name)}">\u00D7</button>
+      </div>${open ? _foodEditorHTML(it, key) : ''}`;
+  }).join('');
 
-  const totalCal = curMealItems.reduce((s,i) => s + i.calories, 0);
+  const totalCal = _mealCal(curMealItems);
+  const buildingHTML = curMealItems.length ? `
+    <div class="d-building ani">
+      <div class="d-building-head"><h2>Your ${esc(curMealType.toLowerCase())}</h2><span>${totalCal.toLocaleString()} cal, ${_mealProtein(curMealItems)}g protein</span></div>
+      <div class="d-items-list">${itemsList}</div>
+      <button class="d-save-meal" onclick="saveMeal()">Save ${esc(curMealType.toLowerCase())}</button>
+    </div>` : '';
 
   document.getElementById('view').innerHTML = `
     <button class="back" onclick="curMealItems=[];go('diet')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
     <div class="page-head ani"><div class="page-title">Add Meal</div><div class="page-sub">Log what you ate.</div></div>
     <div class="d-type-btns">${typeBtns}</div>
+    ${buildingHTML}
+    ${_againSectionHTML()}
     <div style="padding:0 24px">
-      <div class="sec-lbl" style="padding:0 0 8px">Items${curMealItems.length ? ` \u00B7 ${totalCal} cal total` : ''}</div>
-      <div class="d-items-list">${itemsList}</div>
 
       <div class="dm-section">
         <div class="dm-header">
@@ -1288,7 +1308,6 @@ function renderDietAddMeal() {
         <div id="food-search-results"></div>
       </div>
 
-      ${_buildFavoritesSection()}
 
       <div class="j-lbl">Manual Entry</div>
       <input class="d-input" type="text" id="fi-name" placeholder="Food name (e.g. Chicken breast 200g)">
@@ -1300,11 +1319,10 @@ function renderDietAddMeal() {
       </div>
       <button class="w-action-btn" style="width:100%;margin:12px 0" onclick="addFoodItem()">ADD ITEM</button>
       <button class="w-action-btn" style="width:100%;margin:0 0 12px;background:rgba(110,159,212,0.1);border-color:var(--pro);color:var(--pro)" onclick="go('dietRecipes')">QUICK ADD FROM RECIPES \u2192</button>
-    </div>
-    <button class="w-finish" onclick="saveMeal()"${curMealItems.length?'':' style="opacity:0.4;pointer-events:none"'}>SAVE MEAL</button>`;
+    </div>`;
 }
 
-function setMealType(t) { curMealType = t; go('dietAddMeal'); }
+function setMealType(t) { curMealType = t; _redraw(renderDietAddMeal); }
 
 function addFoodItem() {
   const name = document.getElementById('fi-name')?.value?.trim();
@@ -1320,7 +1338,7 @@ function addFoodItem() {
   go('dietAddMeal');
 }
 
-function removeFoodItem(i) { curMealItems.splice(i, 1); go('dietAddMeal'); }
+function removeFoodItem(i) { curMealItems.splice(i, 1); _foodEditKey = null; _redraw(renderDietAddMeal); }
 
 // ── OPEN FOOD FACTS SEARCH ──────────────────────────────────────────────
 // ── FOOD DATABASE ────────────────────────────────────────────────────────
@@ -1460,6 +1478,8 @@ function selectFoodResult(i) {
 }
 
 // ── MEAL FAVORITES ──────────────────────────────────────────────────────
+// Every saved meal is also kept here. It is read only as a fallback by
+// usualMeals(), for meals older than the log it looks through.
 function getMealFavorites() { return LS.get('hvi_meal_favorites', []); }
 
 function saveMealAsFavorite() {
@@ -1470,129 +1490,370 @@ function saveMealAsFavorite() {
   LS.set('hvi_meal_favorites', favs);
 }
 
-function logFavorite(i) {
-  const favs = getMealFavorites();
-  const fav = favs[i];
-  if (!fav) return;
-  const t = today();
-  if (!mealLog[t]) mealLog[t] = { meals: [] };
-  mealLog[t].meals.push({ id: genId('m'), name: fav.name, items: [...fav.items] });
-  LS.set('hvi_meal_log', mealLog);
-  awardXP(15, 'body');
-  checkDailyQuests();
-  go('diet');
+// ── LOGGING AGAIN ───────────────────────────────────────────────────────
+// Most people eat the same few breakfasts and lunches, and each one used to be
+// built from scratch, or found in a list below the photo, describe and search
+// sections that showed every meal twice (each save was also kept as a
+// "favourite") under 9px labels. Now the meal usually eaten at this time is
+// one tap from the Nutrition page, the rest are at the top of Add Meal, and
+// the foods logged most are one tap from being added.
+const AGAIN_DAYS = 30;          // how far back the log is read for usual meals and foods
+
+// The meal people mean at this hour.
+function mealTypeNow(when) {
+  const d = when || new Date();
+  const h = d.getHours() + d.getMinutes() / 60;
+  return h < 11 ? 'Breakfast' : h < 15 ? 'Lunch' : h < 17 ? 'Snack' : h < 21.5 ? 'Dinner' : 'Snack';
 }
 
-function deleteFavorite(i) {
-  const favs = getMealFavorites();
-  favs.splice(i, 1);
-  LS.set('hvi_meal_favorites', favs);
+// Add Meal opens on the meal for this hour, unless one is half built.
+function openAddMeal() {
+  if (!curMealItems.length) curMealType = mealTypeNow();
+  _foodEditKey = null;
   go('dietAddMeal');
 }
 
-function getRecentMeals() {
-  const recent = [];
-  const seen = new Set();
-  const dates = Object.keys(mealLog).sort().reverse().slice(0, 14);
-  for (const d of dates) {
-    for (const meal of (mealLog[d]?.meals || [])) {
-      const key = meal.items.map(it => it.name).sort().join('|');
-      if (!seen.has(key)) {
-        seen.add(key);
-        recent.push(meal);
-        if (recent.length >= 8) return recent;
+const _copyItem = it => JSON.parse(JSON.stringify(it));
+const _mealKey = items => items.map(it => String(it.name || '').trim().toLowerCase()).sort().join('|');
+const _mealCal = items => Math.round(items.reduce((s, it) => s + (it.calories || 0), 0));
+const _mealProtein = items => Math.round(items.reduce((s, it) => s + (it.protein || 0), 0));
+function _daysBack(n) { const x = new Date(); x.setDate(x.getDate() - n); return dateKey(x); }
+
+// Meals eaten before, one per combination of foods, best first: the ones
+// usually had as `type`, then the most often eaten, then the most recent.
+function usualMeals(type) {
+  const since = _daysBack(AGAIN_DAYS);
+  const byKey = new Map();
+  const dates = Object.keys(mealLog || {}).filter(x => x >= since).sort().reverse();
+  for (const day of dates) {
+    for (const meal of ((mealLog[day] || {}).meals || [])) {
+      if (!meal || !Array.isArray(meal.items) || !meal.items.length) continue;
+      const key = _mealKey(meal.items);
+      let e = byKey.get(key);
+      // The most recent time is the one kept: its amounts are the current ones.
+      if (!e) { e = { key, items: meal.items.map(_copyItem), count: 0, last: day, names: {} }; byKey.set(key, e); }
+      e.count++;
+      e.names[meal.name] = (e.names[meal.name] || 0) + 1;
+    }
+  }
+  const oldest = _daysBack(90);
+  for (const f of getMealFavorites()) {
+    if (!f || !Array.isArray(f.items) || !f.items.length || !f.savedAt) continue;
+    const key = _mealKey(f.items), day = dateKey(new Date(f.savedAt));
+    if (byKey.has(key) || day < oldest) continue;
+    byKey.set(key, { key, items: f.items.map(_copyItem), count: 1, last: day, names: { [f.name]: 1 } });
+  }
+  return [...byKey.values()].map(e => {
+    const usual = Object.keys(e.names).sort((a, b) => e.names[b] - e.names[a])[0];
+    return { key: e.key, type: usual, items: e.items, count: e.count, last: e.last, cal: _mealCal(e.items), protein: _mealProtein(e.items) };
+  }).sort((a, b) => ((a.type === type ? 0 : 1) - (b.type === type ? 0 : 1)) || (b.count - a.count) || (a.last < b.last ? 1 : a.last > b.last ? -1 : 0))
+    .slice(0, 8);
+}
+
+// The meal for this hour, if it has not been logged yet today and the same
+// one was eaten at that time in the last week.
+function nextMealSuggestion() {
+  const type = mealTypeNow();
+  const t = today();
+  const todays = ((mealLog || {})[t] || {}).meals || [];
+  if (todays.some(m => m && m.name === type)) return null;
+  const weekAgo = _daysBack(7);
+  const m = usualMeals(type).find(x => x.type === type && x.last >= weekAgo && x.last < t);
+  if (!m) return null;
+  const lower = type.toLowerCase();
+  const when = m.last === yesterday() ? `Same ${lower} as yesterday?`
+    : m.count >= 3 ? `Your usual ${lower}?`
+    : `Same ${lower} as ${new Date(m.last + 'T12:00').toLocaleDateString('en-US', { weekday: 'long' })}?`;
+  return Object.assign({ forType: type, headline: when }, m);
+}
+
+function _foodList(items) {
+  const names = items.map(it => it.name);
+  return names.length <= 3 ? names.join(', ') : `${names.slice(0, 3).join(', ')} and ${names.length - 3} more`;
+}
+
+// The card's meal is kept, so a tap logs what the card said even if the clock
+// has moved into the next meal since it was drawn (found at 21:30: the card
+// said dinner and the tap logged a snack).
+let _shownSuggestion = null;
+function nextMealHTML() {
+  const s = nextMealSuggestion();
+  _shownSuggestion = s;
+  if (!s) return '';
+  return `<div class="d-next ani">
+      <div class="d-next-text">
+        <div class="d-next-head">${esc(s.headline)}</div>
+        <div class="d-next-items">${esc(_foodList(s.items))}</div>
+        <div class="d-next-num">${s.cal.toLocaleString()} cal, ${s.protein}g protein</div>
+      </div>
+      <button class="d-next-btn" onclick="logSuggestedMeal()">Log it</button>
+    </div>`;
+}
+
+// The foods logged most often, at least twice, most recent amounts.
+function usualFoods() {
+  const since = _daysBack(AGAIN_DAYS);
+  const byName = new Map();
+  const dates = Object.keys(mealLog || {}).filter(x => x >= since).sort().reverse();
+  for (const day of dates) {
+    for (const meal of ((mealLog[day] || {}).meals || [])) {
+      for (const it of ((meal && meal.items) || [])) {
+        const key = String(it.name || '').trim().toLowerCase();
+        if (!key) continue;
+        let e = byName.get(key);
+        if (!e) { e = { item: _copyItem(it), count: 0, last: day }; byName.set(key, e); }
+        e.count++;
       }
     }
   }
-  return recent;
+  return [...byName.values()].filter(e => e.count >= 2)
+    .sort((a, b) => (b.count - a.count) || (a.last < b.last ? 1 : a.last > b.last ? -1 : 0))
+    .slice(0, 8).map(e => e.item);
 }
 
-function _buildFavoritesSection() {
-  const favs = getMealFavorites();
-  const recent = getRecentMeals();
-  if (!favs.length && !recent.length) return '';
-
-  let html = '<div class="dm-section"><div class="dm-header"><span class="dm-icon">' + (typeof icon==='function'?icon('star',18):'') + '</span><span class="dm-header-text">Quick Re-log</span><span class="dm-header-sub">Favorites & recent meals</span></div>';
-
-  const SHOW_LIMIT = 3;
-
-  if (favs.length) {
-    html += '<div class="sec-lbl" style="padding:8px 0 4px;font-size:9px">FAVORITES</div>';
-    html += favs.slice(0, SHOW_LIMIT).map((f, i) => {
-      const cal = f.items.reduce((s, it) => s + (it.calories||0), 0);
-      return `<div class="food-result" style="position:relative" onclick="logFavorite(${i})">
-        <div class="food-result-name">${esc(f.name)} — ${f.items.map(it=>esc(it.name)).join(', ')}</div>
-        <div class="food-result-macros">${cal} cal · tap to log</div>
-        <button class="d-del-btn" style="position:absolute;right:8px;top:8px" onclick="event.stopPropagation();deleteFavorite(${i})">×</button>
-      </div>`;
-    }).join('');
-    if (favs.length > SHOW_LIMIT) {
-      html += `<div id="favs-extra" style="display:none">` + favs.slice(SHOW_LIMIT).map((f, i) => {
-        const idx = i + SHOW_LIMIT;
-        const cal = f.items.reduce((s, it) => s + (it.calories||0), 0);
-        return `<div class="food-result" style="position:relative" onclick="logFavorite(${idx})">
-          <div class="food-result-name">${esc(f.name)} — ${f.items.map(it=>esc(it.name)).join(', ')}</div>
-          <div class="food-result-macros">${cal} cal · tap to log</div>
-          <button class="d-del-btn" style="position:absolute;right:8px;top:8px" onclick="event.stopPropagation();deleteFavorite(${idx})">×</button>
-        </div>`;
-      }).join('') + `</div>`;
-      html += `<div class="food-result" style="text-align:center;color:var(--accent);font-size:12px;cursor:pointer" onclick="document.getElementById('favs-extra').style.display='block';this.remove()">Show ${favs.length - SHOW_LIMIT} more ▾</div>`;
-    }
-  }
-
-  if (recent.length) {
-    html += '<div class="sec-lbl" style="padding:8px 0 4px;font-size:9px">RECENT MEALS</div>';
-    html += recent.slice(0, SHOW_LIMIT).map((m, i) => {
-      const cal = m.items.reduce((s, it) => s + (it.calories||0), 0);
-      return `<div class="food-result" onclick="logRecentMeal(${i})">
-        <div class="food-result-name">${esc(m.name)} — ${m.items.map(it=>esc(it.name)).join(', ')}</div>
-        <div class="food-result-macros">${cal} cal · tap to log again</div>
-      </div>`;
-    }).join('');
-    if (recent.length > SHOW_LIMIT) {
-      html += `<div id="recent-extra" style="display:none">` + recent.slice(SHOW_LIMIT).map((m, i) => {
-        const idx = i + SHOW_LIMIT;
-        const cal = m.items.reduce((s, it) => s + (it.calories||0), 0);
-        return `<div class="food-result" onclick="logRecentMeal(${idx})">
-          <div class="food-result-name">${esc(m.name)} — ${m.items.map(it=>esc(it.name)).join(', ')}</div>
-          <div class="food-result-macros">${cal} cal · tap to log again</div>
-        </div>`;
-      }).join('') + `</div>`;
-      html += `<div class="food-result" style="text-align:center;color:var(--accent);font-size:12px;cursor:pointer" onclick="document.getElementById('recent-extra').style.display='block';this.remove()">Show ${recent.length - SHOW_LIMIT} more ▾</div>`;
-    }
-  }
-
-  html += '</div>';
-  return html;
-}
-
-function logRecentMeal(i) {
-  const recent = getRecentMeals();
-  const m = recent[i];
-  if (!m) return;
+// One way into the log for everything that records a meal. Re-logging and
+// recipes used to write the meal and stop there: no XP, no "meal logged"
+// signal, so a habit linked to protein or calories never heard about it.
+function _commitMeal(name, items, via) {
   const t = today();
   if (!mealLog[t]) mealLog[t] = { meals: [] };
-  mealLog[t].meals.push({ id: genId('m'), name: m.name, items: [...m.items] });
+  const id = genId('m');
+  mealLog[t].meals.push({ id, name, items: items.map(_copyItem) });
   LS.set('hvi_meal_log', mealLog);
-  awardXP(15, 'body');
-  checkDailyQuests();
+  if (typeof track === 'function') track('meal_logged', { meal_type: name, items: items.length, via });
+  if (window.Arete) window.Arete.emit('meal:logged', { meal: name });
+  if (typeof awardXP === 'function') awardXP(15, 'body');
+  const dm = getDayMacros();
+  if (dietMeta.dailyGoals.protein > 0 && dm.p >= dietMeta.dailyGoals.protein * 0.9 && typeof trackWeeklyProtein === 'function') trackWeeklyProtein();
+  if (typeof checkDailyQuests === 'function') checkDailyQuests();
+  return id;
+}
+
+// A whole meal logged in one tap can be taken back for a few seconds.
+function _afterQuickLog(id, type, items) {
   go('diet');
+  if (typeof showActionToast === 'function') {
+    showActionToast(`Logged ${type.toLowerCase()}, ${_mealCal(items).toLocaleString()} cal`, 'Undo', () => undoMeal(id));
+  }
+}
+
+function undoMeal(id) {
+  const t = today();
+  const fresh = LS.get('hvi_meal_log', {});
+  const meals = (fresh[t] || {}).meals || [];
+  const idx = meals.findIndex(m => m && m.id === id);
+  if (idx < 0) return;
+  meals.splice(idx, 1);
+  fresh[t].meals = meals;
+  mealLog = fresh;
+  LS.set('hvi_meal_log', mealLog);
+  if (typeof track === 'function') track('meal_undo', {});
+  if (curView === 'diet') _redraw(renderDiet);
+}
+
+function logSuggestedMeal() {
+  const s = _shownSuggestion || nextMealSuggestion();
+  _shownSuggestion = null;
+  if (!s) return;
+  // Already logged since the card was drawn (another tap, another device).
+  const now = ((LS.get('hvi_meal_log', {})[today()] || {}).meals || []);
+  if (now.some(m => m && m.name === s.forType)) { if (curView === 'diet') _redraw(renderDiet); return; }
+  const id = _commitMeal(s.forType, s.items, 'suggested');
+  _afterQuickLog(id, s.forType, s.items);
+}
+
+let _againList = [];
+// From Add Meal: logged straight away as the chosen meal, or, when one is
+// being built, its foods are added to it instead.
+function relogMeal(i) {
+  const m = _againList[i];
+  if (!m) return;
+  if (curMealItems.length) {
+    curMealItems.push(...m.items.map(_copyItem));
+    _redraw(renderDietAddMeal);
+    return;
+  }
+  const id = _commitMeal(curMealType, m.items, 'again');
+  _afterQuickLog(id, curMealType, m.items);
+}
+
+let _usualFoodList = [];
+function addUsualFood(i) {
+  const it = _usualFoodList[i];
+  if (!it) return;
+  curMealItems.push(_copyItem(it));
+  if (typeof haptic === 'function') haptic('light');
+  _redraw(renderDietAddMeal);
+}
+
+function _againSectionHTML() {
+  _againList = usualMeals(curMealType);
+  _usualFoodList = usualFoods();
+  if (!_againList.length && !_usualFoodList.length) return '';
+  const building = curMealItems.length > 0;
+  const rows = _againList.map((m, i) => `<button class="d-again${i >= 3 ? ' d-again-more' : ''}" onclick="relogMeal(${i})">
+      <span class="d-again-text">
+        <span class="d-again-name">${esc(_foodList(m.items))}</span>
+        <span class="d-again-sub">${esc(m.type)}, ${m.cal.toLocaleString()} cal</span>
+      </span>
+      <span class="d-again-act">${building ? 'Add' : 'Log'}</span>
+    </button>`).join('');
+  const more = _againList.length > 3
+    ? `<button class="d-again-show" onclick="this.parentElement.classList.add('d-again-open');this.remove()">Show ${_againList.length - 3} more</button>` : '';
+  const chips = _usualFoodList.map((it, i) =>
+    `<button class="d-usual-chip" onclick="addUsualFood(${i})">${esc(it.name)}<span>${Math.round(it.calories || 0)}</span></button>`).join('');
+  return `${_againList.length ? `<div class="sec-h ani"><h2>${building ? 'Add a meal you\u2019ve had' : 'Log again'}</h2></div>
+    <div class="d-again-list ani">${rows}${more}</div>` : ''}
+    ${chips ? `<div class="sec-h ani"><h2>Your usual foods</h2></div><div class="d-usual ani">${chips}</div>` : ''}`;
+}
+
+function logRecentMeal(i) { relogMeal(i); }
+
+// ── AMOUNTS ──────────────────────────────────────────────────────────────
+// A food logged as "Rice, 150g cooked" that was really 200 g used to mean
+// deleting it and adding it again. Tapping a food now changes its amount, and
+// its calories and macros follow. The first change keeps the food as it was
+// logged (base), so every later change scales from that, not from a scaled
+// copy that would drift with rounding.
+const PORTIONS = [[0.5, '\u00bd'], [0.75, '\u00be'], [1, '1\u00d7'], [1.5, '1\u00bd'], [2, '2\u00d7'], [3, '3\u00d7']];
+
+// Round amounts around the one logged, in a step that suits its size:
+// 150 g offers 50 to 300 g in 50s, 80 g offers 40 to 140 g in 20s.
+function _amountSteps(v) {
+  const want = v / 3;
+  const step = [5, 10, 20, 50, 100, 250].reduce((a, b) => Math.abs(b - want) < Math.abs(a - want) ? b : a);
+  const out = [];
+  for (let k = -2; out.length < 6 && k < 12; k++) { const x = v + k * step; if (x > 0) out.push(x); }
+  return out;
+}
+let _foodEditKey = null;    // 'b:<i>' for Add Meal, 'l:<meal>:<i>' for a logged meal
+
+function _amountIn(name) {
+  const m = /(\d+(?:[.,]\d+)?)(\s?)(g|ml)\b/i.exec(String(name || ''));
+  return m ? { value: parseFloat(m[1].replace(',', '.')), text: m[0], space: m[2], unit: m[3] } : null;
+}
+function _round1(x) { return Math.round(x * 10) / 10; }
+function _niceAmount(x) { return x >= 50 ? Math.round(x / 5) * 5 : Math.round(x); }
+function _fmtAmount(x) { return String(Math.round(x * 10) / 10); }
+
+function scaleFoodItem(it, factor) {
+  if (!it || !(factor > 0)) return it;
+  if (!it.base) it.base = { name: it.name, calories: it.calories || 0, protein: it.protein || 0, carbs: it.carbs || 0, fat: it.fat || 0 };
+  const b = it.base;
+  const f = Math.max(0.1, Math.min(10, factor));
+  it.calories = Math.round(b.calories * f);
+  it.protein = _round1(b.protein * f);
+  it.carbs = _round1(b.carbs * f);
+  it.fat = _round1(b.fat * f);
+  const a = _amountIn(b.name);
+  it.name = a ? b.name.replace(a.text, `${_niceAmount(a.value * f)}${a.space}${a.unit}`) : b.name;
+  if (Math.abs(f - 1) < 0.001) delete it.portion; else it.portion = Math.round(f * 100) / 100;
+  return it;
+}
+
+// "×1.5" next to a food whose name carries no amount of its own.
+function _portionBadge(it) {
+  if (!it.portion || _amountIn((it.base || it).name)) return '';
+  const known = PORTIONS.find(p => Math.abs(p[0] - it.portion) < 0.01);
+  return ` <span class="d-portion">${known && it.portion !== 1 ? (known[1].includes('\u00d7') ? known[1] : known[1] + '\u00d7') : '\u00d7' + it.portion}</span>`;
+}
+
+function _foodEditorHTML(it, key) {
+  const base = it.base || it;
+  const cur = it.portion || 1;
+  const a = _amountIn(base.name);
+  const k = esc(key);
+  const opts = a
+    ? _amountSteps(a.value).map(v => [v / a.value, `${_fmtAmount(v)} ${a.unit}`])
+    : PORTIONS;
+  const chips = opts.map(([f, label]) =>
+    `<button class="d-fe-chip${Math.abs(f - cur) < 0.01 ? ' on' : ''}" onclick="event.stopPropagation();setFoodAmount('${k}', ${f})">${label}</button>`).join('');
+  const exact = a ? `<label class="d-fe-exact" onclick="event.stopPropagation()">
+      <input class="d-fe-input" type="number" inputmode="decimal" id="fe-amt" value="${_niceAmount(a.value * cur)}" aria-label="Amount in ${a.unit}"
+        onkeydown="if(event.key==='Enter'){setFoodExact('${k}')}"> ${a.unit}
+      <button class="d-fe-set" onclick="event.stopPropagation();setFoodExact('${k}')">Set</button></label>` : '';
+  return `<div class="d-fe" onclick="event.stopPropagation()">
+      <div class="d-fe-chips">${chips}</div>
+      <div class="d-fe-foot">${exact}<button class="d-fe-remove" onclick="event.stopPropagation();removeFood('${k}')">Remove</button></div>
+    </div>`;
+}
+
+function toggleFoodEditor(key) {
+  _foodEditKey = _foodEditKey === key ? null : key;
+  _redraw(curView === 'dietAddMeal' ? renderDietAddMeal : renderDiet);
+}
+
+// Finds the food a key points at. Logged meals are read from fresh storage
+// and found by id, the way deleteMeal does, so a stale copy is never written.
+function _foodAt(key) {
+  const parts = String(key).split(':');
+  if (parts[0] === 'b') return { item: curMealItems[+parts[1]], save() {} };
+  if (parts[0] !== 'l') return null;
+  const t = today();
+  const fresh = LS.get('hvi_meal_log', {});
+  const meals = (fresh[t] || {}).meals || [];
+  const ref = parts[1], ii = +parts[2];
+  const mi = ref.charAt(0) === '#' ? +ref.slice(1) : meals.findIndex(m => m && m.id === ref);
+  const meal = meals[mi];
+  if (!meal || !meal.items || !meal.items[ii]) return null;
+  return { item: meal.items[ii], meal, meals, mi, ii, save() { mealLog = fresh; LS.set('hvi_meal_log', mealLog); } };
+}
+
+function setFoodAmount(key, factor) {
+  const at = _foodAt(key);
+  if (!at || !at.item) return;
+  scaleFoodItem(at.item, factor);
+  at.save();
+  if (typeof track === 'function') track('food_amount', { factor: Math.round(factor * 100) / 100 });
+  _redraw(curView === 'dietAddMeal' ? renderDietAddMeal : renderDiet);
+}
+
+function setFoodExact(key) {
+  const at = _foodAt(key);
+  const el = document.getElementById('fe-amt');
+  if (!at || !at.item || !el) return;
+  const a = _amountIn((at.item.base || at.item).name);
+  const v = parseFloat(String(el.value).replace(',', '.'));
+  if (!a || !(v > 0)) return;
+  setFoodAmount(key, v / a.value);
+}
+
+// Taking one food out of a logged meal, with a moment to undo it. The last
+// food in a meal goes the way the whole meal does.
+function removeFood(key) {
+  const at = _foodAt(key);
+  if (!at || !at.item) return;
+  _foodEditKey = null;
+  if (String(key).charAt(0) === 'b') { removeFoodItem(+String(key).split(':')[1]); return; }
+  if (at.meal.items.length === 1) { deleteMeal(at.mi, at.meal.id || ''); return; }
+  const [gone] = at.meal.items.splice(at.ii, 1);
+  at.save();
+  _redraw(renderDiet);
+  const mealId = at.meal.id, ii = at.ii;
+  if (typeof showActionToast === 'function') showActionToast(`Removed ${String(gone.name).slice(0, 28)}`, 'Undo', () => {
+    const t = today(), fresh = LS.get('hvi_meal_log', {});
+    const meal = ((fresh[t] || {}).meals || []).find(m => m && m.id === mealId);
+    if (!meal) return;
+    meal.items.splice(Math.min(ii, meal.items.length), 0, gone);
+    mealLog = fresh; LS.set('hvi_meal_log', mealLog);
+    if (curView === 'diet') _redraw(renderDiet);
+  });
+}
+
+// Redraw the screen in place: no history entry, no jump to the top.
+function _redraw(fn) {
+  const v = document.getElementById('view');
+  const st = v ? v.scrollTop : 0;
+  fn();
+  if (v) v.scrollTop = st;
 }
 
 function saveMeal() {
   if (!curMealItems.length) return;
-  if (typeof track === 'function') track('meal_logged', { meal_type: curMealType, items: curMealItems.length });
   saveMealAsFavorite();
-  const t = today();
-  if (!mealLog[t]) mealLog[t] = { meals: [] };
-  mealLog[t].meals.push({ id: genId('m'), name: curMealType, items: [...curMealItems] });
-  if (window.Arete) window.Arete.emit('meal:logged', { meal: curMealType });
-  LS.set('hvi_meal_log', mealLog);
-  awardXP(15, 'body');
-  const _dm = getDayMacros();
-  if (dietMeta.dailyGoals.protein > 0 && _dm.p >= dietMeta.dailyGoals.protein * 0.9) trackWeeklyProtein();
-  checkDailyQuests();
+  _commitMeal(curMealType, curMealItems, 'built');
   curMealItems = [];
+  _foodEditKey = null;
   go('diet');
 }
 
@@ -1635,14 +1896,7 @@ function renderDietRecipeDetail() {
 function logRecipe(id) {
   const r = RECIPES.find(x => x.id === id);
   if (!r) return;
-  const t = today();
-  if (!mealLog[t]) mealLog[t] = { meals: [] };
-  mealLog[t].meals.push({
-    id: genId('m'),
-    name: r.cat,
-    items: [{ name: r.name, calories: r.cal, protein: r.p, carbs: r.c, fat: r.f }]
-  });
-  LS.set('hvi_meal_log', mealLog);
+  _commitMeal(r.cat, [{ name: r.name, calories: r.cal, protein: r.p, carbs: r.c, fat: r.f }], 'recipe');
   go('diet');
 }
 

@@ -1117,7 +1117,7 @@ function toggleQuickLog() {
   menu.id = 'quick-log-menu';
   menu.className = 'quick-log-menu';
   menu.innerHTML = `
-    <div class="quick-log-item" onclick="closeQuickLog();go('dietAddMeal')">${icon('utensils')} Log Meal</div>
+    <div class="quick-log-item" onclick="closeQuickLog();openAddMeal()">${icon('utensils')} Log Meal</div>
     <div class="quick-log-item" onclick="closeQuickLog();go('workoutActive')">${icon('activity')} Start Workout</div>
     <div class="quick-log-item" onclick="closeQuickLog();go('library')">${icon('edit')} Journal</div>
     <div class="quick-log-item" onclick="closeQuickLog();go('sleep')">${icon('moon')} Log Sleep</div>
@@ -1138,7 +1138,8 @@ function showToast(msg) {
       document.body.appendChild(el);
     }
     el.textContent = msg;
-    el.classList.remove('toast--shield');
+    el.classList.remove('toast--shield', 'toast--action');
+    _toastAction = null;
     // Restart the animation even if a toast is already on screen.
     el.classList.remove('show');
     void el.offsetWidth;
@@ -1146,6 +1147,29 @@ function showToast(msg) {
     clearTimeout(_toastTimer);
     _toastTimer = setTimeout(() => el.classList.remove('show'), 1700);
   } catch {}
+}
+
+// A toast with one action, for something done in a single tap that should be
+// easy to take back. It stays long enough to reach.
+let _toastAction = null;
+function showActionToast(msg, label, fn) {
+  try {
+    showToast(msg);
+    const el = document.getElementById('toast');
+    el.innerHTML = `<span>${esc(msg)}</span><button class="toast-act" onclick="runToastAction()">${esc(label)}</button>`;
+    el.classList.add('toast--action');
+    _toastAction = fn;
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => { el.classList.remove('show'); _toastAction = null; }, 5000);
+  } catch {}
+}
+function runToastAction() {
+  const fn = _toastAction;
+  _toastAction = null;
+  const el = document.getElementById('toast');
+  if (el) el.classList.remove('show');
+  clearTimeout(_toastTimer);
+  if (typeof fn === 'function') fn();
 }
 
 // The shield is the one toast worth a moment: it spent something of theirs to

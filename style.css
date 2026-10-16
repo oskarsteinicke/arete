@@ -793,9 +793,73 @@ input.d-input[type="date"]::-webkit-date-and-time-value { text-align: left; min-
 .d-input-sm::placeholder { color: var(--text-muted); font-size: 10px; }
 
 .d-items-list { margin: 12px 0; }
-.d-fi { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border2); font-size: 13px; color: var(--text-dim); }
+
+/* ── Logging again, usual foods and amounts (diet.js) ── */
+.d-next {
+  display: flex; align-items: center; gap: 14px; margin: 14px 24px 0; padding: 16px;
+  background: linear-gradient(160deg, rgba(var(--accent-rgb), 0.10), var(--surface) 65%);
+  border: 1px solid rgba(var(--accent-rgb), 0.35); border-radius: var(--radius);
+}
+.d-next-text { flex: 1; min-width: 0; }
+.d-next-head { font-size: 16px; font-weight: 600; color: var(--text); }
+.d-next-items { font-size: 14px; color: var(--text-dim); line-height: 1.4; margin-top: 3px; }
+.d-next-num { font-size: 14px; color: var(--accent-b); margin-top: 4px; font-variant-numeric: tabular-nums; }
+.d-next-btn, .d-save-meal {
+  flex-shrink: 0; min-height: 44px; padding: 0 18px; border: none; border-radius: 12px; cursor: pointer;
+  background: var(--accent); color: #0a0908; font-family: inherit; font-size: 15px; font-weight: 700;
+}
+.d-next-btn:active, .d-save-meal:active, .d-again:active, .d-usual-chip:active { transform: scale(0.98); }
+.d-building { margin: 0 24px 8px; padding: 16px; background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); }
+.d-building-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.d-building-head h2 { font-family: var(--display); font-size: 18px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); margin: 0; }
+.d-building-head span { font-size: 14px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.d-building .d-items-list { margin: 8px 0 12px; }
+.d-save-meal { width: 100%; }
+.d-fi-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.d-fi-name { color: var(--text); }
+.d-fi .d-fi-macros { font-size: 14px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.d-fi.open, .d-meal-item.open { border-bottom-color: transparent; }
+.d-meal-item { cursor: pointer; }
+.d-portion { font-size: 13px; color: var(--accent-b); font-weight: 600; white-space: nowrap; }
+.d-again-list { padding: 0 24px; display: flex; flex-direction: column; gap: 8px; }
+.d-again {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 16px; text-align: left; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--border2); border-radius: 14px; font-family: inherit; color: var(--text);
+}
+.d-again-more { display: none; }
+.d-again-open .d-again-more { display: flex; }
+.d-again-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.d-again-name { font-size: 15px; color: var(--text); line-height: 1.35; }
+.d-again-sub { font-size: 14px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.d-again-act { flex-shrink: 0; font-size: 15px; font-weight: 700; color: var(--accent-b); }
+.d-again-show { align-self: flex-start; background: none; border: none; padding: 6px 0; cursor: pointer; font-family: inherit; font-size: 14px; color: var(--accent-b); }
+.d-usual { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 24px 8px; }
+.d-usual-chip {
+  display: inline-flex; align-items: baseline; gap: 8px; max-width: 100%; min-height: 40px; padding: 9px 14px; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--border2); border-radius: 999px;
+  font-family: inherit; font-size: 14px; color: var(--text); text-align: left;
+}
+.d-usual-chip span { font-size: 13px; color: var(--text-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.d-fe { padding: 4px 0 14px; border-bottom: 1px solid var(--border2); }
+.d-meal .d-fe { border-bottom: none; padding-bottom: 10px; }
+.d-fe-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.d-fe-chip {
+  min-width: 52px; min-height: 40px; padding: 0 12px; border-radius: 999px; cursor: pointer;
+  background: var(--surface2); border: 1px solid var(--border2); color: var(--text-dim);
+  font-family: inherit; font-size: 14px; font-variant-numeric: tabular-nums;
+}
+.d-fe-chip.on { border-color: var(--accent); color: var(--accent-b); background: rgba(var(--accent-rgb), 0.12); font-weight: 600; }
+.d-fe-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.d-fe-exact { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-dim); }
+.d-fe-input {
+  width: 84px; min-height: 40px; padding: 0 10px; border-radius: 10px; -webkit-appearance: none; appearance: none;
+  background: var(--surface2); border: 1px solid var(--border2); color: var(--text); font-family: inherit; font-size: 16px;
+}
+.d-fe-set { min-height: 40px; padding: 0 14px; border-radius: 10px; cursor: pointer; background: var(--surface2); border: 1px solid var(--border2); color: var(--text); font-family: inherit; font-size: 14px; font-weight: 600; }
+.d-fe-remove { min-height: 40px; padding: 0 4px; margin-left: auto; background: none; border: none; cursor: pointer; font-family: inherit; font-size: 14px; color: var(--fat); }
+.d-fi { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border2); font-size: 15px; color: var(--text-dim); cursor: pointer; }
 .d-fi:last-child { border-bottom: none; }
-.d-fi-macros { font-size: 11px; color: var(--text-muted); }
+.d-fi-macros { font-size: 14px; color: var(--text-dim); }
 
 /* Recipe cards */
 .d-recipe-grid { padding: 0 24px 24px; }
@@ -3328,6 +3392,13 @@ body {
   opacity: 0; transition: opacity .18s ease, transform .18s ease;
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast.toast--action { display: flex; align-items: center; gap: 6px; padding: 4px 4px 4px 18px; font-size: 14px; }
+.toast.toast--action.show { pointer-events: auto; }
+.toast-act {
+  min-height: 40px; padding: 0 14px; border: none; border-radius: 999px; cursor: pointer;
+  background: rgba(var(--accent-rgb), 0.14); color: var(--accent-b);
+  font-family: inherit; font-size: 14px; font-weight: 700;
+}
 .toast.toast--shield { display: flex; align-items: center; gap: 9px; border-color: rgba(var(--accent-rgb), 0.35); }
 .toast-shield { display: flex; color: var(--accent-b); }
 .toast-shield svg { animation: shield-stamp 0.6s cubic-bezier(0.2, 1.6, 0.4, 1) 0.15s both; }
