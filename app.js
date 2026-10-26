@@ -791,6 +791,7 @@ function renderAuth() {
   // One-shot: don't let a notice linger across later renders
   _authNotice = null;
   _authPrefillEmail = '';
+  riseText(overlay.querySelector('.auth-title'), 100);
 }
 
 function closeAuth() { document.getElementById('auth-overlay')?.remove(); }
@@ -970,29 +971,83 @@ function motionOK() {
   try { return !window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return true; }
 }
 
-// Counts an element's text from `from` (default 0) to `to`. The element should
-// already hold the final number, so if this never runs the right value shows.
-function countUp(el, to, ms = 1100, delay = 0, from = 0) {
+// Rolls an element's number from `from` (default 0) to `to` like an odometer:
+// each digit is a column of 0-9 that slides to its new value, instead of the
+// number counting through every value in between. The element should already
+// hold the final number, so if this never runs the right value shows.
+function countUp(el, to, ms = 900, delay = 0, from = 0) {
   if (!el) return;
-  if (!motionOK() || typeof requestAnimationFrame !== 'function') { el.textContent = to; return; }
-  el.textContent = from;
-  let landed = false;
-  const run = () => {
-    let t0 = null;
-    const step = now => {
-      if (landed) return;
-      if (typeof now !== 'number') { landed = true; el.textContent = to; return; }
-      if (t0 === null) t0 = now;
-      const p = Math.min(1, (now - t0) / ms);
-      el.textContent = Math.round(from + (to - from) * (1 - Math.pow(1 - p, 3)));
-      if (p < 1) requestAnimationFrame(step); else landed = true;
-    };
-    requestAnimationFrame(step);
+  const finalText = String(to);
+  if (!motionOK() || typeof requestAnimationFrame !== 'function' || !document.createElement) { el.textContent = finalText; return; }
+  const fromText = String(Math.round(+from || 0));
+  // Somewhere that cannot hold the digit columns: show the old number, then the new.
+  if (typeof el.appendChild !== 'function') { el.textContent = fromText; setTimeout(() => { el.textContent = finalText; }, delay + ms); return; }
+  const pad = finalText.length - fromText.length;
+  el.textContent = '';
+  const odo = document.createElement('span');
+  odo.className = 'odo';
+  odo.setAttribute('aria-hidden', 'true');
+  const strips = [];
+  for (let i = 0; i < finalText.length; i++) {
+    const ch = finalText[i];
+    if (!/\d/.test(ch)) { const s = document.createElement('span'); s.textContent = ch; odo.appendChild(s); continue; }
+    const startCh = fromText[i - pad];
+    const start = /\d/.test(startCh || '') ? +startCh : 0;
+    const col = document.createElement('span'); col.className = 'odo-col';
+    const strip = document.createElement('span'); strip.className = 'odo-strip';
+    strip.textContent = '0123456789';
+    strip.style.transform = `translateY(${-start}em)`;
+    col.appendChild(strip); odo.appendChild(col);
+    strips.push([strip, +ch]);
+  }
+  const sr = document.createElement('span');
+  sr.className = 'sr-only'; sr.textContent = finalText;
+  el.appendChild(odo); el.appendChild(sr);
+  const roll = () => requestAnimationFrame(() => strips.forEach(([s, n], i) => {
+    s.style.transition = `transform ${ms}ms var(--ease) ${(strips.length - 1 - i) * 30}ms`;
+    s.style.transform = `translateY(${-n}em)`;
+  }));
+  delay ? setTimeout(roll, delay) : roll();
+  // Settle back to plain text once it has landed; also covers a hidden tab or
+  // a backgrounded web view, where frames stop. These are real numbers.
+  setTimeout(() => { el.textContent = finalText; }, delay + ms + strips.length * 30 + 120);
+}
+
+// Big headings rise in letter by letter from under their baseline. Each word
+// is a clipping line; the letters inside slide up 40ms apart. Read as one
+// word by assistive tech, and skipped entirely for reduced motion.
+function riseText(el, delay = 0) {
+  if (!el || !motionOK() || !el.childNodes || el.dataset.risen) return;
+  el.dataset.risen = '1';
+  const label = el.textContent;
+  let n = 0;
+  const letter = (node) => {
+    const c = document.createElement('span');
+    c.className = 'rise-c';
+    c.style.animationDelay = `${delay + n++ * 40}ms`;
+    c.appendChild(node);
+    return c;
   };
-  delay ? setTimeout(run, delay) : run();
-  // Frames stop in a hidden tab or a backgrounded web view. These are real
-  // numbers (calories, a score), so they land on the right value regardless.
-  setTimeout(() => { if (!landed) { landed = true; el.textContent = to; } }, delay + ms + 250);
+  const out = document.createDocumentFragment();
+  [...el.childNodes].forEach(node => {
+    if (node.nodeType === 3) {
+      node.textContent.split(/(\s+)/).forEach(part => {
+        if (!part) return;
+        if (/^\s+$/.test(part)) { out.appendChild(document.createTextNode(part)); return; }
+        const w = document.createElement('span'); w.className = 'rise-w';
+        [...part].forEach(ch => w.appendChild(letter(document.createTextNode(ch))));
+        out.appendChild(w);
+      });
+    } else {
+      // An element such as the orange full stop rises as one more letter.
+      const w = document.createElement('span'); w.className = 'rise-w';
+      w.appendChild(letter(node)); out.appendChild(w);
+    }
+  });
+  el.textContent = '';
+  el.appendChild(out);
+  el.setAttribute('aria-label', label);
+  [...el.children].forEach(ch => ch.setAttribute('aria-hidden', 'true'));
 }
 
 // Rings redrawn after a change sweep from where they stood to where they are
@@ -1666,6 +1721,7 @@ function showMilestone({ icon, title, subtitle, message, xp }) {
       <button class="milestone-btn" onclick="this.closest('.milestone-overlay').remove()">Continue</button>
     </div>`;
   document.body.appendChild(el);
+  if (typeof riseText === 'function') riseText(el.querySelector('.milestone-title'), 150);
   // Auto-dismiss after 8 seconds
   setTimeout(() => el.remove(), 8000);
 }
@@ -2507,6 +2563,8 @@ function go(view, params = {}, pushState = true) {
   _arriving = !redraw;
   try { (typeof render === 'function' ? render : renderHome)(); }
   finally { _arriving = false; }
+  // The screen's big heading rises in as it arrives, not on every redraw.
+  if (!redraw) { try { riseText(viewEl.querySelector('.page-title, .hm-hero-name, .w-hero-day')); } catch {} }
 }
 
 window.addEventListener('popstate', e => {

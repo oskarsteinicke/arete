@@ -498,9 +498,9 @@ function _buildCalorieTrendChart() {
   return `<div class="da-section ani">
     <h2 class="da-h">Calories, last 14 days</h2>
     <svg viewBox="0 0 ${W} ${H}" style="width:100%;display:block">
-      <line x1="${ML}" y1="${goalY}" x2="${W-MR}" y2="${goalY}" stroke="var(--accent)" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.5"/>
-      <text x="${W-MR}" y="${goalY-3}" fill="var(--accent)" font-size="9" text-anchor="end" opacity="0.7">goal</text>
-      <polyline points="${pts}" fill="none" stroke="var(--cal)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+      <line x1="${ML}" y1="${goalY}" x2="${W-MR}" y2="${goalY}" stroke="var(--text-muted)" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.5"/>
+      <text x="${W-MR}" y="${goalY-3}" fill="var(--text-muted)" font-size="9" text-anchor="end">goal</text>
+      <polyline class="draw-line" pathLength="1" points="${pts}" fill="none" stroke="var(--cal)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
       ${data.map((d,i) => d.cal > 0 ? `<circle cx="${x(i).toFixed(1)}" cy="${y(d.cal).toFixed(1)}" r="2" fill="var(--cal)"/>` : '').join('')}
     </svg>
   </div>`;
@@ -2276,7 +2276,7 @@ function renderDietTrend() {
         <text x="${ML - 4}" y="12" fill="var(--text-dim)" font-size="9" text-anchor="end">${maxW.toFixed(1)}</text>
         <text x="${ML - 4}" y="${cH}" fill="var(--text-dim)" font-size="9" text-anchor="end">${minW.toFixed(1)}</text>
         ${dots}
-        <polyline points="${linePts}" fill="none" stroke="var(--accent-b)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+        <polyline class="draw-line" pathLength="1" points="${linePts}" fill="none" stroke="var(--orange)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
       </svg>
     </div>`;
   }

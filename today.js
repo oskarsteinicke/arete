@@ -220,12 +220,12 @@ function injectTodayStyles() {
     .td-cons b.bump{animation:td-bump .45s ease}
     @keyframes td-bump{40%{transform:translateY(-2px) scale(1.07);color:var(--accent-b)}}
     .td-bar{height:4px;border-radius:2px;background:var(--border);overflow:hidden;margin-top:6px;width:104px}
-    .td-bar span{display:block;height:100%;background:var(--accent);border-radius:2px;transition:width .6s cubic-bezier(.3,1.2,.5,1)}
+    .td-bar span{display:block;height:100%;background:var(--accent);border-radius:2px;transition:width .6s var(--ease)}
     .td-mood{display:flex;align-items:center;gap:6px}
     .td-mood-btn{background:none;border:none;font-size:18px;line-height:1;cursor:pointer;padding:2px 1px;opacity:.38;transition:opacity .15s,transform .15s}
     .td-mood-btn:hover{opacity:.8;transform:scale(1.12)}
     .td-mood-btn.on{opacity:1;transform:scale(1.15)}
-    .td-mood-btn.picked{animation:td-mood .45s cubic-bezier(.3,1.6,.5,1)}
+    .td-mood-btn.picked{animation:td-mood .45s var(--ease)}
     @keyframes td-mood{0%{transform:scale(.8)}60%{transform:scale(1.4)}100%{transform:scale(1.15)}}
     .td-mood-lbl{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-muted);margin-right:2px;white-space:nowrap}
     @media (max-width:400px){.td-mood-lbl{display:none}.td-mood-btn{font-size:17px;padding:2px 0}}

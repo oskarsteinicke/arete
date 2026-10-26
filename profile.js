@@ -313,6 +313,7 @@ function showLevelUp(from, to) {
       </div>`;
     el.addEventListener('click', e => { if (e.target === el) closeLevelUp(); });
     document.body.appendChild(el);
+    if (typeof riseText === 'function' && !evolved) riseText(el.querySelector('.lvl-title'), 300);
     if (typeof countUp === 'function') countUp(document.getElementById('lvl-num'), to, 700, 350, from);
     if (evolved && typeof launchConfetti === 'function') setTimeout(() => launchConfetti(), 1100);
     if (typeof track === 'function') track('level_up', { level: to, evolved });
@@ -1956,6 +1957,7 @@ function renderOnboarding(step) {
         <div class="ob-welcome-sub">The pursuit of excellence in mind, body, and spirit.</div>
         <button class="ob-welcome-btn" onclick="renderOnboarding(1)">GET STARTED \u2192</button>
       </div>`;
+    if (typeof riseText === 'function') riseText(overlay.querySelector('.ob-welcome-title'), 150);
     return;
   }
 

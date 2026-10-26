@@ -2012,7 +2012,7 @@ function _wpLineChart(series) {
     </linearGradient></defs>
     <line x1="${padL}" y1="${H - padB}" x2="${W - padR}" y2="${H - padB}" stroke="var(--border2)" stroke-width="1"/>
     <path d="${area}" fill="url(#wpg)"/>
-    <path d="${line}" fill="none" stroke="var(--accent-b)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <path class="draw-line" pathLength="1" d="${line}" fill="none" stroke="var(--orange)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
     ${dots}${yLbl}${xLbl}
   </svg>`;
 }

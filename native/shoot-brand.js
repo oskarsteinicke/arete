@@ -64,6 +64,50 @@ const server = http.createServer((req, res) => {
 });
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+const audit = [];
+const AUDIT_JS = `(() => {
+  const parse = c => { const m = c.match(/rgba?\\(([^)]+)\\)/); if (!m) return null; const p = m[1].split(',').map(Number); return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 }; };
+  const over = (f, b) => ({ r: f.r * f.a + b.r * (1 - f.a), g: f.g * f.a + b.g * (1 - f.a), b: f.b * f.a + b.b * (1 - f.a), a: 1 });
+  const lum = c => { const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b); };
+  const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+  const bgOf = el => {
+    const layers = [];
+    for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
+      const c = parse(getComputedStyle(n).backgroundColor);
+      if (c && c.a > 0) { layers.push(c); if (c.a >= 1) break; }
+    }
+    let base = parse(getComputedStyle(document.body).backgroundColor) || { r: 0, g: 0, b: 0, a: 1 };
+    if (base.a < 1) base = { ...base, a: 1 };
+    for (let i = layers.length - 1; i >= 0; i--) base = over(layers[i], base);
+    return base;
+  };
+  const fails = [], seen = new Set();
+  let checked = 0;
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  while (walker.nextNode()) {
+    const t = walker.currentNode; const el = t.parentElement;
+    if (!el || !t.textContent.trim()) continue;
+    const cs = getComputedStyle(el);
+    if (cs.visibility === 'hidden' || cs.display === 'none') continue;
+    const r = el.getBoundingClientRect(); if (!r.width || !r.height) continue;
+    let op = 1; for (let n = el; n && n.nodeType === 1; n = n.parentElement) op *= +getComputedStyle(n).opacity;
+    if (op < 0.5) continue;            // disabled or faded on purpose
+    if (el.closest('[aria-hidden="true"]') && !el.closest('.rise-w')) continue;
+    const fg = parse(cs.color); if (!fg || fg.a === 0) continue;   // a glyph hidden until checked
+    if (el.closest('.dot')) continue;                                    // the decorative full stop
+    const bg = bgOf(el); const col = over({ ...fg, a: fg.a * op }, bg);
+    const size = parseFloat(cs.fontSize), bold = +cs.fontWeight >= 700;
+    const large = size >= 24 || (size >= 18.66 && bold);
+    const need = large ? 3 : 4.5, got = ratio(col, bg);
+    checked++;
+    if (got + 0.01 < need) {
+      const key = (el.className || el.tagName) + '|' + got.toFixed(2);
+      if (seen.has(key)) continue; seen.add(key);
+      fails.push({ text: t.textContent.trim().slice(0, 30), cls: String(el.className || el.tagName).slice(0, 40), ratio: +got.toFixed(2), need, color: cs.color, bg: 'rgb(' + [bg.r, bg.g, bg.b].map(Math.round) + ')' });
+    }
+  }
+  return { checked, fails };
+})()`;
 server.listen(PORT, async () => {
   fs.mkdirSync(OUT, { recursive: true });
   const c = await launch();
