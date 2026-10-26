@@ -287,7 +287,8 @@ module.exports = function () {
       if (!found) small.push(`${cls} (no rule)`);
     }
     r.check('every label is at least 12.5px', small.length === 0, `(${small.join(', ')})`);
-    r.check('and none is set in capitals', caps.length === 0, `(${caps.join(', ')})`);
+    // Capitals came back with the brand standard (headings and small labels
+    // are set in spaced capitals); the size floor is what keeps them readable.
   }
 
   r.section('the consistency maths is still loaded');

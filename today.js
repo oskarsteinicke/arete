@@ -198,7 +198,7 @@ function injectTodayStyles() {
     .td-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:2px}
     .td-title{font-size:19px;font-weight:700;letter-spacing:-0.2px}
     .td-date{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--text-muted)}
-    .td-why{font-size:12px;color:var(--text-dim);font-style:italic;margin:4px 0 12px;line-height:1.45}
+    .td-why{font-size:12px;color:var(--text-dim);margin:4px 0 12px;line-height:1.45}
     .td-why-set{background:none;border:none;color:var(--accent);font:inherit;font-style:normal;cursor:pointer;padding:0;text-decoration:underline}
     .td-why{cursor:pointer}
     .td-why-edit{font-style:normal;color:var(--text-muted);font-size:10px;margin-left:2px}

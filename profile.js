@@ -521,7 +521,7 @@ function injectGamificationStyles() {
     .cal-di{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid rgba(var(--text-rgb), 0.04);font-size:13px;color:var(--text)}
     .cal-di span{flex:1;line-height:1.4}
     .cal-di-sub{font-size:11px;color:var(--text-dim);padding:2px 0 4px 22px;line-height:1.4}
-    .cal-di-empty{font-size:12px;color:var(--text-dim);font-style:italic;padding:16px 0}
+    .cal-di-empty{font-size:12px;color:var(--text-dim);padding:16px 0}
     /* Weekly strips */
     .cal-week-cols{display:grid;grid-template-columns:repeat(7,1fr);padding:0 8px;gap:2px}
     .cal-wcol{padding:8px 2px 6px;border-radius:8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;transition:background .15s}

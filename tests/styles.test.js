@@ -131,8 +131,9 @@ module.exports = function () {
         while ((m = re.exec(source))) {
           found = true;
           const size = /font-size:\s*([\d.]+)px/.exec(m[3]);
+          // The brand standard sets headings and small labels in capitals, so
+          // capitals are allowed now; the size floor from the cleanup stays.
           if (size && +size[1] < 12.5) bad.push(`${cls} ${size[1]}px`);
-          if (/text-transform:\s*uppercase/.test(m[3])) bad.push(`${cls} in capitals`);
         }
         if (!found) bad.push(`${cls} (no rule)`);
       }

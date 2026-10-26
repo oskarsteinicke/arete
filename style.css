@@ -2950,3 +2950,61 @@ nav.has-pill .ni.active::before { display: none; }
     scroll-behavior: auto !important;
   }
 }
+
+/* ═══ TYPE ═══════════════════════════════════════════════════════════════
+   One family: Inter. Its Display cut takes over at large sizes by itself
+   (font-optical-sizing on body). Headings, screen titles and big numbers
+   are heavy, tight and in capitals; small labels are spaced capitals in the
+   muted colour; numbers that change keep their width. */
+.page-title, .sec-h h2, .hm-sec-title, .w-hero-day, .hm-hero-name, .hm-hero-title,
+.d-building-head h2, .aip-day-head h3, .d-meal-name, .w-ex-name, .w-card-name,
+.coach-hdr-title, .coach-welcome h3, .milestone-title, .streak-toast-title, .tour-title,
+.why-modal-title, .edit-habit-title, .error-boundary h2, .pw-title, .pro-title,
+.char-name, .char-sec-title, .jh-title, .ah-title, .sh-title, .h-day, .pd-name, .lvl-title,
+.tb-title, .td-title, .sf-title, .wp-card-title, .empty-state-title, .auth-title,
+.ob-title, .ob-welcome-title, .chal-card-name, .rd-title {
+  font-family: var(--font);
+  font-weight: var(--fw-head);
+  text-transform: uppercase;
+  letter-spacing: var(--track-head);
+  line-height: var(--lh-head);
+  font-style: normal;
+}
+.page-title { font-size: var(--fs-h1); }
+.hm-hero-name, .w-hero-day { font-size: 32px; }
+.sec-h h2, .hm-sec-title { font-size: var(--fs-h3); }
+.milestone-title, .why-modal-title, .edit-habit-title, .tour-title, .pw-title, .auth-title, .ob-title { font-size: var(--fs-h2); }
+.ob-welcome-title { font-size: var(--fs-display); }
+
+.d-ring-val, .w-stat-val, .hm-score-num, .s-val, .wp-card-num, .wp-sum-val, .rt-time,
+.wir-stat-val, .tb-cell-val, .tb-ready-num, .hm-vital-val, .lb-xp, .char-power, .rd-score-num,
+.lvl-num, .w-advice-score, .da-stat-val, .da-rec-val, .tp-tdee-num, .tp-macro-val,
+.char-stat-val, .ps-val, .sf-val, .rd-factor-val, .rd-vital-val, .ring-num, .hm-streak-num {
+  font-family: var(--font);
+  font-weight: var(--fw-head);
+  letter-spacing: var(--track-head);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--lh-head);
+}
+
+.sec-lbl, .j-lbl, .w-stat-lbl, .d-ring-label, .dm-header-sub, .hm-heat-label, .s-lbl,
+.wir-stat-lbl, .tb-cell-lbl, .tb-ready-lbl, .rd-score-lbl, .rd-vital-lbl, .wp-sum-lbl,
+.wp-overall-lbl, .da-stat-lbl, .da-rec-lbl, .tp-macro-lbl, .tp-tdee-label, .char-xp-label,
+.sf-lbl, .ob-macro-label, .td-label, .lb-xp-label, .eyebrow {
+  font-family: var(--font);
+  font-weight: 500;
+  font-size: 12.5px;
+  text-transform: uppercase;
+  letter-spacing: var(--track-eyebrow);
+  color: var(--text-muted);
+}
+
+body, input, textarea, select, button { font-family: var(--font); }
+
+/* Emphasis without italics: the brand is upright throughout. */
+em, i { font-style: normal; }
+.coach-bubble em { font-weight: 600; }
+
+/* Four labels side by side do not fit at 0.2em on a 375px phone ("THIS
+   WEEK" broke over two lines), so the compact strips track a little tighter. */
+.w-stat-lbl, .wir-stat-lbl, .tb-cell-lbl, .d-ring-label { letter-spacing: 0.12em; line-height: 1.25; }
