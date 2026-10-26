@@ -116,7 +116,7 @@ nav {
 .back:hover { color: var(--text); }
 
 /* PULL-TO-REFRESH */
-.ptr-indicator { position: fixed; top: -50px; left: 50%; transform: translateX(-50%); width: 36px; height: 36px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; z-index: 9999; transition: top 0.2s ease, transform 0.2s ease; box-shadow: 0 2px 12px rgba(var(--c-ink-rgb), 0.3); }
+.ptr-indicator { position: fixed; top: -50px; left: 50%; transform: translateX(-50%); width: 36px; height: 36px; border-radius: 50%; background: var(--raised); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; z-index: 9999; transition: top 0.2s ease, transform 0.2s ease; box-shadow: 0 2px 12px rgba(var(--c-ink-rgb), 0.3); }
 .ptr-indicator.ptr-visible { top: 12px; }
 .ptr-indicator.ptr-refreshing { top: 12px; }
 .ptr-indicator svg { width: 18px; height: 18px; stroke: var(--accent-b); fill: none; stroke-width: 2; transition: transform 0.2s ease; }
@@ -304,7 +304,7 @@ nav {
 .jq-edit-input:focus { border-color: rgba(var(--accent-rgb),0.4); }
 .jq-edit-ph { font-size: 12px; color: var(--text-dim); }
 .jq-edit-del { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 8px; font-size: 18px; line-height: 1; border-radius: 6px; transition: all 0.2s; }
-.jq-edit-del:hover { color: var(--fat); background: rgba(var(--danger-rgb), 0.1); }
+.jq-edit-del:hover { color: var(--danger); background: rgba(var(--danger-rgb), 0.1); }
 .jq-add-btn { width: 100%; background: none; border: 1px dashed var(--border2); border-radius: 10px; color: var(--accent); font-size: 12px; letter-spacing: 1px; padding: 12px; cursor: pointer; margin-top: 12px; transition: all 0.2s; }
 .jq-add-btn:hover { border-color: var(--accent); background: rgba(var(--accent-rgb),0.05); }
 .jq-reset-btn { width: 100%; background: none; border: none; color: var(--text-muted); font-size: 11px; letter-spacing: 0.5px; padding: 10px; cursor: pointer; margin-top: 4px; transition: color 0.2s; }
@@ -326,7 +326,7 @@ nav {
 .ps-fill { height: 100%; background: var(--accent); transition: width 0.6s; }
 .ps-val { font-size: 11px; color: var(--text-dim); width: 36px; text-align: right; }
 .q-block { margin: 0 24px 32px; background: var(--surface); border: 1px solid var(--border2); border-radius: 12px; padding: 24px; text-align: center; }
-.q-mark { font-family: var(--font); font-size: 36px; color: rgba(var(--accent-rgb),0.3); line-height: 0.9; margin-bottom: 12px; }
+.q-mark { font-family: var(--font); font-size: 36px; color: var(--text-muted); line-height: 0.9; margin-bottom: 12px; }
 .q-text { font-family: var(--font); font-size: 15px; font-style: normal; color: var(--text-dim); line-height: 1.7; margin-bottom: 10px; transition: opacity 0.25s; }
 .q-auth { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 16px; }
 .q-nav { display: flex; align-items: center; justify-content: center; gap: 12px; }
@@ -569,7 +569,7 @@ nav {
 .wp-sum-lbl { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.2px; margin-top: 3px; }
 .wp-delta { display: inline-block; margin-top: 6px; font-size: 10px; letter-spacing: 0.4px; color: var(--text-muted); }
 .wp-delta.wp-up { color: var(--carb); }
-.wp-delta.wp-down { color: var(--fat); }
+.wp-delta.wp-down { color: var(--danger); }
 
 .wp-card {
   background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius);
@@ -583,7 +583,7 @@ nav {
 .wp-card-unit { font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 3px; }
 .wp-card-foot { font-size: 11px; color: var(--text-dim); margin-top: 10px; }
 .wp-card-foot.wp-up { color: var(--carb); }
-.wp-card-foot.wp-down { color: var(--fat); }
+.wp-card-foot.wp-down { color: var(--danger); }
 
 .wp-chips { display: flex; gap: 6px; overflow-x: auto; padding: 0 24px 10px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
 .wp-chips::-webkit-scrollbar { display: none; }
@@ -655,7 +655,7 @@ nav {
 .w-hist-vol { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 .w-repeat-btn {
   position: absolute; top: 12px; right: 12px;
-  background: var(--surface2); border: 1px solid var(--border2); border-radius: 10px;
+  background: var(--raised); border: 1px solid var(--border2); border-radius: 10px;
   color: var(--accent); font-size: 18px; width: 34px; height: 34px;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; transition: background 0.2s;
@@ -712,7 +712,7 @@ nav {
   background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 20px; line-height: 1;
   width: 32px; height: 32px; margin: -4px -8px 0 0; border-radius: 50%; flex-shrink: 0;
 }
-.d-del-btn:hover { color: var(--fat); }
+.d-del-btn:hover { color: var(--danger); }
 
 .d-type-btns { display: flex; gap: 8px; padding: 0 24px 16px; flex-wrap: wrap; }
 .d-type-btn {
@@ -831,7 +831,7 @@ input.d-input[type="date"]::-webkit-date-and-time-value { text-align: left; min-
   background: var(--surface2); border: 1px solid var(--border2); color: var(--text); font-family: inherit; font-size: 16px;
 }
 .d-fe-set { min-height: 40px; padding: 0 14px; border-radius: 10px; cursor: pointer; background: var(--surface2); border: 1px solid var(--border2); color: var(--text); font-family: inherit; font-size: 14px; font-weight: 600; }
-.d-fe-remove { min-height: 40px; padding: 0 4px; margin-left: auto; background: none; border: none; cursor: pointer; font-family: inherit; font-size: 14px; color: var(--fat); }
+.d-fe-remove { min-height: 40px; padding: 0 4px; margin-left: auto; background: none; border: none; cursor: pointer; font-family: inherit; font-size: 14px; color: var(--danger); }
 .d-fi { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border2); font-size: 15px; color: var(--text-dim); cursor: pointer; }
 .d-fi:last-child { border-bottom: none; }
 .d-fi-macros { font-size: 14px; color: var(--text-dim); }
@@ -1106,7 +1106,7 @@ input.d-input[type="date"]::-webkit-date-and-time-value { text-align: left; min-
   right: max(12px, calc(50% - 240px + 12px));
   width: 42px; height: 42px;
   border-radius: 50%;
-  background: var(--surface2);
+  background: var(--raised);
   color: var(--accent-b);
   border: 1px solid var(--border);
   display: flex; align-items: center; justify-content: center;
@@ -1523,7 +1523,7 @@ input.d-input[type="date"]::-webkit-date-and-time-value { text-align: left; min-
 /* ═══ UNDO TOAST ══════════════════════════════════════════════════════════ */
 .undo-toast {
   position: fixed; bottom: calc(var(--nav-h) + 16px); left: 50%; transform: translateX(-50%);
-  background: var(--surface2); border: 1px solid var(--border); border-radius: 14px;
+  background: var(--raised); border: 1px solid var(--border); border-radius: 14px;
   padding: 12px 20px; display: flex; align-items: center; gap: 14px;
   z-index: 2500; box-shadow: 0 8px 32px rgba(var(--c-ink-rgb), 0.5);
   animation: toast-in 0.3s ease;
@@ -1545,7 +1545,7 @@ input.d-input[type="date"]::-webkit-date-and-time-value { text-align: left; min-
   position: fixed; bottom: calc(var(--nav-h) + 12px);
   left: max(12px, calc(50% - 240px + 12px));
   width: 42px; height: 42px; border-radius: 50%;
-  background: var(--surface2); color: var(--accent-b); border: 1px solid var(--border);
+  background: var(--raised); color: var(--accent-b); border: 1px solid var(--border);
   font-size: 20px; font-weight: 300; display: flex; align-items: center; justify-content: center;
   cursor: pointer; z-index: 900;
   box-shadow: 0 2px 12px rgba(var(--c-ink-rgb), 0.3);
@@ -2009,7 +2009,7 @@ input.d-input[type="date"]::-webkit-date-and-time-value { text-align: left; min-
   cursor: pointer; text-align: center;
 }
 .chal-action-btn:active { transform: scale(0.97); }
-.chal-action-remove { color: var(--fat); border-color: rgba(var(--danger-rgb), 0.2); }
+.chal-action-remove { color: var(--danger); border-color: rgba(var(--danger-rgb), 0.2); }
 .chal-tmpl {
   display: flex; align-items: center; gap: 12px; padding: 14px 16px;
   background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius);
@@ -2077,7 +2077,7 @@ input.d-input[type="date"]::-webkit-date-and-time-value { text-align: left; min-
 /* Group actions */
 .lb-group-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 20px 24px; }
 .lb-group-actions .lb-action-btn { flex: 1; min-width: calc(50% - 4px); padding: 12px; font-size: 12px; }
-.lb-leave-btn { color: var(--fat) !important; border-color: rgba(var(--danger-rgb), 0.2) !important; }
+.lb-leave-btn { color: var(--danger) !important; border-color: rgba(var(--danger-rgb), 0.2) !important; }
 
 /* ── Home Stats Mini Bar ───────────────────────────────────────────────── */
 
@@ -2768,9 +2768,9 @@ nav.has-pill .ni.active::before { display: none; }
 .tb-ready-num { font-size: 16px; }
 
 /* Live workout: completed exercises compress so the current one is obvious */
-.w-ex-done { opacity: 0.5; transition: opacity 0.25s ease; }
-.w-ex-done:active, .w-ex-done:hover { opacity: 0.85; }
-.w-ex-done .w-ex-name::after { content: " ✓"; color: var(--carb); }
+/* A finished exercise is marked by the orange check after its name. It used
+   to fade to half strength, which took its text below readable contrast. */
+.w-ex-done .w-ex-name::after { content: " ✓"; color: var(--orange); }
 
 /* ══ DESKTOP FRAME ══════════════════════════════════════════════════════
    On wide screens the app reads as an intentional centered column on clean

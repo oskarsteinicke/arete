@@ -867,11 +867,11 @@ async function submitAuth() {
 async function handleForgotPassword() {
   const email = document.getElementById('auth-email')?.value?.trim();
   const errEl = document.getElementById('auth-error');
-  if (!email) { errEl.style.color = 'var(--fat)'; errEl.textContent = 'Enter your email above first.'; return; }
+  if (!email) { errEl.style.color = 'var(--danger)'; errEl.textContent = 'Enter your email above first.'; return; }
   errEl.style.color = 'var(--text-dim)'; errEl.textContent = 'Sending…';
   const res = await authResetPassword(email);
   if (res.ok) { errEl.style.color = 'var(--success)'; errEl.textContent = 'Check your inbox for a reset link.'; }
-  else { errEl.style.color = 'var(--fat)'; errEl.textContent = 'Could not send reset email. Try again.'; }
+  else { errEl.style.color = 'var(--danger)'; errEl.textContent = 'Could not send reset email. Try again.'; }
 }
 
 // ── STORAGE ───────────────────────────────────────────────────────────────

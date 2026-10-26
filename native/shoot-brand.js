@@ -125,12 +125,22 @@ server.listen(PORT, async () => {
             ${full ? `const st = document.createElement('style'); st.textContent = 'html,body{height:auto!important;overflow:visible!important}#app{height:auto!important}.view{overflow:visible!important;height:auto!important}#install-banner{display:none!important}'; document.head.appendChild(st);` : ''}
           })()`;
           const out = path.join(OUT, `${name}-${size}-${theme}.png`);
+          if (process.env.AUDIT && size === 'phone') {
+            // Contrast of every visible text node against what is really behind
+            // it: backgrounds are composited up the tree until opaque.
+            await c.shoot({ url: `http://localhost:${PORT}/__shot?r=${Math.random()}`, width: w, height: h, scale: 1, settleMs: 2600,
+              out: path.join(OUT, '_audit.png'), before });
+            const res = await c.evaluate(AUDIT_JS);
+            audit.push({ screen: `${name} ${theme}`, ...res });
+            continue;
+          }
           await c.shoot({ url: `http://localhost:${PORT}/__shot?r=${Math.random()}`, width: w, height: h, scale: size === 'phone' ? 2 : 1,
             settleMs: 2600, out, before, fullPage: full && !['coach', 'signin', 'onboarding'].includes(name) });
           console.log(`  ${path.basename(out)}`);
         }
       }
     }
+    if (audit.length) fs.writeFileSync(path.join(OUT, 'contrast.json'), JSON.stringify(audit, null, 2));
     const errs = c.errors().filter(e => !/ServiceWorker/.test(e));
     if (errs.length) console.log('page errors:', errs.slice(0, 5));
   } catch (e) { console.error('FAILED:', e.message); process.exitCode = 1; }

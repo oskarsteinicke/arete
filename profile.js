@@ -486,7 +486,7 @@ function injectGamificationStyles() {
     .g-pl-lv{font-size:15px;font-weight:800;font-family:var(--serif);color:var(--accent-b)}
     .g-weekly{padding:0 24px 8px}
     .w-set-del{background:none;border:none;color:var(--text-dim);font-size:14px;padding:4px 6px;cursor:pointer;flex-shrink:0;opacity:0.4;margin-left:auto}
-    .w-set-del:active{opacity:1;color:var(--fat)}
+    .w-set-del:active{opacity:1;color:var(--danger)}
     .w-ex-tip{font-size:14px;line-height:1.45;margin:2px 12px 8px;padding:10px 12px;border-radius:10px;background:var(--surface2);border:1px solid var(--border2);color:var(--text-dim);display:flex;align-items:center;flex-wrap:wrap;gap:8px}
     .w-ex-tip::before{content:"";width:6px;height:6px;border-radius:50%;flex-shrink:0;background:var(--text-muted)}
     .w-ex-tip-increase::before{background:var(--carb)}
@@ -544,7 +544,7 @@ function injectGamificationStyles() {
     .cal-task-text{flex:1;font-size:13px;color:var(--text);line-height:1.4;background:none;border:none;outline:none;padding:0}
     .cal-task-text-done{text-decoration:line-through;color:var(--text-dim)}
     .cal-task-del{background:none;border:none;color:var(--text-dim);font-size:18px;cursor:pointer;padding:0 2px;line-height:1;opacity:0.5}
-    .cal-task-del:active{opacity:1;color:var(--fat)}
+    .cal-task-del:active{opacity:1;color:var(--danger)}
     .cal-task-add{display:flex;gap:8px;align-items:center;margin-top:8px}
     .cal-task-input{flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;font-family:inherit}
     .cal-task-input:focus{border-color:var(--accent)}
@@ -1655,7 +1655,7 @@ function renderStats() {
                  <button class="unit-btn${!on ? ' unit-btn-active' : ''}" onclick="setNotifications(false)">Off</button>`}
           </div>
         </div>
-        ${err ? `<div style="font-size:11px;color:var(--fat);line-height:1.45;margin-bottom:14px">${esc(err)}</div>`
+        ${err ? `<div style="font-size:11px;color:var(--danger);line-height:1.45;margin-bottom:14px">${esc(err)}</div>`
               : note ? `<div style="font-size:10.5px;color:var(--text-muted);line-height:1.45;margin-bottom:${on ? 10 : 14}px">${note}</div>` : ''}
         ${on ? `<div style="display:flex;gap:8px;margin-bottom:6px">
           ${reminderTimes().map((t, i) => `<div style="flex:1">
@@ -1721,7 +1721,7 @@ function renderStats() {
          <button class="w-action-btn" style="margin:8px 24px 32px" onclick="showAuth()">Already have an account? Sign in</button>`
       : `<button class="w-action-btn" style="margin:0 24px 8px" onclick="forceSync()" id="force-sync-btn">${icon('refresh')} Force Sync Now</button>
          <div id="sync-log" style="margin:0 24px 8px;font-size:11px;color:var(--text-dim);max-height:120px;overflow:auto;font-family:monospace;white-space:pre-wrap"></div>
-         <button class="w-action-btn" style="margin:0 24px 8px;color:var(--fat);border-color:var(--fat)" onclick="if(confirm('Sign out?'))authSignOut()">Sign Out</button>
+         <button class="w-action-btn" style="margin:0 24px 8px;color:var(--danger);border-color:var(--danger)" onclick="if(confirm('Sign out?'))authSignOut()">Sign Out</button>
          <button class="w-action-btn" style="margin:0 24px 32px;color:var(--text-muted)" onclick="openDeleteAccount()">Delete Account</button>`}
     ${_errorLogHTML()}
     <div style="text-align:center;padding:0 24px 28px;font-size:10px;color:var(--text-muted);letter-spacing:0.08em">ARETE ${(() => { try { return 'v' + (document.querySelector('script[src*="app.js?v="]').src.match(/v=(\d+)/) || [])[1]; } catch { return ''; } })()}</div>`;
@@ -1738,7 +1738,7 @@ function openDeleteAccount() {
   modal.innerHTML = `
     <div class="edit-habit-backdrop" onclick="closeDeleteAccount()"></div>
     <div class="edit-habit-sheet">
-      <div class="edit-habit-title" style="color:var(--fat)">Delete account</div>
+      <div class="edit-habit-title" style="color:var(--danger)">Delete account</div>
       <div style="font-size:13px;color:var(--text-dim);line-height:1.6;margin-bottom:12px">
         This permanently deletes your account and everything synced to it:
       </div>
@@ -1755,11 +1755,11 @@ function openDeleteAccount() {
       <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:6px">Type DELETE to confirm</div>
       <input class="d-input" id="del-acct-input" type="text" autocapitalize="characters" autocomplete="off"
         placeholder="DELETE" oninput="_delAcctCheck()" style="margin-bottom:10px">
-      <div id="del-acct-error" style="color:var(--fat);font-size:12px;min-height:18px;margin-bottom:8px"></div>
+      <div id="del-acct-error" style="color:var(--danger);font-size:12px;min-height:18px;margin-bottom:8px"></div>
       <div style="display:flex;gap:10px">
         <button class="w-action-btn" style="flex:1;margin:0" onclick="closeDeleteAccount()">Cancel</button>
         <button class="w-action-btn" id="del-acct-go" disabled
-          style="flex:1;margin:0;opacity:0.4;color:var(--fat);border-color:var(--fat)"
+          style="flex:1;margin:0;opacity:0.4;color:var(--danger);border-color:var(--danger)"
           onclick="_delAcctConfirm()">Delete</button>
       </div>
     </div>`;
@@ -1808,7 +1808,7 @@ function _errorLogHTML() {
   const rows = log.slice(0, 6).map(e => {
     const when = (e.at || '').slice(5, 16).replace('T', ' ');
     return `<div style="padding:5px 0;border-bottom:1px solid var(--border2)">
-      <div style="color:var(--fat);font-size:10.5px">${esc(String(e.msg || '').slice(0, 90))}</div>
+      <div style="color:var(--danger);font-size:10.5px">${esc(String(e.msg || '').slice(0, 90))}</div>
       <div style="color:var(--text-muted);font-size:9.5px;margin-top:1px">${when} · ${esc(e.where || '')}${e.src ? ' · ' + esc(e.src) : ''}${e.line ? ':' + e.line : ''} · v${esc(String(e.v || '?'))}</div>
     </div>`;
   }).join('');
@@ -2779,7 +2779,7 @@ function viewProgressPhoto(i) {
       <img src="${p.thumb}" style="max-width:90%;max-height:70vh;border-radius:12px;object-fit:contain">
       <div style="color:var(--text);margin-top:12px;font-size:14px">${new Date(p.date).toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric', year:'numeric'})}</div>
       ${p.note ? `<div style="color:var(--text-dim);margin-top:4px;font-size:13px">${esc(p.note)}</div>` : ''}
-      <button style="margin-top:16px;background:var(--fat);color:var(--text);border:none;padding:8px 20px;border-radius:8px;font-size:12px;cursor:pointer" onclick="event.stopPropagation();deleteProgressPhoto(${i})">Delete Photo</button>
+      <button style="margin-top:16px;background:var(--danger);color:var(--text);border:none;padding:8px 20px;border-radius:8px;font-size:12px;cursor:pointer" onclick="event.stopPropagation();deleteProgressPhoto(${i})">Delete Photo</button>
     </div>`;
   modal.style.display = 'block';
 }

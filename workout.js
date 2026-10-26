@@ -596,14 +596,14 @@ function renderWorkoutActive() {
         ${canMoveUp ? `<button class="w-ex-act-btn" onclick="reorderExercise(${ei},-1)" title="Move up">↑</button>` : ''}
         ${canMoveDown ? `<button class="w-ex-act-btn" onclick="reorderExercise(${ei},1)" title="Move down">↓</button>` : ''}
         <button class="w-ex-act-btn" onclick="swapExercise(${ei})" title="Swap exercise">⇄</button>
-        <button class="w-ex-act-btn" onclick="removeExercise(${ei})" title="Remove exercise" style="color:var(--fat)">\u00d7</button>
+        <button class="w-ex-act-btn" onclick="removeExercise(${ei})" title="Remove exercise" style="color:var(--danger)">\u00d7</button>
       </div>
       ${infoHTML}
       ${tipHTML}
       <div id="w-sets-${ei}">${setsHTML}</div>
       <div class="w-set-actions">
         <button class="w-add-set" onclick="addSet(${ei})">+ Add Set</button>
-        <button class="w-add-set" id="w-rm-${ei}" style="color:var(--fat);opacity:0.5;${canRemove ? '' : 'display:none'}" onclick="removeSet(${ei})">− Remove Set</button>
+        <button class="w-add-set" id="w-rm-${ei}" style="color:var(--danger);${canRemove ? '' : 'display:none'}" onclick="removeSet(${ei})">− Remove Set</button>
         <button class="w-rest-chip" id="w-rest-${ei}" onclick="toggleRestPicker(${ei})" aria-expanded="false" aria-controls="w-rest-pick-${ei}" aria-label="${_restAria(rest)}">${icon('timer', 13)}<span>${_fmtRest(rest)}</span></button>
       </div>
       <div class="w-rest-pick" id="w-rest-pick-${ei}" role="group" aria-label="Rest between sets" hidden>${
@@ -917,7 +917,7 @@ function calcPlates() {
     while (remaining >= p - 0.01) { needed.push(p); remaining -= p; }
   }
   if (remaining > 0.1) {
-    out.innerHTML = `<div style="color:var(--fat);font-size:13px">Can't make exact weight with standard plates</div>`;
+    out.innerHTML = `<div style="color:var(--danger);font-size:13px">Can't make exact weight with standard plates</div>`;
     return;
   }
   const counts = {};

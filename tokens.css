@@ -19,14 +19,20 @@
   /* The same, as channels, for the few places that need transparency */
   --c-ink-rgb: 11,11,11;
   --c-white-rgb: 248,248,248;
+  --c-line-rgb: 38,36,34;
   --c-divider-rgb: 112,112,112;
   --c-orange-rgb: 255,86,30;
 
-  /* Errors and success. Kept, but quiet, so they never compete with orange. */
-  --c-danger: #B86A5E;
-  --c-danger-rgb: 184,106,94;
-  --c-success: #7E9C7A;
-  --c-success-rgb: 126,156,122;
+  /* Errors and success. Kept, but quiet, so they never compete with orange.
+     Each theme has the shade that still reads at 4.5:1 on its own ground. */
+  --c-danger: #C47A6E;
+  --c-danger-rgb: 196,122,110;
+  --c-success: #8FAD8B;
+  --c-success-rgb: 143,173,139;
+  --c-danger-light: #9A4F44;
+  --c-danger-light-rgb: 154,79,68;
+  --c-success-light: #4F6B4B;
+  --c-success-light-rgb: 79,107,75;
 
   /* ── Type: one family. Inter switches to its Display cut on its own at
         large sizes (font-optical-sizing: auto, opsz axis 14..32). ── */
@@ -56,7 +62,11 @@
   --bg: var(--c-ink);
   --surface: var(--c-surface);
   --surface-rgb: 22,22,22;
-  --surface2: var(--c-line);
+  /* Chips, tiles and inputs: the line colour at 55%, which keeps muted text
+     at 4.5:1 (on the solid line colour it was 4.2:1). Floating controls use
+     --raised, which is solid, so nothing shows through them. */
+  --surface2: rgba(var(--c-line-rgb), 0.55);
+  --raised: var(--c-line);
   --border: var(--c-line);
   --border2: rgba(var(--c-divider-rgb), 0.22);
   --text: var(--c-white);
@@ -103,6 +113,7 @@
   --surface: var(--c-white);
   --surface-rgb: var(--c-white-rgb);
   --surface2: rgba(var(--c-ink-rgb), 0.06);
+  --raised: var(--c-white);
   --border: rgba(var(--c-ink-rgb), 0.12);
   --border2: rgba(var(--c-ink-rgb), 0.08);
   --text: var(--c-ink);
@@ -110,4 +121,8 @@
   --text-dim: rgba(var(--c-ink-rgb), 0.68);
   --text-muted: rgba(var(--c-ink-rgb), 0.68);
   --overlay: rgba(var(--c-ink-rgb), 0.55);
+  --danger: var(--c-danger-light);
+  --danger-rgb: var(--c-danger-light-rgb);
+  --success: var(--c-success-light);
+  --success-rgb: var(--c-success-light-rgb);
 }

@@ -1973,7 +1973,7 @@ function injectTDEEStyles() {
     .tp-macro-card{background:var(--surface);border-radius:10px;padding:12px;text-align:center}
     .tp-macro-val{font-size:20px;font-weight:700;font-family:var(--serif)}
     .tp-macro-lbl{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px}
-    .tp-error{color:var(--fat);font-size:13px;padding:8px 0;text-align:center}
+    .tp-error{color:var(--danger);font-size:13px;padding:8px 0;text-align:center}
     .tp-confirm{color:var(--carb);font-size:13px;padding:8px 0;text-align:center}
   `;
   document.head.appendChild(s);
