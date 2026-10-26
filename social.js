@@ -1308,7 +1308,7 @@ function _showCreateGroup() {
       <div id="lb-modal-error" style="color:var(--danger);font-size:12px;min-height:18px;margin-bottom:8px"></div>
       <div style="display:flex;gap:10px">
         <button class="w-action-btn" style="flex:1;margin:0" onclick="_closeLbModal()">Cancel</button>
-        <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:var(--on-accent)" id="lb-create-submit" onclick="_submitCreateGroup()">Create</button>
+        <button class="w-action-btn" style="flex:1;margin:0;background:var(--orange);color:var(--on-orange);border-color:var(--orange)" id="lb-create-submit" onclick="_submitCreateGroup()">Create</button>
       </div>
     </div>`;
   modal.style.display = 'block';
@@ -1354,7 +1354,7 @@ function _showJoinGroup() {
       <div id="lb-modal-error" style="color:var(--danger);font-size:12px;min-height:18px;margin-bottom:8px"></div>
       <div style="display:flex;gap:10px">
         <button class="w-action-btn" style="flex:1;margin:0" onclick="_closeLbModal()">Cancel</button>
-        <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:var(--on-accent)" id="lb-join-submit" onclick="_submitJoinGroup()">Join</button>
+        <button class="w-action-btn" style="flex:1;margin:0;background:var(--orange);color:var(--on-orange);border-color:var(--orange)" id="lb-join-submit" onclick="_submitJoinGroup()">Join</button>
       </div>
     </div>`;
   modal.style.display = 'block';

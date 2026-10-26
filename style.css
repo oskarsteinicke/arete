@@ -3079,3 +3079,13 @@ em, i { font-style: normal; }
 [data-theme="light"] .ni.active { color: var(--text); }
 [data-theme="light"] .tb-ready-num, [data-theme="light"] .rd-score-num { color: var(--text) !important; }
 
+/* Popups set their headings and big numbers inline in what used to be the
+   serif; they take the heading style like every other heading. */
+[style*="font-family:var(--serif)"], .cal-month-label, .av-name {
+  font-weight: var(--fw-head); text-transform: uppercase; letter-spacing: var(--track-head);
+  line-height: var(--lh-head); font-variant-numeric: tabular-nums;
+}
+.g-score-val, .g-pl-lv, .ob-macro-input {
+  font-weight: var(--fw-head); letter-spacing: var(--track-head); font-variant-numeric: tabular-nums;
+}
+

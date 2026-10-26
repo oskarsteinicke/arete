@@ -2075,7 +2075,7 @@ function showMilestonePrompt(o) {
         <div style="font-size:13px;color:var(--text-dim);line-height:1.5;margin-bottom:24px">${o.body}</div>
         <div style="display:flex;gap:10px">
           <button class="w-action-btn" style="flex:1;margin:0" onclick="dismissMilestonePrompt()">Not now</button>
-          <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:var(--on-accent)" onclick="dismissMilestonePrompt();${act}">${o.action}</button>
+          <button class="w-action-btn" style="flex:1;margin:0;background:var(--orange);color:var(--on-orange);border-color:var(--orange)" onclick="dismissMilestonePrompt();${act}">${o.action}</button>
         </div>
       </div>
     </div>`;
@@ -2194,7 +2194,7 @@ function showSleepPrompt() {
         </div>
         <div style="display:flex;gap:10px">
           <button class="w-action-btn" style="flex:1;margin:0" onclick="dismissSleepPrompt()">Skip</button>
-          <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:var(--on-accent)" id="sp-save" onclick="saveSleepPrompt()">Save</button>
+          <button class="w-action-btn" style="flex:1;margin:0;background:var(--orange);color:var(--on-orange);border-color:var(--orange)" id="sp-save" onclick="saveSleepPrompt()">Save</button>
         </div>
       </div>
     </div>`;
@@ -3374,7 +3374,7 @@ function openEditHabit(id) {
       })()}
       <div style="display:flex;gap:10px;margin-top:20px">
         <button class="w-action-btn" style="flex:1;margin:0" onclick="closeEditHabit()">Cancel</button>
-        <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:var(--on-accent)" onclick="saveEditHabit('${id}')">Save</button>
+        <button class="w-action-btn" style="flex:1;margin:0;background:var(--orange);color:var(--on-orange);border-color:var(--orange)" onclick="saveEditHabit('${id}')">Save</button>
       </div>
     </div>`;
   modal.style.display = 'block';
@@ -3769,7 +3769,7 @@ function showAIConsent() {
           </div>
           <div style="display:flex;gap:10px;margin-top:18px">
             <button class="w-action-btn" style="flex:1;margin:0" onclick="answerAIConsent(false)">Not now</button>
-            <button class="w-action-btn" style="flex:1.3;margin:0;background:var(--accent);color:var(--on-accent);border-color:var(--accent)" onclick="answerAIConsent(true)">Allow</button>
+            <button class="w-action-btn" style="flex:1.3;margin:0;background:var(--orange);color:var(--on-orange);border-color:var(--orange);border-color:var(--accent)" onclick="answerAIConsent(true)">Allow</button>
           </div>
           <div style="text-align:center;margin-top:12px"><a href="https://get-arete.com/privacy.html" target="_blank" rel="noopener" style="font-size:11.5px;color:var(--text-muted)">Privacy policy</a></div>
         </div>

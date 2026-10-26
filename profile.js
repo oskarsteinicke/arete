@@ -540,7 +540,7 @@ function injectGamificationStyles() {
     .cal-task-list{margin-bottom:4px}
     .cal-task-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(var(--text-rgb), 0.05)}
     .cal-task-cb{width:20px;height:20px;border-radius:50%;border:2px solid var(--accent);background:none;cursor:pointer;flex-shrink:0;padding:0;display:flex;align-items:center;justify-content:center;transition:all .2s;font-size:12px;color:transparent}
-    .cal-task-cb-done{background:var(--accent);color:var(--on-accent)}
+    .cal-task-cb-done{background:var(--orange);color:var(--on-orange);border-color:var(--orange)}
     .cal-task-text{flex:1;font-size:13px;color:var(--text);line-height:1.4;background:none;border:none;outline:none;padding:0}
     .cal-task-text-done{text-decoration:line-through;color:var(--text-dim)}
     .cal-task-del{background:none;border:none;color:var(--text-dim);font-size:18px;cursor:pointer;padding:0 2px;line-height:1;opacity:0.5}
@@ -1832,7 +1832,7 @@ function openEditName() {
       <input class="d-input" id="edit-name-input" type="text" value="${esc(current)}" placeholder="First name" style="margin-bottom:20px">
       <div style="display:flex;gap:10px">
         <button class="w-action-btn" style="flex:1;margin:0" onclick="closeEditName()">Cancel</button>
-        <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:var(--on-accent)" onclick="saveEditName()">Save</button>
+        <button class="w-action-btn" style="flex:1;margin:0;background:var(--orange);color:var(--on-orange);border-color:var(--orange)" onclick="saveEditName()">Save</button>
       </div>
     </div>`;
   modal.style.display = 'block';
@@ -2462,7 +2462,7 @@ function showWeeklyRecap() {
         <div style="font-size:13px;color:var(--accent);font-weight:600;margin-bottom:20px">Level ${lvl} · ${xp.toLocaleString()} XP</div>
         <div style="display:flex;gap:10px">
           <button class="w-action-btn" style="flex:1;margin:0" onclick="this.closest('#weekly-recap-modal').remove()">Dismiss</button>
-          <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:var(--on-accent)" onclick="this.closest('#weekly-recap-modal').remove();shareRecap()">Share</button>
+          <button class="w-action-btn" style="flex:1;margin:0;background:var(--orange);color:var(--on-orange);border-color:var(--orange)" onclick="this.closest('#weekly-recap-modal').remove();shareRecap()">Share</button>
         </div>
       </div>
     </div>`;
@@ -2838,7 +2838,7 @@ function editWhy() {
       <textarea class="why-modal-input" id="why-input" rows="4" maxlength="280" placeholder="e.g. To become the man my younger self needed, and the one my future family deserves.">${esc(cur)}</textarea>
       <div style="display:flex;gap:10px;margin-top:16px">
         <button class="w-action-btn" style="flex:1;margin:0" onclick="closeWhyModal()">Cancel</button>
-        <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:var(--on-accent)" onclick="saveWhy()">Save</button>
+        <button class="w-action-btn" style="flex:1;margin:0;background:var(--orange);color:var(--on-orange);border-color:var(--orange)" onclick="saveWhy()">Save</button>
       </div>
     </div>`;
   modal.style.display = 'block';

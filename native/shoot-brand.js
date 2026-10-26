@@ -106,7 +106,19 @@ const AUDIT_JS = `(() => {
       fails.push({ text: t.textContent.trim().slice(0, 30), cls: String(el.className || el.tagName).slice(0, 40), ratio: +got.toFixed(2), need, color: cs.color, bg: 'rgb(' + [bg.r, bg.g, bg.b].map(Math.round) + ')' });
     }
   }
-  return { checked, fails };
+  // Every element painted orange, as its outermost orange element (an orange
+  // button counts once, not once per span inside it), in the first screen.
+  const O = 'rgb(255, 86, 30)', orange = [];
+  for (const el of document.querySelectorAll('body *')) {
+    const cs = getComputedStyle(el); const r = el.getBoundingClientRect();
+    if (!r.width || cs.display === 'none' || cs.visibility === 'hidden' || +cs.opacity === 0 || r.top > innerHeight || r.bottom < 0) continue;
+    const hit = [cs.color, cs.backgroundColor, cs.borderTopColor, cs.stroke, cs.fill].some(v => v === O) && !(cs.color === O && !el.textContent.trim() && cs.backgroundColor !== O && cs.stroke !== O && cs.fill !== O && cs.borderTopColor !== O);
+    if (!hit) continue;
+    if (orange.some(o => o.contains(el))) continue;
+    orange.push(el);
+  }
+  const names = orange.map(e => (e.closest('nav') ? 'nav' : String(e.className && e.className.baseVal !== undefined ? e.className.baseVal : e.className) || e.tagName).split(' ')[0]);
+  return { checked, fails, orange: [...new Set(names)], orangeCount: new Set(names).size };
 })()`;
 server.listen(PORT, async () => {
   fs.mkdirSync(OUT, { recursive: true });
