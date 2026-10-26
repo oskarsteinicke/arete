@@ -428,9 +428,9 @@ function injectAdaptiveStyles() {
     .da-stat-val{font-size:22px;font-weight:700;color:var(--accent-b);font-family:var(--display);letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
     .da-stat-lbl{font-size:13px;color:var(--text-dim);margin-top:3px;line-height:1.35}
     .da-goal-btns{display:flex;gap:6px;margin:12px 0 8px}
-    .da-goal-btn{flex:1;padding:10px 0;border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:transparent;color:var(--text-dim);font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
-    .da-goal-btn.active{background:rgba(154,130,86,0.15);border-color:var(--accent);color:var(--accent-b)}
-    .da-apply{display:inline-block;margin-top:8px;padding:8px 20px;border:1px solid var(--accent);border-radius:10px;background:rgba(154,130,86,0.1);color:var(--accent-b);font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+    .da-goal-btn{flex:1;padding:10px 0;border:1px solid rgba(var(--text-rgb), 0.08);border-radius:10px;background:transparent;color:var(--text-dim);font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+    .da-goal-btn.active{background:rgba(var(--accent-rgb), 0.15);border-color:var(--accent);color:var(--accent-b)}
+    .da-apply{display:inline-block;margin-top:8px;padding:8px 20px;border:1px solid var(--accent);border-radius:10px;background:rgba(var(--accent-rgb), 0.1);color:var(--accent-b);font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
     .da-apply:active{transform:scale(0.97)}
     .da-rec{display:flex;gap:16px;justify-content:center;margin-top:10px}
     .da-rec-item{text-align:center}
@@ -440,27 +440,27 @@ function injectAdaptiveStyles() {
     .dw-logged{font-size:15px;color:var(--text);margin-bottom:10px}
     .dw-empty{font-size:14px;color:var(--text-dim)}
     .dw-input-row{display:flex;gap:8px;align-items:center}
-    .dw-input{flex:1;padding:10px 12px;border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:var(--surface);color:var(--text);font-size:14px}
-    .dw-log-btn{padding:10px 18px;border:none;border-radius:10px;background:var(--accent);color:#0a0908;font-size:14px;font-weight:700;cursor:pointer}
+    .dw-input{flex:1;padding:10px 12px;border:1px solid rgba(var(--text-rgb), 0.08);border-radius:10px;background:var(--surface);color:var(--text);font-size:14px}
+    .dw-log-btn{padding:10px 18px;border:none;border-radius:10px;background:var(--accent);color:var(--on-accent);font-size:14px;font-weight:700;cursor:pointer}
     .dw-log-btn:active{transform:scale(0.97)}
-    .dw-drift{margin-top:12px;padding:12px 14px;background:rgba(176,132,72,0.08);border:1px solid rgba(217,180,106,0.28);border-radius:12px}
+    .dw-drift{margin-top:12px;padding:12px 14px;background:rgba(var(--accent-rgb), 0.08);border:1px solid rgba(var(--accent-rgb), 0.28);border-radius:12px}
     .dw-drift-text{font-size:14px;line-height:1.5;color:var(--text-dim)}
     .dw-drift-text strong{color:var(--text)}
     .dw-drift-arrow{color:var(--accent-b);font-weight:700}
     .dw-history{margin-top:12px;font-size:14px;color:var(--text-dim);font-variant-numeric:tabular-nums}
-    .dw-history-item{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+    .dw-history-item{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(var(--text-rgb), 0.04)}
     .dw-history-item:last-child{border-bottom:none}
     .dw-trend-link{display:block;margin-top:10px;font-size:14px;font-weight:600;color:var(--accent-b);cursor:pointer;text-align:right}
     .dt-chart{margin:16px 24px;background:var(--surface2);border-radius:14px;padding:16px;overflow:hidden}
     .dt-placeholder{padding:32px 24px;text-align:center;font-size:13px;color:var(--text-dim)}
     .fs-row{background:var(--surface2);border-radius:8px;padding:10px 14px;margin-bottom:4px;cursor:pointer;border:1px solid transparent;transition:all .2s}
-    .fs-row:hover{background:var(--surface);border-color:rgba(255,255,255,0.08)}
+    .fs-row:hover{background:var(--surface);border-color:rgba(var(--text-rgb), 0.08)}
     .fs-row.selected{border-color:var(--accent)}
     .fs-row-name{font-size:13px;color:var(--text);margin-bottom:2px}
     .fs-row-macros{font-size:11px;color:var(--text-dim)}
     .fs-status{color:var(--text-dim);font-size:13px;padding:12px 0}
     .fs-input-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
-    .fs-search-btn{padding:10px 18px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;white-space:nowrap}
+    .fs-search-btn{padding:10px 18px;border:none;border-radius:10px;background:var(--accent);color:var(--on-accent);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;white-space:nowrap}
     .fs-search-btn:active{transform:scale(0.97)}
     .fs-grams-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
     .fs-grams-label{font-size:12px;color:var(--text-dim);white-space:nowrap}
@@ -1322,7 +1322,7 @@ function renderDietAddMeal() {
         <input class="d-input-sm" type="number" inputmode="decimal" id="fi-f" placeholder="Fat">
       </div>
       <button class="w-action-btn" style="width:100%;margin:12px 0" onclick="addFoodItem()">ADD ITEM</button>
-      <button class="w-action-btn" style="width:100%;margin:0 0 12px;background:rgba(110,159,212,0.1);border-color:var(--pro);color:var(--pro)" onclick="go('dietRecipes')">QUICK ADD FROM RECIPES \u2192</button>
+      <button class="w-action-btn" style="width:100%;margin:0 0 12px;background:rgba(var(--text-rgb), 0.1);border-color:var(--pro);color:var(--pro)" onclick="go('dietRecipes')">QUICK ADD FROM RECIPES \u2192</button>
     </div>`;
 }
 
@@ -1467,7 +1467,7 @@ function _renderFoodResults() {
   if (!_foodSearchResults.length) { out.innerHTML = ''; return; }
   out.innerHTML = _foodSearchResults.map((f, i) =>
     `<div class="food-result" onclick="selectFoodResult(${i})">
-      <div class="food-result-name">${esc(f.name)}${f.source === 'api' ? ' <span style="font-size:10px;color:var(--text-dim);background:rgba(255,255,255,0.06);padding:1px 5px;border-radius:4px">OFF</span>' : ''}</div>
+      <div class="food-result-name">${esc(f.name)}${f.source === 'api' ? ' <span style="font-size:10px;color:var(--text-dim);background:rgba(var(--text-rgb), 0.06);padding:1px 5px;border-radius:4px">OFF</span>' : ''}</div>
       <div class="food-result-macros">${f.calories} cal · ${f.protein}P · ${f.carbs}C · ${f.fat}F <span style="color:var(--text-dim)">per ${esc(f.per)}</span></div>
     </div>`
   ).join('');
@@ -1955,16 +1955,16 @@ function injectTDEEStyles() {
   const s = document.createElement('style');
   s.id = 'tdee-styles';
   s.textContent = `
-    .tp-pill{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:var(--surface);color:var(--text);cursor:pointer;width:100%;text-align:left;margin-bottom:6px;font-size:13px;letter-spacing:0.05em;transition:all .2s}
+    .tp-pill{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-radius:10px;border:1px solid rgba(var(--text-rgb), 0.08);background:var(--surface);color:var(--text);cursor:pointer;width:100%;text-align:left;margin-bottom:6px;font-size:13px;letter-spacing:0.05em;transition:all .2s}
     .tp-pill.active{background:var(--surface2);border-color:var(--accent-b)}
     .tp-pill-sub{font-size:11px;color:var(--text-dim);text-align:right;max-width:55%}
     .tp-sex-row{display:flex;gap:8px;margin-bottom:8px}
-    .tp-sex-btn{flex:1;padding:12px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:var(--surface);color:var(--text);cursor:pointer;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;text-align:center;transition:all .2s}
+    .tp-sex-btn{flex:1;padding:12px 16px;border-radius:10px;border:1px solid rgba(var(--text-rgb), 0.08);background:var(--surface);color:var(--text);cursor:pointer;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;text-align:center;transition:all .2s}
     .tp-sex-btn.active{border-color:var(--accent);color:var(--accent-b)}
     .tp-input-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
     .tp-input-card{background:var(--surface2);border-radius:10px;padding:12px}
     .tp-input-label{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
-    .tp-input{width:100%;padding:8px 10px;border:1px solid rgba(255,255,255,0.08);border-radius:8px;background:var(--surface);color:var(--text);font-size:15px;box-sizing:border-box}
+    .tp-input{width:100%;padding:8px 10px;border:1px solid rgba(var(--text-rgb), 0.08);border-radius:8px;background:var(--surface);color:var(--text);font-size:15px;box-sizing:border-box}
     .tp-result-box{background:var(--surface2);border-radius:14px;padding:20px;margin-top:16px;text-align:center}
     .tp-tdee-label{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px}
     .tp-tdee-num{font-family:var(--serif);font-size:48px;color:var(--accent-b);margin:8px 0}
@@ -2269,8 +2269,8 @@ function renderDietTrend() {
 
     chartHTML = `<div class="dt-chart ani">
       <svg viewBox="0 0 ${W} ${H}" style="width:100%;display:block">
-        <line x1="${ML}" y1="${cH}" x2="${W}" y2="${cH}" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
-        <line x1="${ML}" y1="0" x2="${ML}" y2="${cH}" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+        <line x1="${ML}" y1="${cH}" x2="${W}" y2="${cH}" stroke="rgba(var(--text-rgb), 0.08)" stroke-width="1"/>
+        <line x1="${ML}" y1="0" x2="${ML}" y2="${cH}" stroke="rgba(var(--text-rgb), 0.08)" stroke-width="1"/>
         <text x="${ML}" y="${H - 4}" fill="var(--text-dim)" font-size="9">${firstDate}</text>
         <text x="${W}" y="${H - 4}" fill="var(--text-dim)" font-size="9" text-anchor="end">${lastDate}</text>
         <text x="${ML - 4}" y="12" fill="var(--text-dim)" font-size="9" text-anchor="end">${maxW.toFixed(1)}</text>

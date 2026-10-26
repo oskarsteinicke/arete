@@ -239,7 +239,7 @@ function trainingAdviceHTML(where) {
 }
 
 function readinessColor(score) {
-  return score >= 75 ? 'var(--accent-b)' : score >= 50 ? 'var(--carb)' : score >= 30 ? '#e0a866' : 'var(--fat)';
+  return score >= 75 ? 'var(--accent-b)' : score >= 50 ? 'var(--carb)' : score >= 30 ? 'var(--text-dim)' : 'var(--fat)';
 }
 
 // Only meaningful once we have at least one real input. Avoids showing a
@@ -756,7 +756,7 @@ function dismissBriefCoach() {
 // and the factor holding the score back is marked so the sheet says what to fix.
 function _rdFactorRow(glyph, label, val, weight, limiter = false) {
   const v = Math.round(val);
-  const c = v >= 70 ? 'var(--carb)' : v >= 40 ? '#e0a866' : 'var(--fat)';
+  const c = v >= 70 ? 'var(--carb)' : v >= 40 ? 'var(--text-dim)' : 'var(--fat)';
   return `<div class="rd-factor${limiter ? ' rd-factor--limiter' : ''}">
     <div class="rd-factor-top">
       <span class="rd-factor-name">${glyph} ${label}</span>

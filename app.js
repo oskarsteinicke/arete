@@ -747,16 +747,16 @@ function injectAuthStyles() {
     .auth-logo{margin-bottom:40px;text-align:center;display:flex;flex-direction:column;align-items:center}
     .auth-title{font-family:var(--display);font-size:30px;color:var(--text);text-align:center;margin-bottom:8px;line-height:1.2;letter-spacing:0.5px}
     .auth-sub{font-size:13px;color:var(--text-dim);text-align:center;margin-bottom:36px;line-height:1.6}
-    .auth-input{width:100%;padding:16px 18px;border:1px solid rgba(255,255,255,0.1);border-radius:12px;background:var(--surface);color:var(--text);font-size:15px;margin-bottom:12px;outline:none;transition:border .2s;box-sizing:border-box}
+    .auth-input{width:100%;padding:16px 18px;border:1px solid rgba(var(--text-rgb), 0.1);border-radius:12px;background:var(--surface);color:var(--text);font-size:15px;margin-bottom:12px;outline:none;transition:border .2s;box-sizing:border-box}
     .auth-input:focus{border-color:var(--accent)}
-    .auth-btn{width:100%;padding:18px;border:none;border-radius:14px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:8px;transition:transform .15s,opacity .15s}
+    .auth-btn{width:100%;padding:18px;border:none;border-radius:14px;background:var(--accent);color:var(--on-accent);font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:8px;transition:transform .15s,opacity .15s}
     .auth-btn:active{transform:scale(0.98)}
     .auth-btn:disabled{opacity:0.5;cursor:not-allowed}
     .auth-switch{margin-top:24px;font-size:13px;color:var(--text-dim);text-align:center}
     .auth-switch span{color:var(--accent-b);cursor:pointer;font-weight:600}
-    .auth-error{color:#d46f6f;font-size:13px;text-align:center;margin-top:8px;min-height:20px}
+    .auth-error{color:var(--danger);font-size:13px;text-align:center;margin-top:8px;min-height:20px}
     .auth-divider{display:flex;align-items:center;gap:12px;margin:20px 0;width:100%}
-    .auth-divider-line{flex:1;height:1px;background:rgba(255,255,255,0.08)}
+    .auth-divider-line{flex:1;height:1px;background:rgba(var(--text-rgb), 0.08)}
     .auth-divider-text{font-size:11px;color:var(--text-muted);letter-spacing:1px}
   `;
   document.head.appendChild(s);
@@ -780,7 +780,7 @@ function renderAuth() {
       <input class="auth-input" type="email" id="auth-email" placeholder="Email address" autocomplete="email" value="${esc(_authPrefillEmail)}">
       <input class="auth-input" type="password" id="auth-password" placeholder="Password" autocomplete="${isSignIn ? 'current-password' : 'new-password'}" onkeydown="if(event.key==='Enter')submitAuth()">
       ${!isSignIn ? `<input class="auth-input" type="password" id="auth-confirm" placeholder="Confirm password" onkeydown="if(event.key==='Enter')submitAuth()">` : ''}
-      <div class="auth-error" id="auth-error"${_authNotice && _authNotice.ok ? ' style="color:#6fd48e"' : ''}>${_authNotice ? esc(_authNotice.text) : ''}</div>
+      <div class="auth-error" id="auth-error"${_authNotice && _authNotice.ok ? ' style="color:var(--success)"' : ''}>${_authNotice ? esc(_authNotice.text) : ''}</div>
       <button class="auth-btn" id="auth-btn" onclick="submitAuth()">${isSignIn ? 'SIGN IN' : 'CREATE ACCOUNT'}</button>
       <div class="auth-switch">
         ${isSignIn ? `Don't have an account? <span onclick="_authMode='signup';renderAuth()">Sign up</span>` : `Already have an account? <span onclick="_authMode='signin';renderAuth()">Sign in</span>`}
@@ -845,7 +845,7 @@ async function submitAuth() {
     const low = msg.toLowerCase();
     trackFail('signin', low.includes('invalid login credentials') ? 'invalid_credentials' : msg);
     if (low.includes('not confirmed')) {
-      errEl.style.color = '#6fd48e';
+      errEl.style.color = 'var(--success)';
       errEl.textContent = 'Account created! Check your inbox to confirm your email, then sign in.';
     } else if (low.includes('invalid login credentials')) {
       // The API can't say which is wrong, but "invalid credentials" reads like
@@ -869,7 +869,7 @@ async function handleForgotPassword() {
   if (!email) { errEl.style.color = 'var(--fat)'; errEl.textContent = 'Enter your email above first.'; return; }
   errEl.style.color = 'var(--text-dim)'; errEl.textContent = 'Sending…';
   const res = await authResetPassword(email);
-  if (res.ok) { errEl.style.color = '#6fd48e'; errEl.textContent = 'Check your inbox for a reset link.'; }
+  if (res.ok) { errEl.style.color = 'var(--success)'; errEl.textContent = 'Check your inbox for a reset link.'; }
   else { errEl.style.color = 'var(--fat)'; errEl.textContent = 'Could not send reset email. Try again.'; }
 }
 
@@ -904,6 +904,29 @@ const LS = {
   },
 };
 
+// ── BRAND COLOURS FOR CANVAS ─────────────────────────────────────────────
+// Canvas cannot read CSS custom properties, so the share cards ask for the
+// palette here and tokens.css stays the one place it is written down.
+function brandColor(name, alpha) {
+  let v = '';
+  try { v = getComputedStyle(document.documentElement).getPropertyValue('--c-' + name).trim(); } catch {}
+  if (!v) return name === 'ink' || name === 'surface' ? 'black' : 'white';
+  if (alpha == null) return v;
+  const n = parseInt(v.slice(1), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
+}
+// A heading as the brand sets it: tight, and a closing full stop in orange.
+function brandHeading(ctx, text, x, y) {
+  const size = parseFloat((/(\d+)px/.exec(ctx.font) || [0, 40])[1]);
+  ctx.letterSpacing = `${(-0.035 * size).toFixed(1)}px`;
+  const dot = text.endsWith('.');
+  const body = dot ? text.slice(0, -1) : text;
+  ctx.fillStyle = brandColor('white');
+  ctx.fillText(body, x, y);
+  if (dot) { ctx.fillStyle = brandColor('orange'); ctx.fillText('.', x + ctx.measureText(body).width, y); }
+  ctx.letterSpacing = '0px';
+}
+
 // Collision-proof id generator (timestamp + random suffix). Avoids two items
 // created in the same millisecond sharing an id.
 function genId(prefix) {
@@ -932,8 +955,8 @@ function ring(r, pct, sw = 3, color = 'var(--accent)') {
   const sz = (r + sw) * 2;
   const cx = r + sw;
   return `<svg viewBox="0 0 ${sz} ${sz}">
-    <circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="${sw + 1}"/>
-    <circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="${sw}"/>
+    <circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="rgba(var(--text-rgb), 0.06)" stroke-width="${sw + 1}"/>
+    <circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="rgba(var(--text-rgb), 0.12)" stroke-width="${sw}"/>
     <circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="${color}" stroke-width="${sw}"
       stroke-dasharray="${c.toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}" stroke-linecap="round"
       style="--ring-c:${c.toFixed(2)};--ring-off:${off.toFixed(2)}"/>
@@ -1989,14 +2012,14 @@ function showMilestonePrompt(o) {
   modal.id = 'milestone-prompt';
   const act = o.arg ? `${o.onAction}('${o.arg}')` : `${o.onAction}()`;
   modal.innerHTML = `
-    <div class="pop-backdrop" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:4000;display:flex;align-items:center;justify-content:center;padding:24px" onclick="dismissMilestonePrompt()">
+    <div class="pop-backdrop" style="position:fixed;inset:0;background:rgba(var(--c-ink-rgb), 0.7);z-index:4000;display:flex;align-items:center;justify-content:center;padding:24px" onclick="dismissMilestonePrompt()">
       <div class="pop-card" style="background:var(--bg);border:1px solid var(--border2);border-radius:24px;padding:32px 24px;max-width:360px;width:100%;text-align:center" onclick="event.stopPropagation()">
         <div style="font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">${o.eyebrow}</div>
         <div style="font-family:var(--serif);font-size:32px;color:var(--text);margin-bottom:10px">${o.title}</div>
         <div style="font-size:13px;color:var(--text-dim);line-height:1.5;margin-bottom:24px">${o.body}</div>
         <div style="display:flex;gap:10px">
           <button class="w-action-btn" style="flex:1;margin:0" onclick="dismissMilestonePrompt()">Not now</button>
-          <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:#fff" onclick="dismissMilestonePrompt();${act}">${o.action}</button>
+          <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:var(--on-accent)" onclick="dismissMilestonePrompt();${act}">${o.action}</button>
         </div>
       </div>
     </div>`;
@@ -2092,7 +2115,7 @@ function showSleepPrompt() {
   const modal = document.createElement('div');
   modal.id = 'sleep-prompt';
   modal.innerHTML = `
-    <div class="pop-backdrop" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:4000;display:flex;align-items:center;justify-content:center;padding:24px" onclick="dismissSleepPrompt()">
+    <div class="pop-backdrop" style="position:fixed;inset:0;background:rgba(var(--c-ink-rgb), 0.7);z-index:4000;display:flex;align-items:center;justify-content:center;padding:24px" onclick="dismissSleepPrompt()">
       <div class="pop-card" style="background:var(--bg);border:1px solid var(--border2);border-radius:24px;padding:28px 24px;max-width:360px;width:100%;text-align:center" onclick="event.stopPropagation()">
         <div style="font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Last Night</div>
         <div style="font-family:var(--serif);font-size:26px;color:var(--text);margin-bottom:4px">How did you sleep?</div>
@@ -2115,7 +2138,7 @@ function showSleepPrompt() {
         </div>
         <div style="display:flex;gap:10px">
           <button class="w-action-btn" style="flex:1;margin:0" onclick="dismissSleepPrompt()">Skip</button>
-          <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:#fff" id="sp-save" onclick="saveSleepPrompt()">Save</button>
+          <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:var(--on-accent)" id="sp-save" onclick="saveSleepPrompt()">Save</button>
         </div>
       </div>
     </div>`;
@@ -2971,7 +2994,7 @@ function renderHome() {
         const dismissedAt = parseInt(localStorage.getItem('hvi_invite_dismissed') || '0');
         const daysSinceDismiss = (Date.now() - dismissedAt) / 86400000;
         if (_overallStreak >= 3 && daysSinceDismiss > 7) {
-          return `<div class="hm-feedback-banner ani" style="display:flex;align-items:center;gap:12px;padding:14px 16px;margin:0 16px 12px;background:linear-gradient(135deg,rgba(196,169,108,.12),rgba(196,169,108,.04));border:1px solid rgba(196,169,108,.2);border-radius:14px;cursor:pointer" onclick="go('challenges')">
+          return `<div class="hm-feedback-banner ani" style="display:flex;align-items:center;gap:12px;padding:14px 16px;margin:0 16px 12px;background:linear-gradient(135deg,rgba(var(--accent-rgb), .12),rgba(var(--accent-rgb), .04));border:1px solid rgba(var(--accent-rgb), .2);border-radius:14px;cursor:pointer" onclick="go('challenges')">
             <div style="font-size:24px;flex-shrink:0">⚔️</div>
             <div style="flex:1;min-width:0">
               <div style="font-weight:600;font-size:14px;color:var(--text)">Challenge a friend</div>
@@ -2986,13 +3009,13 @@ function renderHome() {
       const ch = active[0];
       const prog = _challengeProgress(ch);
       const left = _daysLeft(ch);
-      return `<div class="hm-feedback-banner ani" style="padding:14px 16px;margin:0 16px 12px;background:linear-gradient(135deg,rgba(196,169,108,.08),rgba(196,169,108,.02));border:1px solid rgba(196,169,108,.15);border-radius:14px;cursor:pointer" onclick="go('challenges')">
+      return `<div class="hm-feedback-banner ani" style="padding:14px 16px;margin:0 16px 12px;background:linear-gradient(135deg,rgba(var(--accent-rgb), .08),rgba(var(--accent-rgb), .02));border:1px solid rgba(var(--accent-rgb), .15);border-radius:14px;cursor:pointer" onclick="go('challenges')">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
           <span style="font-size:20px">${ch.icon}</span>
           <span style="font-weight:600;font-size:14px;color:var(--text)">${esc(ch.name)}</span>
           <span style="margin-left:auto;font-size:11px;color:var(--text-dim)">${prog.done ? '✓ Done' : left + 'd left'}</span>
         </div>
-        <div style="height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden">
+        <div style="height:6px;background:rgba(var(--text-rgb), .06);border-radius:3px;overflow:hidden">
           <div style="height:100%;width:${(prog.pct*100).toFixed(0)}%;background:${prog.done ? 'var(--accent-b)' : 'var(--accent)'};border-radius:3px;transition:width .3s"></div>
         </div>
         <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:11px;color:var(--text-dim)">
@@ -3051,7 +3074,7 @@ function renderHabits() {
     <div class="ah-head ani" style="display:flex;align-items:flex-start;justify-content:space-between">
       <div><div class="ah-title">All Habits</div><div class="ah-sub">We are what we repeatedly do.</div></div>
       <div style="display:flex;gap:8px;padding-top:8px">
-        ${!_habitEditMode ? `<button class="w-action-btn" style="margin:0;padding:8px 18px;font-size:11px;width:auto" onclick="_habitEditMode=true;renderHabits()">Edit</button>` : `<button class="w-action-btn" style="margin:0;padding:8px 18px;font-size:11px;width:auto;background:rgba(154,130,86,0.15);border-color:var(--accent)" onclick="_habitEditMode=false;renderHabits()">Done</button>`}
+        ${!_habitEditMode ? `<button class="w-action-btn" style="margin:0;padding:8px 18px;font-size:11px;width:auto" onclick="_habitEditMode=true;renderHabits()">Edit</button>` : `<button class="w-action-btn" style="margin:0;padding:8px 18px;font-size:11px;width:auto;background:rgba(var(--accent-rgb), 0.15);border-color:var(--accent)" onclick="_habitEditMode=false;renderHabits()">Done</button>`}
         ${!_habitEditMode ? `<button class="w-action-btn" style="margin:0;padding:8px 14px;font-size:16px;width:auto;line-height:1" onclick="tryAddHabit()">+</button>` : ''}
       </div>
     </div>
@@ -3184,7 +3207,7 @@ function renderRoutines(toggle) {
     <div class="ah-head ani" style="display:flex;align-items:flex-start;justify-content:space-between">
       <div><div class="ah-title">Routines</div><div class="ah-sub">${totalItems ? `${doneCount}/${totalItems} done today · ${pct}%` : 'Build your daily rituals.'}</div></div>
       <div style="display:flex;gap:8px;padding-top:8px">
-        ${!_routineEditMode ? `<button class="w-action-btn" style="margin:0;padding:8px 18px;font-size:11px;width:auto" onclick="_routineEditMode=true;renderHabits()">Edit</button>` : `<button class="w-action-btn" style="margin:0;padding:8px 18px;font-size:11px;width:auto;background:rgba(154,130,86,0.15);border-color:var(--accent)" onclick="_routineEditMode=false;renderHabits()">Done</button>`}
+        ${!_routineEditMode ? `<button class="w-action-btn" style="margin:0;padding:8px 18px;font-size:11px;width:auto" onclick="_routineEditMode=true;renderHabits()">Edit</button>` : `<button class="w-action-btn" style="margin:0;padding:8px 18px;font-size:11px;width:auto;background:rgba(var(--accent-rgb), 0.15);border-color:var(--accent)" onclick="_routineEditMode=false;renderHabits()">Done</button>`}
       </div>
     </div>
     <div class="ani">
@@ -3293,7 +3316,7 @@ function openEditHabit(id) {
       })()}
       <div style="display:flex;gap:10px;margin-top:20px">
         <button class="w-action-btn" style="flex:1;margin:0" onclick="closeEditHabit()">Cancel</button>
-        <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:#fff" onclick="saveEditHabit('${id}')">Save</button>
+        <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:var(--on-accent)" onclick="saveEditHabit('${id}')">Save</button>
       </div>
     </div>`;
   modal.style.display = 'block';
@@ -3673,7 +3696,7 @@ function showAIConsent() {
     el = document.createElement('div');
     el.id = 'ai-consent';
     el.innerHTML = `
-      <div class="pop-backdrop" style="position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:9000;display:flex;align-items:center;justify-content:center;padding:24px" onclick="answerAIConsent(false)">
+      <div class="pop-backdrop" style="position:fixed;inset:0;background:rgba(var(--c-ink-rgb), 0.78);z-index:9000;display:flex;align-items:center;justify-content:center;padding:24px" onclick="answerAIConsent(false)">
         <div class="pop-card" role="dialog" aria-modal="true" aria-labelledby="ai-consent-title" style="background:var(--bg);border:1px solid var(--border2);border-radius:24px;padding:26px 22px 20px;max-width:380px;width:100%;max-height:calc(100% - 24px);overflow-y:auto" onclick="event.stopPropagation()">
           <div style="font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Your data and AI</div>
           <div id="ai-consent-title" style="font-family:var(--serif);font-size:23px;color:var(--text);line-height:1.2;margin-bottom:10px">Allow the AI features?</div>
@@ -3688,7 +3711,7 @@ function showAIConsent() {
           </div>
           <div style="display:flex;gap:10px;margin-top:18px">
             <button class="w-action-btn" style="flex:1;margin:0" onclick="answerAIConsent(false)">Not now</button>
-            <button class="w-action-btn" style="flex:1.3;margin:0;background:var(--accent);color:#0a0908;border-color:var(--accent)" onclick="answerAIConsent(true)">Allow</button>
+            <button class="w-action-btn" style="flex:1.3;margin:0;background:var(--accent);color:var(--on-accent);border-color:var(--accent)" onclick="answerAIConsent(true)">Allow</button>
           </div>
           <div style="text-align:center;margin-top:12px"><a href="https://get-arete.com/privacy.html" target="_blank" rel="noopener" style="font-size:11.5px;color:var(--text-muted)">Privacy policy</a></div>
         </div>

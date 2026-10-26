@@ -76,10 +76,10 @@ function injectExerciseBrowserStyles() {
     .ex-skeleton{background:var(--surface2);border-radius:10px;height:60px;margin-bottom:8px;animation:pulse 1.4s ease infinite}
     .ex-filter-row{display:flex;overflow-x:auto;gap:8px;padding:0 24px 8px;scrollbar-width:none}
     .ex-filter-row::-webkit-scrollbar{display:none}
-    .ex-filter-pill{flex-shrink:0;padding:8px 14px;border-radius:20px;border:1px solid rgba(255,255,255,0.08);background:var(--surface);color:var(--text-dim);font-size:12px;cursor:pointer;white-space:nowrap;transition:all .2s}
+    .ex-filter-pill{flex-shrink:0;padding:8px 14px;border-radius:20px;border:1px solid rgba(var(--text-rgb), 0.08);background:var(--surface);color:var(--text-dim);font-size:12px;cursor:pointer;white-space:nowrap;transition:all .2s}
     .ex-filter-pill.active{background:var(--surface2);border-color:var(--accent-b);color:var(--accent-b)}
-    .ex-card{background:var(--surface);border-radius:10px;padding:14px;margin-bottom:8px;cursor:pointer;border:1px solid rgba(255,255,255,0.04);transition:all .2s;position:relative}
-    .ex-card:hover{border-color:rgba(255,255,255,0.1)}
+    .ex-card{background:var(--surface);border-radius:10px;padding:14px;margin-bottom:8px;cursor:pointer;border:1px solid rgba(var(--text-rgb), 0.04);transition:all .2s;position:relative}
+    .ex-card:hover{border-color:rgba(var(--text-rgb), 0.1)}
     .ex-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
     .ex-card-main{flex:1;min-width:0}
     .ex-card-name{font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px}
@@ -90,8 +90,8 @@ function injectExerciseBrowserStyles() {
     .ex-thumb{width:30px;height:30px;border-radius:4px;object-fit:cover}
     .ex-add-btn{background:var(--surface2);border:1px solid var(--accent);color:var(--accent-b);padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:700;letter-spacing:0.5px}
     .ex-add-btn:active{transform:scale(0.96)}
-    .ex-log-btn{background:var(--accent);border:none;color:#fff;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:700;letter-spacing:0.5px;text-transform:uppercase}
-    .ex-detail{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06);font-size:12px;color:var(--text-dim);line-height:1.5}
+    .ex-log-btn{background:var(--accent);border:none;color:var(--on-accent);padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:700;letter-spacing:0.5px;text-transform:uppercase}
+    .ex-detail{margin-top:10px;padding-top:10px;border-top:1px solid rgba(var(--text-rgb), 0.06);font-size:12px;color:var(--text-dim);line-height:1.5}
     .ex-detail img{max-width:100%;border-radius:8px;margin:8px 0}
     .ex-detail-pr{color:var(--accent-b);font-size:12px;padding:6px 0;font-weight:600}
     .ex-search-status{color:var(--text-dim);font-size:13px;padding:12px 24px;text-align:center}
@@ -1899,7 +1899,7 @@ function _wpRelStrength() {
 // climb with strength, so gold is the most prominent thing on the figure.
 // Untrained stays neutral dark so "nothing logged" never competes with
 // "trained a little".
-const _WP_RAMP = ['#17171a', '#57503f', '#7d7050', '#a68f52', '#cbaa48', '#f0c23a'];
+const _WP_RAMP = ['var(--surface)', 'var(--text-dim)', 'var(--text-dim)', 'var(--accent)', 'var(--accent)', 'var(--accent)'];
 
 const _WP_TIERS = [
   { min: 0,   name: 'Untrained',    color: _WP_RAMP[0] },
@@ -1908,7 +1908,7 @@ const _WP_TIERS = [
   { min: 85,  name: 'Intermediate', color: _WP_RAMP[3] },
   { min: 110, name: 'Advanced',     color: _WP_RAMP[4] },
   { min: 140, name: 'Elite',        color: _WP_RAMP[5] },
-  { min: 175, name: 'Demigod',      color: '#fff8ea' },
+  { min: 175, name: 'Demigod',      color: 'var(--text)' },
 ];
 
 function _wpTier(pct) {
@@ -1953,9 +1953,9 @@ function _wpBodyMapSVG(vals, max, heatFn) {
     }, 400);
     return '<div class="wp-card-sub" style="padding:28px 0;text-align:center">Loading body map…</div>';
   }
-  const st = 'stroke="rgba(0,0,0,0.45)" stroke-width="2" stroke-linejoin="round"';
+  const st = 'stroke="rgba(var(--c-ink-rgb), 0.45)" stroke-width="2" stroke-linejoin="round"';
   const statics = AR_BODY.s.map(d =>
-    `<path d="${d}" fill="rgba(255,255,255,0.06)"/>`).join('');
+    `<path d="${d}" fill="rgba(var(--text-rgb), 0.06)"/>`).join('');
   const muscles = AR_BODY.m.map(g => {
     const v = Math.max.apply(null, g.r.map(r => vals[r] || 0));
     const name = g.r.map(r => _WP_REGION_NAMES[r]).join(' / ');

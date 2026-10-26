@@ -28,7 +28,7 @@ async function launch() {
     '--remote-debugging-port=0', '--user-data-dir=' + profile,
     // Google Fonts, analytics and the Discord count never resolve here, and a
     // pending request holds the load event open.
-    '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost',
+    '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE fonts.googleapis.com, EXCLUDE fonts.gstatic.com',
     '--disable-background-networking', '--no-first-run', '--disable-sync',
     'about:blank',
   ], { stdio: ['ignore', 'ignore', 'pipe'] });

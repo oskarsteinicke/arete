@@ -456,20 +456,20 @@ function injectGamificationStyles() {
   s.textContent = `
     @keyframes xpPop { 0%{opacity:0;transform:translateY(0) scale(.8)} 15%{opacity:1;transform:translateY(-10px) scale(1.1)} 80%{opacity:1;transform:translateY(-22px) scale(1)} 100%{opacity:0;transform:translateY(-32px)} }
     @keyframes achSlide { 0%{opacity:0;transform:translateX(120%)} 10%{opacity:1;transform:translateX(0)} 80%{opacity:1;transform:translateX(0)} 100%{opacity:0;transform:translateX(120%)} }
-    #xp-toast{position:fixed;bottom:90px;right:20px;background:var(--accent);color:#fff;font-weight:700;font-size:13px;padding:6px 14px;border-radius:20px;opacity:0;pointer-events:none;z-index:999}
+    #xp-toast{position:fixed;bottom:90px;right:20px;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:13px;padding:6px 14px;border-radius:20px;opacity:0;pointer-events:none;z-index:999}
     #xp-toast.xp-toast-show{animation:xpPop 1.5s ease forwards}
     #ach-toast{position:fixed;top:20px;right:16px;left:16px;background:var(--surface2);border:1px solid var(--accent);color:var(--text);font-size:13px;padding:12px 16px;border-radius:12px;opacity:0;pointer-events:none;z-index:1000;text-align:center}
     #ach-toast.ach-toast-show{animation:achSlide 3s ease forwards}
     .g-score-ring{text-align:center;cursor:pointer;padding:4px 8px}
     .g-score-val{font-family:var(--serif);font-size:32px;font-weight:700;line-height:1}
     .g-score-lbl{font-size:10px;letter-spacing:.04em;color:var(--accent);font-weight:600;margin-top:2px}
-    .g-xp-bar-track{height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;margin:6px 0 2px}
+    .g-xp-bar-track{height:4px;background:rgba(var(--text-rgb), 0.06);border-radius:2px;overflow:hidden;margin:6px 0 2px}
     .g-xp-bar-fill{height:100%;background:var(--accent-b);border-radius:2px;transition:width .5s ease}
     .g-challenge{background:var(--surface2);border-radius:10px;padding:12px 16px;margin-bottom:8px}
     .g-challenge-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
     .g-challenge-label{font-size:13px;color:var(--text)}
     .g-challenge-ct{font-size:12px;font-weight:700;color:var(--accent-b)}
-    .g-challenge-track{height:4px;background:rgba(255,255,255,0.07);border-radius:2px;overflow:hidden}
+    .g-challenge-track{height:4px;background:rgba(var(--text-rgb), 0.07);border-radius:2px;overflow:hidden}
     .g-challenge-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s}
     .g-ach-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 24px 16px}
     .g-ach-card{background:var(--surface2);border-radius:10px;padding:12px 6px;text-align:center;border:1px solid transparent;transition:all .2s}
@@ -501,32 +501,32 @@ function injectGamificationStyles() {
     .cal-nav-disabled{opacity:0.25;pointer-events:none}
     .cal-view-seg{display:flex;background:var(--surface2);border-radius:12px;padding:3px;gap:2px;margin:0 24px 12px}
     .cal-vbtn{flex:1;border:none;background:none;color:var(--text-muted);font-size:12px;padding:7px 4px;border-radius:10px;cursor:pointer;transition:all .2s;font-weight:600;letter-spacing:.02em}
-    .cal-vbtn-active{background:var(--accent);color:#1a1208}
+    .cal-vbtn-active{background:var(--accent);color:var(--on-accent)}
     .cal-legend{display:flex;flex-wrap:wrap;gap:10px;padding:0 20px 10px}
     .cal-leg{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-dim)}
     .cal-dow-row{display:grid;grid-template-columns:repeat(7,1fr);padding:0 8px}
     .cal-dow{text-align:center;font-size:10px;color:var(--text-dim);padding:4px 0;text-transform:uppercase;letter-spacing:.04em}
     .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);padding:0 8px;gap:2px}
     .cal-cell{min-height:54px;padding:5px 2px 3px;border-radius:8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;transition:background .15s}
-    .cal-cell:active{background:rgba(255,255,255,0.06)}
+    .cal-cell:active{background:rgba(var(--text-rgb), 0.06)}
     .cal-empty{pointer-events:none}
     .cal-future{opacity:0.45}
     .cal-today .cal-num{color:var(--accent-b);font-weight:800}
-    .cal-selected{background:var(--surface2)!important;outline:1px solid rgba(154,130,86,.3)}
+    .cal-selected{background:var(--surface2)!important;outline:1px solid rgba(var(--accent-rgb), .3)}
     .cal-num{font-size:13px;color:var(--text);line-height:1.3}
     .cal-dots{display:flex;gap:2px;margin-top:4px;flex-wrap:wrap;justify-content:center;min-height:7px}
     .cal-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
     .cal-detail{border-top:1px solid var(--border2);margin:10px 0 0;padding:0 20px 80px}
     .cal-detail-hdr{font-size:13px;font-weight:700;color:var(--accent-b);padding:14px 0 8px;letter-spacing:.02em}
-    .cal-di{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px;color:var(--text)}
+    .cal-di{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid rgba(var(--text-rgb), 0.04);font-size:13px;color:var(--text)}
     .cal-di span{flex:1;line-height:1.4}
     .cal-di-sub{font-size:11px;color:var(--text-dim);padding:2px 0 4px 22px;line-height:1.4}
     .cal-di-empty{font-size:12px;color:var(--text-dim);font-style:italic;padding:16px 0}
     /* Weekly strips */
     .cal-week-cols{display:grid;grid-template-columns:repeat(7,1fr);padding:0 8px;gap:2px}
     .cal-wcol{padding:8px 2px 6px;border-radius:8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;transition:background .15s}
-    .cal-wcol:active{background:rgba(255,255,255,0.06)}
-    .cal-wcol-sel{background:var(--surface2)!important;outline:1px solid rgba(154,130,86,.3)}
+    .cal-wcol:active{background:rgba(var(--text-rgb), 0.06)}
+    .cal-wcol-sel{background:var(--surface2)!important;outline:1px solid rgba(var(--accent-rgb), .3)}
     .cal-wday{font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em}
     .cal-wnum{font-size:16px;color:var(--text);font-weight:600;line-height:1.2}
     .cal-wnum-today{color:var(--accent-b);font-weight:800}
@@ -537,9 +537,9 @@ function injectGamificationStyles() {
     .cal-daily-sec-hdr{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);padding:16px 0 6px;display:flex;align-items:center;justify-content:space-between}
     /* Tasks */
     .cal-task-list{margin-bottom:4px}
-    .cal-task-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+    .cal-task-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(var(--text-rgb), 0.05)}
     .cal-task-cb{width:20px;height:20px;border-radius:50%;border:2px solid var(--accent);background:none;cursor:pointer;flex-shrink:0;padding:0;display:flex;align-items:center;justify-content:center;transition:all .2s;font-size:12px;color:transparent}
-    .cal-task-cb-done{background:var(--accent);color:#1a1208}
+    .cal-task-cb-done{background:var(--accent);color:var(--on-accent)}
     .cal-task-text{flex:1;font-size:13px;color:var(--text);line-height:1.4;background:none;border:none;outline:none;padding:0}
     .cal-task-text-done{text-decoration:line-through;color:var(--text-dim)}
     .cal-task-del{background:none;border:none;color:var(--text-dim);font-size:18px;cursor:pointer;padding:0 2px;line-height:1;opacity:0.5}
@@ -547,11 +547,11 @@ function injectGamificationStyles() {
     .cal-task-add{display:flex;gap:8px;align-items:center;margin-top:8px}
     .cal-task-input{flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;font-family:inherit}
     .cal-task-input:focus{border-color:var(--accent)}
-    .cal-task-add-btn{background:var(--accent);border:none;color:#1a1208;border-radius:10px;width:36px;height:36px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700}
+    .cal-task-add-btn{background:var(--accent);border:none;color:var(--on-accent);border-radius:10px;width:36px;height:36px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700}
     /* Unit toggle */
     .unit-toggle{display:flex;background:var(--surface2);border-radius:10px;padding:3px;gap:2px}
     .unit-btn{background:none;border:none;color:var(--text-muted);font-size:12px;font-weight:600;padding:6px 16px;border-radius:8px;cursor:pointer;transition:all .2s;letter-spacing:.02em}
-    .unit-btn-active{background:var(--accent);color:#fff}
+    .unit-btn-active{background:var(--accent);color:var(--on-accent)}
     .g-quests{padding:0 24px 16px}
     .g-quest{display:flex;align-items:center;gap:12px;background:var(--surface2);border-radius:10px;padding:12px 14px;margin-bottom:8px;border:1px solid transparent;transition:all .25s}
     .g-quest-done{border-color:var(--accent-b);opacity:0.7}
@@ -567,7 +567,7 @@ function injectGamificationStyles() {
     .av-name{font-family:var(--serif);font-size:24px;color:var(--text);margin-top:10px;line-height:1.2}
     .av-level{font-size:13px;color:var(--text-dim);margin-top:3px;letter-spacing:.02em}
     .av-xp-outer{width:100%;max-width:200px;margin-top:12px}
-    .av-xp-track{height:5px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
+    .av-xp-track{height:5px;background:rgba(var(--text-rgb), .08);border-radius:3px;overflow:hidden}
     .av-xp-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .6s ease}
     .av-xp-lbl{font-size:10px;color:var(--text-dim);margin-top:4px;letter-spacing:.01em}
     .av-edit-btn{position:absolute;top:24px;right:20px;background:none;border:1px solid var(--border2);color:var(--text-dim);font-size:11px;padding:5px 10px;border-radius:8px;cursor:pointer}
@@ -576,47 +576,21 @@ function injectGamificationStyles() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// CONFETTI
+// GOAL REACHED
 // ══════════════════════════════════════════════════════════════════════════
+// One short orange ring that widens and fades: the brand's whole celebration.
+// It used to be a burst of confetti in six colours. The name stays, so every
+// place that marks a goal keeps working.
 function launchConfetti(originY = 0.35) {
   if (typeof motionOK === 'function' && !motionOK()) return;
-  const existing = document.getElementById('confetti-canvas');
-  if (existing) existing.remove();
-  const canvas = document.createElement('canvas');
-  canvas.id = 'confetti-canvas';
-  canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10000';
-  document.body.appendChild(canvas);
-  const ctx = canvas.getContext('2d');
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  const COLORS = ['#9a8256','#b89d68','#6e9fd4','#6fd48e','#e4dace','#d46f6f'];
-  const particles = Array.from({length: 90}, () => ({
-    x: canvas.width * (0.3 + Math.random() * 0.4),
-    y: canvas.height * originY,
-    vx: (Math.random() - 0.5) * 12,
-    vy: -(Math.random() * 10 + 4),
-    color: COLORS[Math.floor(Math.random() * COLORS.length)],
-    w: Math.random() * 9 + 4,
-    h: Math.random() * 5 + 3,
-    angle: Math.random() * Math.PI * 2,
-    spin: (Math.random() - 0.5) * 0.25,
-    life: 1,
-  }));
-  function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    let alive = false;
-    particles.forEach(p => {
-      if (p.life <= 0) return;
-      alive = true;
-      p.x += p.vx; p.y += p.vy; p.vy += 0.3; p.vx *= 0.99; p.angle += p.spin; p.life -= 0.007;
-      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle);
-      ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.color;
-      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
-      ctx.restore();
-    });
-    if (alive) requestAnimationFrame(draw); else canvas.remove();
-  }
-  requestAnimationFrame(draw);
+  const y = Math.min(Math.max(+originY || 0.35, 0.1), 0.9);
+  const ring = document.createElement('div');
+  ring.className = 'goal-pulse';
+  ring.style.top = `${Math.round(y * 100)}%`;
+  ring.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(ring);
+  ring.addEventListener('animationend', () => ring.remove());
+  setTimeout(() => ring.remove(), 1200);
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -696,11 +670,11 @@ function _computeRPGStats() {
   ));
 
   return [
-    { key: 'STR', name: 'Strength', val: strength, icon: '⚔️', color: '#ef4444' },
-    { key: 'WIS', name: 'Wisdom',   val: wisdom,   icon: '📖', color: '#a78bfa' },
-    { key: 'DIS', name: 'Discipline', val: discipline, icon: '🛡️', color: '#c4a96c' },
-    { key: 'VIT', name: 'Vitality', val: vitality, icon: '💚', color: '#4ade80' },
-    { key: 'SPI', name: 'Spirit',   val: spirit,   icon: '🔥', color: '#f59e0b' },
+    { key: 'STR', name: 'Strength', val: strength, icon: '⚔️', color: 'var(--danger)' },
+    { key: 'WIS', name: 'Wisdom',   val: wisdom,   icon: '📖', color: 'var(--text-dim)' },
+    { key: 'DIS', name: 'Discipline', val: discipline, icon: '🛡️', color: 'var(--accent)' },
+    { key: 'VIT', name: 'Vitality', val: vitality, icon: '💚', color: 'var(--success)' },
+    { key: 'SPI', name: 'Spirit',   val: spirit,   icon: '🔥', color: 'var(--text-dim)' },
   ];
 }
 
@@ -724,13 +698,13 @@ function _buildRadarChart(stats, size) {
   let grid = '';
   [0.25, 0.5, 0.75, 1].forEach(s => {
     const pts = Array.from({length: n}, (_, i) => point(i, s).join(',')).join(' ');
-    grid += `<polygon points="${pts}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="0.8"/>`;
+    grid += `<polygon points="${pts}" fill="none" stroke="rgba(var(--text-rgb), 0.08)" stroke-width="0.8"/>`;
   });
 
   // Grid lines from center
   for (let i = 0; i < n; i++) {
     const [x, y] = point(i, 1);
-    grid += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="rgba(255,255,255,0.06)" stroke-width="0.6"/>`;
+    grid += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="rgba(var(--text-rgb), 0.06)" stroke-width="0.6"/>`;
   }
 
   // Data polygon
@@ -751,7 +725,7 @@ function _buildRadarChart(stats, size) {
 
   return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" style="display:block;margin:0 auto" xmlns="http://www.w3.org/2000/svg">
     ${grid}
-    <polygon class="radar-data" points="${dataPts}" fill="rgba(196,169,108,0.15)" stroke="var(--accent-b)" stroke-width="1.5" stroke-linejoin="round"/>
+    <polygon class="radar-data" points="${dataPts}" fill="rgba(var(--accent-rgb), 0.15)" stroke="var(--accent-b)" stroke-width="1.5" stroke-linejoin="round"/>
     ${stats.map((s, i) => {
       const [x, y] = point(i, s.val / 100);
       return `<circle class="radar-dot" cx="${x}" cy="${y}" r="3" fill="${s.color}" stroke="var(--bg)" stroke-width="1"/>`;
@@ -874,19 +848,19 @@ async function shareCharacterCard() {
 
   // Background
   const bg = ctx.createLinearGradient(0, 0, 0, h);
-  bg.addColorStop(0, '#0f0d0a');
-  bg.addColorStop(1, '#1a1714');
+  bg.addColorStop(0, brandColor('ink'));
+  bg.addColorStop(1, brandColor('ink'));
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, w, h);
 
   // Border
-  ctx.strokeStyle = '#c4a96c';
+  ctx.strokeStyle = brandColor('white');
   ctx.lineWidth = 3;
   _roundRect(ctx, 10, 10, w - 20, h - 20, 20);
   ctx.stroke();
 
   // Inner border
-  ctx.strokeStyle = 'rgba(196,169,108,0.2)';
+  ctx.strokeStyle = brandColor('line');
   ctx.lineWidth = 1;
   _roundRect(ctx, 20, 20, w - 40, h - 40, 14);
   ctx.stroke();
@@ -905,11 +879,11 @@ async function shareCharacterCard() {
     : `avatar-m-${(typeof avatarStage === 'function') ? avatarStage(lvl) : 1}.png`);
   const pw = 210, ph = 264, px = (w - pw) / 2, py = 40;
   const pg = ctx.createLinearGradient(0, py, 0, py + ph);
-  pg.addColorStop(0, '#14110b');
-  pg.addColorStop(1, '#000000');
+  pg.addColorStop(0, brandColor('ink'));
+  pg.addColorStop(1, brandColor('ink'));
   ctx.fillStyle = pg;
   _roundRect(ctx, px, py, pw, ph, 16); ctx.fill();
-  ctx.strokeStyle = 'rgba(196,169,108,0.35)'; ctx.lineWidth = 1.5;
+  ctx.strokeStyle = brandColor('line'); ctx.lineWidth = 1.5;
   _roundRect(ctx, px, py, pw, ph, 16); ctx.stroke();
   if (_av && _av.naturalWidth) {
     const maxW = pw - 16, maxH = ph - 16;
@@ -926,23 +900,25 @@ async function shareCharacterCard() {
   ctx.translate(0, 250);
 
   // Name
-  ctx.fillStyle = '#e8dfd3';
-  ctx.font = 'bold 36px Georgia, serif';
+  ctx.fillStyle = brandColor('white');
+  ctx.font = '900 36px Inter, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(userName() || 'Warrior', w / 2, 80);
+  ctx.letterSpacing = '-1.2px';
+  ctx.fillText((userName() || 'Warrior').toUpperCase(), w / 2, 80);
+  ctx.letterSpacing = '0px';
 
   // Level & Title
-  ctx.fillStyle = '#c4a96c';
-  ctx.font = '20px Georgia, serif';
+  ctx.fillStyle = brandColor('white');
+  ctx.font = '900 20px Inter, sans-serif';
   ctx.fillText(`Level ${lvl} · ${title}`, w / 2, 115);
 
   // XP
-  ctx.fillStyle = 'rgba(232,223,211,0.5)';
-  ctx.font = '14px -apple-system, sans-serif';
+  ctx.fillStyle = brandColor('muted');
+  ctx.font = '500 14px Inter, sans-serif';
   ctx.fillText(`${xp.toLocaleString()} XP · Power ${totalPower}`, w / 2, 145);
 
   // Divider
-  ctx.strokeStyle = 'rgba(196,169,108,0.3)';
+  ctx.strokeStyle = brandColor('line');
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(60, 165);
@@ -965,7 +941,7 @@ async function shareCharacterCard() {
       i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     }
     ctx.closePath();
-    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.strokeStyle = brandColor('line');
     ctx.stroke();
   });
 
@@ -978,9 +954,9 @@ async function shareCharacterCard() {
     i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
   });
   ctx.closePath();
-  ctx.fillStyle = 'rgba(196,169,108,0.2)';
+  ctx.fillStyle = brandColor('line');
   ctx.fill();
-  ctx.strokeStyle = '#c4a96c';
+  ctx.strokeStyle = brandColor('white');
   ctx.lineWidth = 2;
   ctx.stroke();
 
@@ -996,29 +972,29 @@ async function shareCharacterCard() {
 
     const lx = rcx + Math.cos(a) * (rr + 28);
     const ly = rcy + Math.sin(a) * (rr + 28);
-    ctx.fillStyle = 'rgba(232,223,211,0.7)';
-    ctx.font = 'bold 13px -apple-system, sans-serif';
+    ctx.fillStyle = brandColor('white');
+    ctx.font = '700 13px Inter, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(s.key, lx, ly);
-    ctx.fillStyle = '#c4a96c';
-    ctx.font = '11px -apple-system, sans-serif';
+    ctx.fillStyle = brandColor('white');
+    ctx.font = '500 11px Inter, sans-serif';
     ctx.fillText(String(s.val), lx, ly + 14);
   });
 
   // Stat bars below radar
   let barY = 430;
   stats.forEach(s => {
-    ctx.fillStyle = 'rgba(232,223,211,0.5)';
-    ctx.font = '13px -apple-system, sans-serif';
+    ctx.fillStyle = brandColor('muted');
+    ctx.font = '500 13px Inter, sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText(`${s.icon} ${s.name}`, 60, barY);
 
     ctx.textAlign = 'right';
-    ctx.fillStyle = '#c4a96c';
+    ctx.fillStyle = brandColor('white');
     ctx.fillText(String(s.val), w - 60, barY);
 
     // Bar track
-    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    ctx.fillStyle = brandColor('line');
     _roundRect(ctx, 60, barY + 6, w - 120, 8, 4);
     ctx.fill();
 
@@ -1035,7 +1011,7 @@ async function shareCharacterCard() {
 
   // Key stats
   barY += 10;
-  ctx.strokeStyle = 'rgba(196,169,108,0.3)';
+  ctx.strokeStyle = brandColor('line');
   ctx.beginPath();
   ctx.moveTo(60, barY);
   ctx.lineTo(w - 60, barY);
@@ -1050,25 +1026,25 @@ async function shareCharacterCard() {
     { label: '🏆 Achievements', val: `${(achievements || []).length}/${ACHIEVEMENTS.length}` },
   ];
 
-  ctx.font = '13px -apple-system, sans-serif';
+  ctx.font = '500 13px Inter, sans-serif';
   const colW = (w - 120) / keyStats.length;
   keyStats.forEach((ks, i) => {
     const kx = 60 + colW * i + colW / 2;
-    ctx.fillStyle = 'rgba(232,223,211,0.5)';
+    ctx.fillStyle = brandColor('muted');
     ctx.textAlign = 'center';
     ctx.fillText(ks.label, kx, barY);
-    ctx.fillStyle = '#e8dfd3';
-    ctx.font = 'bold 20px Georgia, serif';
+    ctx.fillStyle = brandColor('white');
+    ctx.font = '900 20px Inter, sans-serif';
     ctx.fillText(ks.val, kx, barY + 28);
-    ctx.font = '13px -apple-system, sans-serif';
+    ctx.font = '500 13px Inter, sans-serif';
   });
 
   // End content shift (footer stays anchored to the card bottom)
   ctx.restore();
 
   // Footer
-  ctx.fillStyle = 'rgba(232,223,211,0.3)';
-  ctx.font = '12px -apple-system, sans-serif';
+  ctx.fillStyle = brandColor('muted');
+  ctx.font = '500 12px Inter, sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('get-arete.com · Become your greatest self', w / 2, h - 35);
 
@@ -1589,9 +1565,8 @@ function renderStats() {
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
         <div style="font-size:14px;color:var(--text)">Theme</div>
         <div class="unit-toggle">
-          <button class="unit-btn${(settings.theme||'dark')==='dark'?' unit-btn-active':''}" onclick="settings.theme='dark';LS.set('hvi_settings',settings);applyTheme();renderStats()">Dark</button>
+          <button class="unit-btn${settings.theme!=='light'?' unit-btn-active':''}" onclick="settings.theme='dark';LS.set('hvi_settings',settings);applyTheme();renderStats()">Dark</button>
           <button class="unit-btn${settings.theme==='light'?' unit-btn-active':''}" onclick="settings.theme='light';LS.set('hvi_settings',settings);applyTheme();renderStats()">Light</button>
-          <button class="unit-btn${settings.theme==='winter'?' unit-btn-active':''}" onclick="settings.theme='winter';LS.set('hvi_settings',settings);applyTheme();renderStats()">Winter</button>
         </div>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
@@ -1856,7 +1831,7 @@ function openEditName() {
       <input class="d-input" id="edit-name-input" type="text" value="${esc(current)}" placeholder="First name" style="margin-bottom:20px">
       <div style="display:flex;gap:10px">
         <button class="w-action-btn" style="flex:1;margin:0" onclick="closeEditName()">Cancel</button>
-        <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:#fff" onclick="saveEditName()">Save</button>
+        <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:var(--on-accent)" onclick="saveEditName()">Save</button>
       </div>
     </div>`;
   modal.style.display = 'block';
@@ -1931,7 +1906,7 @@ function injectOnboardingStyles() {
     #ob-overlay{position:fixed;inset:0;background:var(--bg);z-index:2000;overflow-y:auto;display:flex;flex-direction:column}
     .ob-wrap{flex:1;display:flex;flex-direction:column;padding:0 28px 48px;max-width:480px;margin:0 auto;width:100%}
     .ob-step-dots{display:flex;gap:6px;justify-content:center;padding:20px 0 4px}
-    .ob-dot{width:6px;height:6px;border-radius:3px;background:rgba(255,255,255,0.15);transition:all .3s}
+    .ob-dot{width:6px;height:6px;border-radius:3px;background:rgba(var(--text-rgb), 0.15);transition:all .3s}
     .ob-dot.active{width:20px;background:var(--accent)}
     .ob-eyebrow{font-family:var(--display);font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;margin-top:32px}
     .ob-title{font-family:var(--display);font-size:28px;color:var(--text);line-height:1.2;margin-bottom:8px;letter-spacing:0.5px}
@@ -1941,25 +1916,25 @@ function injectOnboardingStyles() {
     .ob-input::placeholder{color:var(--text-muted)}
     .ob-goal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:28px}
     .ob-goal-card{background:var(--surface);border:1.5px solid var(--border2);border-radius:14px;padding:18px 14px;cursor:pointer;transition:all .2s;text-align:center}
-    .ob-goal-card.active{border-color:var(--accent);background:rgba(154,130,86,0.1)}
+    .ob-goal-card.active{border-color:var(--accent);background:rgba(var(--accent-rgb), 0.1)}
     .ob-goal-card.full{grid-column:1/-1}
     .ob-goal-emoji{font-size:26px;margin-bottom:8px}
     .ob-goal-name{font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px}
     .ob-goal-desc{font-size:11px;color:var(--text-dim)}
     .ob-nut-btns{display:flex;gap:8px;margin-bottom:20px}
     .ob-nut-btn{flex:1;padding:14px 8px;border:1.5px solid var(--border2);border-radius:12px;background:transparent;color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s;text-align:center}
-    .ob-nut-btn.active{border-color:var(--accent);color:var(--accent-b);background:rgba(154,130,86,0.08)}
+    .ob-nut-btn.active{border-color:var(--accent);color:var(--accent-b);background:rgba(var(--accent-rgb), 0.08)}
     .ob-macro-row{display:flex;gap:10px;margin-bottom:20px}
     .ob-macro-card{flex:1;background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:14px 10px;text-align:center}
     .ob-macro-label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
     .ob-macro-input{width:100%;background:transparent;border:none;color:var(--accent-b);font-family:var(--serif);font-size:22px;font-weight:700;text-align:center;outline:none}
-    .ob-btn{display:block;width:100%;padding:18px;border:none;border-radius:14px;background:var(--accent);color:#0a0908;font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:auto;transition:transform .15s}
+    .ob-btn{display:block;width:100%;padding:18px;border:none;border-radius:14px;background:var(--accent);color:var(--on-accent);font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:auto;transition:transform .15s}
     .ob-btn:active{transform:scale(0.98)}
     .ob-welcome{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 32px 60px}
     .ob-welcome-star{font-size:48px;color:var(--accent);margin-bottom:20px;line-height:1}
     .ob-welcome-title{font-family:var(--display);font-size:38px;color:var(--text);margin-bottom:14px;letter-spacing:2px}
     .ob-welcome-sub{font-size:15px;color:var(--text-dim);line-height:1.7;margin-bottom:48px;max-width:300px}
-    .ob-welcome-btn{padding:18px 48px;border:none;border-radius:14px;background:var(--accent);color:#0a0908;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer}
+    .ob-welcome-btn{padding:18px 48px;border:none;border-radius:14px;background:var(--accent);color:var(--on-accent);font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer}
   `;
   document.head.appendChild(s);
 }
@@ -2248,18 +2223,18 @@ function generateRecapCard() {
   ctx.scale(2, 2);
 
   // Background
-  ctx.fillStyle = '#0a0908';
+  ctx.fillStyle = brandColor('ink');
   ctx.fillRect(0, 0, W, H);
 
   // Vignette
   const grad = ctx.createRadialGradient(W/2, H/2, H*0.2, W/2, H/2, H*0.75);
   grad.addColorStop(0, 'transparent');
-  grad.addColorStop(1, 'rgba(60,20,5,0.6)');
+  grad.addColorStop(1, 'transparent');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
-  // Gold accent line top
-  ctx.fillStyle = '#9a8256';
+  // Accent rule
+  ctx.fillStyle = brandColor('orange');
   ctx.fillRect(28, 52, 40, 2);
 
   // Week range
@@ -2267,17 +2242,15 @@ function generateRecapCard() {
   const mon = new Date(now); mon.setDate(now.getDate() - now.getDay() + 1);
   const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
   const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  ctx.fillStyle = 'rgba(228,218,206,0.45)';
-  ctx.font = '11px -apple-system,sans-serif';
+  ctx.fillStyle = brandColor('muted');
+  ctx.font = '500 11px Inter, sans-serif';
   ctx.letterSpacing = '2px';
   ctx.fillText(`${fmt(mon).toUpperCase()} – ${fmt(sun).toUpperCase()}`, 28, 44);
 
   // Title
-  ctx.fillStyle = '#e4dace';
-  ctx.font = 'italic 600 52px "Georgia",serif';
-  ctx.fillText('Weekly', 28, 110);
-  ctx.fillStyle = '#b89d68';
-  ctx.fillText('Recap.', 28, 165);
+  ctx.font = '900 52px Inter, sans-serif';
+  brandHeading(ctx, 'WEEKLY', 28, 110);
+  brandHeading(ctx, 'RECAP.', 28, 165);
 
   // Stats
   ensureWeeklyStats();
@@ -2301,64 +2274,64 @@ function generateRecapCard() {
     const x = startX + col * (cardW + cardGap);
     const y = startY + row * (cardH + cardGap);
     // Card bg
-    ctx.fillStyle = '#141210';
+    ctx.fillStyle = brandColor('surface');
     roundRect(ctx, x, y, cardW, cardH, 12);
     ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.strokeStyle = brandColor('line');
     ctx.lineWidth = 1;
     roundRect(ctx, x, y, cardW, cardH, 12);
     ctx.stroke();
     // Value
-    ctx.fillStyle = '#b89d68';
-    ctx.font = '700 28px "Georgia",serif';
+    ctx.fillStyle = brandColor('white');
+    ctx.font = '900 28px Inter, sans-serif';
     ctx.fillText(st.value, x + 14, y + 40);
     // Label
-    ctx.fillStyle = 'rgba(228,218,206,0.4)';
-    ctx.font = '500 10px -apple-system,sans-serif';
+    ctx.fillStyle = brandColor('muted');
+    ctx.font = '500 10px Inter, sans-serif';
     ctx.fillText(st.label, x + 14, y + 62);
   });
 
   // Habit progress bar
   const barY = 440, barX = 28, barW2 = W - 56;
-  ctx.fillStyle = 'rgba(228,218,206,0.4)';
-  ctx.font = '500 10px -apple-system,sans-serif';
+  ctx.fillStyle = brandColor('muted');
+  ctx.font = '500 10px Inter, sans-serif';
   ctx.fillText('HABITS COMPLETED TODAY', barX, barY - 8);
-  ctx.fillStyle = 'rgba(255,255,255,0.07)';
+  ctx.fillStyle = brandColor('line');
   roundRect(ctx, barX, barY, barW2, 6, 3);
   ctx.fill();
   if (total > 0) {
-    ctx.fillStyle = '#9a8256';
+    ctx.fillStyle = brandColor('white');
     roundRect(ctx, barX, barY, (done/total) * barW2, 6, 3);
     ctx.fill();
   }
-  ctx.fillStyle = 'rgba(228,218,206,0.5)';
-  ctx.font = '500 12px -apple-system,sans-serif';
+  ctx.fillStyle = brandColor('muted');
+  ctx.font = '500 12px Inter, sans-serif';
   ctx.fillText(`${done} / ${total}`, barX, barY + 22);
 
   // XP
   const xp = gamification.xp || 0;
-  ctx.fillStyle = '#9a8256';
-  ctx.font = '700 14px -apple-system,sans-serif';
+  ctx.fillStyle = brandColor('white');
+  ctx.font = '700 14px Inter, sans-serif';
   ctx.fillText(`+${xp.toLocaleString()} XP EARNED`, barX, barY + 50);
 
   // Quote
   const q = QUOTES[(meta.quoteIndex || 0) % QUOTES.length];
-  ctx.fillStyle = 'rgba(184,157,104,0.6)';
-  ctx.font = 'italic 700 28px "Georgia",serif';
+  ctx.fillStyle = brandColor('muted');
+  ctx.font = '900 28px Inter, sans-serif';
   ctx.fillText('“', barX, barY + 100);
-  ctx.fillStyle = 'rgba(228,218,206,0.75)';
-  ctx.font = 'italic 13px "Georgia",serif';
+  ctx.fillStyle = brandColor('white');
+  ctx.font = '500 13px Inter, sans-serif';
   wrapText(ctx, q.text.slice(0, 80) + (q.text.length > 80 ? '…' : ''), barX + 20, barY + 115, barW2 - 20, 18);
-  ctx.fillStyle = 'rgba(228,218,206,0.4)';
-  ctx.font = '11px -apple-system,sans-serif';
+  ctx.fillStyle = brandColor('muted');
+  ctx.font = '500 11px Inter, sans-serif';
   ctx.fillText('— ' + q.author, barX + 20, barY + 165);
 
   // Branding + watermark
-  ctx.fillStyle = 'rgba(228,218,206,0.2)';
-  ctx.font = '700 11px -apple-system,sans-serif';
+  ctx.fillStyle = brandColor('muted');
+  ctx.font = '700 11px Inter, sans-serif';
   ctx.fillText('ARETE', barX, H - 28);
-  ctx.fillStyle = 'rgba(184,157,104,0.35)';
-  ctx.font = '500 10px -apple-system,sans-serif';
+  ctx.fillStyle = brandColor('line');
+  ctx.font = '500 10px Inter, sans-serif';
   ctx.textAlign = 'right';
   ctx.fillText('get-arete.com', W - 28, H - 28);
   ctx.textAlign = 'left';
@@ -2471,7 +2444,7 @@ function showWeeklyRecap() {
   const modal = document.createElement('div');
   modal.id = 'weekly-recap-modal';
   modal.innerHTML = `
-    <div class="pop-backdrop" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:4000;display:flex;align-items:center;justify-content:center;padding:24px" onclick="this.remove()">
+    <div class="pop-backdrop" style="position:fixed;inset:0;background:rgba(var(--c-ink-rgb), 0.7);z-index:4000;display:flex;align-items:center;justify-content:center;padding:24px" onclick="this.remove()">
       <div class="pop-card" style="background:var(--bg);border:1px solid var(--border2);border-radius:24px;padding:32px 24px;max-width:360px;width:100%;text-align:center" onclick="event.stopPropagation()">
         <div style="font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Weekly Recap</div>
         <div style="font-family:var(--serif);font-size:28px;color:var(--text);margin-bottom:4px">Great week!</div>
@@ -2487,7 +2460,7 @@ function showWeeklyRecap() {
         <div style="font-size:13px;color:var(--accent);font-weight:600;margin-bottom:20px">Level ${lvl} · ${xp.toLocaleString()} XP</div>
         <div style="display:flex;gap:10px">
           <button class="w-action-btn" style="flex:1;margin:0" onclick="this.closest('#weekly-recap-modal').remove()">Dismiss</button>
-          <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:#fff" onclick="this.closest('#weekly-recap-modal').remove();shareRecap()">Share</button>
+          <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:var(--on-accent)" onclick="this.closest('#weekly-recap-modal').remove();shareRecap()">Share</button>
         </div>
       </div>
     </div>`;
@@ -2502,31 +2475,29 @@ function generateDailyCard() {
   ctx.scale(2, 2);
 
   // Background
-  ctx.fillStyle = '#0a0908';
+  ctx.fillStyle = brandColor('ink');
   ctx.fillRect(0, 0, W, H);
   const grad = ctx.createRadialGradient(W/2, H/2, H*0.15, W/2, H/2, H*0.7);
   grad.addColorStop(0, 'transparent');
-  grad.addColorStop(1, 'rgba(60,20,5,0.6)');
+  grad.addColorStop(1, 'transparent');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
   // Date
   const dateStr = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase();
-  ctx.fillStyle = 'rgba(228,218,206,0.4)';
-  ctx.font = '600 10px -apple-system,sans-serif';
+  ctx.fillStyle = brandColor('muted');
+  ctx.font = '700 10px Inter, sans-serif';
   ctx.letterSpacing = '2px';
   ctx.fillText(dateStr, 28, 44);
 
-  // Gold line
-  ctx.fillStyle = '#9a8256';
+  // Accent rule
+  ctx.fillStyle = brandColor('orange');
   ctx.fillRect(28, 52, 40, 2);
 
   // Title
-  ctx.fillStyle = '#e4dace';
-  ctx.font = 'italic 600 44px "Georgia",serif';
-  ctx.fillText("Today's", 28, 100);
-  ctx.fillStyle = '#b89d68';
-  ctx.fillText('Progress.', 28, 148);
+  ctx.font = '900 44px Inter, sans-serif';
+  brandHeading(ctx, "TODAY'S", 28, 100);
+  brandHeading(ctx, 'PROGRESS.', 28, 148);
 
   // Stats
   const {done, total} = totalPct();
@@ -2548,38 +2519,38 @@ function generateDailyCard() {
     const col = i % 2, row = Math.floor(i / 2);
     const x = 28 + col * (cardW + cardGap);
     const y = 190 + row * (cardH + cardGap);
-    ctx.fillStyle = '#141210';
+    ctx.fillStyle = brandColor('surface');
     roundRect(ctx, x, y, cardW, cardH, 12);
     ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.strokeStyle = brandColor('line');
     ctx.lineWidth = 1;
     roundRect(ctx, x, y, cardW, cardH, 12);
     ctx.stroke();
-    ctx.fillStyle = '#b89d68';
-    ctx.font = '700 26px "Georgia",serif';
+    ctx.fillStyle = brandColor('white');
+    ctx.font = '900 26px Inter, sans-serif';
     ctx.fillText(st.value, x + 14, y + 36);
-    ctx.fillStyle = 'rgba(228,218,206,0.4)';
-    ctx.font = '500 10px -apple-system,sans-serif';
+    ctx.fillStyle = brandColor('muted');
+    ctx.font = '500 10px Inter, sans-serif';
     ctx.fillText(st.label, x + 14, y + 56);
   });
 
   // Workout status
   const workoutText = todayWorkout ? '✓ Workout completed' : '— No workout today';
-  ctx.fillStyle = todayWorkout ? '#9a8256' : 'rgba(228,218,206,0.35)';
-  ctx.font = '600 13px -apple-system,sans-serif';
+  ctx.fillStyle = todayWorkout ? brandColor('orange') : brandColor('muted');
+  ctx.font = '700 13px Inter, sans-serif';
   ctx.fillText(workoutText, 28, 400);
 
   // Level
-  ctx.fillStyle = '#b89d68';
-  ctx.font = '700 13px -apple-system,sans-serif';
+  ctx.fillStyle = brandColor('white');
+  ctx.font = '700 13px Inter, sans-serif';
   ctx.fillText(`Level ${lvl} · ${getLevelTitle(lvl)}`, 28, 425);
 
   // Branding + URL
-  ctx.fillStyle = 'rgba(228,218,206,0.2)';
-  ctx.font = '700 11px -apple-system,sans-serif';
+  ctx.fillStyle = brandColor('muted');
+  ctx.font = '700 11px Inter, sans-serif';
   ctx.fillText('ARETE', 28, H - 28);
-  ctx.fillStyle = 'rgba(184,157,104,0.35)';
-  ctx.font = '500 10px -apple-system,sans-serif';
+  ctx.fillStyle = brandColor('line');
+  ctx.font = '500 10px Inter, sans-serif';
   ctx.textAlign = 'right';
   ctx.fillText('get-arete.com', W - 28, H - 28);
   ctx.textAlign = 'left';
@@ -2720,8 +2691,11 @@ function toggleTheme() {
   LS.set('hvi_settings', settings);
   applyTheme();
 }
+// Two themes: dark (ink) and light (cream). Winter was retired with the brand
+// palette, and anyone who had it chosen gets dark.
 function applyTheme() {
-  const theme = (settings || {}).theme || 'dark';
+  const t = (settings || {}).theme;
+  const theme = t === 'light' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', theme);
 }
 
@@ -2799,11 +2773,11 @@ function viewProgressPhoto(i) {
   let modal = document.getElementById('photo-view-modal');
   if (!modal) { modal = document.createElement('div'); modal.id = 'photo-view-modal'; document.body.appendChild(modal); }
   modal.innerHTML = `
-    <div style="position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:5000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px" onclick="this.parentElement.style.display='none'">
+    <div style="position:fixed;inset:0;background:rgba(var(--c-ink-rgb), 0.92);z-index:5000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px" onclick="this.parentElement.style.display='none'">
       <img src="${p.thumb}" style="max-width:90%;max-height:70vh;border-radius:12px;object-fit:contain">
-      <div style="color:#fff;margin-top:12px;font-size:14px">${new Date(p.date).toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric', year:'numeric'})}</div>
+      <div style="color:var(--text);margin-top:12px;font-size:14px">${new Date(p.date).toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric', year:'numeric'})}</div>
       ${p.note ? `<div style="color:var(--text-dim);margin-top:4px;font-size:13px">${esc(p.note)}</div>` : ''}
-      <button style="margin-top:16px;background:var(--fat);color:#fff;border:none;padding:8px 20px;border-radius:8px;font-size:12px;cursor:pointer" onclick="event.stopPropagation();deleteProgressPhoto(${i})">Delete Photo</button>
+      <button style="margin-top:16px;background:var(--fat);color:var(--text);border:none;padding:8px 20px;border-radius:8px;font-size:12px;cursor:pointer" onclick="event.stopPropagation();deleteProgressPhoto(${i})">Delete Photo</button>
     </div>`;
   modal.style.display = 'block';
 }
@@ -2826,7 +2800,7 @@ function showPhotoCompare() {
   let modal = document.getElementById('photo-compare-modal');
   if (!modal) { modal = document.createElement('div'); modal.id = 'photo-compare-modal'; document.body.appendChild(modal); }
   modal.innerHTML = `
-    <div style="position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:5000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px" onclick="this.parentElement.style.display='none'">
+    <div style="position:fixed;inset:0;background:rgba(var(--c-ink-rgb), 0.95);z-index:5000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px" onclick="this.parentElement.style.display='none'">
       <div style="color:var(--text);font-size:16px;font-weight:600;margin-bottom:16px">Your Transformation</div>
       <div style="display:flex;gap:12px;max-width:100%;overflow:hidden">
         <div style="flex:1;text-align:center">
@@ -2862,7 +2836,7 @@ function editWhy() {
       <textarea class="why-modal-input" id="why-input" rows="4" maxlength="280" placeholder="e.g. To become the man my younger self needed, and the one my future family deserves.">${esc(cur)}</textarea>
       <div style="display:flex;gap:10px;margin-top:16px">
         <button class="w-action-btn" style="flex:1;margin:0" onclick="closeWhyModal()">Cancel</button>
-        <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:#1a1209" onclick="saveWhy()">Save</button>
+        <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:var(--on-accent)" onclick="saveWhy()">Save</button>
       </div>
     </div>`;
   modal.style.display = 'block';

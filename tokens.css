@@ -1,0 +1,113 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   ARETE BRAND TOKENS
+   Every color, typeface, type size and easing in the app comes from here.
+   style.css and the screens' scripts use the role names further down
+   (--bg, --text, --accent ...), never a raw value.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Palette: these values and nothing else ── */
+  --c-ink: #0B0B0B;
+  --c-surface: #161616;
+  --c-line: #262422;
+  --c-white: #F8F8F8;
+  --c-muted: #8A8580;
+  --c-divider: #707070;
+  --c-cream: #F2EEE6;
+  --c-orange: #FF561E;
+
+  /* The same, as channels, for the few places that need transparency */
+  --c-ink-rgb: 11,11,11;
+  --c-white-rgb: 248,248,248;
+  --c-divider-rgb: 112,112,112;
+  --c-orange-rgb: 255,86,30;
+
+  /* Errors and success. Kept, but quiet, so they never compete with orange. */
+  --c-danger: #B86A5E;
+  --c-danger-rgb: 184,106,94;
+  --c-success: #7E9C7A;
+  --c-success-rgb: 126,156,122;
+
+  /* ── Type: one family. Inter switches to its Display cut on its own at
+        large sizes (font-optical-sizing: auto, opsz axis 14..32). ── */
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --fs-eyebrow: 12px;
+  --fs-small: 13px;
+  --fs-body: 15px;
+  --fs-lead: 17px;
+  --fs-h3: 20px;
+  --fs-h2: 26px;
+  --fs-h1: 40px;
+  --fs-display: 56px;
+  --fw-head: 900;
+  --track-head: -0.035em;
+  --track-eyebrow: 0.2em;
+  --lh-head: 0.95;
+  --lh-body: 1.5;
+
+  /* ── Motion ── */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 200ms;
+  --dur-rise: 600ms;
+  --dur-draw: 800ms;
+  --stagger: 40ms;
+
+  /* ══ Roles, dark (the default) ══ */
+  --bg: var(--c-ink);
+  --surface: var(--c-surface);
+  --surface-rgb: 22,22,22;
+  --surface2: var(--c-line);
+  --border: var(--c-line);
+  --border2: rgba(var(--c-divider-rgb), 0.22);
+  --text: var(--c-white);
+  --text-rgb: var(--c-white-rgb);
+  --text-dim: var(--c-muted);
+  --text-muted: var(--c-muted);
+  --overlay: rgba(var(--c-ink-rgb), 0.82);
+  --card-shadow: none;
+
+  /* Orange, only where the brand allows it: progress, the one primary
+     action, the active tab, and small accent dots. */
+  --orange: var(--c-orange);
+  --orange-rgb: var(--c-orange-rgb);
+  --on-orange: var(--c-ink);
+
+  /* What used to be the gold accent is now a neutral highlight: selected
+     chips, links, emphasised numbers. Orange is opted into, never inherited. */
+  --accent: var(--text);
+  --accent-b: var(--text);
+  --accent-rgb: var(--text-rgb);
+  --accent-b-rgb: var(--text-rgb);
+  --accent-d-rgb: var(--text-rgb);
+  --accent-hi-rgb: var(--text-rgb);
+  --accent-glow-rgb: var(--text-rgb);
+  --on-accent: var(--bg);
+
+  /* Macros: calories is the progress ring and takes the orange; the other
+     three are told apart by their labels, not by color. */
+  --cal: var(--orange);
+  --pro: var(--text);
+  --carb: var(--text);
+  --fat: var(--text);
+  --danger: var(--c-danger);
+  --danger-rgb: var(--c-danger-rgb);
+  --success: var(--c-success);
+  --success-rgb: var(--c-success-rgb);
+}
+
+/* ══ Roles, light: cream ground, ink text ══
+   The palette's muted grey is too light to read on cream (3.1:1), so muted
+   text here is ink at reduced strength (6.2:1). */
+[data-theme="light"] {
+  --bg: var(--c-cream);
+  --surface: var(--c-white);
+  --surface-rgb: var(--c-white-rgb);
+  --surface2: rgba(var(--c-ink-rgb), 0.06);
+  --border: rgba(var(--c-ink-rgb), 0.12);
+  --border2: rgba(var(--c-ink-rgb), 0.08);
+  --text: var(--c-ink);
+  --text-rgb: var(--c-ink-rgb);
+  --text-dim: rgba(var(--c-ink-rgb), 0.68);
+  --text-muted: rgba(var(--c-ink-rgb), 0.68);
+  --overlay: rgba(var(--c-ink-rgb), 0.55);
+}

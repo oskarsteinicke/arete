@@ -2,7 +2,7 @@
   "appId": "com.getarete.app",
   "appName": "Arete",
   "webDir": "www",
-  "backgroundColor": "#0c0c0d",
+  "backgroundColor": "#0B0B0B",
   "ios": {
     "contentInset": "always"
   },

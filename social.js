@@ -509,7 +509,7 @@ function _calDots(date) {
   const isFuture = date > t;
   const isToday = date === t;
   const hasTasks = (calTasks[date] || []).length > 0;
-  if (isFuture) return hasTasks ? `<span class="cal-dot" style="background:#f472b6"></span>` : '';
+  if (isFuture) return hasTasks ? `<span class="cal-dot" style="background:var(--accent)"></span>` : '';
   const hasWorkout = workoutLog[date]?.exercises?.some(e => e.sets?.some(s => s.completed));
   const hasMeal    = (mealLog[date]?.meals || []).length > 0;
   const hasJournal = Object.values(journal[date] || {}).some(Boolean);
@@ -519,12 +519,12 @@ function _calDots(date) {
     : habits.filter(h => log[h.id]?.lastCompletedDate === date).length;
   const habitPct = habits.length ? habitsDone / habits.length : 0;
   return [
-    hasTasks    ? `<span class="cal-dot" style="background:#f472b6"></span>` : '',
+    hasTasks    ? `<span class="cal-dot" style="background:var(--accent)"></span>` : '',
     habitsDone > 0 ? `<span class="cal-dot" style="background:${habitPct >= 1 ? 'var(--accent-b)' : 'var(--accent)'}"></span>` : '',
-    hasWorkout  ? `<span class="cal-dot" style="background:#5b9cf6"></span>` : '',
-    hasMeal     ? `<span class="cal-dot" style="background:#4ade80"></span>` : '',
-    hasJournal  ? `<span class="cal-dot" style="background:#a78bfa"></span>` : '',
-    hasWeight   ? `<span class="cal-dot" style="background:#fb923c"></span>` : '',
+    hasWorkout  ? `<span class="cal-dot" style="background:var(--text)"></span>` : '',
+    hasMeal     ? `<span class="cal-dot" style="background:var(--success)"></span>` : '',
+    hasJournal  ? `<span class="cal-dot" style="background:var(--text-dim)"></span>` : '',
+    hasWeight   ? `<span class="cal-dot" style="background:var(--text-dim)"></span>` : '',
   ].filter(Boolean).join('');
 }
 
@@ -538,11 +538,11 @@ function _calViewToggle() {
 
 function _calLegend() {
   return `<div class="cal-legend ani">
-    <span class="cal-leg"><span class="cal-dot" style="background:#f472b6"></span> Tasks</span>
+    <span class="cal-leg"><span class="cal-dot" style="background:var(--accent)"></span> Tasks</span>
     <span class="cal-leg"><span class="cal-dot" style="background:var(--accent)"></span> Habits</span>
-    <span class="cal-leg"><span class="cal-dot" style="background:#5b9cf6"></span> Workout</span>
-    <span class="cal-leg"><span class="cal-dot" style="background:#4ade80"></span> Meals</span>
-    <span class="cal-leg"><span class="cal-dot" style="background:#a78bfa"></span> Journal</span>
+    <span class="cal-leg"><span class="cal-dot" style="background:var(--text)"></span> Workout</span>
+    <span class="cal-leg"><span class="cal-dot" style="background:var(--success)"></span> Meals</span>
+    <span class="cal-leg"><span class="cal-dot" style="background:var(--text-dim)"></span> Journal</span>
   </div>`;
 }
 
@@ -1305,10 +1305,10 @@ function _showCreateGroup() {
     <div class="edit-habit-sheet">
       <div class="edit-habit-title">Create Group</div>
       <input class="d-input" id="lb-group-name" type="text" placeholder="Group name (e.g. Gym Bros)" maxlength="30" style="margin-bottom:16px">
-      <div id="lb-modal-error" style="color:#d46f6f;font-size:12px;min-height:18px;margin-bottom:8px"></div>
+      <div id="lb-modal-error" style="color:var(--danger);font-size:12px;min-height:18px;margin-bottom:8px"></div>
       <div style="display:flex;gap:10px">
         <button class="w-action-btn" style="flex:1;margin:0" onclick="_closeLbModal()">Cancel</button>
-        <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:#fff" id="lb-create-submit" onclick="_submitCreateGroup()">Create</button>
+        <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:var(--on-accent)" id="lb-create-submit" onclick="_submitCreateGroup()">Create</button>
       </div>
     </div>`;
   modal.style.display = 'block';
@@ -1351,10 +1351,10 @@ function _showJoinGroup() {
       <div class="edit-habit-title">Join Group</div>
       <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px">Enter the 6-character code from your friend.</div>
       <input class="d-input lb-code-input" id="lb-join-code" type="text" placeholder="ABC123" maxlength="6" style="margin-bottom:16px;text-align:center;letter-spacing:4px;font-size:20px;text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
-      <div id="lb-modal-error" style="color:#d46f6f;font-size:12px;min-height:18px;margin-bottom:8px"></div>
+      <div id="lb-modal-error" style="color:var(--danger);font-size:12px;min-height:18px;margin-bottom:8px"></div>
       <div style="display:flex;gap:10px">
         <button class="w-action-btn" style="flex:1;margin:0" onclick="_closeLbModal()">Cancel</button>
-        <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:#fff" id="lb-join-submit" onclick="_submitJoinGroup()">Join</button>
+        <button class="w-action-btn" style="flex:1;margin:0;background:var(--accent);color:var(--on-accent)" id="lb-join-submit" onclick="_submitJoinGroup()">Join</button>
       </div>
     </div>`;
   modal.style.display = 'block';

@@ -2,6 +2,7 @@ const CACHE = 'arete-v179';
 const ASSETS = [
   '/',
   '/index.html',
+  '/tokens.css',
   '/style.css',
   '/data.js',
   '/app.js',

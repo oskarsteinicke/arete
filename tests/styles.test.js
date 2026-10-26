@@ -13,11 +13,13 @@ module.exports = function () {
   const r = createReporter('styles');
 
   const css = fs.readFileSync(path.join(APP, 'style.css'), 'utf8');
+  // Colours, type and motion are defined in tokens.css, loaded first.
+  const tokens = fs.readFileSync(path.join(APP, 'tokens.css'), 'utf8');
 
   // Somewhere a property can legitimately come from: a declaration anywhere in
   // the stylesheet, an @property rule with an initial value, or JavaScript
   // setting it inline on the element.
-  const declared = new Set([...css.matchAll(/(^|[;{\s])(--[\w-]+)\s*:/g)].map(m => m[2]));
+  const declared = new Set([...(css + tokens).matchAll(/(^|[;{\s])(--[\w-]+)\s*:/g)].map(m => m[2]));
   for (const m of css.matchAll(/@property\s+(--[\w-]+)/g)) declared.add(m[1]);
 
   const js = ['app.js', 'profile.js', 'connect.js', 'today.js', 'workout.js', 'diet.js',
@@ -47,44 +49,47 @@ module.exports = function () {
     }
   }
 
-  // A theme that misses a variable does not fail — it silently inherits the
-  // dark one, which is how you end up with a gold button on a steel screen.
-  r.section('the Winter theme redefines everything it needs to');
+  // A theme that misses a variable does not fail: it silently inherits the
+  // dark one. Every role the dark theme sets for surfaces and text, the light
+  // theme has to set too.
+  r.section('both themes come from the tokens');
   {
     const block = sel => {
-      const i = css.indexOf(sel + ' {');
-      return i === -1 ? '' : css.slice(i, css.indexOf('\n}', i));
+      const i = tokens.indexOf(sel + ' {');
+      return i === -1 ? '' : tokens.slice(i, tokens.indexOf('\n}', i));
     };
     const vars = b => new Set([...b.matchAll(/(--[\w-]+)\s*:/g)].map(m => m[1]));
-
-    const light = vars(block('[data-theme="light"]'));
-    const winter = vars(block('[data-theme="winter"]'));
-    r.check('the Winter block exists', winter.size > 0, '(no theme defined)');
-
-    const missed = [...light].filter(v => !winter.has(v));
-    r.check('it covers everything the Light theme covers', missed.length === 0,
-      `(${missed.join(', ')} would fall back to the dark palette)`);
-
-    // The gold is spread across 162 literals in the stylesheet, so it is only
-    // swappable at all because those go through channel variables.
-    for (const v of ['--accent-rgb', '--accent-b-rgb', '--accent-d-rgb', '--accent-hi-rgb']) {
-      r.check(`${v} is overridden`, winter.has(v), '(gold would survive into Winter)');
-    }
+    const dark = vars(block(':root')), light = vars(block('[data-theme="light"]'));
+    const roles = ['--bg', '--surface', '--surface-rgb', '--surface2', '--border', '--border2', '--text', '--text-rgb', '--text-dim', '--text-muted', '--overlay'];
+    r.check('the dark theme sets every role', roles.every(v => dark.has(v)), `(${roles.filter(v => !dark.has(v)).join(', ')})`);
+    r.check('the light theme sets every role', roles.every(v => light.has(v)), `(${roles.filter(v => !light.has(v)).join(', ')})`);
+    r.check('the stylesheet no longer defines a palette of its own', !/^\s*--(bg|text|accent|surface)\s*:/m.test(css));
+    r.check('Winter is retired: no rules of its own', !/data-theme="winter"/.test(css));
+    // Orange only where it is opted into: the old accent is a neutral.
+    r.check('the old accent is neutral, not orange', /--accent:\s*var\(--text\)/.test(tokens) && /--accent-rgb:\s*var\(--text-rgb\)/.test(tokens));
   }
 
-  // Colour carries meaning in four places. A theme is allowed to change what
-  // the app is made of, not what it is telling you.
+  // The palette, and nothing else, in the tokens.
+  r.section('the palette is exactly the brand palette');
+  {
+    const want = { '--c-ink': '#0B0B0B', '--c-surface': '#161616', '--c-line': '#262422', '--c-white': '#F8F8F8',
+      '--c-muted': '#8A8580', '--c-divider': '#707070', '--c-cream': '#F2EEE6', '--c-orange': '#FF561E' };
+    for (const [k, v] of Object.entries(want)) r.check(`${k} is ${v}`, new RegExp(k + ':\\s*' + v + ';').test(tokens));
+    const hexIn = s => [...s.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/#[0-9a-fA-F]{3,8}\b/g)].map(m => m[0]);
+    r.check('the stylesheet has no literal colours left', hexIn(css).length === 0, `(${hexIn(css).slice(0, 6).join(', ')})`);
+    const rgbIn = [...css.matchAll(/rgba?\(\s*\d/g)].length;
+    r.check('and no literal rgb() either', rgbIn === 0, `(${rgbIn})`);
+  }
+
+  // Colour carries meaning on the rings. A theme is allowed to change what the
+  // app is made of, not what it is telling you.
   r.section('no theme repaints the data colours');
   {
-    for (const sel of ['[data-theme="light"]', '[data-theme="winter"]']) {
-      const i = css.indexOf(sel + ' {');
-      const b = i === -1 ? '' : css.slice(i, css.indexOf('\n}', i));
-      const repainted = ['--pro', '--carb', '--fat'].filter(v => new RegExp(v + '\\s*:').test(b));
-      r.check(`${sel} leaves protein, carbs and fat alone`, repainted.length === 0,
-        `(${repainted.join(', ')} — the macro rings stop meaning anything)`);
-    }
+    const i = tokens.indexOf('[data-theme="light"] {');
+    const b = i === -1 ? '' : tokens.slice(i, tokens.indexOf('\n}', i));
+    const repainted = ['--pro', '--carb', '--fat', '--cal'].filter(v => new RegExp(v + '\\s*:').test(b));
+    r.check('the light theme leaves the macro colours alone', repainted.length === 0, `(${repainted.join(', ')})`);
   }
-
 
   // An animation keyed on a state class replays every time that state is
   // drawn: with the ripple on .done, every finished habit rippled again each

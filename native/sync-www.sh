@@ -11,7 +11,7 @@ mkdir -p "$WWW"
 
 # App shell + scripts + styles
 cp "$APP/index.html" "$WWW/"
-cp "$APP/style.css" "$WWW/"
+cp "$APP"/*.css "$WWW/"
 cp "$APP"/*.js "$WWW/" 2>/dev/null || true
 rm -f "$WWW/service-worker.js"   # native app bundles assets; no SW
 
