@@ -749,7 +749,7 @@ function injectAuthStyles() {
     .auth-sub{font-size:13px;color:var(--text-dim);text-align:center;margin-bottom:36px;line-height:1.6}
     .auth-input{width:100%;padding:16px 18px;border:1px solid rgba(var(--text-rgb), 0.1);border-radius:12px;background:var(--surface);color:var(--text);font-size:15px;margin-bottom:12px;outline:none;transition:border .2s;box-sizing:border-box}
     .auth-input:focus{border-color:var(--accent)}
-    .auth-btn{width:100%;padding:18px;border:none;border-radius:14px;background:var(--accent);color:var(--on-accent);font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:8px;transition:transform .15s,opacity .15s}
+    .auth-btn{width:100%;padding:18px;border:none;border-radius:14px;background:var(--orange);color:var(--on-orange);font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:8px;transition:transform .15s,opacity .15s}
     .auth-btn:active{transform:scale(0.98)}
     .auth-btn:disabled{opacity:0.5;cursor:not-allowed}
     .auth-switch{margin-top:24px;font-size:13px;color:var(--text-dim);text-align:center}
@@ -773,7 +773,7 @@ function renderAuth() {
       <img src="icon-192.png" alt="Arete" style="width:72px;height:72px;border-radius:16px">
       <div style="font-size:13px;letter-spacing:.25em;color:var(--accent-b);margin-top:8px;font-weight:600">ARETE</div>
     </div>
-    <div class="auth-title">${isSignIn ? 'Welcome back.' : 'Begin the path to excellence.'}</div>
+    <div class="auth-title">${isSignIn ? 'Welcome back' : 'Begin the path to excellence'}<span class="dot">.</span></div>
     <div class="auth-sub">${isSignIn ? 'Sign in to continue your pursuit of arete.' : 'Create your account and pursue daily excellence.'}</div>
     <div style="width:100%;max-width:360px">
       ${!isSignIn ? `<input class="auth-input" type="text" id="auth-name" placeholder="First name" autocomplete="given-name" value="${esc(userName())}" onkeydown="if(event.key==='Enter')submitAuth()">` : ''}
@@ -2903,7 +2903,7 @@ function renderHome() {
   const { lvl, progress, needed } = xpToNextLevel(gamification.xp || 0);
   const xpPct = needed > 0 ? (progress / needed * 100).toFixed(1) : 100;
   const score = computeDailyScore();
-  const scoreColor = score >= 80 ? 'var(--accent-b)' : score >= 50 ? 'var(--carb)' : 'var(--fat)';
+  const scoreColor = 'var(--orange)';
   const dateStr = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
   // Overall streak — consecutive days with at least 1 habit done
@@ -2998,7 +2998,7 @@ function renderHome() {
         <div class="hm-hero-glow"></div>
         <div class="hm-hero-date">${dateStr}</div>
         <div class="avatar-frame hm-hero-portrait">${avatarImg(homeLvl)}</div>
-        <div class="hm-hero-name">${greeting()}${userName() ? ', ' + userName() : ''}.</div>
+        <div class="hm-hero-name">${greeting()}${userName() ? ', ' + esc(userName()) : ''}<span class="dot">.</span></div>
         <div class="hm-hero-lvl">Lv.${homeLvl} · ${getLevelTitle(homeLvl)}</div>
         <div class="hm-hero-xp" role="img" aria-label="${progress.toLocaleString()} of ${needed.toLocaleString()} XP to level ${lvl + 1}"><span id="hm-xp-fill" style="width:${xpPct}%"></span></div>
       </div>

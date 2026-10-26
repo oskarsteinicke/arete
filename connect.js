@@ -209,7 +209,7 @@ function trainingAdvice() {
     }
     return null;
   }
-  const color = readinessColor(call.level === 0 ? 80 : call.level === 1 ? 40 : 20);
+  const color = 'var(--text)';
   const base = { kind: call.tier, tier: call.tier, value: call.value, color };
   // A started session keeps what it was built with.
   const built = touched ? (wl.tier || 'full') : (wl && wl.asPlanned ? 'full' : call.tier);
@@ -238,8 +238,10 @@ function trainingAdviceHTML(where) {
     </div>`;
 }
 
+// Readiness is progress, and progress is orange whatever the score: the
+// number says how good the day is, not a traffic light.
 function readinessColor(score) {
-  return score >= 75 ? 'var(--accent-b)' : score >= 50 ? 'var(--carb)' : score >= 30 ? 'var(--text-dim)' : 'var(--fat)';
+  return 'var(--orange)';
 }
 
 // Only meaningful once we have at least one real input. Avoids showing a
@@ -368,8 +370,8 @@ function macroAdjustBadgeHTML() {
     const isRest = t.type === 'rest';
     const ic = (n, s) => (typeof icon === 'function' ? icon(n, s) : '');
     const glyph = isRest ? ic('moon', 15) : isHard ? ic('flame', 15) : ic('activity', 15);
-    const color = isRest ? 'var(--text-dim)' : 'var(--carb)';
-    return `<div class="d-adjust-badge" style="border-color:${color}">
+    // Neutral: the left rule marks it, not a colour.
+    return `<div class="d-adjust-badge" style="border-left-color:var(--text-muted)">
       <span class="d-adjust-main">${glyph} ${macroAdjustReason()}</span>
       <span class="d-adjust-base">${t.baseCalories.toLocaleString()} → ${t.calories.toLocaleString()} cal</span>
     </div>`;
@@ -756,7 +758,7 @@ function dismissBriefCoach() {
 // and the factor holding the score back is marked so the sheet says what to fix.
 function _rdFactorRow(glyph, label, val, weight, limiter = false) {
   const v = Math.round(val);
-  const c = v >= 70 ? 'var(--carb)' : v >= 40 ? 'var(--text-dim)' : 'var(--fat)';
+  const c = 'var(--text)';
   return `<div class="rd-factor${limiter ? ' rd-factor--limiter' : ''}">
     <div class="rd-factor-top">
       <span class="rd-factor-name">${glyph} ${label}</span>

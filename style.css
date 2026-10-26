@@ -2988,7 +2988,7 @@ nav.has-pill .ni.active::before { display: none; }
 }
 
 .sec-lbl, .j-lbl, .w-stat-lbl, .d-ring-label, .dm-header-sub, .hm-heat-label, .s-lbl,
-.wir-stat-lbl, .tb-cell-lbl, .tb-ready-lbl, .rd-score-lbl, .rd-vital-lbl, .wp-sum-lbl,
+.wir-stat-lbl, .tb-ready-lbl, .rd-score-lbl, .rd-vital-lbl, .wp-sum-lbl,
 .wp-overall-lbl, .da-stat-lbl, .da-rec-lbl, .tp-macro-lbl, .tp-tdee-label, .char-xp-label,
 .sf-lbl, .ob-macro-label, .td-label, .lb-xp-label, .eyebrow {
   font-family: var(--font);

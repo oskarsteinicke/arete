@@ -465,7 +465,7 @@ function injectGamificationStyles() {
     .g-score-val{font-family:var(--serif);font-size:32px;font-weight:700;line-height:1}
     .g-score-lbl{font-size:10px;letter-spacing:.04em;color:var(--accent);font-weight:600;margin-top:2px}
     .g-xp-bar-track{height:4px;background:rgba(var(--text-rgb), 0.06);border-radius:2px;overflow:hidden;margin:6px 0 2px}
-    .g-xp-bar-fill{height:100%;background:var(--accent-b);border-radius:2px;transition:width .5s ease}
+    .g-xp-bar-fill{height:100%;background:var(--orange);border-radius:2px;transition:width .5s ease}
     .g-challenge{background:var(--surface2);border-radius:10px;padding:12px 16px;margin-bottom:8px}
     .g-challenge-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
     .g-challenge-label{font-size:13px;color:var(--text)}
@@ -726,7 +726,7 @@ function _buildRadarChart(stats, size) {
 
   return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" style="display:block;margin:0 auto" xmlns="http://www.w3.org/2000/svg">
     ${grid}
-    <polygon class="radar-data" points="${dataPts}" fill="rgba(var(--accent-rgb), 0.15)" stroke="var(--accent-b)" stroke-width="1.5" stroke-linejoin="round"/>
+    <polygon class="radar-data" points="${dataPts}" fill="rgba(var(--orange-rgb), 0.15)" stroke="var(--orange)" stroke-width="1.5" stroke-linejoin="round"/>
     ${stats.map((s, i) => {
       const [x, y] = point(i, s.val / 100);
       return `<circle class="radar-dot" cx="${x}" cy="${y}" r="3" fill="${s.color}" stroke="var(--bg)" stroke-width="1"/>`;
@@ -1552,7 +1552,7 @@ function renderStats() {
         <div style="font-size:11px;color:var(--text-dim)">${(gamification.xp||0).toLocaleString()} XP</div>
       </div>
       <div class="g-xp-bar-track"><div class="g-xp-bar-fill" style="width:${(xpBarPct*100).toFixed(1)}%"></div></div>
-      <div style="font-size:10px;color:var(--text-dim);text-align:right;margin-top:2px">${(needed-progress).toLocaleString()} XP to Level ${lvl+1}</div>
+      <div style="font-size:12.5px;color:var(--text-dim);text-align:right;margin-top:4px">${(needed-progress).toLocaleString()} XP to Level ${lvl+1}</div>
     </div>
     <div class="da-section ani" style="margin:0 24px 16px;padding:16px">
       <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Settings</div>
@@ -1929,13 +1929,13 @@ function injectOnboardingStyles() {
     .ob-macro-card{flex:1;background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:14px 10px;text-align:center}
     .ob-macro-label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
     .ob-macro-input{width:100%;background:transparent;border:none;color:var(--accent-b);font-family:var(--serif);font-size:22px;font-weight:700;text-align:center;outline:none}
-    .ob-btn{display:block;width:100%;padding:18px;border:none;border-radius:14px;background:var(--accent);color:var(--on-accent);font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:auto;transition:transform .15s}
+    .ob-btn{display:block;width:100%;padding:18px;border:none;border-radius:14px;background:var(--orange);color:var(--on-orange);font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:auto;transition:transform .15s}
     .ob-btn:active{transform:scale(0.98)}
     .ob-welcome{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 32px 60px}
     .ob-welcome-star{font-size:48px;color:var(--accent);margin-bottom:20px;line-height:1}
     .ob-welcome-title{font-family:var(--display);font-size:38px;color:var(--text);margin-bottom:14px;letter-spacing:2px}
     .ob-welcome-sub{font-size:15px;color:var(--text-dim);line-height:1.7;margin-bottom:48px;max-width:300px}
-    .ob-welcome-btn{padding:18px 48px;border:none;border-radius:14px;background:var(--accent);color:var(--on-accent);font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer}
+    .ob-welcome-btn{padding:18px 48px;border:none;border-radius:14px;background:var(--orange);color:var(--on-orange);font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer}
   `;
   document.head.appendChild(s);
 }
@@ -1953,7 +1953,7 @@ function renderOnboarding(step) {
     overlay.innerHTML = `
       <div class="ob-welcome">
         <div class="ob-welcome-star"><img src="icon-192.png" alt="Arete" style="width:72px;height:72px;border-radius:16px"></div>
-        <div class="ob-welcome-title">Arete</div>
+        <div class="ob-welcome-title">Arete<span class="dot">.</span></div>
         <div class="ob-welcome-sub">The pursuit of excellence in mind, body, and spirit.</div>
         <button class="ob-welcome-btn" onclick="renderOnboarding(1)">GET STARTED \u2192</button>
       </div>`;

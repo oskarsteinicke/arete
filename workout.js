@@ -1899,7 +1899,8 @@ function _wpRelStrength() {
 // climb with strength, so gold is the most prominent thing on the figure.
 // Untrained stays neutral dark so "nothing logged" never competes with
 // "trained a little".
-const _WP_RAMP = ['var(--surface)', 'var(--text-dim)', 'var(--text-dim)', 'var(--accent)', 'var(--accent)', 'var(--accent)'];
+// Trained muscles warm from the surface to full orange: the map is progress.
+const _WP_RAMP = ['var(--surface2)', 'rgba(var(--orange-rgb), 0.25)', 'rgba(var(--orange-rgb), 0.45)', 'rgba(var(--orange-rgb), 0.65)', 'rgba(var(--orange-rgb), 0.85)', 'var(--orange)'];
 
 const _WP_TIERS = [
   { min: 0,   name: 'Untrained',    color: _WP_RAMP[0] },

@@ -623,8 +623,8 @@ function renderDiet() {
   let adaptiveRec = '';
   if (adaptive) {
     adaptiveRec = `<div class="da-rec">
-      <div class="da-rec-item"><div class="da-rec-val" style="color:var(--cal)">${adaptive.calories.toLocaleString()}</div><div class="da-rec-lbl">Suggested calories</div></div>
-      <div class="da-rec-item"><div class="da-rec-val" style="color:var(--pro)">${adaptive.protein}g</div><div class="da-rec-lbl">Suggested protein</div></div>
+      <div class="da-rec-item"><div class="da-rec-val">${adaptive.calories.toLocaleString()}</div><div class="da-rec-lbl">Suggested calories</div></div>
+      <div class="da-rec-item"><div class="da-rec-val">${adaptive.protein}g</div><div class="da-rec-lbl">Suggested protein</div></div>
     </div>
     <div style="text-align:center"><button class="da-apply" onclick="applyAdaptiveTarget()">Use these targets</button></div>`;
   }
@@ -692,7 +692,7 @@ function renderDiet() {
     <div class="ani">${mealsHTML}</div>
     ${nextMealHTML()}
     <div style="display:flex;gap:8px;padding:14px 24px 8px">
-      <button class="w-action-btn" style="margin:0;flex:1" onclick="openAddMeal()">+ Add Meal</button>
+      <button class="w-action-btn btn-primary" style="margin:0;flex:1" onclick="openAddMeal()">+ Add Meal</button>
       <button class="w-action-btn" style="margin:0;flex:1" onclick="go('dietRecipes')">Recipes</button>
     </div>
     ${_buildCalorieTrendChart()}
@@ -2189,7 +2189,7 @@ function calculateTDEE() {
 
       <div class="sec-lbl" style="padding:20px 0 8px;text-align:left">Recommended Macros</div>
       <div class="tp-macro-grid">
-        <div class="tp-macro-card"><div class="tp-macro-val" style="color:var(--cal)">${target.toLocaleString()}</div><div class="tp-macro-lbl">Calories</div></div>
+        <div class="tp-macro-card"><div class="tp-macro-val">${target.toLocaleString()}</div><div class="tp-macro-lbl">Calories</div></div>
         <div class="tp-macro-card"><div class="tp-macro-val" style="color:var(--pro)">${protein_g}g</div><div class="tp-macro-lbl">Protein</div></div>
         <div class="tp-macro-card"><div class="tp-macro-val" style="color:var(--carb)">${carbs_g}g</div><div class="tp-macro-lbl">Carbs</div></div>
         <div class="tp-macro-card"><div class="tp-macro-val" style="color:var(--fat)">${fat_g}g</div><div class="tp-macro-lbl">Fat</div></div>
