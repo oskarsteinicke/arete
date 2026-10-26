@@ -1243,12 +1243,19 @@ input.d-input[type="date"]::-webkit-date-and-time-value { text-align: left; min-
   max-width: 92%;
 }
 .coach-action-item {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--accent-b);
   padding: 4px 0;
   line-height: 1.5;
   letter-spacing: 0.02em;
 }
+.coach-propose-item { font-size: 15px; color: var(--text); padding: 4px 0; line-height: 1.45; }
+.coach-propose-btns { display: flex; gap: 8px; margin-top: 10px; }
+.coach-propose-apply, .coach-propose-skip {
+  min-height: 40px; padding: 0 16px; border-radius: 10px; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 700;
+}
+.coach-propose-apply { background: var(--accent); border: none; color: #0a0908; }
+.coach-propose-skip { background: none; border: 1px solid var(--border2); color: var(--text-dim); font-weight: 600; }
 .coach-action-item + .coach-action-item {
   border-top: 1px solid rgba(var(--accent-rgb),0.12);
   margin-top: 4px;

@@ -377,10 +377,14 @@ function computeTrend(wl) {
   });
 }
 
+// Finished days only. Today was counted too, so checking at lunch averaged in
+// a day with only breakfast: 2,000 kcal a day at a flat weight read as a
+// maintenance of 1,757, and "Use these targets" set the targets that low.
 function computeWeeklyAvgCalories(ml) {
+  const t = today();
   const dates = Object.keys(ml).filter(d => {
     const meals = (ml[d] || {}).meals || [];
-    return meals.length > 0;
+    return d < t && meals.length > 0;
   }).sort().reverse().slice(0, 7);
   if (dates.length < 3) return null;
   const total = dates.reduce((sum, d) => {
