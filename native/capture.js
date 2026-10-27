@@ -115,6 +115,10 @@ async function launch() {
       if (exceptionDetails) throw new Error(exceptionDetails.exception?.description || exceptionDetails.text);
       return result.value;
     },
+    // Emulate media features, e.g. [{ name: 'prefers-reduced-motion', value: 'reduce' }].
+    async media(features) { await send('Emulation.setEmulatedMedia', { features }); },
+    // Load pages with JavaScript switched off.
+    async noScript(off = true) { await send('Emulation.setScriptExecutionDisabled', { value: off }); },
     errors: () => errors.slice(),
     async close() {
       try { ws.close(); } catch {}

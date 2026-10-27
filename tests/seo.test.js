@@ -56,7 +56,9 @@ module.exports = function () {
       const src = read(f);
       const title = (src.match(/<title>([^<]*)<\/title>/) || [])[1] || '';
       const desc = (src.match(/<meta name="description" content="([^"]*)"/) || [])[1] || '';
-      r.check(`${f} has a title`, title.length > 10 && title.length < 70, `(${title.length} chars)`);
+      // The landing page's title is the brand alone, by the owner's choice.
+      const brandOnly = f === 'landing.html' && title === 'Arete';
+      r.check(`${f} has a title`, brandOnly || (title.length > 10 && title.length < 70), `(${title.length} chars)`);
       r.check(`${f} has a description`, desc.length > 50, `(${desc.length} chars)`);
     }
   }
@@ -233,6 +235,33 @@ module.exports = function () {
       .filter(src => !/^https?:|^data:/.test(src));
     const missing = srcs.filter(src => !fs.existsSync(path.join(APP, src)));
     r.check(`${srcs.length} images, all present`, missing.length === 0, `(${missing.join(', ')})`);
+  }
+
+  // The landing page under the brand standard (October 2026).
+  r.section('the landing page keeps what it has to');
+  {
+    const html = read('landing.html');
+    const text = html.replace(/<script[\s\S]*?<\/script>/g, '').replace(/<style[\s\S]*?<\/style>/g, '');
+    r.check('faceless: no name, school, sport, city or country',
+      !/Oskar|Steinicke|Saint Joseph|\bSJU\b|soccer|football|Philadelphia|Philly|Denmark|Danish|D1|college athlete/i.test(html));
+    r.check('no em dashes in the copy', !/\u2014/.test(text));
+    const starts = [...html.matchAll(/<a[^>]+href="\/"[^>]*>/g)].map(m => m[0]);
+    r.check('every Start free and Open app link still marks the visitor for the app',
+      starts.length >= 3 && starts.every(a => /localStorage\.setItem\('hvi_from_landing','1'\)/.test(a)), `(${starts.length} links)`);
+    r.check('analytics are unchanged', /gtag\/js\?id=G-4NQYVJR5S2/.test(html) && /gtag\('config', 'G-4NQYVJR5S2'\)/.test(html));
+    r.check('the brand palette comes from the app\'s tokens', /href="\/tokens\.css/.test(html));
+    r.check('Inter with the optical-size axis, swapping', /family=Inter:opsz,wght@14\.\.32,100\.\.900&display=swap/.test(html));
+    const og = (html.match(/property="og:image" content="https:\/\/get-arete\.com\/([^"]+)"/) || [])[1];
+    r.check('the share image exists', !!og && fs.existsSync(path.join(APP, og)), `(${og})`);
+    r.check('large card for X', /name="twitter:card" content="summary_large_image"/.test(html));
+    const vid = (html.match(/<video[^>]*>/) || [''])[0];
+    r.check('the hero video autoplays muted, loops inline and loads only metadata',
+      ['autoplay', 'muted', 'loop', 'playsinline', 'preload="metadata"'].every(a => vid.includes(a)));
+    r.check('and has a size, so it cannot shift the layout', /width="\d+"/.test(vid) && /height="\d+"/.test(vid) && /aspect-ratio:\s*9\s*\/\s*16/.test(html));
+    r.check('its poster exists', fs.existsSync(path.join(APP, 'assets/arete_hero_poster.jpg')));
+    // The video never starts under reduced motion, so only its poster shows.
+    r.check('reduced motion gets the poster only', /prefers-reduced-motion: reduce\)'\)\.matches\) \{ still\(\); return; \}/.test(html) && /function still\(\) \{ v\.removeAttribute\('autoplay'\)/.test(html));
+    r.check('the heading reads as two sentences, with or without the letter animation', /id="hero-title" aria-label="Everyone wants to change\. Almost nobody tracks it\."/.test(html));
   }
 
   // The page advertised a $7.99 Premium plan with a 7-day trial while the
