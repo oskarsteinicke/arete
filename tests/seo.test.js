@@ -261,7 +261,34 @@ module.exports = function () {
     r.check('its poster exists', fs.existsSync(path.join(APP, 'assets/arete_hero_poster.jpg')));
     // The video never starts under reduced motion, so only its poster shows.
     r.check('reduced motion gets the poster only', /prefers-reduced-motion: reduce\)'\)\.matches\) \{ still\(\); return; \}/.test(html) && /function still\(\) \{ v\.removeAttribute\('autoplay'\)/.test(html));
-    r.check('the heading reads as two sentences, with or without the letter animation', /id="hero-title" aria-label="Everyone wants to change\. Almost nobody tracks it\."/.test(html));
+    r.check('the heading reads as two sentences, whatever the animation does', /id="hero-title" aria-label="Everyone wants to change\. Almost nobody tracks it\."/.test(html));
+  }
+
+  // The page animates as it scrolls (October 2026). Every animation starts
+  // from a hidden or empty state, so the risk is a visitor who never gets the
+  // animation (reduced motion, no JavaScript, a script error) being left with
+  // a blank card. The finished state has to be the page's default.
+  r.section('the landing page animates without hiding anything for good');
+  {
+    const html = read('landing.html');
+    r.check('motion is switched on only with JavaScript and without reduced motion',
+      /className = 'js' \+ \(\(window\.matchMedia && matchMedia\('\(prefers-reduced-motion: reduce\)'\)\.matches\) \|\| !\('IntersectionObserver' in window\) \? '' : ' motion'\)/.test(html));
+    const css = (html.match(/<style>([\s\S]*?)<\/style>/) || ['', ''])[1]
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/@keyframes[^{]+\{(?:[^{}]*\{[^}]*\})*[^}]*\}/g, '');
+    const hides = /opacity:\s*0\s*[;}]|visibility:\s*hidden|translateY\(105%\)|scale\(0\)|scaleX\(0\)|color:\s*transparent|stroke-dashoffset:\s*1\b/;
+    // Elements that only exist once the script has built them, or that are
+    // meant to be invisible until the script shows them for a moment.
+    const scriptOnly = /^\.(tn|odo-col\.lead|typing)\b/;
+    const unguarded = [...css.matchAll(/([^{}]+)\{([^}]*)\}/g)]
+      .filter(([, , body]) => hides.test(body))
+      .flatMap(([, sel]) => sel.split(',').map(s => s.trim()))
+      .filter(sel => !sel.startsWith('.motion ') && !scriptOnly.test(sel) && !sel.startsWith('@media'));
+    r.check('every hidden starting state is behind .motion', unguarded.length === 0, `(${unguarded.join(' | ')})`);
+    r.check('a script error drops back to the finished page', /catch \(err\) \{[\s\S]{0,120}root\.classList\.remove\('motion'\)/.test(html));
+    const demos = [...html.matchAll(/<div class="demo [^"]*"[^>]*>/g)].map(m => m[0]);
+    r.check('each demo card is described for screen readers', demos.length === 5 && demos.every(d => /role="img"/.test(d) && /aria-label="[^"]{20,}"/.test(d)), `(${demos.length} cards)`);
+    r.check('the headline is not split into letters any more', !/className = 'rc'|\.split\(''\)\.forEach\(function \(ch\) \{ w\.appendChild/.test(html));
   }
 
   // The page advertised a $7.99 Premium plan with a 7-day trial while the

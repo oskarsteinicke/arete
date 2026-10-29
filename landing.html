@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script>document.documentElement.className = 'js';</script>
+  <!-- "motion" turns the animations on. Without JavaScript, or with reduced
+       motion, the page is simply in its finished state. -->
+  <script>document.documentElement.className = 'js' + ((window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) || !('IntersectionObserver' in window) ? '' : ' motion');</script>
   <title>Arete</title>
   <meta name="description" content="Habits, nutrition, training, journaling and an AI coach in one free app.">
   <meta name="theme-color" content="#0B0B0B">
@@ -43,6 +45,7 @@
   <link rel="stylesheet" href="/tokens.css?v=209">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --pop: cubic-bezier(0.34, 1.56, 0.64, 1); }
     html { background: var(--c-ink); scroll-behavior: smooth; }
     body {
       background: var(--c-ink); color: var(--c-white);
@@ -66,8 +69,14 @@
       color: var(--c-muted);
     }
     .dot { color: var(--c-orange); }
+    .nw { white-space: nowrap; }
     .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     .body { color: var(--c-muted); max-width: 65ch; }
+
+    /* A heading line inside a mask, so it can slide up from under its own
+       baseline as one piece. */
+    .ln { display: block; overflow: hidden; padding-bottom: 0.08em; margin-bottom: -0.08em; }
+    .li { display: block; }
 
     /* Buttons. Orange only for Start free; text on orange is ink. */
     .btn-start {
@@ -91,7 +100,6 @@
     /* 1. Hero */
     .hero { display: grid; gap: 40px; align-items: center; padding-top: 28px; padding-bottom: 64px; }
     .hero h1 { font-size: clamp(36px, 9.8vw, 88px); }
-    .hero h1 .ln { display: block; }
     .hero .sub { margin-top: 22px; font-size: 18px; }
     .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 26px; margin-top: 30px; }
     .phone {
@@ -105,23 +113,121 @@
       .phone { width: 320px; }
     }
 
-    /* Letters rising from under the baseline (set up by the script after the h1) */
-    .rw { display: inline-block; overflow: hidden; vertical-align: bottom; padding: 0.06em 0.02em 0.08em; margin: -0.06em -0.02em -0.08em; }
-    .rc { display: inline-block; transform: translateY(105%); animation: rise var(--dur-rise) var(--ease) forwards; }
-    @keyframes rise { to { transform: none; } }
+    /* 2. The five features in a band that slides sideways with the scroll */
+    .band { overflow: hidden; border-top: 1px solid var(--c-line); padding: 26px 0 30px; }
+    .band-track {
+      display: flex; align-items: center; gap: 0.32em; width: max-content; padding: 0 20px;
+      font-weight: 900; text-transform: uppercase; letter-spacing: var(--track-head); line-height: 1;
+      font-size: clamp(56px, 12vw, 136px); color: var(--c-muted); white-space: nowrap;
+    }
+    .band-track span { transition: color 0.45s var(--ease); }
+    .band-track span.hot { color: var(--c-white); }
+    .band-track i { flex: none; width: 0.14em; height: 0.14em; border-radius: 0.03em; background: var(--c-divider); }
+    @media (min-width: 720px) { .band-track { padding: 0 40px; } }
 
-    /* 2. Features */
-    .data { padding: 72px 0; border-top: 1px solid var(--c-line); }
+    /* 3. What it does */
+    .data { padding: 72px 0 24px; border-top: 1px solid var(--c-line); }
     .data h2 { font-size: clamp(32px, 8vw, 64px); margin-top: 14px; }
     .data .body { margin-top: 20px; font-size: 18px; }
-    .feats { list-style: none; margin-top: 40px; border-top: 1px solid var(--c-line); }
-    .feats li { display: grid; gap: 4px 32px; padding: 20px 0; border-bottom: 1px solid var(--c-line); }
-    .feats h3 { font-weight: 900; font-size: 22px; text-transform: uppercase; letter-spacing: var(--track-head); line-height: 1; }
-    .feats p { color: var(--c-muted); max-width: 65ch; }
-    @media (min-width: 720px) { .feats li { grid-template-columns: 200px 1fr; align-items: baseline; } }
+    .strike { position: relative; color: var(--c-muted); }
+    .strike::after {
+      content: ''; position: absolute; left: -0.02em; right: -0.02em; top: 0.56em; height: 0.085em;
+      background: var(--c-white); transform-origin: left center;
+    }
 
-    /* 3. Closing: four lines spread edge to edge, only the last in white */
-    .end { padding: 72px 0 64px; border-top: 1px solid var(--c-line); text-align: center; }
+    .feats { list-style: none; margin-top: 56px; }
+    .feat { display: grid; gap: 28px; padding: 48px 0; border-top: 1px solid var(--c-line); }
+    .feat h3 {
+      font-weight: 900; font-size: clamp(34px, 9vw, 56px); text-transform: uppercase;
+      letter-spacing: var(--track-head); line-height: var(--lh-head);
+    }
+    .feat .ft p { margin-top: 16px; color: var(--c-muted); max-width: 40ch; font-size: 17px; }
+    @media (min-width: 900px) {
+      .feat { grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; padding: 80px 0; }
+      .feat:nth-child(even) .ft { order: 2; }
+    }
+
+    /* Each feature's demo card: a small, true-to-the-app picture of it */
+    .demo {
+      width: 100%; max-width: 440px; justify-self: center; padding: 22px;
+      background: var(--c-surface); border: 1px solid var(--c-line); border-radius: 24px;
+      font-size: 15px; line-height: 1.45;
+    }
+    .dh { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+    .dl { font-size: 12.5px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.2em; color: var(--c-muted); }
+    .dn { font-weight: 900; font-size: 34px; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+    .dn small { font-size: 15px; font-weight: 500; color: var(--c-muted); letter-spacing: 0; }
+    .hl { color: var(--c-orange); font-weight: inherit; }
+
+    /* Numbers that roll like an odometer: each digit is a column of 0 to 9 */
+    .odo { display: inline-flex; letter-spacing: 0; }
+    .odo-col { display: inline-block; height: 1em; line-height: 1; overflow: hidden; }
+    .odo-strip { display: block; width: 1ch; line-height: 1; word-break: break-all; white-space: normal; }
+    .odo-col.lead { opacity: 0; transition: opacity 0.3s ease; }
+    .odo-col.lead.in { opacity: 1; }
+
+    /* Typing: the untyped rest of the text holds its place, so nothing moves */
+    .tn { visibility: hidden; }
+    .caret { display: inline-block; position: relative; width: 0; }
+    .caret::after { content: ''; position: absolute; left: 1px; bottom: -0.2em; width: 2px; height: 1.1em; background: currentColor; animation: caret 1s steps(1) infinite; }
+    @keyframes caret { 50% { opacity: 0; } }
+
+    /* Habits: a week of ticks */
+    .hb { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 18px; }
+    .hb-d { text-align: center; font-size: 12.5px; font-weight: 500; color: var(--c-muted); }
+    .hb-n { grid-column: 1 / -1; margin-top: 10px; font-size: 14px; }
+    .hb i { --d: 0ms; position: relative; aspect-ratio: 1; border-radius: 9px; border: 1.5px solid rgba(var(--c-divider-rgb), 0.45); }
+    .hb i.y::before { content: ''; position: absolute; inset: -1.5px; border-radius: inherit; background: var(--c-white); }
+    .hb i.y::after {
+      content: ''; position: absolute; left: 37%; top: 20%; width: 24%; height: 44%;
+      border: solid var(--c-ink); border-width: 0 2.5px 2.5px 0; transform: rotate(45deg);
+    }
+
+    /* Nutrition: type a meal, get the macros */
+    .field { margin-top: 12px; padding: 13px 15px; min-height: 50px; border: 1px solid rgba(var(--c-divider-rgb), 0.5); border-radius: 14px; font-size: 16px; }
+    .meal { margin-top: 20px; }
+    .meal .mn { font-weight: 700; font-size: 17px; }
+    .stack { display: flex; gap: 3px; height: 12px; margin-top: 14px; border-radius: 6px; overflow: hidden; }
+    .stack i { display: block; transform-origin: left center; }
+    .stack i, .mac i.p { background: var(--c-white); }
+    .stack i:nth-child(2), .mac i.c { background: rgba(var(--c-white-rgb), 0.55); }
+    .stack i:nth-child(3), .mac i.f { background: rgba(var(--c-white-rgb), 0.25); }
+    .mac { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 14px; }
+    .mac .mk { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.12em; color: var(--c-muted); }
+    .mac i { flex: none; width: 8px; height: 8px; border-radius: 2px; }
+    .mac strong { display: block; margin-top: 4px; font-size: 20px; font-weight: 800; line-height: 1; color: var(--c-white); font-variant-numeric: tabular-nums; }
+    .mac strong small { font-size: 13px; font-weight: 500; color: var(--c-muted); }
+
+    /* Training: the weight going up */
+    .chart { display: block; width: 100%; height: auto; margin-top: 14px; overflow: visible; }
+    .chart .grid line { stroke: var(--c-line); stroke-width: 1; }
+    .chart text { fill: var(--c-muted); font: 500 12.5px var(--font); }
+    .chart .line { fill: none; stroke: var(--c-white); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 0; }
+    .chart circle { --i: 0; fill: var(--c-surface); stroke: var(--c-white); stroke-width: 2; transform-box: fill-box; transform-origin: center; }
+    .chart circle.last { fill: var(--c-orange); stroke: var(--c-orange); }
+    .chip { display: inline-block; margin-top: 14px; padding: 9px 13px; border-radius: 10px; background: var(--c-line); font-size: 14px; color: var(--c-muted); }
+    .chip b { color: var(--c-white); font-weight: 700; }
+
+    /* Journal: three questions, answered */
+    .q + .q { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--c-line); }
+    .qa { margin-top: 6px; font-size: 18px; font-weight: 500; line-height: 1.35; }
+
+    /* AI Coach: a question and its answer */
+    .msg { max-width: 86%; padding: 12px 15px; border-radius: 18px; font-size: 15px; line-height: 1.45; }
+    .me { width: fit-content; margin: 16px 0 0 auto; background: var(--c-white); color: var(--c-ink); border-bottom-right-radius: 6px; font-weight: 500; }
+    .ai-wrap { position: relative; margin-top: 10px; }
+    .ai { background: var(--c-line); border-bottom-left-radius: 6px; }
+    .ai .hl { font-weight: 700; }
+    .typing {
+      position: absolute; left: 0; top: 0; display: flex; gap: 5px; padding: 16px;
+      border-radius: 18px 18px 18px 6px; background: var(--c-line);
+      opacity: 0; transform: scale(0.85); transform-origin: left bottom;
+      transition: opacity 0.25s ease, transform 0.35s var(--pop);
+    }
+    .typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--c-muted); }
+
+    /* 4. Closing: four lines spread edge to edge, only the last in white */
+    .end { padding: 96px 0 72px; border-top: 1px solid var(--c-line); text-align: center; }
     .card { text-align: justify; text-align-last: justify; }
     .card .fit {
       display: block; white-space: nowrap; color: var(--c-muted);
@@ -132,22 +238,105 @@
     .end .btn-start { margin-top: 44px; }
     .end .mark { width: 56px; height: 56px; border-radius: 14px; border: 1px solid var(--c-line); margin: 36px auto 0; }
 
-    /* 4. Footer */
+    /* 5. Footer */
     .foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; padding-top: 28px; padding-bottom: 40px; border-top: 1px solid var(--c-line); font-size: 14px; color: var(--c-muted); }
     .foot .brand img { width: 24px; height: 24px; border-radius: 6px; }
     .foot nav { display: flex; gap: 22px; }
     .foot a { color: var(--c-muted); text-decoration: none; }
     .foot a:hover { color: var(--c-white); }
 
-    /* Sections fade up as they come into view. Without JavaScript they are
-       simply there. */
-    .js .reveal { opacity: 0; transform: translateY(16px); transition: opacity 0.7s var(--ease), transform 0.7s var(--ease); }
-    .js .reveal.in { opacity: 1; transform: none; }
+    /* ══ Motion. Everything below only applies with html.motion; each rule
+          describes the starting point, and the element moves to the
+          finished state written above. ══ */
+
+    /* Hero, on load: the two lines slide up as whole lines, the dot lands,
+       then the rest follows. */
+    .motion .hero .li { animation: line-up 1s var(--ease) both; }
+    .motion .hero .ln + .ln .li { animation-delay: 0.12s; }
+    .motion .hero .dot { animation: dot-in 0.35s ease-out 0.8s both; }
+    .motion .hero .sub { animation: fade-up 0.8s var(--ease) 0.35s both; }
+    .motion .hero .actions { animation: fade-up 0.8s var(--ease) 0.45s both; }
+    .motion .hero .phone { animation: phone-in 1.2s var(--ease) both; }
+    @keyframes line-up { from { transform: translateY(105%); } }
+    /* The dot only fades: making it a box to scale it would break the
+       kerning that tucks it under the letter before it. */
+    @keyframes dot-in { from { opacity: 0; } }
+    @keyframes fade-up { from { opacity: 0; transform: translateY(12px); } }
+    /* The phone only moves, never fades: its poster is the biggest thing on
+       the first screen, and a fade keeps it from counting as painted. */
+    @keyframes phone-in { from { transform: translateY(48px) scale(0.96); } }
+
+    /* Section heading: "motivation" is struck through, then "It's data." */
+    .motion .stmt .eyebrow, .motion .stmt .body { transition: opacity 0.8s var(--ease), transform 0.8s var(--ease); }
+    .motion .stmt .body { transition-delay: 0.9s; }
+    .motion .stmt:not(.on) .eyebrow, .motion .stmt:not(.on) .body { opacity: 0; transform: translateY(10px); }
+    .motion .stmt .li { transition: transform 1s var(--ease); }
+    .motion .stmt .ln + .ln .li { transition-delay: 0.8s; }
+    .motion .stmt:not(.on) .li { transform: translateY(105%); }
+    .motion .stmt .strike { transition: color 0.5s ease 0.6s; }
+    .motion .stmt:not(.on) .strike { color: var(--c-white); }
+    .motion .stmt .strike::after { transition: transform 0.55s var(--ease) 0.5s; }
+    .motion .stmt:not(.on) .strike::after { transform: scaleX(0); }
+    .motion .stmt .dot { transition: opacity 0.35s ease-out 1.4s; }
+    .motion .stmt:not(.on) .dot { opacity: 0; }
+
+    /* Feature names rise, their line fades in */
+    .motion .ft .li { transition: transform 0.9s var(--ease); }
+    .motion .ft:not(.on) .li { transform: translateY(105%); }
+    .motion .ft p { transition: opacity 0.8s var(--ease) 0.15s, transform 0.8s var(--ease) 0.15s; }
+    .motion .ft:not(.on) p { opacity: 0; transform: translateY(10px); }
+
+    /* Demo cards arrive as soon as they enter the screen (.in), and play
+       once most of the card is visible (.on) */
+    .motion .demo { transition: opacity 0.7s var(--ease), transform 0.9s var(--ease); }
+    .motion .demo:not(.in) { opacity: 0; transform: translateY(28px); }
+
+    /* Habits: ticks fill in day by day */
+    .motion .hb i.y::before { transition: transform 0.45s var(--pop) var(--d); }
+    .motion .d-hab:not(.on) .hb i.y::before { transform: scale(0); }
+    .motion .hb i.y::after { transition: opacity 0.2s ease calc(var(--d) + 140ms), transform 0.4s var(--pop) calc(var(--d) + 140ms); }
+    .motion .d-hab:not(.on) .hb i.y::after { opacity: 0; transform: rotate(45deg) scale(0.3); }
+
+    /* Nutrition: once the meal is typed, it is logged and split */
+    .motion .d-nut .meal { transition: opacity 0.6s var(--ease), transform 0.6s var(--ease); }
+    .motion .d-nut:not(.logged) .meal { opacity: 0; transform: translateY(10px); }
+    .motion .d-nut .stack i { transition: transform 0.7s var(--ease) 0.15s; }
+    .motion .d-nut .stack i:nth-child(2) { transition-delay: 0.3s; }
+    .motion .d-nut .stack i:nth-child(3) { transition-delay: 0.45s; }
+    .motion .d-nut:not(.logged) .stack i { transform: scaleX(0); }
+
+    /* Training: the line draws, each session lands on it */
+    .motion .d-tr .line { transition: stroke-dashoffset 1.4s linear 0.4s; }
+    .motion .d-tr:not(.on) .line { stroke-dashoffset: 1; }
+    .motion .d-tr circle { transition: transform 0.4s var(--pop); transition-delay: calc(400ms + var(--i) * 200ms); }
+    .motion .d-tr:not(.on) circle { transform: scale(0); }
+    .motion .d-tr .chip { transition: opacity 0.5s var(--ease) 2s, transform 0.5s var(--ease) 2s; }
+    .motion .d-tr:not(.on) .chip { opacity: 0; transform: translateY(8px); }
+
+    /* Journal: each question appears, then its answer is written */
+    .motion .d-jr .q .dl { transition: opacity 0.4s ease, transform 0.5s var(--ease); }
+    .motion .d-jr .q:not(.show) .dl { opacity: 0; transform: translateY(6px); }
+
+    /* AI Coach: the question is sent, the coach thinks, then answers */
+    .motion .d-co .me { transform-origin: right bottom; transition: opacity 0.4s ease 0.45s, transform 0.55s var(--pop) 0.45s; }
+    .motion .d-co:not(.on) .me { opacity: 0; transform: translateY(14px) scale(0.94); }
+    .d-co.thinking .typing { opacity: 1; transform: none; }
+    .d-co.thinking .typing i { animation: bob 1s ease-in-out infinite; }
+    .d-co.thinking .typing i:nth-child(2) { animation-delay: 0.15s; }
+    .d-co.thinking .typing i:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes bob { 0%, 60%, 100% { transform: none; opacity: 0.5; } 30% { transform: translateY(-4px); opacity: 1; } }
+    .motion .d-co .ai { transition: opacity 0.35s ease, transform 0.45s var(--ease); }
+    .motion .d-co:not(.answer) .ai { opacity: 0; transform: translateY(8px); }
+
+    /* Closing: each line fills with its colour as you scroll through it */
+    .motion .card .fit {
+      color: transparent; -webkit-background-clip: text; background-clip: text;
+      background-image: linear-gradient(90deg, var(--fill, var(--c-muted)) 0 var(--p, 0%), var(--c-line) var(--p, 0%) 100%);
+    }
+    .motion .card .fit:last-child { --fill: var(--c-white); }
 
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
-      .rc { animation: none; transform: none; }
-      .js .reveal { opacity: 1; transform: none; transition: none; }
     }
   </style>
   <script type="application/ld+json">
@@ -181,35 +370,7 @@
   <!-- 1. Hero -->
   <section class="wrap hero">
     <div>
-      <h1 class="head-1" id="hero-title" aria-label="Everyone wants to change. Almost nobody tracks it."><span class="ln">Everyone wants to change</span> <span class="ln">Almost nobody tracks it<span class="dot">.</span></span></h1>
-      <script>
-        // Letters rise in one by one. Each word is a clipping line; the letters
-        // inside slide up 40ms apart. Assistive tech reads the heading whole.
-        (function () {
-          var h = document.getElementById('hero-title');
-          if (!h || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
-          var n = 0;
-          function letter(node) { var c = document.createElement('span'); c.className = 'rc'; c.style.animationDelay = (n++ * 40) + 'ms'; c.appendChild(node); return c; }
-          [].slice.call(h.querySelectorAll('.ln')).forEach(function (line) {
-            var out = document.createDocumentFragment();
-            [].slice.call(line.childNodes).forEach(function (node) {
-              if (node.nodeType === 3) {
-                node.textContent.split(/(\s+)/).forEach(function (part) {
-                  if (!part) return;
-                  if (/^\s+$/.test(part)) { out.appendChild(document.createTextNode(part)); return; }
-                  var w = document.createElement('span'); w.className = 'rw'; w.setAttribute('aria-hidden', 'true');
-                  part.split('').forEach(function (ch) { w.appendChild(letter(document.createTextNode(ch))); });
-                  out.appendChild(w);
-                });
-              } else {
-                var w = document.createElement('span'); w.className = 'rw'; w.setAttribute('aria-hidden', 'true');
-                w.appendChild(letter(node)); out.appendChild(w);
-              }
-            });
-            line.textContent = ''; line.appendChild(out);
-          });
-        })();
-      </script>
+      <h1 class="head-1" id="hero-title" aria-label="Everyone wants to change. Almost nobody tracks it."><span class="ln"><span class="li">Everyone wants to change</span></span> <span class="ln"><span class="li">Almost nobody tracks <span class="nw">it<span class="dot">.</span></span></span></span></h1>
       <p class="body sub">Habits, nutrition, training, journaling and an AI coach in one app. Free.</p>
       <div class="actions">
         <a class="btn-start" href="/" onclick="localStorage.setItem('hvi_from_landing','1')">Start free</a>
@@ -241,24 +402,95 @@
     </div>
   </section>
 
-  <!-- 2. What it does -->
-  <section class="data reveal" id="how">
+  <!-- 2. The five features, moving sideways as the page scrolls -->
+  <div class="band" aria-hidden="true">
+    <div class="band-track"><span>Habits</span><i></i><span>Nutrition</span><i></i><span>Training</span><i></i><span>Journal</span><i></i><span>AI Coach</span></div>
+  </div>
+
+  <!-- 3. What it does -->
+  <section class="data" id="how">
     <div class="wrap">
-      <p class="eyebrow">How it works</p>
-      <h2 class="head-2">It's not motivation. It's data<span class="dot">.</span></h2>
-      <p class="body">Wanting to change is easy. Seeing what you actually did is what moves you. Arete keeps your habits, food, training and reflections in one place, so the pattern is in front of you every day.</p>
+      <div class="stmt play">
+        <p class="eyebrow">How it works</p>
+        <h2 class="head-2" aria-label="It's not motivation. It's data."><span class="ln"><span class="li">It's not <span class="strike">motivation</span>.</span></span> <span class="ln"><span class="li">It's <span class="nw">data<span class="dot">.</span></span></span></span></h2>
+        <p class="body">Wanting to change is easy. Seeing what you actually did is what moves you. Arete keeps your habits, food, training and reflections in one place, so the pattern is in front of you every day.</p>
+      </div>
+
       <ul class="feats">
-        <li><h3>Habits</h3><p>Tick off your daily habits and see how often you showed up this week, not just a streak.</p></li>
-        <li><h3>Nutrition</h3><p>Log a meal by typing it, snapping a photo or repeating yesterday's in one tap.</p></li>
-        <li><h3>Training</h3><p>Follow a program or describe a goal and get one built. The weight goes up when you have earned it.</p></li>
-        <li><h3>Journal</h3><p>Three questions each evening: what went well, what you learned, what comes next.</p></li>
-        <li><h3>AI Coach</h3><p>Ask it anything. It reads your training, food and sleep and answers in plain words.</p></li>
+        <li class="feat">
+          <div class="ft play"><h3><span class="ln"><span class="li">Habits</span></span></h3><p>Tick off your daily habits and see how often you showed up this week, not just a streak.</p></div>
+          <div class="demo d-hab play" data-demo="habits" role="img" aria-label="Three habits over one week: 16 of 21 days ticked, 76 percent.">
+            <div class="dh"><span class="dl">This week</span><span class="dn"><b class="hl" data-roll>76</b><small> %</small></span></div>
+            <div class="hb">
+              <span class="hb-d">M</span><span class="hb-d">T</span><span class="hb-d">W</span><span class="hb-d">T</span><span class="hb-d">F</span><span class="hb-d">S</span><span class="hb-d">S</span>
+              <span class="hb-n">Read 10 pages</span>
+              <i class="y"></i><i class="y"></i><i class="y"></i><i></i><i class="y"></i><i class="y"></i><i></i>
+              <span class="hb-n">Walk 8,000 steps</span>
+              <i class="y"></i><i class="y"></i><i></i><i class="y"></i><i class="y"></i><i class="y"></i><i class="y"></i>
+              <span class="hb-n">In bed by 11</span>
+              <i class="y"></i><i></i><i class="y"></i><i class="y"></i><i class="y"></i><i></i><i class="y"></i>
+            </div>
+          </div>
+        </li>
+
+        <li class="feat">
+          <div class="ft play"><h3><span class="ln"><span class="li">Nutrition</span></span></h3><p>Log a meal by typing it, snapping a photo or repeating yesterday's in one tap.</p></div>
+          <div class="demo d-nut play" data-demo="nutrition" role="img" aria-label="A meal typed in, two eggs, toast and a coffee, is logged as 380 kcal: 19 g protein, 33 g carbs and 19 g fat.">
+            <div class="dl">Log a meal</div>
+            <div class="field"><span class="ty">Two eggs, toast and a coffee</span></div>
+            <div class="meal">
+              <div class="dh"><span class="mn">Breakfast</span><span class="dn"><b class="hl" data-roll>380</b><small> kcal</small></span></div>
+              <div class="stack"><i style="flex:20"></i><i style="flex:35"></i><i style="flex:45"></i></div>
+              <div class="mac">
+                <div><span class="mk"><i class="p"></i>Protein</span><strong><b data-roll>19</b><small> g</small></strong></div>
+                <div><span class="mk"><i class="c"></i>Carbs</span><strong><b data-roll>33</b><small> g</small></strong></div>
+                <div><span class="mk"><i class="f"></i>Fat</span><strong><b data-roll>19</b><small> g</small></strong></div>
+              </div>
+            </div>
+          </div>
+        </li>
+
+        <li class="feat">
+          <div class="ft play"><h3><span class="ln"><span class="li">Training</span></span></h3><p>Follow a program or describe a goal and get one built. The weight goes up when you have earned it.</p></div>
+          <div class="demo d-tr play" data-demo="training" role="img" aria-label="Bench press over eight sessions, up from 60 to 70 kg. All reps done, so the next session is 72.5 kg.">
+            <div class="dh"><span class="dl">Bench press</span><span class="dn"><b data-roll>70</b><small> kg</small></span></div>
+            <svg class="chart" viewBox="0 0 320 140" aria-hidden="true">
+              <g class="grid"><line x1="30" x2="320" y1="111.3" y2="111.3"/><line x1="30" x2="320" y1="78" y2="78"/><line x1="30" x2="320" y1="44.7" y2="44.7"/></g>
+              <g><text x="0" y="115.8">60</text><text x="0" y="82.5">65</text><text x="0" y="49.2">70</text></g>
+              <path class="line" pathLength="1" d="M46 111.3 L84 111.3 L122 94.7 L160 94.7 L198 78 L236 78 L274 61.3 L312 44.7"/>
+              <circle cx="46" cy="111.3" r="4.5"/><circle cx="84" cy="111.3" r="4.5"/><circle cx="122" cy="94.7" r="4.5"/><circle cx="160" cy="94.7" r="4.5"/>
+              <circle cx="198" cy="78" r="4.5"/><circle cx="236" cy="78" r="4.5"/><circle cx="274" cy="61.3" r="4.5"/><circle class="last" cx="312" cy="44.7" r="6"/>
+            </svg>
+            <p class="chip">All reps done. Next session <b>72.5 kg</b></p>
+          </div>
+        </li>
+
+        <li class="feat">
+          <div class="ft play"><h3><span class="ln"><span class="li">Journal</span></span></h3><p>Three questions each evening: what went well, what you learned, what comes next.</p></div>
+          <div class="demo d-jr play" data-demo="journal" role="img" aria-label="An evening journal. What went well: hit every set, even the last one. What did you learn: sleep matters more than I thought. What comes next: in bed by 11.">
+            <div class="q"><p class="dl">What went well?</p><p class="qa ty">Hit every set, even the last one.</p></div>
+            <div class="q"><p class="dl">What did you learn?</p><p class="qa ty">Sleep matters more than I thought.</p></div>
+            <div class="q"><p class="dl">What comes next?</p><p class="qa ty">In bed by 11.</p></div>
+          </div>
+        </li>
+
+        <li class="feat">
+          <div class="ft play"><h3><span class="ln"><span class="li">AI Coach</span></span></h3><p>Ask it anything. It reads your training, food and sleep and answers in plain words.</p></div>
+          <div class="demo d-co play" data-demo="coach" role="img" aria-label="A chat. Should I go heavy today? The coach answers: you slept 5 h 40 min and your recovery is low. Keep the session, drop the top set and go heavy on Thursday.">
+            <div class="dl">AI Coach</div>
+            <p class="msg me">Should I go heavy today?</p>
+            <div class="ai-wrap">
+              <span class="typing"><i></i><i></i><i></i></span>
+              <p class="msg ai ty">You slept <b class="hl">5 h 40 min</b> and your recovery is low. Keep the session, drop the top set and go heavy on Thursday.</p>
+            </div>
+          </div>
+        </li>
       </ul>
     </div>
   </section>
 
-  <!-- 3. Closing card -->
-  <section class="end reveal">
+  <!-- 4. Closing card -->
+  <section class="end">
     <div class="wrap">
       <p class="card">
         <span class="sr">Track the habit. Log the food. Write it down. Start for free.</span>
@@ -273,7 +505,7 @@
   </section>
 </main>
 
-<!-- 4. Footer -->
+<!-- 5. Footer -->
 <footer class="wrap foot">
   <a class="brand" href="/landing.html"><img src="/icon-192.png" alt="" width="24" height="24" loading="lazy"><span>get-arete.com</span></a>
   <nav aria-label="Legal"><a href="/privacy.html">Privacy</a></nav>
@@ -299,14 +531,177 @@
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
 })();
 
-// Sections fade up once as they come into view.
+// Motion down the page. Each part plays its own animation once, as it comes
+// into view; the band and the closing lines follow the scroll itself. Only
+// with html.motion: otherwise the HTML is already the finished picture.
 (function () {
-  var els = [].slice.call(document.querySelectorAll('.reveal'));
-  if (!('IntersectionObserver' in window)) { els.forEach(function (e) { e.classList.add('in'); }); return; }
-  var io = new IntersectionObserver(function (entries) {
-    entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
-  }, { rootMargin: '0px 0px -10% 0px' });
-  els.forEach(function (e) { io.observe(e); });
+  var root = document.documentElement;
+  if (!root.classList.contains('motion')) return;
+  function $(s, r) { return (r || document).querySelector(s); }
+  function $$(s, r) { return [].slice.call((r || document).querySelectorAll(s)); }
+  function clamp(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+  function later(ms, f) { setTimeout(f, ms); }
+
+  // A number that rolls like an odometer from `from` to the value written in
+  // the HTML. Returns the function that starts the roll.
+  function odometer(el, from) {
+    var to = el.textContent.trim(), f = String(from || 0), pad = to.length - f.length, strips = [];
+    var box = document.createElement('span'); box.className = 'odo';
+    to.split('').forEach(function (ch, i) {
+      if (!/\d/.test(ch)) { var s = document.createElement('span'); s.textContent = ch; box.appendChild(s); return; }
+      var st = f.charAt(i - pad); st = /\d/.test(st) ? +st : 0;
+      var col = document.createElement('span'), strip = document.createElement('span');
+      // A digit the starting number does not have stays blank until it rolls,
+      // so 0 to 76 starts as "0", not "00".
+      col.className = 'odo-col' + (i < pad ? ' lead' : ''); strip.className = 'odo-strip'; strip.textContent = '0123456789';
+      strip.style.transform = 'translateY(' + -st + 'em)';
+      col.appendChild(strip); box.appendChild(col); strips.push([strip, +ch, col]);
+    });
+    el.textContent = ''; el.appendChild(box);
+    return function (ms, delay) {
+      strips.forEach(function (p, i) {
+        var wait = (delay || 0) + (strips.length - 1 - i) * 70;
+        p[0].style.transition = 'transform ' + ms + 'ms var(--ease) ' + wait + 'ms';
+        p[0].style.transform = 'translateY(' + -p[1] + 'em)';
+        if (p[2].classList.contains('lead')) later(wait, function () { p[2].classList.add('in'); });
+      });
+    };
+  }
+
+  // Text typed in character by character, with a caret. The rest of the text
+  // is already laid out, hidden, so nothing around it moves while it types.
+  function typer(el) {
+    var parts = [], caret = document.createElement('span');
+    caret.className = 'caret';
+    (function walk(n) {
+      [].slice.call(n.childNodes).forEach(function (c) {
+        if (c.nodeType === 1) return walk(c);
+        if (c.nodeType !== 3 || !c.textContent) return;
+        var on = document.createElement('span'), off = document.createElement('span');
+        off.className = 'tn'; off.textContent = c.textContent;
+        n.insertBefore(on, c); n.insertBefore(off, c); n.removeChild(c);
+        parts.push({ on: on, off: off, t: off.textContent });
+      });
+    })(el);
+    return function (speed, done) {
+      var i = 0, j = 0;
+      (function step() {
+        if (i >= parts.length) { later(900, function () { if (caret.parentNode) caret.parentNode.removeChild(caret); }); if (done) done(); return; }
+        var p = parts[i], ch = p.t.charAt(j); j++;
+        p.on.textContent = p.t.slice(0, j); p.off.textContent = p.t.slice(j);
+        p.off.parentNode.insertBefore(caret, p.off);
+        if (j >= p.t.length) { i++; j = 0; }
+        later(speed * (/[,.?]/.test(ch) ? 5 : 0.6 + Math.random() * 0.8), step);
+      })();
+    };
+  }
+
+  // What each demo card does when it comes into view. Set up now, so the
+  // card shows its starting point until then.
+  var demos = {
+    habits: function (card) {
+      var roll = odometer($('[data-roll]', card), 0);
+      $$('.hb i', card).forEach(function (c, k) { c.style.setProperty('--d', (450 + (k % 7) * 110 + Math.floor(k / 7) * 40) + 'ms'); });
+      return function () { roll(1300, 450); };
+    },
+    nutrition: function (card) {
+      var type = typer($('.ty', card)), rolls = $$('[data-roll]', card).map(function (el) { return odometer(el, 0); });
+      return function () {
+        later(550, function () {
+          type(45, function () {
+            later(300, function () {
+              card.classList.add('logged');
+              rolls.forEach(function (roll, k) { roll(900, 200 + k * 90); });
+            });
+          });
+        });
+      };
+    },
+    training: function (card) {
+      var roll = odometer($('[data-roll]', card), 60);
+      $$('circle', card).forEach(function (c, k) { c.style.setProperty('--i', k); });
+      return function () { roll(1400, 400); };
+    },
+    journal: function (card) {
+      var qs = $$('.q', card), types = qs.map(function (q) { return typer($('.ty', q)); });
+      return function () {
+        (function next(k) {
+          if (k >= qs.length) return;
+          qs[k].classList.add('show');
+          later(380, function () { types[k](40, function () { later(250, function () { next(k + 1); }); }); });
+        })(0);
+      };
+    },
+    coach: function (card) {
+      var type = typer($('.ai', card));
+      return function () {
+        later(1100, function () { card.classList.add('thinking'); });
+        later(2500, function () { card.classList.remove('thinking'); card.classList.add('answer'); type(24); });
+      };
+    }
+  };
+
+  try {
+    // Text plays when 40% of it is on screen. A demo card slides in as soon
+    // as it enters, and plays at 60%, so it does not start while it is still
+    // mostly below the fold.
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        e.target.classList.add('in');
+        if (e.intersectionRatio < (e.target._play ? 0.6 : 0.4)) return;
+        io.unobserve(e.target);
+        e.target.classList.add('on');
+        if (e.target._play) e.target._play();
+      });
+    }, { threshold: [0, 0.4, 0.6] });
+    $$('.play').forEach(function (el) {
+      var k = el.getAttribute('data-demo');
+      if (k && demos[k]) el._play = demos[k](el);
+      io.observe(el);
+    });
+
+    // The band slides left as the page scrolls, and the word nearest the
+    // middle of the screen turns white. The closing lines fill in one after
+    // another; the last one is full by the time the page can scroll no further.
+    var band = $('.band'), track = $('.band-track'), words = $$('.band-track span');
+    var card = $('.card'), fits = $$('.card .fit');
+    var seen = { band: false, card: false }, centers = [], shift = 0, queued = false;
+    function measure() {
+      shift = Math.max(0, track.scrollWidth - band.clientWidth);
+      centers = words.map(function (w) { return w.offsetLeft + w.offsetWidth / 2; });
+    }
+    function frame() {
+      queued = false;
+      var vh = window.innerHeight;
+      if (seen.band) {
+        var r = band.getBoundingClientRect(), x = -clamp((vh - r.top) / (vh + r.height)) * shift;
+        track.style.transform = 'translate3d(' + x.toFixed(1) + 'px,0,0)';
+        var mid = band.clientWidth / 2 - x, best = 0;
+        centers.forEach(function (c, k) { if (Math.abs(c - mid) < Math.abs(centers[best] - mid)) best = k; });
+        words.forEach(function (w, k) { w.classList.toggle('hot', k === best); });
+      }
+      if (seen.card) {
+        var top = card.getBoundingClientRect().top + window.pageYOffset;
+        var start = top - vh * 0.85, end = Math.min(top - vh * 0.3, root.scrollHeight - vh);
+        var p = clamp((window.pageYOffset - start) / Math.max(1, end - start));
+        fits.forEach(function (f, k) { f.style.setProperty('--p', (clamp(p * fits.length - k) * 100).toFixed(1) + '%'); });
+      }
+    }
+    function tick() { if (!queued) { queued = true; requestAnimationFrame(frame); } }
+    var watch = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { seen[e.target === band ? 'band' : 'card'] = e.isIntersecting; });
+      tick();
+    });
+    watch.observe(band); watch.observe(card);
+    measure();
+    window.addEventListener('scroll', tick, { passive: true });
+    window.addEventListener('resize', function () { measure(); tick(); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { measure(); tick(); });
+  } catch (err) {
+    // Anything goes wrong: show the finished page rather than half of it.
+    root.classList.remove('motion');
+  }
 })();
 
 // Install prompt for phone visitors, as before.
