@@ -1013,41 +1013,66 @@ function countUp(el, to, ms = 900, delay = 0, from = 0) {
   setTimeout(() => { el.textContent = finalText; }, delay + ms + strips.length * 30 + 120);
 }
 
-// Big headings rise in letter by letter from under their baseline. Each word
-// is a clipping line; the letters inside slide up 40ms apart. Read as one
-// word by assistive tech, and skipped entirely for reduced motion.
+// Big headings slide up a line at a time, each line rising out of a mask at
+// its own baseline, and the orange full stop fades in once the last line has
+// landed. The lines are wherever the heading already wraps, so nothing moves,
+// and the words are never split into letters. Once it has played the heading
+// goes back to its own markup. Skipped for reduced motion.
+const RISE_STAGGER = 110, RISE_MS = 600;
 function riseText(el, delay = 0) {
-  if (!el || !motionOK() || !el.childNodes || el.dataset.risen) return;
+  if (!el || !motionOK() || !el.childNodes || !el.getBoundingClientRect || el.dataset.risen) return;
   el.dataset.risen = '1';
-  const label = el.textContent;
-  let n = 0;
-  const letter = (node) => {
-    const c = document.createElement('span');
-    c.className = 'rise-c';
-    c.style.animationDelay = `${delay + n++ * 40}ms`;
-    c.appendChild(node);
-    return c;
+  const before = el.innerHTML;
+  const settle = () => {
+    el.querySelectorAll('.rise-ln, .rise-li, .rise-wd').forEach(s => s.replaceWith(...s.childNodes));
+    el.normalize();
+    el.classList.remove('rising');
+    el.style.removeProperty('--rise-dot');
   };
-  const out = document.createDocumentFragment();
-  [...el.childNodes].forEach(node => {
-    if (node.nodeType === 3) {
+  try {
+    // Each word in a span, so its line can be measured. An element touching
+    // a word, such as the orange full stop, stays with that word.
+    const words = [];
+    let word = null;
+    const take = node => {
+      if (!word) { word = document.createElement('span'); word.className = 'rise-wd'; words.push(word); }
+      word.appendChild(node);
+    };
+    [...el.childNodes].forEach(node => {
+      if (node.nodeType !== 3) return take(node);
       node.textContent.split(/(\s+)/).forEach(part => {
-        if (!part) return;
-        if (/^\s+$/.test(part)) { out.appendChild(document.createTextNode(part)); return; }
-        const w = document.createElement('span'); w.className = 'rise-w';
-        [...part].forEach(ch => w.appendChild(letter(document.createTextNode(ch))));
-        out.appendChild(w);
+        if (/^\s+$/.test(part)) word = null;
+        else if (part) take(document.createTextNode(part));
       });
-    } else {
-      // An element such as the orange full stop rises as one more letter.
-      const w = document.createElement('span'); w.className = 'rise-w';
-      w.appendChild(letter(node)); out.appendChild(w);
-    }
-  });
-  el.textContent = '';
-  el.appendChild(out);
-  el.setAttribute('aria-label', label);
-  [...el.children].forEach(ch => ch.setAttribute('aria-hidden', 'true'));
+    });
+    if (!words.length) return;
+    el.textContent = '';
+    words.forEach((w, i) => { if (i) el.appendChild(document.createTextNode(' ')); el.appendChild(w); });
+    const lines = [];
+    let top = null;
+    words.forEach(w => {
+      const t = w.getBoundingClientRect().top;
+      if (top === null || t - top > 4) { lines.push([]); top = t; }
+      lines[lines.length - 1].push(w);
+    });
+    el.textContent = '';
+    lines.forEach((ws, i) => {
+      if (i) el.appendChild(document.createTextNode(' '));
+      const ln = document.createElement('span'); ln.className = 'rise-ln';
+      const li = document.createElement('span'); li.className = 'rise-li';
+      li.style.animationDelay = `${delay + i * RISE_STAGGER}ms`;
+      ws.forEach((w, j) => { if (j) li.appendChild(document.createTextNode(' ')); li.appendChild(w); });
+      ln.appendChild(li); el.appendChild(ln);
+    });
+    const last = delay + (lines.length - 1) * RISE_STAGGER;
+    el.style.setProperty('--rise-dot', `${last + 380}ms`);
+    el.classList.add('rising');
+    // Back to plain markup once it has landed. Also covers a hidden tab, where
+    // the animation pauses but this still runs.
+    setTimeout(settle, last + RISE_MS + 400);
+  } catch {
+    try { el.innerHTML = before; el.classList.remove('rising'); } catch {}
+  }
 }
 
 // Rings redrawn after a change sweep from where they stood to where they are

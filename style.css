@@ -3060,17 +3060,24 @@ em, i { font-style: normal; }
 .odo-strip { display: block; width: 1ch; line-height: 1; word-break: break-all; white-space: normal; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-/* Letters rising from under the baseline (riseText in app.js) */
-.rise-w { display: inline-block; overflow: hidden; vertical-align: bottom; padding: 0.06em 0.02em 0.08em; margin: -0.06em -0.02em -0.08em; }
-.rise-c { display: inline-block; transform: translateY(110%); animation: rise var(--dur-rise) var(--ease) forwards; }
-@keyframes rise { to { transform: none; } }
+/* Headings sliding up a line at a time (riseText in app.js). Each line is
+   clipped just below its baseline; the clip reaches past the line box rather
+   than padding it, so the heading keeps its exact size and accents and
+   commas are not cut. A line starts a line and a half down, far enough
+   that the ring of an Å is hidden too. The full stop fades rather than
+   moves, which keeps its kerning. */
+.rise-ln { display: block; -webkit-clip-path: inset(-0.25em -0.2em -0.14em); clip-path: inset(-0.25em -0.2em -0.14em); }
+.rise-li { display: block; animation: rise-line var(--dur-rise) var(--ease) both; }
+@keyframes rise-line { from { transform: translateY(150%); } }
+.rising .dot { animation: rise-dot 0.3s ease-out var(--rise-dot, 0ms) both; }
+@keyframes rise-dot { from { opacity: 0; } }
 
 /* Chart lines draw in when their screen arrives */
 #view.view-arriving .draw-line { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw-line var(--dur-draw) var(--ease) 0.15s forwards; }
 @keyframes draw-line { to { stroke-dashoffset: 0; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .rise-c, .goal-pulse, #view.view-arriving .draw-line { animation: none !important; transform: none !important; stroke-dashoffset: 0 !important; }
+  .rise-li, .rising .dot, .goal-pulse, #view.view-arriving .draw-line { animation: none !important; transform: none !important; stroke-dashoffset: 0 !important; }
 }
 
 /* Light theme: orange fails as text on cream and white (2.8-3.0:1), so text

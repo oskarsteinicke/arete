@@ -92,7 +92,7 @@ const AUDIT_JS = `(() => {
     const r = el.getBoundingClientRect(); if (!r.width || !r.height) continue;
     let op = 1; for (let n = el; n && n.nodeType === 1; n = n.parentElement) op *= +getComputedStyle(n).opacity;
     if (op < 0.5) continue;            // disabled or faded on purpose
-    if (el.closest('[aria-hidden="true"]') && !el.closest('.rise-w')) continue;
+    if (el.closest('[aria-hidden="true"]')) continue;
     const fg = parse(cs.color); if (!fg || fg.a === 0) continue;   // a glyph hidden until checked
     if (el.closest('.dot')) continue;                                    // the decorative full stop
     const bg = bgOf(el); const col = over({ ...fg, a: fg.a * op }, bg);

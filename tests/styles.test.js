@@ -154,5 +154,22 @@ module.exports = function () {
       '(an old caption is back)');
   }
 
+  // Screen titles used to spell themselves in a letter at a time, which read
+  // as fussy. They now rise a line at a time, and must not move anything
+  // around them while they do.
+  r.section('screen titles rise a line at a time');
+  {
+    const app = fs.readFileSync(path.join(APP, 'app.js'), 'utf8');
+    const at = app.indexOf('function riseText(');
+    const fn = at < 0 ? '' : app.slice(at, app.indexOf('\n}\n', at));
+    r.check('no word is split into letters', fn && !/\[\.\.\.part\]|split\(''\)|rise-c/.test(fn), '(letters are back)');
+    r.check('the heading goes back to its own markup afterwards', /setTimeout\(settle/.test(fn) && /normalize\(\)/.test(fn));
+    const line = (/\.rise-ln\s*\{([^}]*)\}/.exec(css) || [])[1] || '';
+    r.check('a line clips itself with no padding or margin, so nothing around it moves',
+      /clip-path/.test(line) && !/padding|margin/.test(line), `(${line.trim()})`);
+    r.check('reduced motion stills the lines and the full stop',
+      /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[^@]*\.rise-li[^@]*\.rising \.dot/.test(css));
+  }
+
   return r.finish();
 };
