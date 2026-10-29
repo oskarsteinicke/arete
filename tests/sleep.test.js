@@ -203,6 +203,11 @@ module.exports = function () {
     r.check('and parts', run(s, 'formatSleep(7.5)') === '7h 30m');
     r.check('nothing logged', run(s, 'formatSleep(0)') === '—');
     r.check('undefined is not NaN', run(s, 'formatSleep(undefined)') === '—');
+    // Synced floats just under an hour used to round their minutes up to 60.
+    r.check('just under a whole night is 8h, not 7h 60m', run(s, 'formatSleep(7.9997)') === '8h',
+      `(got ${run(s, 'formatSleep(7.9997)')})`);
+    r.check('and so is 7.995', run(s, 'formatSleep(7.995)') === '8h', `(got ${run(s, 'formatSleep(7.995)')})`);
+    r.check('a synced float keeps its minutes', run(s, 'formatSleep(5.666666)') === '5h 40m');
   }
 
   // Whoop, Google Fit and Apple Health write hours as raw floats. Printed

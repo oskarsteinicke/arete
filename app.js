@@ -2145,7 +2145,9 @@ function recalcSleepHours(key) {
 
 function formatSleep(h) {
   if (!(h > 0)) return '—';
-  const whole = Math.floor(h), m = Math.round((h - whole) * 60);
+  // Round to whole minutes before splitting off the hours, or a synced
+  // 7.9997 rounds its minutes up to 60 and reads 7h 60m.
+  const total = Math.round(h * 60), whole = Math.floor(total / 60), m = total % 60;
   return m ? `${whole}h ${m}m` : `${whole}h`;
 }
 
