@@ -2149,6 +2149,18 @@ function formatSleep(h) {
   return m ? `${whole}h ${m}m` : `${whole}h`;
 }
 
+// Short form for tiles and chart labels. Synced nights (Whoop, Google Fit,
+// Apple Health) arrive as raw floats like 5.666666, so round to one decimal
+// and let a whole night drop its .0: 5.7h, 8h.
+function roundSleep(h) {
+  const n = Number(h);
+  return n > 0 ? Math.round(n * 10) / 10 : 0;
+}
+function formatSleepShort(h) {
+  const r = roundSleep(h);
+  return r > 0 ? `${r}h` : '—';
+}
+
 // ── DAILY SLEEP PROMPT ────────────────────────────────────────
 // Asked once on the first open of each day, because logging last night is the
 // easiest thing in the app to forget and the hardest to reconstruct later.

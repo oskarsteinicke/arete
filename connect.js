@@ -650,7 +650,7 @@ function _coachInsightContext() {
   } catch {}
   try {
     const sl = sleepLog[today()] || sleepLog[yesterday()];
-    if (sl && sl.hours) parts.push(`Last sleep: ${sl.hours}h${sl.quality ? ', quality ' + sl.quality + '/5' : ''}`);
+    if (sl && sl.hours) parts.push(`Last sleep: ${formatSleepShort(sl.hours)}${sl.quality ? ', quality ' + sl.quality + '/5' : ''}`);
   } catch {}
   try {
     const jk = Object.keys(journal || {}).sort().reverse()[0];
@@ -812,7 +812,7 @@ function showReadinessBreakdown() {
     const _steps = (LS.get('hvi_steps_log', {})[_t]) || 0;
     const _energy = (LS.get('hvi_energy_log', {})[_t]) || 0;
     const _vit = [];
-    if (_slToday.hours) _vit.push([ic('moon'), _slToday.hours + 'h', 'Sleep']);
+    if (_slToday.hours) _vit.push([ic('moon'), formatSleepShort(_slToday.hours), 'Sleep']);
     if (_steps) _vit.push([ic('footprints'), _steps.toLocaleString(), 'Steps']);
     if (_energy) _vit.push([ic('flame'), _energy, 'kcal active']);
     if (_slToday.restingHR) _vit.push([ic('heart'), _slToday.restingHR, 'Resting HR']);
@@ -927,7 +927,7 @@ function todayBriefingHTML() {
     // button under three tiles, and a journal prompt in italics under that.
     const slp = (typeof sleepLog !== 'undefined' && sleepLog) ? (sleepLog[t] || null) : null;
     const slpLogged = !!(slp && (slp.hours || slp.quality));
-    const slpVal = slpLogged ? (slp.hours ? `${slp.hours}h` : `${slp.quality}/5`) : 'Log';
+    const slpVal = slpLogged ? (slp.hours ? formatSleepShort(slp.hours) : `${slp.quality}/5`) : 'Log';
     const of = n => `<span class="tb-cell-sub"> / ${n}</span>`;
     const cell = (view, icoName, val, lbl) => `<div class="tb-cell" onclick="go('${view}')" role="button" tabindex="0"
           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();go('${view}')}">

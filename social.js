@@ -224,7 +224,7 @@ function renderSleep() {
       const dayLabel = d.toLocaleDateString('en-US', { weekday: 'short' }).slice(0,2);
       const col = h >= 7 ? 'var(--accent-b)' : h >= 5 ? 'var(--carb)' : 'var(--danger)';
       bars.push(`<div class="sl-bar-col">
-        <div class="sl-bar-val">${h || ''}</div>
+        <div class="sl-bar-val">${h ? roundSleep(h) : ''}</div>
         <div class="sl-bar-track"><div class="sl-bar-fill" style="height:${pct}%;background:${col}"></div></div>
         <div class="sl-bar-day">${dayLabel}</div>
       </div>`);

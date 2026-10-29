@@ -1,5 +1,5 @@
 // Sleep: hours are derived from bedtime and wake, and the daily prompt.
-const { createSandbox, run, createReporter } = require('./harness');
+const { createSandbox, makeEl, run, createReporter } = require('./harness');
 
 const FILES = ['data.js', 'app.js'];
 
@@ -203,6 +203,55 @@ module.exports = function () {
     r.check('and parts', run(s, 'formatSleep(7.5)') === '7h 30m');
     r.check('nothing logged', run(s, 'formatSleep(0)') === '—');
     r.check('undefined is not NaN', run(s, 'formatSleep(undefined)') === '—');
+  }
+
+  // Whoop, Google Fit and Apple Health write hours as raw floats. Printed
+  // as-is, 5.666666h ran out of the Today tile.
+  r.section('synced hours print with one decimal');
+  {
+    const s = sb();
+    const f = v => run(s, `formatSleepShort(${JSON.stringify(v)})`);
+    r.check('5.666666 reads 5.7h', f(5.666666) === '5.7h', `(got ${f(5.666666)})`);
+    r.check('a whole night drops the .0', f(8) === '8h', `(got ${f(8)})`);
+    r.check('rounding up to a whole night drops it too', f(7.96) === '8h', `(got ${f(7.96)})`);
+    r.check('a string from a sync still formats', f('6.94') === '6.9h', `(got ${f('6.94')})`);
+    r.check('nothing logged', f(0) === '—' && f(undefined) === '—');
+    r.check('chart labels round the same way', run(s, 'roundSleep(5.666666)') === 5.7);
+  }
+
+  r.section('a synced 5.666666h night shows as 5.7h on screen');
+  {
+    const key = new Date().toLocaleDateString('en-CA');
+    const s = createSandbox({
+      files: ['data.js', 'app.js', 'workout.js', 'diet.js', 'connect.js', 'social.js'],
+      store: { hvi_onboarded: 'true' },
+    });
+    run(s, `settings={units:'metric'}; curView='home'; track=function(){}; go=function(){};
+            playSound=function(){}; haptic=function(){}; reportError=function(){};
+            habits=[]; log={}; journal={}; workoutLog={}; mealLog={}; weightLog={}; prs={};
+            gamification={xp:0}; meta={}; workoutMeta={activeProgram:'ppl',currentDayIndex:0};
+            dietMeta={dailyGoals:{calories:2500,protein:180,carbs:280,fat:80},goalType:'maintain'};
+            sleepLog={'${key}':{hours:5.666666,source:'whoop'}};`);
+    // The breakdown sheet builds its markup in a detached div; keep hold of it.
+    s._made = [];
+    s.document.createElement = () => {
+      const el = makeEl('created'); el.firstElementChild = makeEl('node'); s._made.push(el); return el;
+    };
+
+    const card = run(s, 'todayBriefingHTML()') || '';
+    r.check('the Today tile reads 5.7h', /tb-cell-val">5\.7h</.test(card),
+      `(tile: ${(card.match(/tb-cell-val">([^<]*)<\/div><div class="tb-cell-lbl">Sleep/) || [])[1]})`);
+    r.check('and nowhere prints the raw float', card.length > 0 && !/5\.66/.test(card));
+
+    run(s, 'showReadinessBreakdown()');
+    const sheet = s._made.map(el => el.innerHTML).join('');
+    r.check('the readiness sheet reads 5.7h', /rd-vital-val">5\.7h</.test(sheet), '(raw hours in the vitals)');
+
+    run(s, 'renderSleep()');
+    const view = run(s, `document.getElementById('view').innerHTML`) || '';
+    r.check('the sleep chart labels the bar 5.7', /sl-bar-val">5\.7</.test(view), '(raw hours over the bar)');
+
+    r.check('the coach is told 5.7h', /Last sleep: 5\.7h/.test(run(s, '_coachInsightContext()') || ''));
   }
 
   return r.finish();
