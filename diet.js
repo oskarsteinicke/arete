@@ -1120,7 +1120,7 @@ async function _saveParsedEdit(idx) {
   if (!fresh) {
     const out = document.getElementById(_parsedOutId);
     if (out) out.insertAdjacentHTML('afterbegin',
-      '<p class="dm-hint dm-warn" style="font-size:11px;margin-bottom:8px">Couldn\'t estimate macros for that name — the previous values were kept. Edit them by hand or try a simpler name.</p>');
+      '<p class="dm-hint dm-warn" style="font-size:11px;margin-bottom:8px">Couldn\'t estimate macros for that name. The previous values were kept. Edit them by hand or try a simpler name.</p>');
   }
 }
 
@@ -1306,7 +1306,7 @@ function renderDietAddMeal() {
         <div class="dm-header">
           <span class="dm-icon">\ud83d\udd0d</span>
           <span class="dm-header-text">Search Food Database</span>
-          <span class="dm-header-sub">Open Food Facts \u2014 millions of foods</span>
+          <span class="dm-header-sub">Millions of foods, from Open Food Facts</span>
         </div>
         <input class="search-input" type="text" id="food-search-input" placeholder="Search foods (e.g. chicken breast, oatmeal)\u2026" oninput="doFoodSearch(this.value)">
         <div id="food-search-results"></div>

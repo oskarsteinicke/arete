@@ -172,9 +172,9 @@ module.exports = function () {
     const s = sb();
     const tip = run(s, `getProgressionTip('bench_press', findProgram('cp_test').days[0]).msg`);
     const wl = session(s);
-    r.check('the tip names the weight the session starts at', new RegExp(`try ${ex(wl, 'bench_press').sets[0].weight} kg today`).test(tip), tip);
+    r.check('the tip names the weight the session starts at', new RegExp(`try ${ex(wl, 'bench_press').sets[0].weight} kg today`, 'i').test(tip), tip);
     const held = sb({ history: { [dk(3)]: day([{ exerciseId: 'bench_press', sets: sets(4, 80, 5) }]) } });
-    r.check('and the prescribed reps are the target it names', /hit 6 before going heavier/.test(run(held, `getProgressionTip('bench_press', findProgram('cp_test').days[0]).msg`)));
+    r.check('and the prescribed reps are the target it names', /hit 6 before going heavier/i.test(run(held, `getProgressionTip('bench_press', findProgram('cp_test').days[0]).msg`)));
   }
 
   return r.finish();

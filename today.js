@@ -92,7 +92,7 @@ function _tdWhy(c) {
   if (!c || c.due === 0) return 'Just started';
   if (!c.ever) return 'Not started yet';
   if (c.pct >= 1) return 'Kept every time this week';
-  if (c.pct < 0.4) return `Slipping — ${c.done} of last ${c.due}`;
+  if (c.pct < 0.4) return `Slipping: ${c.done} of last ${c.due}`;
   return `${c.done} of last ${c.due}`;
 }
 
@@ -271,7 +271,7 @@ function todaySpineHTML() {
     const whyHTML = why
       ? `<div class="td-why" onclick="${edit}" role="button" tabindex="0"
            onkeydown="if(event.key==='Enter'){${edit}}">${esc(why)} <span class="td-why-edit">✎</span></div>`
-      : `<div class="td-why"><button class="td-why-set" onclick="${edit}">Say who you’re becoming</button> — it shapes what shows up here.</div>`;
+      : `<div class="td-why"><button class="td-why-set" onclick="${edit}">Say who you’re becoming</button> It shapes what shows up here.</div>`;
 
     const openGoals = (LS.get('hvi_goals', []) || []).filter(g => g && !g.done).length;
     const goalsHTML = `<div class="td-goals" onclick="go('goals')" role="button" tabindex="0">${

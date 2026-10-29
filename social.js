@@ -460,7 +460,7 @@ function buildCalDayDetail(date) {
       const ex = lookupExercise(e.exerciseId);
       const sets = e.sets.filter(s => s.completed);
       const best = sets.length ? Math.max(...sets.map(s => s.weight)) : 0;
-      return `<div class="cal-di-sub">${esc(ex?.name || 'Exercise')} — ${sets.length} sets${best ? ' · best ' + best + wtUnit() : ''}</div>`;
+      return `<div class="cal-di-sub">${esc(ex?.name || 'Exercise')}: ${sets.length} sets${best ? ' · best ' + best + wtUnit() : ''}</div>`;
     }).join('');
     workoutHTML = `<div class="cal-daily-sec-hdr">💪 Workout</div>
       <div class="cal-di">🏋️ <span>${day ? day.name + ' · ' + prog.name : 'Workout logged'}</span></div>${exRows}`;
@@ -475,7 +475,7 @@ function buildCalDayDetail(date) {
     const rows = meals.map(m => {
       const cal = m.items.reduce((s, i) => s + (i.calories || 0), 0);
       const p   = m.items.reduce((s, i) => s + (i.protein  || 0), 0);
-      return `<div class="cal-di">🍽 <span>${esc(m.name)} — ${cal} cal · ${p}g P</span></div>`;
+      return `<div class="cal-di">🍽 <span>${esc(m.name)}: ${cal} cal · ${p}g P</span></div>`;
     }).join('');
     mealsHTML = `<div class="cal-daily-sec-hdr">🍽 Meals <span style="font-size:11px;font-weight:400;color:var(--accent-b)">${totalCal} cal · ${totalP}g P</span></div>${rows}`;
   }
@@ -692,7 +692,7 @@ function _buildDailyBody(date) {
       const ex = lookupExercise(e.exerciseId);
       const sets = e.sets.filter(s => s.completed);
       const best = sets.length ? Math.max(...sets.map(s => s.weight)) : 0;
-      return `<div class="cal-di-sub">• ${esc(ex?.name || 'Exercise')} — ${sets.length} sets${best ? ' · best ' + best + wtUnit() : ''}</div>`;
+      return `<div class="cal-di-sub">• ${esc(ex?.name || 'Exercise')}: ${sets.length} sets${best ? ' · best ' + best + wtUnit() : ''}</div>`;
     }).join('');
     workoutHTML = `<div class="cal-daily-sec">
       <div class="cal-daily-sec-hdr">💪 Workout</div>
@@ -709,7 +709,7 @@ function _buildDailyBody(date) {
     const rows = meals.map(m => {
       const cal = m.items.reduce((s, i) => s + (i.calories || 0), 0);
       const p   = m.items.reduce((s, i) => s + (i.protein  || 0), 0);
-      return `<div class="cal-di">🍽 <span>${esc(m.name)} — ${cal} cal · ${p}g P</span></div>`;
+      return `<div class="cal-di">🍽 <span>${esc(m.name)}: ${cal} cal · ${p}g P</span></div>`;
     }).join('');
     mealsHTML = `<div class="cal-daily-sec">
       <div class="cal-daily-sec-hdr">🍽 Meals <span style="font-size:11px;font-weight:400;color:var(--accent-b)">${totalCal} cal · ${totalP}g P</span></div>
@@ -1485,7 +1485,7 @@ function _isStale(updatedAt) {
 
 function _shareGroupCode(code, name) {
   const url = `https://get-arete.com/?join=${code}`;
-  const text = `Join my Arete group "${name}" — tap to join and let's compete:\n${url}`;
+  const text = `Join my Arete group "${name}". Tap to join and let's compete:\n${url}`;
   const done = () => { if (typeof _showToast === 'function') _showToast('Invite link copied!'); };
   if (navigator.share) {
     navigator.share({ title: `Join ${name} on Arete`, text, url }).catch(() => {

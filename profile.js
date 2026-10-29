@@ -1644,7 +1644,7 @@ function renderStats() {
           : needsInstall
             ? 'Add Arete to your Home Screen (Share → Add to Home Screen) to get reminders while the app is closed.'
             : push
-              ? 'Reminders arrive at 7:30, 12:30 and 20:30 — even when Arete is closed.'
+              ? 'Reminders arrive at 7:30, 12:30 and 20:30, even when Arete is closed.'
               : 'Your browser can only show reminders while Arete is open.';
         return `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${note || err ? 4 : 14}px">
           <div style="font-size:14px;color:var(--text)">Reminders</div>
@@ -1699,7 +1699,7 @@ function renderStats() {
     <div class="q-block ani">
       <div class="q-mark">\u201C</div>
       <div class="q-text" id="qt">${esc(q.text)}</div>
-      <div class="q-auth" id="qa">\u2014 ${esc(q.author)}</div>
+      <div class="q-auth" id="qa">${esc(q.author)}</div>
       <div class="q-nav"><button class="q-btn" onclick="rotQ(-1)">\u2190</button><button class="q-btn" onclick="rotQ(1)">\u2192</button></div>
     </div>
     ${typeof renderWeekInReview === 'function' ? renderWeekInReview() : ''}
@@ -1867,7 +1867,7 @@ function rotQ(dir) {
   const qt = document.getElementById('qt'), qa = document.getElementById('qa');
   if (!qt) return;
   qt.style.opacity = '0';
-  setTimeout(() => { if (qt) { qt.textContent = q.text; qt.style.opacity = '1'; } if (qa) qa.textContent = '\u2014 ' + q.author; }, 200);
+  setTimeout(() => { if (qt) { qt.textContent = q.text; qt.style.opacity = '1'; } if (qa) qa.textContent = q.author; }, 200);
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -2053,7 +2053,7 @@ function renderOnboarding(step) {
       ${content}
       <button class="ob-btn" onclick="obNext(${step})">${isLast ? 'START MY JOURNEY \u2192' : 'CONTINUE \u2192'}</button>
       <div style="text-align:center;margin-top:14px">
-        <span onclick="obSkip()" style="font-size:12px;color:var(--text-muted);cursor:pointer">Skip setup \u2014 I'll do this later</span>
+        <span onclick="obSkip()" style="font-size:12px;color:var(--text-muted);cursor:pointer">Skip setup, I'll do this later</span>
       </div>
     </div>`;
 }
@@ -2326,7 +2326,7 @@ function generateRecapCard() {
   wrapText(ctx, q.text.slice(0, 80) + (q.text.length > 80 ? '…' : ''), barX + 20, barY + 115, barW2 - 20, 18);
   ctx.fillStyle = brandColor('muted');
   ctx.font = '500 11px Inter, sans-serif';
-  ctx.fillText('— ' + q.author, barX + 20, barY + 165);
+  ctx.fillText(q.author, barX + 20, barY + 165);
 
   // Branding + watermark
   ctx.fillStyle = brandColor('muted');
@@ -2537,7 +2537,7 @@ function generateDailyCard() {
   });
 
   // Workout status
-  const workoutText = todayWorkout ? '✓ Workout completed' : '— No workout today';
+  const workoutText = todayWorkout ? '✓ Workout completed' : 'No workout today';
   ctx.fillStyle = todayWorkout ? brandColor('orange') : brandColor('muted');
   ctx.font = '700 13px Inter, sans-serif';
   ctx.fillText(workoutText, 28, 400);

@@ -433,8 +433,8 @@ function sessionFedHTML(s) {
   const rows = [];
   const n = s.nutrition;
   if (n) {
-    const note = n.fromRest ? 'Up from a rest-day plan — you trained, so carbs come back up.'
-      : n.changed ? `Raised just now — ${esc(s.dayName)} counts as a ${s.type === 'hard' ? 'heavy' : 'training'} day.`
+    const note = n.fromRest ? 'Up from a rest-day plan. You trained, so carbs come back up.'
+      : n.changed ? `Raised just now: ${esc(s.dayName)} counts as a ${s.type === 'hard' ? 'heavy' : 'training'} day.`
       : `${esc(n.reason || 'Training day')}. Already in today's targets.`;
     rows.push(`<div class="sf-row" role="button" tabindex="0" onclick="go('diet')" onkeydown="if(event.key==='Enter'){go('diet')}">
         <div class="sf-ico">${ic('utensils', 16)}</div>
@@ -676,12 +676,12 @@ async function fetchCoachInsight(force) {
   let cached = null;
   try { cached = JSON.parse(localStorage.getItem('hvi_coach_insight') || 'null'); } catch {}
   if (!force && cached && cached.date === t && cached.text) return cached.text;
-  const prompt = `You are Arete Coach — a direct, warm performance coach blending Stoic philosophy and sports science. Based ONLY on this user's data from today, give ONE specific focus or tip for the rest of their day.
+  const prompt = `You are Arete Coach, a direct, warm performance coach blending Stoic philosophy and sports science. Based ONLY on this user's data from today, give ONE specific focus or tip for the rest of their day.
 
 DATA:
 ${_coachInsightContext()}
 
-Rules: 2-3 sentences, maximum 55 words. Speak directly ("you"). Reference at least one of their actual numbers. Be concrete about what to do today. No greetings, no emojis, no markdown, no preamble.`;
+Rules: 2-3 sentences, maximum 55 words. Speak directly ("you"). Reference at least one of their actual numbers. Be concrete about what to do today. No greetings, no emojis, no markdown, no em dashes, no preamble.`;
   const res = await fetch(_INSIGHT_PROXY, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -699,9 +699,9 @@ function coachInsightCardHTML() {
   try {
     const premium = (typeof isPremium === 'function') ? isPremium() : false;
     if (!premium) {
-      return `<div class="ci-card ci-locked ani" onclick="if(typeof showUpgradeModal==='function')showUpgradeModal('coach')" role="button" tabindex="0" aria-label="Coach's Focus — Premium feature">
+      return `<div class="ci-card ci-locked ani" onclick="if(typeof showUpgradeModal==='function')showUpgradeModal('coach')" role="button" tabindex="0" aria-label="Coach's Focus, a Premium feature">
         <div class="ci-head"><span class="ci-label">Coach's focus</span><span class="ci-lock">Premium</span></div>
-        <div class="ci-text ci-teaser">A daily, personal focus from your AI coach — built from your readiness, training, nutrition and habits.</div>
+        <div class="ci-text ci-teaser">A daily, personal focus from your AI coach, built from your readiness, training, nutrition and habits.</div>
       </div>`;
     }
     // Not yet asked: offer it, and send nothing. Turned off: stay out of the way.

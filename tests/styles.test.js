@@ -171,5 +171,23 @@ module.exports = function () {
       /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[^@]*\.rise-li[^@]*\.rising \.dot/.test(css));
   }
 
+  // The brand rule is no em dashes anywhere. A lone dash standing for "no data"
+  // is a placeholder, not punctuation, and the meal-parsing prompts only ever
+  // produce JSON, so those are allowed.
+  r.section('the app copy has no em dashes');
+  {
+    const files = ['app.js', 'coach.js', 'diet.js', 'workout.js', 'connect.js', 'today.js', 'profile.js', 'social.js',
+      'premium.js', 'integrations.js', 'data.js', 'index.html', 'manifest.json'];
+    const bad = [];
+    for (const f of files) {
+      fs.readFileSync(path.join(APP, f), 'utf8').split('\n').forEach((l, i) => {
+        const code = l.replace(/^\s*(\/\/|\*|\/\*|<!--).*$/, '').replace(/\s\/\/\s.*$/, '');
+        const rest = code.replace(/(['"`>])(—|\\u2014)(['"`<])/g, '$1$3');
+        if (/—|\\u2014|&mdash;/.test(rest) && !/raw JSON array|never refuse|LOOK CAREFULLY|Bowls often/.test(rest)) bad.push(`${f}:${i + 1}`);
+      });
+    }
+    r.check('none outside comments, placeholders and the meal-parsing prompts', bad.length === 0, `(${bad.slice(0, 8).join(', ')})`);
+  }
+
   return r.finish();
 };

@@ -237,7 +237,7 @@ function buildCoachSystemPrompt() {
   const progList = allPrograms().map(p => `  - [id: ${p.id}] ${p.name} (${p.days.length}-day)`).join('\n');
   const lifts = _coachLiftProgress();
 
-  return `You are Arete Coach — ${name}'s personal guide inside the Arete app. You blend Stoic philosophy with modern performance science. Be direct, warm, and practical, like a mentor who knows them.
+  return `You are Arete Coach, ${name}'s personal guide inside the Arete app. You blend Stoic philosophy with modern performance science. Be direct, warm, and practical, like a mentor who knows them.
 
 TODAY: ${now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}, ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}
 
@@ -273,14 +273,14 @@ ${_coachNutrition(goals)}
 SLEEP (last 7 nights):
 ${_coachSleep()}
 ${lastJ ? `\nLAST JOURNAL (${_cDay(jKeys[0])}):
-  Win: ${lastJ.win || '—'}
-  Struggle: ${lastJ.struggle || '—'}
-  Focus: ${lastJ.focus || '—'}` : ''}
+  Win: ${lastJ.win || 'none'}
+  Struggle: ${lastJ.struggle || 'none'}
+  Focus: ${lastJ.focus || 'none'}` : ''}
 
 HOW TO ANSWER:
 - Answer the question in your first sentence.
 - Under 120 words. Only a plan for several days, or an explicit request for detail, may run to 220.
-- Plain sentences. No headings, no bold labels, no tables, no emoji. At most three short bullets.
+- Plain sentences. No headings, no bold labels, no tables, no emoji, no em dashes (use a period or a comma). At most three short bullets.
 - End with one concrete thing to do today, as a plain sentence, unless they asked you to change something in the app; then just confirm it.
 - Use only the numbers above, or simple sums of them. If something is not above, say you do not have it; never guess a past number.
 - "Today so far" is an unfinished day. Judge eating by the 7-day average, never by today's total before the day is over.
@@ -305,7 +305,7 @@ Available actions (use exact format, one per line):
    [[ACTION:add_habit:{"name":"Drink 3L water","category":"health"}]]
    - Valid categories: mindset, discipline, fitness, health, learning, social, financial
 
-3. Remove a habit — give BOTH its id and its exact name, copied from the habit list above:
+3. Remove a habit. Give BOTH its id and its exact name, copied from the habit list above:
    [[ACTION:remove_habit:{"id":"<id from the habit list>","name":"<exact habit name>"}]]
    - Nothing is removed unless the id and name belong to the same habit
 
@@ -343,7 +343,7 @@ function _renderCoachMsgs() {
       <div class="coach-welcome">
         <div class="coach-welcome-star"><img src="icon-192.png" alt="Arete" style="width:52px;height:52px;border-radius:12px"></div>
         <h3>Welcome${name ? ', ' + name : ''}.</h3>
-        <p>I am your Arete Coach — a guide in the Stoic tradition. Ask me about your habits, training, nutrition, or mindset. I can see your real data and will speak plainly.</p>
+        <p>I am your Arete Coach, a guide in the Stoic tradition. Ask me about your habits, training, nutrition, or mindset. I can see your real data and will speak plainly.</p>
       </div>`;
     return;
   }
@@ -682,9 +682,9 @@ async function sendCoachMsg() {
     if (err.message === 'offline') {
       _coachHistory.push({ role: 'assistant', content: 'You\'re offline right now. I need an internet connection to respond. Try again when you\'re back online!' });
     } else if (err.name === 'AbortError') {
-      _coachHistory.push({ role: 'assistant', content: 'That took too long — the AI service timed out. Please try again.' });
+      _coachHistory.push({ role: 'assistant', content: 'That took too long. The AI service timed out. Please try again.' });
     } else {
-      _coachHistory.push({ role: 'assistant', content: 'AI service is temporarily unavailable. This usually resolves within a few minutes — try again shortly.' });
+      _coachHistory.push({ role: 'assistant', content: 'AI service is temporarily unavailable. This usually resolves within a few minutes. Try again shortly.' });
     }
     _renderCoachMsgs();
   } finally {

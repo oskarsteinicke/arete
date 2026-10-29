@@ -204,7 +204,7 @@ module.exports = function () {
     const msg = run(s, `getProgressionTip('bench_press').msg`);
     const target = run(s, `(lookupExercise('bench_press')||{}).dr`);
     r.check('the program defines a target', typeof target === 'number', `(${target})`);
-    r.check('and the tip asks for that', new RegExp(`hit ${target} before`).test(msg),
+    r.check('and the tip asks for that', new RegExp(`hit ${target} before`, 'i').test(msg),
       `(${msg}, program target ${target})`);
   }
 

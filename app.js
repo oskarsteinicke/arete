@@ -306,13 +306,13 @@ async function deleteAccount() {
     if (res.status === 401) return { error: 'Your session expired. Sign in again, then retry.' };
     if (!res.ok || !data.ok) {
       reportError('account-delete', data.error || ('HTTP ' + res.status));
-      return { error: data.error || 'Deletion failed. Nothing was removed — please try again.' };
+      return { error: data.error || 'Deletion failed. Nothing was removed. Please try again.' };
     }
     track('account_deleted');
     return { ok: true };
   } catch (e) {
     reportError('account-delete', e);
-    return { error: 'Network error. Nothing was deleted — please try again.' };
+    return { error: 'Network error. Nothing was deleted. Please try again.' };
   }
 }
 
@@ -325,8 +325,8 @@ function setSyncStatus(state) {
   if (!navigator.onLine && state === 'offline') state = 'away';
   el.className = 'sync-' + state;
   if (state === 'ok') el.title = 'Synced ' + new Date().toLocaleTimeString();
-  else if (state === 'away') el.title = 'Offline — changes saved locally';
-  else if (state === 'offline') el.title = 'Sync pending — will retry';
+  else if (state === 'away') el.title = 'Offline: changes saved on this device';
+  else if (state === 'offline') el.title = 'Sync pending, will retry';
   else if (state === 'pending') el.title = 'Syncing…';
 }
 
@@ -786,7 +786,7 @@ function renderAuth() {
         ${isSignIn ? `Don't have an account? <span onclick="_authMode='signup';renderAuth()">Sign up</span>` : `Already have an account? <span onclick="_authMode='signin';renderAuth()">Sign in</span>`}
       </div>
       ${isSignIn ? `<div class="auth-switch" style="margin-top:10px"><span onclick="handleForgotPassword()" style="color:var(--text-dim);font-weight:400">Forgot password?</span></div>` : ''}
-      ${(LS.get('hvi_habits', null) || localStorage.getItem('hvi_onboarded')) ? `<div class="auth-switch" style="margin-top:16px"><span onclick="closeAuth()" style="color:var(--text-dim);font-weight:400">Maybe later — keep using the app</span></div>` : ''}
+      ${(LS.get('hvi_habits', null) || localStorage.getItem('hvi_onboarded')) ? `<div class="auth-switch" style="margin-top:16px"><span onclick="closeAuth()" style="color:var(--text-dim);font-weight:400">Maybe later, keep using the app</span></div>` : ''}
     </div>`;
   // One-shot: don't let a notice linger across later renders
   _authNotice = null;
@@ -823,7 +823,7 @@ async function submitAuth() {
       trackFail('signup', res.code || res.error);
       if (res.code === 'user_already_exists' || /already registered/i.test(res.error)) {
         _authMode = 'signin';
-        _authNotice = { text: 'You already have an account — sign in below.', ok: true };
+        _authNotice = { text: 'You already have an account. Sign in below.', ok: true };
         _authPrefillEmail = email;
         renderAuth();
         return;
@@ -890,7 +890,7 @@ function _onStorageFull(key, err) {
   if (!quota || _storageFullWarned) return;
   _storageFullWarned = true;
   if (typeof trackFail === 'function') trackFail('storage', 'quota_exceeded');
-  const msg = 'Storage is full — recent changes were NOT saved. Free space by deleting progress photos (Profile → Progress Photos).';
+  const msg = 'Storage is full. Recent changes were NOT saved. Free space by deleting progress photos (Profile → Progress Photos).';
   try {
     if (typeof _showToast === 'function') _showToast(msg);
     else if (typeof alert === 'function') alert(msg);
@@ -1326,7 +1326,7 @@ function getEveningReminder() {
   if (left <= 0) return '';
   return `<div class="evening-banner ani">
     <div style="font-size:24px">🌙</div>
-    <div class="evening-banner-text"><strong>${left} habit${left>1?'s':''} left today</strong> — still time to show up.</div>
+    <div class="evening-banner-text"><strong>${left} habit${left>1?'s':''} left today.</strong> Still time to show up.</div>
     <button class="evening-banner-close" onclick="LS.set('hvi_evening_dismissed_${today()}',true);this.closest('.evening-banner').remove()">✕</button>
   </div>`;
 }
@@ -1365,7 +1365,7 @@ function _updateOnlineStatus() {
       el = document.createElement('div');
       el.id = 'offline-banner';
       el.className = 'offline-banner';
-      el.innerHTML = '📡 You\'re offline — changes will sync when you reconnect.';
+      el.innerHTML = '📡 You\'re offline. Changes will sync when you reconnect.';
       document.body.prepend(el);
     }
   } else if (el) {
@@ -1717,9 +1717,9 @@ function _scheduleReminder() {
       const atRisk = getStreaksAtRisk();
       if (atRisk.length > 0) {
         const top = atRisk.sort((a,b) => b.streak - a.streak)[0];
-        new Notification('Streak at risk 🔥', { body: `${top.name} (${top.streak} day streak) — don't let it break.`, icon: '/icon-192.png' });
+        new Notification('Streak at risk 🔥', { body: `${top.name} (${top.streak} day streak). Don't let it break.`, icon: '/icon-192.png' });
       } else {
-        new Notification('Arete', { body: `${left} habit${left>1?'s':''} left today — still time to show up.`, icon: '/icon-192.png' });
+        new Notification('Arete', { body: `${left} habit${left>1?'s':''} left today. Still time to show up.`, icon: '/icon-192.png' });
       }
       LS.set(key + 'pm_' + today(), true);
     }
@@ -2430,7 +2430,7 @@ function validateStreaks() {
     const ids = (prev && prev.date === t ? prev.ids : []).concat(_shieldIds);
     LS.set('hvi_shield_saves', { date: t, ids: [...new Set(ids)] });
     const n = _shieldsSpent.length;
-    const msg = `Streak shield used on ${n === 1 ? _shieldsSpent[0] : n + ' habits'} — ${getStreakShields()} left`;
+    const msg = `Streak shield used on ${n === 1 ? _shieldsSpent[0] : n + ' habits'}. ${getStreakShields()} left`;
     if (typeof showShieldToast === 'function') showShieldToast(msg);
     else if (typeof showToast === 'function') showToast(msg);
   }
@@ -2676,7 +2676,7 @@ function habitRowHTML(h, suffix = '', editMode = false) {
         <button class="habit-del-btn" onclick="event.stopPropagation();deleteHabit('${h.id}')">&times;</button>
       </div></div>`;
   }
-  return `<div class="hi${e.completedToday?' done':''}" id="hi${suffix}-${h.id}" onclick="tapHabit('${h.id}','${suffix}')" role="checkbox" aria-checked="${!!e.completedToday}" aria-label="${esc(h.name)} \u2014 ${streakTxt}" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();tapHabit('${h.id}','${suffix}')}">
+  return `<div class="hi${e.completedToday?' done':''}" id="hi${suffix}-${h.id}" onclick="tapHabit('${h.id}','${suffix}')" role="checkbox" aria-checked="${!!e.completedToday}" aria-label="${esc(h.name)}, ${streakTxt}" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();tapHabit('${h.id}','${suffix}')}">
     <div class="hi-info"><div class="hi-name">${esc(h.name)}${_lk}</div><div class="hi-streak-row"><div class="hi-streak${s>=3?' hot':''}" id="hs${suffix}-${h.id}">${streakTxt}</div>${_sh}</div></div>
     <div class="hi-check" id="hc${suffix}-${h.id}" aria-hidden="true">\u2713</div></div>`;
 }
@@ -3077,7 +3077,7 @@ function renderHome() {
     <!-- Daily quote -->
     <div class="hm-quote ani">
       <div class="hm-quote-text">"${esc(QUOTES[meta.quoteIndex % QUOTES.length].text)}"</div>
-      <div class="hm-quote-auth">— ${esc(QUOTES[meta.quoteIndex % QUOTES.length].author)}</div>
+      <div class="hm-quote-auth">${esc(QUOTES[meta.quoteIndex % QUOTES.length].author)}</div>
     </div>
 
     ${done > 0 ? `<button class="hm-share-btn ani" onclick="shareDailyCard()">📤 Share Today's Progress</button>` : ''}

@@ -32,10 +32,10 @@ const DEFAULT_HABITS = [
 
 const QUOTES = [
   // Marcus Aurelius
-  { text: 'You have power over your mind \u2014 not outside events. Realise this, and you will find strength.', author: 'Marcus Aurelius' },
+  { text: 'You have power over your mind, not outside events. Realise this, and you will find strength.', author: 'Marcus Aurelius' },
   { text: 'The impediment to action advances action. What stands in the way becomes the way.', author: 'Marcus Aurelius' },
   { text: 'Waste no more time arguing about what a good man should be. Be one.', author: 'Marcus Aurelius' },
-  { text: 'When you arise in the morning, think of what a privilege it is to be alive \u2014 to think, to enjoy, to love.', author: 'Marcus Aurelius' },
+  { text: 'When you arise in the morning, think of what a privilege it is to be alive: to think, to enjoy, to love.', author: 'Marcus Aurelius' },
   { text: 'The soul becomes dyed with the colour of its thoughts.', author: 'Marcus Aurelius' },
   { text: 'Very little is needed to make a happy life; it is all within yourself, in your way of thinking.', author: 'Marcus Aurelius' },
   // Epictetus
@@ -368,27 +368,27 @@ const BOOKS = [
   { title: "Man's Search for Meaning", author: 'Viktor Frankl', pillar: 'mind', desc: 'How finding purpose sustains you through even the worst suffering.', url: 'https://www.goodreads.com/search?q=Man%27s+Search+for+Meaning+Viktor+Frankl' },
   { title: 'Thinking, Fast and Slow', author: 'Daniel Kahneman', pillar: 'mind', desc: 'Understand the two systems that drive how you think and decide.', url: 'https://www.goodreads.com/search?q=Thinking+Fast+and+Slow+Daniel+Kahneman' },
   { title: 'The Power of Now', author: 'Eckhart Tolle', pillar: 'mind', desc: 'A guide to spiritual enlightenment through present-moment awareness.', url: 'https://www.goodreads.com/search?q=The+Power+of+Now+Eckhart+Tolle' },
-  { title: 'Atomic Habits', author: 'James Clear', pillar: 'mind', desc: 'Tiny changes, remarkable results \u2014 the definitive guide to building better habits.', url: 'https://www.goodreads.com/search?q=Atomic+Habits+James+Clear' },
+  { title: 'Atomic Habits', author: 'James Clear', pillar: 'mind', desc: 'Tiny changes, remarkable results. The definitive guide to building better habits.', url: 'https://www.goodreads.com/search?q=Atomic+Habits+James+Clear' },
   // Body
-  { title: 'Starting Strength', author: 'Mark Rippetoe', pillar: 'body', desc: 'The bible of barbell training \u2014 learn the five fundamental lifts.', url: 'https://www.goodreads.com/search?q=Starting+Strength+Mark+Rippetoe' },
+  { title: 'Starting Strength', author: 'Mark Rippetoe', pillar: 'body', desc: 'The bible of barbell training. Learn the five fundamental lifts.', url: 'https://www.goodreads.com/search?q=Starting+Strength+Mark+Rippetoe' },
   { title: 'Why We Sleep', author: 'Matthew Walker', pillar: 'body', desc: 'The science of sleep and why it is the most important thing you can do for health.', url: 'https://www.goodreads.com/search?q=Why+We+Sleep+Matthew+Walker' },
   { title: 'The Body Keeps the Score', author: 'Bessel van der Kolk', pillar: 'body', desc: 'How trauma reshapes the body and brain, and how to heal.', url: 'https://www.goodreads.com/search?q=The+Body+Keeps+the+Score+Bessel+van+der+Kolk' },
   { title: 'Bigger Leaner Stronger', author: 'Michael Matthews', pillar: 'body', desc: 'Evidence-based approach to building muscle and losing fat.', url: 'https://www.goodreads.com/search?q=Bigger+Leaner+Stronger+Michael+Matthews' },
   // Mastery
   { title: 'Deep Work', author: 'Cal Newport', pillar: 'mastery', desc: 'Rules for focused success in a distracted world.', url: 'https://www.goodreads.com/search?q=Deep+Work+Cal+Newport' },
   { title: 'Mastery', author: 'Robert Greene', pillar: 'mastery', desc: 'The path to mastery through apprenticeship, practice, and creative insight.', url: 'https://www.goodreads.com/search?q=Mastery+Robert+Greene' },
-  { title: 'Peak', author: 'Anders Ericsson', pillar: 'mastery', desc: 'The new science of expertise \u2014 deliberate practice explained.', url: 'https://www.goodreads.com/search?q=Peak+Anders+Ericsson' },
+  { title: 'Peak', author: 'Anders Ericsson', pillar: 'mastery', desc: 'The new science of expertise: deliberate practice explained.', url: 'https://www.goodreads.com/search?q=Peak+Anders+Ericsson' },
   { title: 'The Art of Learning', author: 'Josh Waitzkin', pillar: 'mastery', desc: 'A chess prodigy and martial artist shares his approach to mastering any skill.', url: 'https://www.goodreads.com/search?q=The+Art+of+Learning+Josh+Waitzkin' },
   { title: "So Good They Can't Ignore You", author: 'Cal Newport', pillar: 'mastery', desc: 'Why skills trump passion in the quest for work you love.', url: 'https://www.goodreads.com/search?q=So+Good+They+Can%27t+Ignore+You+Cal+Newport' },
   // Social
   { title: 'How to Win Friends and Influence People', author: 'Dale Carnegie', pillar: 'social', desc: 'The original guide to building genuine relationships and influence.', url: 'https://www.goodreads.com/search?q=How+to+Win+Friends+and+Influence+People+Dale+Carnegie' },
   { title: 'Never Split the Difference', author: 'Chris Voss', pillar: 'social', desc: 'Negotiation tactics from a former FBI hostage negotiator.', url: 'https://www.goodreads.com/search?q=Never+Split+the+Difference+Chris+Voss' },
-  { title: 'The Charisma Myth', author: 'Olivia Fox Cabane', pillar: 'social', desc: 'Charisma is a learnable skill \u2014 here is the science behind it.', url: 'https://www.goodreads.com/search?q=The+Charisma+Myth+Olivia+Fox+Cabane' },
-  { title: 'Influence', author: 'Robert Cialdini', pillar: 'social', desc: 'The psychology of persuasion \u2014 six principles that drive human behavior.', url: 'https://www.goodreads.com/search?q=Influence+Robert+Cialdini' },
+  { title: 'The Charisma Myth', author: 'Olivia Fox Cabane', pillar: 'social', desc: 'Charisma is a learnable skill. Here is the science behind it.', url: 'https://www.goodreads.com/search?q=The+Charisma+Myth+Olivia+Fox+Cabane' },
+  { title: 'Influence', author: 'Robert Cialdini', pillar: 'social', desc: 'The psychology of persuasion: six principles that drive human behavior.', url: 'https://www.goodreads.com/search?q=Influence+Robert+Cialdini' },
   // Wealth
   { title: 'The Psychology of Money', author: 'Morgan Housel', pillar: 'wealth', desc: 'Timeless lessons on wealth, greed, and happiness.', url: 'https://www.goodreads.com/search?q=The+Psychology+of+Money+Morgan+Housel' },
   { title: 'Rich Dad Poor Dad', author: 'Robert Kiyosaki', pillar: 'wealth', desc: 'What the rich teach their kids about money that others do not.', url: 'https://www.goodreads.com/search?q=Rich+Dad+Poor+Dad+Robert+Kiyosaki' },
-  { title: 'The Millionaire Fastlane', author: 'MJ DeMarco', pillar: 'wealth', desc: 'Crack the code to wealth \u2014 escape the slow lane of saving for 40 years.', url: 'https://www.goodreads.com/search?q=The+Millionaire+Fastlane+MJ+DeMarco' },
+  { title: 'The Millionaire Fastlane', author: 'MJ DeMarco', pillar: 'wealth', desc: 'Crack the code to wealth and escape the slow lane of saving for 40 years.', url: 'https://www.goodreads.com/search?q=The+Millionaire+Fastlane+MJ+DeMarco' },
   { title: 'The Almanack of Naval Ravikant', author: 'Eric Jorgenson', pillar: 'wealth', desc: 'A guide to wealth and happiness from Silicon Valley\u2019s philosopher.', url: 'https://www.goodreads.com/search?q=The+Almanack+of+Naval+Ravikant+Eric+Jorgenson' },
 ];
 

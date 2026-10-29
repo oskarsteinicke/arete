@@ -187,22 +187,22 @@ function topWorkingSet(sets) {
 
 function getProgressionTip(exerciseId, day) {
   const c = progressionCall(exerciseId, day);
-  if (c.kind === 'first') return { type: 'first', msg: 'First time — focus on form, pick a manageable weight' };
+  if (c.kind === 'first') return { type: 'first', msg: 'First time. Focus on form and pick a manageable weight' };
   if (c.kind === 'none') return null;
   const n = c.daysAgo;
   const dLabel = n === 1 ? 'yesterday' : n <= 6 ? `${n}d ago` : `${Math.floor(n / 7)}w ago`;
   if (c.kind === 'bodyweight') {
     const bw = c.done.filter(s => s.reps > 0);
     const maxReps = Math.max(...bw.map(s => s.reps));
-    if (c.done.length >= c.working.length) return { type: 'increase', msg: `Last: ${maxReps} reps/set ${dLabel} — try +1 rep per set today` };
-    return { type: 'maintain', msg: `${c.done.length}/${c.working.length} sets ${dLabel} — hit all sets before adding reps` };
+    if (c.done.length >= c.working.length) return { type: 'increase', msg: `Last: ${maxReps} reps/set ${dLabel}. Try +1 rep per set today` };
+    return { type: 'maintain', msg: `${c.done.length}/${c.working.length} sets ${dLabel}. Hit all sets before adding reps` };
   }
   const u = wtUnit();
   const label = _repsLabel(c.top);
-  if (c.kind === 'earned') return { type: 'increase', msg: `All sets hit (${_fmtW(c.from)} ${u} \u00d7 ${label}) ${dLabel} — try ${_fmtW(c.to)} ${u} today` };
-  if (c.why === 'stale') return { type: 'maintain', msg: `Last: ${_fmtW(c.from)} ${u} \u00d7 ${label} ${dLabel} — it has been a while, so the same weight today` };
-  if (c.why === 'reps') return { type: 'maintain', msg: `Last: ${_fmtW(c.from)} ${u} \u00d7 ${label} ${dLabel} — hit ${c.targetReps} before going heavier` };
-  return { type: 'maintain', msg: `${c.done.length}/${c.working.length} sets at ${_fmtW(c.from)} ${u} ${dLabel} — complete all sets first` };
+  if (c.kind === 'earned') return { type: 'increase', msg: `All sets hit (${_fmtW(c.from)} ${u} \u00d7 ${label}) ${dLabel}. Try ${_fmtW(c.to)} ${u} today` };
+  if (c.why === 'stale') return { type: 'maintain', msg: `Last: ${_fmtW(c.from)} ${u} \u00d7 ${label} ${dLabel}. It has been a while, so the same weight today` };
+  if (c.why === 'reps') return { type: 'maintain', msg: `Last: ${_fmtW(c.from)} ${u} \u00d7 ${label} ${dLabel}. Hit ${c.targetReps} before going heavier` };
+  return { type: 'maintain', msg: `${c.done.length}/${c.working.length} sets at ${_fmtW(c.from)} ${u} ${dLabel}. Complete all sets first` };
 }
 
 // What the note on an exercise in today's session says. A raised weight says
@@ -400,7 +400,7 @@ function _setRowHTML(ei, si, s) {
   const isWarmup = s.warmup;
   return `
       <div class="w-set${isWarmup ? ' w-set-warmup' : ''}" id="w-set-${ei}-${si}">
-        <span class="w-set-num" id="w-setnum-${ei}-${si}" onclick="toggleWarmup(${ei},${si})" title="${isWarmup ? 'Warmup set — tap to make working' : 'Tap to mark as warmup'}" style="cursor:pointer">${isWarmup ? 'W' : si + 1}</span>
+        <span class="w-set-num" id="w-setnum-${ei}-${si}" onclick="toggleWarmup(${ei},${si})" title="${isWarmup ? 'Warmup set. Tap to make it a working set' : 'Tap to mark as warmup'}" style="cursor:pointer">${isWarmup ? 'W' : si + 1}</span>
         <input class="w-input" type="number" inputmode="decimal" value="${s.weight || ''}" placeholder="${wtUnit()}" aria-label="Weight set ${si + 1}" onfocus="this.select()" oninput="updateSet(${ei},${si},'weight',this.value)">
         <span class="w-input-label" aria-hidden="true">×</span>
         <input class="w-input" type="number" inputmode="decimal" value="${s.reps || ''}" placeholder="reps" aria-label="Reps set ${si + 1}" onfocus="this.select()" oninput="updateSet(${ei},${si},'reps',this.value)">
@@ -770,7 +770,7 @@ function toggleWarmup(ei, si) {
   const num = document.getElementById(`w-setnum-${ei}-${si}`);
   if (num) {
     num.textContent = s.warmup ? 'W' : String(si + 1);
-    num.title = s.warmup ? 'Warmup set — tap to make working' : 'Tap to mark as warmup';
+    num.title = s.warmup ? 'Warmup set. Tap to make it a working set' : 'Tap to mark as warmup';
   }
 }
 
@@ -2185,7 +2185,7 @@ function renderWorkoutProgress() {
   }
 
   const strengthSub = canRank
-    ? 'Each group ranked against an average lifter of your bodyweight — 100% is average.'
+    ? 'Each group ranked against an average lifter of your bodyweight. 100% is average.'
     : 'Best estimated 1RM per muscle group.';
   const strengthFoot = canRank
     ? `Ranks: ${_WP_TIERS.slice(1).map(t => t.name).join(' → ')}. Measured against a ${_wpSex() === 'female' ? 'female' : 'male'} lifter at ${Math.round(bodyWt)} ${wtUnit()}. Benchmarks are approximate, so treat these as a guide to which groups lead and lag.`
