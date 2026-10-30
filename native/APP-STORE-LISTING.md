@@ -36,7 +36,7 @@ habit,tracker,workout,gym,log,macros,calorie,nutrition,sleep,routine,journal,coa
 Do not repeat the app name or subtitle here: Apple already indexes those, so
 a repeat wastes characters.
 
-## Description (4000 max, using 2480)
+## Description (4000 max, using 2406)
 
 ```
 Log your whole day in one sentence. "Two eggs and toast, half a litre of water, did my meditation, slept about 6 hours." Arete sorts it into the right places and logs it with one tap.
@@ -69,16 +69,16 @@ Set when you went to bed and when you woke up. Arete works out the rest and asks
 AI COACH
 It sees your real data: sleep, sessions, meals, habits, journal and patterns. Ask why you are tired, what to train today or why progress stalled. It answers from your logs and never changes anything without your tap.
 
-CONNECT
-Apple Health (through a Shortcut), Google Fit, Strava and Whoop.
-
 NO ACCOUNT NEEDED
 Open it and start. Tracking works offline and stays on your device. The AI features need a connection and ask before they are used. Create an account only to sync across devices or join a leaderboard.
 
 Arete is Greek for excellence. Living up to your potential, daily.
 ```
 
-Keep Whoop in CONNECT only if it is connected by the time you submit.
+No CONNECT section: the store builds hide Connected Devices (Apple Health,
+Google Fit, Strava, Whoop) until they get native sign-in, so a reviewer
+would not find them. Add it back when that ships. On get-arete.com they
+all work, Whoop included.
 
 ---
 
