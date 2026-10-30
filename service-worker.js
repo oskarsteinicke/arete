@@ -1,4 +1,4 @@
-const CACHE = 'arete-v186';
+const CACHE = 'arete-v187';
 const ASSETS = [
   '/',
   '/index.html',
@@ -12,6 +12,7 @@ const ASSETS = [
   '/premium.js',
   '/workout.js',
   '/diet.js',
+  '/logany.js',
   '/coach.js',
   '/social.js',
   '/bodymap.js',

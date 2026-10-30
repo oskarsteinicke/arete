@@ -1220,6 +1220,7 @@ function toggleQuickLog() {
   menu.id = 'quick-log-menu';
   menu.className = 'quick-log-menu';
   menu.innerHTML = `
+    ${typeof openLogAnything === 'function' ? `<div class="quick-log-item ql-any" onclick="closeQuickLog();openLogAnything()">${icon('zap')} Log anything</div>` : ''}
     <div class="quick-log-item" onclick="closeQuickLog();openAddMeal()">${icon('utensils')} Log Meal</div>
     <div class="quick-log-item" onclick="closeQuickLog();go('workoutActive')">${icon('activity')} Start Workout</div>
     <div class="quick-log-item" onclick="closeQuickLog();go('library')">${icon('edit')} Journal</div>

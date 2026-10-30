@@ -2846,6 +2846,44 @@ nav.has-pill .ni.active::before { display: none; }
 .pt-item .pt-text { margin-bottom: 8px; }
 .pt-n { font-size: 12.5px; color: var(--text-muted); margin-top: 8px; }
 
+/* ══ LOG ANYTHING (logany.js) ══════════════════════════════════════════
+   One box for the day, then a list to tick before anything is logged. The
+   text is 16px so iPhones do not zoom into the field. */
+.la-field { position: relative; }
+.la-ta {
+  width: 100%; box-sizing: border-box; min-height: 96px; resize: none;
+  padding: 14px 54px 14px 14px; border-radius: 14px; border: 1px solid var(--border2);
+  background: rgba(var(--text-rgb), 0.04); color: var(--text); font: 400 16px/1.45 var(--font);
+}
+.la-ta:focus { border-color: rgba(var(--text-rgb), 0.35); outline: none; }
+.la-mic {
+  position: absolute; right: 10px; bottom: 12px; width: 38px; height: 38px; border-radius: 50%;
+  border: 1px solid var(--border2); background: var(--surface); color: var(--text);
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.la-mic.on { background: var(--accent); color: var(--on-accent); border-color: transparent; animation: la-pulse 1.2s ease-in-out infinite; }
+@keyframes la-pulse { 50% { transform: scale(1.08); } }
+.la-hint { font-size: 12.5px; color: var(--text-muted); margin: 8px 2px 14px; }
+.la-list { display: grid; gap: 8px; margin-bottom: 14px; }
+.la-item {
+  display: flex; gap: 12px; align-items: flex-start; text-align: left; width: 100%;
+  padding: 12px 14px; border-radius: 14px; border: 1px solid var(--border2);
+  background: rgba(var(--text-rgb), 0.03); color: var(--text); font: inherit; cursor: pointer;
+  transition: opacity 0.2s var(--ease);
+}
+.la-item.off { opacity: 0.45; }
+.la-item:disabled { cursor: default; }
+.la-check {
+  flex: 0 0 22px; height: 22px; margin-top: 1px; border-radius: 50%;
+  border: 1.5px solid var(--border2); display: flex; align-items: center; justify-content: center;
+}
+.la-item:not(.off) .la-check { background: var(--text); border-color: var(--text); color: var(--bg); }
+.la-body { display: grid; gap: 2px; min-width: 0; }
+.la-kind { font-size: 12.5px; color: var(--text-muted); }
+.la-main { font-size: 15px; font-weight: 600; }
+.la-sub { font-size: 12.5px; color: var(--text-dim); overflow-wrap: anywhere; }
+.la-note, .la-empty { font-size: 13px; color: var(--text-dim); margin: 0 2px 14px; }
+
 /* ══ BLACK & GOLD IDENTITY ══════════════════════════════════════════════
    Gold carries every screen the way the Diet section does: section labels
    in letterspaced gold caps, key values in gold, supporting labels and body
