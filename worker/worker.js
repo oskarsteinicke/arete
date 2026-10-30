@@ -85,11 +85,12 @@ function getOAuthConfig(service, env) {
   return configs[service] || null;
 }
 
-async function handleOAuthExchange(body, env, origin) {
-  const { service, code, redirect_uri } = body;
+// Trades a provider's sign-in code for tokens. Shared by the website's own
+// sign-in and the one started in the iPhone and Android apps.
+async function exchangeOAuthCode(service, code, redirect_uri, env) {
   const cfg = getOAuthConfig(service, env);
-  if (!cfg) return jsonResponse({ error: 'Unknown service' }, 400, origin);
-  if (!cfg.clientId || !cfg.clientSecret) return jsonResponse({ error: `${service} not configured` }, 400, origin);
+  if (!cfg) return { status: 400, error: 'Unknown service' };
+  if (!cfg.clientId || !cfg.clientSecret) return { status: 400, error: `${service} not configured` };
 
   const params = new URLSearchParams({
     grant_type: 'authorization_code',
@@ -107,9 +108,9 @@ async function handleOAuthExchange(body, env, origin) {
   }
 
   const res = await fetch(cfg.tokenUrl, { method: 'POST', headers, body: params.toString() });
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
 
-  if (!res.ok) return jsonResponse({ error: data.error_description || data.error || 'Token exchange failed' }, res.status, origin);
+  if (!res.ok) return { status: res.status, error: data.error_description || data.error || 'Token exchange failed' };
 
   // Normalize response
   const result = {
@@ -122,7 +123,50 @@ async function handleOAuthExchange(body, env, origin) {
   // Strava includes athlete info
   if (data.athlete) result.athlete = { id: data.athlete.id, firstname: data.athlete.firstname };
 
-  return jsonResponse(result, 200, origin);
+  return { status: 200, result };
+}
+
+async function handleOAuthExchange(body, env, origin) {
+  const { service, code, redirect_uri } = body;
+  const r = await exchangeOAuthCode(service, code, redirect_uri, env);
+  return r.result ? jsonResponse(r.result, 200, origin) : jsonResponse({ error: r.error }, r.status, origin);
+}
+
+// ── Sign-in from the iPhone and Android apps ──
+// The provider sends people back to https://get-arete.com/ in a browser sheet,
+// not into the app. That page hands the code here, and the tokens wait in KV
+// for ten minutes under the sign-in's state. Only the app can collect them:
+// the state ends in the SHA-256 of a secret the app made and never sent out.
+// So the address that reopens the app carries nothing worth stealing.
+const NATIVE_STATE = /^n_(whoop|strava|googlefit|fitbit)_([a-f0-9]{64})$/;
+const NATIVE_REDIRECT = 'https://get-arete.com/';
+
+async function sha256hex(s) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function handleNativeExchange(body, env, origin) {
+  const { code, state } = body || {};
+  const m = NATIVE_STATE.exec(state || '');
+  if (!m || typeof code !== 'string' || !code || code.length > 2048) return jsonResponse({ error: 'Bad request' }, 400, origin);
+  const service = m[1];
+  const r = await exchangeOAuthCode(service, code, NATIVE_REDIRECT, env);
+  if (!r.result) return jsonResponse({ error: r.error }, r.status, origin);
+  await env.HEALTH_KV.put('oauth:' + state, JSON.stringify({ service, token: r.result }), { expirationTtl: 600 });
+  return jsonResponse({ ok: true, service }, 200, origin);
+}
+
+async function handleNativeClaim(body, env, origin) {
+  const { state, verifier } = body || {};
+  const m = NATIVE_STATE.exec(state || '');
+  if (!m || typeof verifier !== 'string' || !/^[a-f0-9]{64}$/.test(verifier)) return jsonResponse({ error: 'Bad request' }, 400, origin);
+  if (await sha256hex(verifier) !== m[2]) return jsonResponse({ error: 'Not yours' }, 403, origin);
+  const key = 'oauth:' + state;
+  const v = await env.HEALTH_KV.get(key);
+  if (!v) return jsonResponse({ error: 'Not ready' }, 404, origin);
+  await env.HEALTH_KV.delete(key);
+  return jsonResponse(JSON.parse(v), 200, origin);
 }
 
 async function handleOAuthRefresh(body, env, origin) {
@@ -896,6 +940,14 @@ export default {
       }
 
       // OAuth token refresh
+      // Sign-in started in the iPhone or Android app (see handleNativeExchange)
+      if (path === '/oauth/native-exchange') {
+        return handleNativeExchange(await request.json().catch(() => null), env, origin);
+      }
+      if (path === '/oauth/native-claim') {
+        return handleNativeClaim(await request.json().catch(() => null), env, origin);
+      }
+
       if (path === '/oauth/refresh') {
         const body = await request.json();
         return handleOAuthRefresh(body, env, origin);

@@ -255,7 +255,10 @@ module.exports = function () {
     const web = createSandbox({ files: ['data.js', 'app.js', 'integrations.js'], store: {} });
     const native = createSandbox({ files: ['data.js', 'app.js', 'integrations.js'], store: {}, capacitor: { platform: 'ios' } });
     r.check('connected devices are offered on the web', /Connected Devices/.test(run(web, 'renderIntegrationsSection()') || ''), '(section gone from the web too)');
-    r.check('and not in the native app, where the sign-in round trip cannot return', run(native, 'renderIntegrationsSection()') === '', '(Connect buttons that dead-end)');
+    // The app signs in through a browser sheet now (integrations: _connectNative).
+    const nativeHtml = run(native, 'renderIntegrationsSection()') || '';
+    r.check('and in the native app, through a browser sheet', /Whoop/.test(nativeHtml) && typeof run(native, 'typeof _connectNative') === 'string' && run(native, '_oauthRedirectUri()') === 'https://get-arete.com/', '(Connect would return to capacitor://localhost, which no provider accepts)');
+    r.check('but not Apple Health, which is a Shortcut on the web', !/Apple Health/.test(nativeHtml));
     // "Version: dev" and an Update button that clears a service-worker cache
     // the store build does not have.
     r.check('the cache-clearing Update row is web only', /\$\{window\.Capacitor \? '' : `<div[^`]*>Version<\/div>/.test(src('profile.js')), '(Update button shown in the store build)');

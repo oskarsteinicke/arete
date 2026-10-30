@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<title>Connecting to Arete</title>
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="stylesheet" href="tokens.css">
+<script>
+  // Follow the phone's light or dark setting, like the app.
+  try { if (matchMedia('(prefers-color-scheme: light)').matches) document.documentElement.setAttribute('data-theme', 'light'); } catch (e) {}
+</script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg); color: var(--text); font-family: var(--font);
+    -webkit-font-smoothing: antialiased;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+  }
+  main { width: 100%; max-width: 360px; text-align: center; }
+  img { width: 56px; height: 56px; border-radius: 14px; margin-bottom: 28px; }
+  h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; margin-bottom: 10px; }
+  p { font-size: 15px; line-height: 1.5; color: var(--text-dim); }
+  a.btn {
+    display: block; margin-top: 28px; padding: 15px 20px; border-radius: 14px;
+    background: var(--text); color: var(--bg); text-decoration: none;
+    font-size: 16px; font-weight: 600;
+  }
+  a.btn:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+  .hint { margin-top: 14px; font-size: 13px; color: var(--text-muted); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <img src="icon-192.png" alt="">
+  <h1 id="title">Connecting…</h1>
+  <p id="msg">One moment.</p>
+  <a class="btn" id="back" href="com.getarete.app://oauth-done" hidden>Back to Arete</a>
+  <p class="hint" id="hint" hidden>If nothing happens, close this window. Arete finishes the connection when you return to it.</p>
+</main>
+<script>
+  // The provider sent the person back here, in a browser sheet opened by the
+  // iPhone or Android app. Hand the code to Arete's server, which keeps the
+  // login until the app collects it, then send the person back to the app.
+  // The code never goes back to the app in a link, and the login never comes
+  // to this page.
+  (function () {
+    var NAMES = { whoop: 'Whoop', strava: 'Strava', googlefit: 'Google Fit', fitbit: 'Fitbit' };
+    var q = new URLSearchParams(location.search);
+    var code = q.get('code'), state = q.get('state') || '', err = q.get('error');
+    var m = /^n_(whoop|strava|googlefit|fitbit)_[a-f0-9]{64}$/.exec(state);
+    var name = m ? NAMES[m[1]] : 'The service';
+    // Keep the code out of the address bar and the history.
+    try { history.replaceState(null, '', location.pathname); } catch (e) {}
+
+    function show(title, msg, ok) {
+      document.getElementById('title').textContent = title;
+      document.getElementById('msg').textContent = msg;
+      document.getElementById('back').hidden = false;
+      document.getElementById('hint').hidden = false;
+      if (ok) setTimeout(function () { location.href = 'com.getarete.app://oauth-done'; }, 300);
+    }
+
+    if (!m) return show('This link has expired', 'Go back to Arete and tap Connect again.', false);
+    if (err || !code) return show(name + ' was not connected', 'Go back to Arete and tap Connect to try again.', false);
+
+    fetch('https://arete-ai.oskarsteinicke.workers.dev/oauth/native-exchange', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: code, state: state })
+    }).then(function (res) {
+      if (res.ok) show(name + ' is connected', 'Go back to Arete to finish.', true);
+      else show(name + ' was not connected', 'The sign-in did not go through. Go back to Arete and tap Connect again.', false);
+    }).catch(function () {
+      show('No connection', 'Check your signal, then go back to Arete and tap Connect again.', false);
+    });
+  })();
+</script>
+</body>
+</html>

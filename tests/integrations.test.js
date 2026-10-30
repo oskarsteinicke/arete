@@ -297,7 +297,7 @@ module.exports = async function () {
     run(s, `delete sleepLog['${T}']; var i = _getIntegrations(); i.whoop.lastSync = ${at(15)} - 15 * 60000; _saveIntegrations(i);`);
     r.check('in the afternoon it stops checking every 10 minutes', run(s, `_syncDue('whoop', ${at(15)})`) === false);
     const src = require('fs').readFileSync(require('path').join(require('./harness').APP, 'integrations.js'), 'utf8');
-    r.check('it runs when the app comes back on screen, not only on a reload', /visibilitychange[\s\S]{0,120}_autoSync/.test(src));
+    r.check('it runs when the app comes back on screen, not only on a reload', /visibilitychange[\s\S]{0,300}_autoSync/.test(src));
 
     // Two syncs at once used to mean two refreshes of a token that works once.
     let calls = 0;
@@ -330,6 +330,59 @@ module.exports = async function () {
     } });
     const got = await run(raced, `_refreshToken('whoop')`);
     r.check('when another tab refreshed first, its new token is used', got === 'fresh' && run(raced, `_getIntegrations().whoop.refresh_token`) === 'r2', `(${got})`);
+  }
+
+  // Providers only send people back to https://get-arete.com/, never into the
+  // app, so the app signs in through a browser sheet and collects the login
+  // from the Worker afterwards.
+  r.section('connecting from inside the iPhone or Android app');
+  {
+    const nodeCrypto = require('crypto');
+    const opened = [], closed = [], listeners = {};
+    const cap = { platform: 'ios', isNativePlatform: () => true, Plugins: {
+      Browser: { open: async o => { opened.push(o.url); }, close: async () => { closed.push(1); }, addListener: (ev, fn) => { listeners['b:' + ev] = fn; } },
+      App: { addListener: (ev, fn) => { listeners['a:' + ev] = fn; } },
+    } };
+    let claimBody = null, answer = 'ok';
+    const s = sb({}, { fetch: (url, opts) => {
+      if (/native-claim/.test(url)) {
+        claimBody = JSON.parse(opts.body);
+        if (answer === 'later') { answer = 'ok'; return Promise.resolve({ ok: false, status: 404, json: () => Promise.resolve({}) }); }
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ service: 'whoop', token: { access_token: 'AT', refresh_token: 'RT', expires_at: Date.now() + 3600000 } }) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ records: [] }) });
+    } });
+    s.crypto = nodeCrypto.webcrypto; s.window.Capacitor = cap; s.Capacitor = cap;
+    run(s, `showToast = function (m) { _toasts = (typeof _toasts === 'undefined' ? [] : _toasts).concat(m); };`);
+
+    await run(s, `connectIntegration('whoop')`);
+    const u = new URL(opened[0] || 'https://x/');
+    r.check('Connect opens Whoop in a browser sheet, not the app\'s own page', opened.length === 1 && u.host === 'api.prod.whoop.com');
+    r.check('with the site as the return address', u.searchParams.get('redirect_uri') === 'https://get-arete.com/');
+    const pend = JSON.parse(s.localStorage._d['hvi_oauth_native'] || '{}');
+    const state = u.searchParams.get('state') || '';
+    r.check('the state carries only a fingerprint of a secret kept on the phone',
+      /^n_whoop_[a-f0-9]{64}$/.test(state) && state === 'n_whoop_' + nodeCrypto.createHash('sha256').update(pend.verifier || '').digest('hex') && !opened[0].includes(pend.verifier));
+
+    run(s, `_listenForNativeSignIn()`);
+    await new Promise(res => setTimeout(res, 20));
+    r.check('coming back to the app collects the login', run(s, `_getIntegrations().whoop && _getIntegrations().whoop.access_token`) === 'AT', JSON.stringify(claimBody));
+    r.check('with the secret, which only now leaves the phone', claimBody && claimBody.verifier === pend.verifier && claimBody.state === state);
+    r.check('then it is forgotten, and Whoop syncs', !s.localStorage._d['hvi_oauth_native'] && run(s, `_toasts.join()`) === 'Whoop is connected');
+
+    // The Worker may not have it yet when the app comes back.
+    run(s, `disconnectIntegration = null; _removeToken('whoop'); localStorage.setItem('hvi_oauth_native', JSON.stringify({ service: 'whoop', state: '${state}', verifier: '${pend.verifier}', at: Date.now() }))`);
+    answer = 'later';
+    listeners['a:appUrlOpen']({ url: 'com.getarete.app://oauth-done' });
+    await new Promise(res => setTimeout(res, 1700));
+    r.check('a "not yet" is asked again, and the sheet is closed', run(s, `_getIntegrations().whoop && _getIntegrations().whoop.access_token`) === 'AT' && closed.length === 1);
+
+    const web = sb({});
+    run(web, `location.search = '?code=abc&state=n_whoop_${'a'.repeat(64)}'; _touched = false; _recallOAuth = function () { _touched = true; return {}; };`);
+    run(web, `_handleOAuthCallback()`);
+    r.check('the website leaves the app\'s sign-ins to oauth-return.html', run(web, '_touched') === false, '(it treated it as its own, and would say it could not be finished)');
+    const idx = require('fs').readFileSync(require('path').join(require('./harness').APP, 'index.html'), 'utf8');
+    r.check('which index.html sends them to before the landing page could', /_nativeSignIn\) location\.replace\('\/oauth-return\.html' \+ location\.search\);\s*\/\/[^\n]*\n[^\n]*\n\s*else if \(!window\.Capacitor/.test(idx));
   }
 
   // Whoop's refresh token works once. Synced to a second device, one device's

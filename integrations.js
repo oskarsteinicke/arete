@@ -168,13 +168,98 @@ function connectIntegration(service) {
     params.set('response_type', 'code');
   }
 
+  if (_isNativeApp()) return _connectNative(service, cfg, params);
   window.location.href = cfg.authUrl + '?' + params.toString();
+}
+
+// ── SIGN-IN FROM THE IPHONE AND ANDROID APPS ─────────────────────────────
+// The app cannot be the return address: providers only send people back to
+// https://get-arete.com/. So the sign-in opens in a browser sheet, comes back
+// to that site (oauth-return.html), which hands the code to the Worker, and
+// the app collects the login from the Worker when the person returns.
+// Only this app can collect it: the state ends in the SHA-256 of a secret
+// made here, and the Worker hands the login over for that secret alone.
+function _isNativeApp() {
+  try { return !!(window.Capacitor && (typeof window.Capacitor.isNativePlatform !== 'function' || window.Capacitor.isNativePlatform())); } catch { return false; }
+}
+const _NATIVE_RETURN = 'https://get-arete.com/';
+
+async function _sha256hex(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function _connectNative(service, cfg, params) {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  const verifier = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  const state = `n_${service}_${await _sha256hex(verifier)}`;
+  try { localStorage.setItem('hvi_oauth_native', JSON.stringify({ service, state, verifier, at: Date.now() })); } catch {}
+  params.set('state', state);
+  params.set('redirect_uri', _NATIVE_RETURN);
+  const url = cfg.authUrl + '?' + params.toString();
+  const B = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser;
+  if (B) await B.open({ url, presentationStyle: 'popover' });
+  else window.open(url, '_blank');
+}
+
+// Collects a finished sign-in from the Worker. Runs when the app is reopened
+// from the browser sheet, when the sheet is closed, and when the app comes
+// back on screen, so any of the three finishes it. The Worker may take a
+// moment to have it, so a "not yet" is asked again a few times.
+let _claiming = null;
+function _claimNative(tries) {
+  if (_claiming && !tries) return _claiming;
+  const run = (async () => {
+    let p = null;
+    try { p = JSON.parse(localStorage.getItem('hvi_oauth_native') || 'null'); } catch {}
+    if (!p || !p.state || !p.verifier) return false;
+    if (Date.now() - (p.at || 0) > 15 * 60000) { localStorage.removeItem('hvi_oauth_native'); return false; }
+    let res;
+    try {
+      res = await fetch(_OAUTH_PROXY + '/oauth/native-claim', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: p.state, verifier: p.verifier })
+      });
+    } catch { return false; }   // offline: tried again when the app comes back
+    if (res.status === 404) {
+      if ((tries || 0) < 4) { await new Promise(r => setTimeout(r, 1500)); return _claimNative((tries || 0) + 1); }
+      return false;             // not signed in yet, or the sheet was closed early
+    }
+    localStorage.removeItem('hvi_oauth_native');
+    const name = (INTEGRATIONS[p.service] || {}).name || 'It';
+    if (!res.ok) { if (typeof showToast === 'function') showToast(`${name} was not connected. Tap Connect to try again.`); return false; }
+    const d = await res.json();
+    if (!d || !d.token || !d.token.access_token || !INTEGRATIONS[d.service]) return false;
+    _saveToken(d.service, d.token);
+    if (typeof showToast === 'function') showToast(`${name} is connected`);
+    _redrawIntegrations();
+    syncIntegration(d.service);
+    return true;
+  })();
+  if (!tries) { _claiming = run; run.finally(() => { _claiming = null; }); }
+  return run;
+}
+
+function _listenForNativeSignIn() {
+  const P = window.Capacitor && window.Capacitor.Plugins;
+  if (!P) return;
+  try {
+    if (P.App) P.App.addListener('appUrlOpen', ev => {
+      if (String(ev && ev.url).indexOf('com.getarete.app://oauth') !== 0) return;
+      try { if (P.Browser) P.Browser.close(); } catch {}
+      _claimNative();
+    });
+    if (P.Browser) P.Browser.addListener('browserFinished', () => _claimNative());
+  } catch (e) { console.warn('[integrations] sign-in listeners', e); }
+  // The app may have been closed while the person signed in.
+  _claimNative();
 }
 
 // The address the provider sends people back to. It has to match what is
 // registered with the provider character for character, so it is the site
 // root and never whatever path the app happened to be opened on.
-function _oauthRedirectUri() { return window.location.origin + '/'; }
+function _oauthRedirectUri() { return _isNativeApp() ? _NATIVE_RETURN : window.location.origin + '/'; }
 
 // The state travels out to the provider and back. sessionStorage is the right
 // home for it, but an installed web app can come back in a fresh session, so
@@ -218,6 +303,8 @@ function _handleOAuthCallback() {
   const state = params.get('state');
 
   if (!code || !state) return;
+  // Started in the iPhone or Android app: oauth-return.html finishes those.
+  if (state.indexOf('n_') === 0) return;
 
   const { state: savedState, service } = _recallOAuth();
 
@@ -805,12 +892,10 @@ function disconnectAppleHealth() {
 }
 
 function renderIntegrationsSection(still) {
-  // Not in the store build yet. Each Connect starts an OAuth round trip whose
-  // return address is this page's own URL, and inside the native app that is
-  // capacitor://localhost, which no provider accepts: the button led to a
-  // dead end in Safari. It comes back with proper deep links (and HealthKit
-  // for Apple Health, rather than a Shortcut).
-  if (typeof window !== 'undefined' && window.Capacitor) return '';
+  // In the iPhone and Android apps, Connect signs in through a browser sheet
+  // (see _connectNative). Apple Health stays on the website: it is set up
+  // through a Shortcut, and in the app it should be HealthKit instead.
+  const native = typeof window !== 'undefined' && _isNativeApp();
   const int = _getIntegrations();
 
   // Apple Health row
@@ -859,7 +944,7 @@ function renderIntegrationsSection(still) {
   return `
     <div class="da-section${still ? '' : ' ani'}" id="intg-section" style="margin:0 24px 16px;padding:16px">
       <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Connected Devices</div>
-      <div class="intg-list">${appleRow}${rows}</div>
+      <div class="intg-list">${native ? '' : appleRow}${rows}</div>
       ${allConnected ? `<button class="intg-sync-all" onclick="syncAllIntegrations();syncAppleHealth();this.textContent='Syncing all…'">Sync All Now</button>` : ''}
     </div>`;
 }
@@ -899,10 +984,13 @@ function _autoSync() {
 
 function _initIntegrations() {
   _handleOAuthCallback();
+  if (_isNativeApp()) _listenForNativeSignIn();
   setTimeout(_autoSync, 3000);
   if (typeof document !== 'undefined' && document.addEventListener) {
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') setTimeout(_autoSync, 800);
+      if (document.visibilityState !== 'visible') return;
+      if (_isNativeApp()) _claimNative();
+      setTimeout(_autoSync, 800);
     });
   }
 }
