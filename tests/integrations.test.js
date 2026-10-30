@@ -273,5 +273,18 @@ module.exports = async function () {
     r.check('the Worker allows the DELETE that revokes access', /Allow-Methods': '[^']*DELETE/.test(wsrc));
   }
 
+  // Whoop's refresh token works once. Synced to a second device, one device's
+  // refresh broke the other's connection, and the disconnect then synced back.
+  r.section('connection logins stay on the device');
+  {
+    const s = sb({});
+    r.check('they are not in the cloud backup', run(s, `SYNC_KEYS.indexOf('hvi_integrations')`) === -1);
+    r.check('nor is Whoop\'s body reading', run(s, `SYNC_KEYS.indexOf('hvi_whoop_body')`) === -1);
+    r.check('what the sync brings in still syncs', ['hvi_sleep_log', 'hvi_workout_log', 'hvi_weight_log'].every(k => run(s, `SYNC_KEYS.indexOf('${k}')`) !== -1));
+    const src = require('fs').readFileSync(require('path').join(require('./harness').APP, 'app.js'), 'utf8');
+    const signOut = src.slice(src.indexOf('async function authSignOut'), src.indexOf('// ── ACCOUNT DELETION'));
+    r.check('and sign-out clears them, so the next person on this device is not connected', /SYNC_KEYS\.concat\(DEVICE_KEYS\)/.test(signOut) && run(s, `DEVICE_KEYS.indexOf('hvi_integrations')`) !== -1);
+  }
+
   return r.finish();
 };
