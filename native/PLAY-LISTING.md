@@ -15,49 +15,58 @@ inside them.
 Arete: Habits, Gym & Diet
 ```
 
-## Short description (80 max, using 76)
+## Short description (80 max, using 77)
 
 ```
-Habits, training, nutrition and an AI coach. Free, works offline, no account.
+Log your whole day in one sentence. Habits, gym, food, sleep and an AI coach.
 ```
 
-## Full description (4000 max, using ~2100)
+## Full description (4000 max, using 2561)
 
 ```
-Most self-improvement apps do one thing and charge you every month for it. Arete does the whole picture instead.
+Log your whole day in one sentence. "Two eggs and toast, half a litre of water, did my meditation, slept about 6 hours." Arete sorts it into the right places and logs it with one tap.
 
-Habits, training, nutrition, sleep and an AI coach in one place. The parts talk to each other. Log a workout and your recovery updates. Sleep badly and today's training advice changes with it.
+Habits, training, nutrition, sleep, a journal and an AI coach in one app. The parts talk to each other. Sleep badly and today's session gets lighter. Train hard and your carbs go up. Then Arete shows you what your own days have in common.
+
+LOG ANYTHING
+Type it, or tap the microphone on your keyboard and say it. Meals come back with calories and macros, plus water, last night's sleep, habits, weight and mood. You see the list before anything is saved, and one Undo takes it all back.
+
+YOUR PATTERNS
+Arete compares your own last 60 days. "After 7+ hours of sleep you finish 92% of your habits. After under 6 hours, 29%." A pattern only shows once there are enough days behind it, and it never claims one thing causes another.
+
+TODAY
+Your day in four numbers: training, calories, habits and sleep, with a readiness score built from all of them. Tap one to log it.
 
 HABITS
-Build streaks across five areas: body, mind, spirit, craft and connection. Daily, weekly, or specific days of the week. Weekly habits are judged on the week, not on whether you opened the app.
+Five areas: Mind, Body, Mastery, Social and Wealth. Daily, weekly or on set days. Habits show how consistent you have been over the last seven days, not a streak that one missed day sets to zero.
 
 TRAINING
-Push/Pull/Legs, Upper/Lower and Full Body programs are built in. Or build your own. Every set is logged, personal records are tracked, and estimated 1RM comes from the weight and reps you actually did.
+Push/Pull/Legs, Upper/Lower and Full Body programs are built in, or build your own. Every set is logged, personal records are tracked, and the weight goes up when you hit every rep. A short night trims today's session automatically.
 
-A body map shows which muscles you have trained recently and where you are strongest. Strength is scored against what an average lifter your bodyweight and sex can do, so your arms are not compared to your legs. Ranks run from Untrained to Demigod.
+A muscle map shows what you trained this week and where you are strongest, scored against an average lifter of your bodyweight.
 
 NUTRITION
-Photograph a meal and Arete estimates the calories and macros. Or just describe it. Edit anything it gets wrong and the numbers recalculate.
-
-Targets come from your own height, weight, age and activity level. Log your weight and it tells you when your targets have drifted.
+Photograph a meal, describe it, or pick something you eat often. Targets come from your height, weight, age and activity, and move with your training day.
 
 SLEEP
-Set when you went to bed and when you woke up. Arete works out the rest. It asks once a day, because sleep is the easiest thing to forget and the hardest to reconstruct later.
+Set when you went to bed and when you woke up. Arete works out the rest and asks once a day.
 
 AI COACH
-It can see your real data. Ask why you are tired, what to train today, or why progress stalled. It answers from your logs, not from generic advice.
+It sees your real data: sleep, sessions, meals, habits, journal and patterns. Ask why you are tired, what to train today or why progress stalled. It answers from your logs and never changes anything without your tap.
+
+CONNECT
+Apple Health (through a Shortcut), Google Fit, Strava and Whoop.
+
+NO ACCOUNT NEEDED
+Open it and start. Tracking works offline and stays on your device. The AI features need a connection and ask before they are used. Create an account only to sync across devices or join a leaderboard.
+
+Arete is Greek for excellence. Living up to your potential, daily.
 
 COMPETE
-Create a group, share the code, and see where you stand against friends. Good for teams and training partners.
-
-CONNECT WHAT YOU ALREADY USE
-Apple Health, Google Fit, Strava, Fitbit and Whoop.
-
-NO ACCOUNT REQUIRED
-Open it and start. Everything works offline and stays on your device. Create an account only if you want it synced across devices or want to use a leaderboard.
-
-Arete is Greek for excellence. Living up to your potential, daily, in the things that matter. That is the whole idea.
+Create a group, share the code and see where you stand against friends.
 ```
+
+Keep Whoop in CONNECT only if it is connected by the time you submit.
 
 ---
 

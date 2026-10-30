@@ -15,59 +15,70 @@ something to stuff into the description.
 Arete: Habits & Training
 ```
 
-## Subtitle (30 max, using 29)
+## Subtitle (30 max, using 28)
 
 ```
-Your day, in one calm place
+Your whole day, one sentence
 ```
 
-## Promotional text (170 max — editable without a new review)
+## Promotional text (170 max, using 161; editable without a new review)
 
 ```
-Your day in four numbers: training, calories, habits and sleep. Consistency over the last seven days, not a streak that one missed day destroys.
+New: Log anything. Type or say your day in one sentence and Arete sorts it into meals, water, sleep, habits and mood. And Your patterns: what your own days show.
 ```
 
 ## Keywords (100 max, comma separated, no spaces after commas)
 
 ```
-habit,tracker,workout,gym,log,nutrition,macros,sleep,routine,discipline,journal,self,improvement,coach
+habit,tracker,workout,gym,log,macros,calorie,nutrition,sleep,routine,journal,coach,discipline,goals
 ```
 
-Do not repeat the app name or subtitle here — Apple already indexes those, so
+Do not repeat the app name or subtitle here: Apple already indexes those, so
 a repeat wastes characters.
 
-## Description (4000 max, using ~2100)
+## Description (4000 max, using 2480)
 
 ```
-Most self-improvement apps do one thing and charge you every month for it. Arete does the whole picture instead.
+Log your whole day in one sentence. "Two eggs and toast, half a litre of water, did my meditation, slept about 6 hours." Arete sorts it into the right places and logs it with one tap.
 
-Habits, training, nutrition, sleep and an AI coach in one place. The parts talk to each other. Log a workout and your recovery updates. Sleep badly and today's training advice changes with it.
+Habits, training, nutrition, sleep, a journal and an AI coach in one app. The parts talk to each other. Sleep badly and today's session gets lighter. Train hard and your carbs go up. Then Arete shows you what your own days have in common.
+
+LOG ANYTHING
+Type it, or tap the microphone on your keyboard and say it. Meals come back with calories and macros, plus water, last night's sleep, habits, weight and mood. You see the list before anything is saved, and one Undo takes it all back.
+
+YOUR PATTERNS
+Arete compares your own last 60 days. "After 7+ hours of sleep you finish 92% of your habits. After under 6 hours, 29%." A pattern only shows once there are enough days behind it, and it never claims one thing causes another.
 
 TODAY
-Open the app and see your day in four numbers: training, calories, habits and sleep, with a readiness score built from all of them. Tap one to log it. Habits show how consistent you have been over the last seven days — not a streak that one missed day sets to zero.
+Your day in four numbers: training, calories, habits and sleep, with a readiness score built from all of them. Tap one to log it.
 
 HABITS
-Build across five areas: body, mind, spirit, craft and connection. Daily, weekly, or specific days of the week. Weekly habits are judged on the week, not on whether you opened the app.
+Five areas: Mind, Body, Mastery, Social and Wealth. Daily, weekly or on set days. Habits show how consistent you have been over the last seven days, not a streak that one missed day sets to zero.
 
 TRAINING
-Push/Pull/Legs, Upper/Lower and Full Body programs are built in. Or build your own. Every set is logged, personal records are tracked, and estimated 1RM comes from the weight and reps you actually did.
+Push/Pull/Legs, Upper/Lower and Full Body programs are built in, or build your own. Every set is logged, personal records are tracked, and the weight goes up when you hit every rep. A short night trims today's session automatically.
 
-A body map shows which muscles you have trained recently and where you are strongest. Strength is scored against what an average lifter your bodyweight and sex can do, so your arms are not compared to your legs.
+A muscle map shows what you trained this week and where you are strongest, scored against an average lifter of your bodyweight.
 
 NUTRITION
-Photograph a meal and Arete estimates the calories and macros. Or just describe it. Edit anything it gets wrong and the numbers recalculate. Targets come from your own height, weight, age and activity level.
+Photograph a meal, describe it, or pick something you eat often. Targets come from your height, weight, age and activity, and move with your training day.
 
 SLEEP
-Set when you went to bed and when you woke up. Arete works out the rest. It asks once a day, because sleep is the easiest thing to forget and the hardest to reconstruct later.
+Set when you went to bed and when you woke up. Arete works out the rest and asks once a day.
 
 AI COACH
-It can see your real data. Ask why you are tired, what to train today, or why progress stalled. It answers from your logs, not from generic advice.
+It sees your real data: sleep, sessions, meals, habits, journal and patterns. Ask why you are tired, what to train today or why progress stalled. It answers from your logs and never changes anything without your tap.
 
-NO ACCOUNT REQUIRED
-Open it and start. Everything works offline and stays on your device. Create an account only if you want it synced across devices.
+CONNECT
+Apple Health (through a Shortcut), Google Fit, Strava and Whoop.
 
-Arete is Greek for excellence. Living up to your potential, daily, in the things that matter.
+NO ACCOUNT NEEDED
+Open it and start. Tracking works offline and stays on your device. The AI features need a connection and ask before they are used. Create an account only to sync across devices or join a leaderboard.
+
+Arete is Greek for excellence. Living up to your potential, daily.
 ```
+
+Keep Whoop in CONNECT only if it is connected by the time you submit.
 
 ---
 
@@ -149,11 +160,13 @@ so). Without an account none of it is linked. Answer for the linked case.
 ## Review notes
 
 ```
-Arete requires no account. Open the app and everything is available immediately — habits, training, nutrition, sleep and the AI coach all work without signing in. An account is optional and only enables sync across devices.
+Arete requires no account. Open the app and everything is available immediately: habits, training, nutrition, sleep and the AI coach all work without signing in. An account is optional and only enables sync across devices.
 
 The camera is used for the meal scanner (photograph a meal to estimate its calories and macros) and for progress photos. Both are user-initiated from within the app.
 
-The AI features (coach, daily focus, meal description, meal photo scan and the program builder) send data to Google Gemini and Groq through our own server. The app asks for permission the first time any of them is used, explaining what is sent and to whom, and nothing is sent before that. They can be turned off in Profile > Settings > "AI coach and meal scan".
+The AI features (coach, daily focus, Log anything, meal description, meal photo scan and the program builder) send data to Google Gemini and Groq through our own server. The app asks for permission the first time any of them is used, explaining what is sent and to whom, and nothing is sent before that. They can be turned off in Profile > Settings > "AI coach and meal scan".
+
+Log anything takes typed text. To speak instead, people use the microphone on the iOS keyboard; the app itself does not use the microphone.
 
 There are no in-app purchases and nothing is for sale.
 ```
