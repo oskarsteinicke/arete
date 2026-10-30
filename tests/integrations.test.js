@@ -293,9 +293,12 @@ module.exports = async function () {
     const s = sb({ hvi_integrations: JSON.stringify({ whoop: { access_token: 't', lastSync: at(9) - 15 * 60000 } }) });
     r.check('at 9:00 with no night yet, a sync 15 minutes ago is not enough', run(s, `_syncDue('whoop', ${at(9)})`) === true);
     run(s, `sleepLog['${T}'] = { hours: 7, source: 'whoop' }`);
-    r.check('once the night is in, it waits the usual 2 hours', run(s, `_syncDue('whoop', ${at(9)})`) === false);
+    r.check('once the night is in, it waits 20 minutes', run(s, `_syncDue('whoop', ${at(9)})`) === false);
+    r.check('then looks again, so a session just finished moves today\'s target', run(s, `_syncDue('whoop', ${at(9)} + 10 * 60000)`) === true);
+    run(s, `var i2 = _getIntegrations(); i2.strava = { access_token: 't', lastSync: ${at(9)} - 25 * 60000 }; _saveIntegrations(i2);`);
+    r.check('other services keep their 2 hours', run(s, `_syncDue('strava', ${at(9)})`) === false);
     run(s, `delete sleepLog['${T}']; var i = _getIntegrations(); i.whoop.lastSync = ${at(15)} - 15 * 60000; _saveIntegrations(i);`);
-    r.check('in the afternoon it stops checking every 10 minutes', run(s, `_syncDue('whoop', ${at(15)})`) === false);
+    r.check('in the afternoon it stops checking every 10 minutes', run(s, `_syncDue('whoop', ${at(15)})`) === false && run(s, `_syncDue('whoop', ${at(15)} + 10 * 60000)`) === true);
     const src = require('fs').readFileSync(require('path').join(require('./harness').APP, 'integrations.js'), 'utf8');
     r.check('it runs when the app comes back on screen, not only on a reload', /visibilitychange[\s\S]{0,300}_autoSync/.test(src));
 

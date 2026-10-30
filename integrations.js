@@ -988,16 +988,22 @@ function _timeAgo(ts) {
 // resumes the app rather than reloading it, and the sync used to run on a
 // reload only, so last night could stay missing until the next restart.
 //
-// Due every 2 hours. Whoop is checked every 10 minutes in the morning until
-// last night arrives: it scores the night a little after you wake, so an
-// early look often finds nothing yet. A failed sync waits 10 minutes too.
+// Due every 2 hours, Whoop every 20 minutes. Whoop is checked every 10 minutes
+// in the morning until last night arrives: it scores the night a little after
+// you wake, so an early look often finds nothing yet. A failed sync waits 10
+// minutes too.
 function _syncDue(service, now) {
   const i = _getIntegrations()[service];
   if (!i) return false;
   const last = Math.max(i.lastSync || 0, i.lastError || 0);
   const morning = new Date(now).getHours() < 14;
   const waiting = service === 'whoop' && morning && !whoopHasNight(today());
-  return now - last > (waiting || (i.lastError || 0) > (i.lastSync || 0) ? 10 * 60000 : 2 * 3600000);
+  const failed = (i.lastError || 0) > (i.lastSync || 0);
+  // Whoop's sessions move today's calorie target (connect.js), so it is asked
+  // every 20 minutes rather than every 2 hours: opening the app an hour after
+  // a match should show the match.
+  const every = waiting || failed ? 10 * 60000 : service === 'whoop' ? 20 * 60000 : 2 * 3600000;
+  return now - last > every;
 }
 
 function _autoSync() {
