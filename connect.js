@@ -173,7 +173,9 @@ function todaysTrainingCall() {
     if (fatigued) {
       // A hard week on top of a short night is a deload; on its own, a trim.
       level = level ? 2 : 1;
-      why.push(load.consecutive >= 4 ? `${load.consecutive} days of training in a row.` : `${load.days} sessions in the last week.`);
+      why.push(load.consecutive >= 4 ? `${load.consecutive} days of training in a row.`
+        : load.days >= 6 ? `${load.days} sessions in the last week.`
+        : load.why ? load.why.charAt(0).toUpperCase() + load.why.slice(1) + '.' : `${load.days} sessions in the last week.`);
     }
     value = hours !== null ? `${Math.round(hours * 10) / 10}h` : quality !== null ? `${quality}/5` : `${load.days}/7`;
   }
@@ -291,6 +293,62 @@ function _intensityFromDayName(name) {
   return 'moderate';
 }
 
+// ── HOW HARD, AND WHAT IT BURNED (WHOOP) ─────────────────────────────────────
+// Whoop's strain runs 0 to 21; 14 and up is strenuous. A Whoop activity is
+// judged by its strain, not its name, so a 15-strain match is a hard day and a
+// 6-strain kickabout is not. A session logged here is hard if its name says so
+// or Whoop measured it at 14+ (Whoop under-reads lifting, so the name stays).
+const HARD_STRAIN = 14;
+function _sessionStrain(wl) {
+  if (!wl) return null;
+  const s = wl.source === 'whoop' ? wl.strain : (wl.whoop && wl.whoop.strain);
+  return typeof s === 'number' ? s : null;
+}
+function _intensityOf(wl) {
+  const strain = _sessionStrain(wl);
+  if (strain !== null && strain >= HARD_STRAIN) return 'hard';
+  if (wl && wl.source === 'whoop') return 'moderate';
+  return _intensityFromDayName(wl && wl.dayName);
+}
+
+// What a day's training burned, from Whoop (integrations.js keeps the log).
+function _burnLog() { try { return LS.get('hvi_burn_log', {}) || {}; } catch { return {}; } }
+function burnOn(day) { const b = _burnLog()[day]; return b && b.kcal > 0 ? b : null; }
+
+// A usual day's burn: the average over the last four weeks of the days Whoop
+// was worn (a night on record, or an activity), a day with no session counting
+// as zero. Null until there are seven such days.
+function typicalBurn() {
+  const log = _burnLog(), sl = (typeof sleepLog !== 'undefined' && sleepLog) || {};
+  let days = 0, total = 0;
+  for (let i = 1; i <= 28; i++) {
+    const d = _cnDateKey(i), n = sl[d], b = log[d];
+    const worn = (n && (n.source === 'whoop' || typeof n.whoopRecovery === 'number')) || (b && b.kcal > 0);
+    if (!worn) continue;
+    days++;
+    total += (b && b.kcal) || 0;
+  }
+  return days >= 7 ? Math.round(total / days) : null;
+}
+
+// Training load as Whoop measured it: the last three days' burn against three
+// usual days, and how hard yesterday was. Counting sessions alone made a
+// match and a short session the same load.
+function whoopLoad() {
+  const usual = typicalBurn();
+  let recent = 0;
+  for (let i = 1; i <= 3; i++) { const b = burnOn(_cnDateKey(i)); recent += b ? b.kcal : 0; }
+  const ratio = usual > 0 ? recent / (3 * usual) : null;
+  const y = burnOn(_cnDateKey(1)), ys = y ? y.strain || 0 : 0;
+  const level = (ratio !== null && ratio >= 1.6) || ys >= 18 ? 2
+    : (ratio !== null && ratio >= 1.25) || ys >= HARD_STRAIN ? 1 : 0;
+  if (!level) return { level: 0, ratio };
+  const heavyDays = ratio !== null && ratio >= (level === 2 ? 1.6 : 1.25);
+  const why = heavyDays ? `${Math.round(ratio * 10) / 10}× your usual training over the last three days`
+    : `strain ${ys} yesterday`;
+  return { level, ratio, strain: ys, why };
+}
+
 // Classify today: 'hard' | 'moderate' | 'rest'. A logged workout always counts
 // as a training day; otherwise the weekly schedule decides training vs rest.
 function classifyTodaySession() {
@@ -301,7 +359,7 @@ function classifyTodaySession() {
   const trained = (typeof workoutDoneToday === 'function') ? workoutDoneToday()
     : !!(wl && (wl.source || (wl.exercises || []).some(e => (e.sets || []).some(s => s.completed))));
   if (wl && trained) {
-    return { type: _intensityFromDayName(wl.dayName), dayName: wl.dayName || null, source: 'logged' };
+    return { type: _intensityOf(wl), dayName: wl.dayName || null, source: 'logged', strain: _sessionStrain(wl) };
   }
   return _plannedSession();
 }
@@ -339,8 +397,24 @@ function getTodaysMacroTargets(sess) {
   // hard day: carbs +20% / protein +10%; normal training day: carbs +8%; rest: carbs -25%
   const carbMult = sess.type === 'hard' ? 1.20 : sess.type === 'rest' ? 0.75 : 1.08;
   const protMult = sess.type === 'hard' ? 1.10 : 1.0;
-  const adjCarbs = Math.round(carbs * carbMult);
+  let adjCarbs = Math.round(carbs * carbMult);
   const adjProtein = Math.round(protein * protMult);
+
+  // Measured beats guessed. When Whoop has today's training, the carbs follow
+  // what it burned instead of the day type's percentage. The goal already
+  // assumes a usual amount of exercise (the activity level it was set with, or
+  // the intake and weight trend it was worked out from), so adding a whole
+  // session would count it twice: the day earns what it burned beyond a usual
+  // day, up to 1,000 cal, as carbs. A quiet day never loses calories for it.
+  let burn = null;
+  if (sess.source === 'logged' && sess.type !== 'rest') {
+    const b = burnOn(today()), usual = b ? typicalBurn() : null;
+    if (b && usual !== null) {
+      const extra = Math.max(0, Math.min(1000, Math.round((b.kcal - usual) / 10) * 10));
+      burn = { kcal: b.kcal, usual, extra };
+      adjCarbs = carbs + Math.round(extra / 4);
+    }
+  }
   // Calories = the user's set goal plus only the delta from the adjustment, so
   // a normal day shows their exact numbers (macros need not sum to calories).
   const adjCalories = Math.round(calories + (adjCarbs - carbs) * 4 + (adjProtein - protein) * 4);
@@ -348,8 +422,8 @@ function getTodaysMacroTargets(sess) {
   return {
     calories: adjCalories, protein: adjProtein, carbs: adjCarbs, fat,
     baseCalories: calories, baseCarbs: carbs, baseProtein: protein,
-    adjusted: carbMult !== 1.0 || protMult !== 1.0,
-    type: sess.type, dayName: sess.dayName, source: sess.source,
+    adjusted: adjCarbs !== carbs || adjProtein !== protein,
+    type: sess.type, dayName: sess.dayName, source: sess.source, burn,
   };
 }
 
@@ -357,6 +431,13 @@ function getTodaysMacroTargets(sess) {
 function macroAdjustReason() {
   const t = getTodaysMacroTargets();
   if (!t.adjusted) return '';
+  if (t.burn) {
+    const n = v => Math.round(v).toLocaleString('en-US');
+    const what = t.dayName || 'Today\'s training';
+    const prot = t.type === 'hard' ? 'protein +10%' : '';
+    if (!t.burn.extra) return `${what} burned ${n(t.burn.kcal)} cal, about a usual day${prot ? ' · ' + prot : ''}`;
+    return `${what} burned ${n(t.burn.kcal)} cal, ${n(t.burn.extra)} more than a usual day · +${n(t.burn.extra)} cal as carbs${prot ? ', ' + prot : ''}`;
+  }
   if (t.type === 'hard') return `${t.dayName || 'Heavy day'} · carbs +20%, protein +10%`;
   if (t.type === 'rest') return 'Rest day · carbs -25%';
   return `${t.dayName || 'Training day'} · carbs +8%`;

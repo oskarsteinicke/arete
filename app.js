@@ -123,7 +123,7 @@ function _convertStoredWeights(f) {
 // ── SUPABASE AUTH + CLOUD SYNC ────────────────────────────────────────────
 const SUPABASE_URL = 'https://socflncohsenjptgkkax.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_J2qJ8iTfCESrML5Hm6NGbQ_mz9uPeug';
-const SYNC_KEYS = ['hvi_habits','hvi_log','hvi_journal3','hvi_meta','hvi_workout_log','hvi_workout_meta','hvi_meal_log','hvi_diet_meta','hvi_weight_log','hvi_water_log','hvi_prs','hvi_gamification','hvi_achievements','hvi_tdee_profile','hvi_custom_programs','hvi_onboarded','hvi_sleep_log','hvi_settings','hvi_habit_history','hvi_meal_favorites','hvi_routines','hvi_routine_log','hvi_challenges','hvi_habit_links','hvi_why','hvi_goals','hvi_mood_log','hvi_rest_by_exercise'];
+const SYNC_KEYS = ['hvi_habits','hvi_log','hvi_journal3','hvi_meta','hvi_workout_log','hvi_workout_meta','hvi_meal_log','hvi_diet_meta','hvi_weight_log','hvi_water_log','hvi_prs','hvi_gamification','hvi_achievements','hvi_tdee_profile','hvi_custom_programs','hvi_onboarded','hvi_sleep_log','hvi_settings','hvi_habit_history','hvi_meal_favorites','hvi_routines','hvi_routine_log','hvi_challenges','hvi_habit_links','hvi_why','hvi_goals','hvi_mood_log','hvi_rest_by_exercise','hvi_burn_log'];
 // Keys that are date-keyed objects — these get merged instead of overwritten
 // Kept on this device only, and cleared on sign-out. Connected devices hold
 // login tokens: Whoop's refresh token works once, so a copy synced to a second
@@ -131,7 +131,7 @@ const SYNC_KEYS = ['hvi_habits','hvi_log','hvi_journal3','hvi_meta','hvi_workout
 // not belong in the backup anyway. Each device connects on its own; the data a
 // sync brings in (sleep, workouts, weight) still syncs as usual.
 const DEVICE_KEYS = ['hvi_integrations', 'hvi_whoop_body'];
-const MERGE_KEYS = ['hvi_workout_log','hvi_meal_log','hvi_journal3','hvi_weight_log','hvi_water_log','hvi_sleep_log','hvi_habit_history','hvi_rest_by_exercise'];
+const MERGE_KEYS = ['hvi_workout_log','hvi_meal_log','hvi_journal3','hvi_weight_log','hvi_water_log','hvi_sleep_log','hvi_habit_history','hvi_rest_by_exercise','hvi_burn_log'];
 
 // ── AUTH HELPERS ──────────────────────────────────────────────────────────
 async function authResetPassword(email) {
@@ -4069,15 +4069,20 @@ function getRecoveryStatus() {
     else break;
   }
 
-  if (consecutiveDays >= 4 || workoutsLast7 >= 6) return { status: 'fatigued', label: 'Consider rest', days: workoutsLast7, consecutive: consecutiveDays };
-  if (consecutiveDays >= 3 || workoutsLast7 >= 4) return { status: 'moderate', label: 'Moderate load', days: workoutsLast7, consecutive: consecutiveDays };
+  // With Whoop, how hard the training was counts too, not only how often:
+  // three heavy days, or a very hard day yesterday (whoopLoad, connect.js).
+  let wl = null;
+  try { if (typeof whoopLoad === 'function') wl = whoopLoad(); } catch {}
+  const strainLevel = (wl && wl.level) || 0, why = strainLevel ? wl.why : '';
+  if (consecutiveDays >= 4 || workoutsLast7 >= 6 || strainLevel === 2) return { status: 'fatigued', label: 'Consider rest', days: workoutsLast7, consecutive: consecutiveDays, why };
+  if (consecutiveDays >= 3 || workoutsLast7 >= 4 || strainLevel === 1) return { status: 'moderate', label: 'Moderate load', days: workoutsLast7, consecutive: consecutiveDays, why };
   return { status: 'fresh', label: 'Well recovered', days: workoutsLast7, consecutive: consecutiveDays };
 }
 
 function recoveryBadgeHTML() {
   const r = getRecoveryStatus();
   if (r.status === 'fresh' && r.days === 0) return '';
-  return `<div class="hm-card-recovery recovery-${r.status}">${r.status === 'fatigued' ? '⚠️' : r.status === 'moderate' ? '⚡' : '✓'} ${r.label} (${r.days}× this week)</div>`;
+  return `<div class="hm-card-recovery recovery-${r.status}">${r.status === 'fatigued' ? '⚠️' : r.status === 'moderate' ? '⚡' : '✓'} ${r.label} (${r.why ? esc(r.why) : r.days + '× this week'})</div>`;
 }
 
 // ── START ─────────────────────────────────────────────────────────────────

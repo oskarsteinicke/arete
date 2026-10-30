@@ -710,7 +710,7 @@ function _whoopQuality(perf) {
 //  - Whoop's own readings (recovery, HRV, resting heart rate) always update
 //  - a session logged in Arete keeps its sets and gains Whoop's strain reading
 //  - naps, and anything Whoop has not finished scoring, are left alone
-function applyWhoopData(data, sleeps, workouts) {
+function applyWhoopData(data, sleeps, workouts, burns) {
   const took = { nights: 0, recoveries: 0, workouts: 0 };
   const dayOfSleep = {};
   let lastOffset = null;
@@ -763,6 +763,7 @@ function applyWhoopData(data, sleeps, workouts) {
     took.recoveries++;
   });
 
+  const dayBurn = {};
   (data.workouts || []).forEach(w => {
     if (!w || w.score_state !== 'SCORED' || !w.score) return;
     const day = _whoopDay(w.start, w.timezone_offset);
@@ -774,6 +775,12 @@ function applyWhoopData(data, sleeps, workouts) {
       avgHr: w.score.average_heart_rate || null, maxHr: w.score.max_heart_rate || null,
       calories: w.score.kilojoule ? Math.round(w.score.kilojoule / 4.184) : null,
     };
+    // Every activity counts toward what the day burned, the walk to class
+    // included, even though only the hardest becomes the day's session.
+    const db = dayBurn[day] || (dayBurn[day] = { kcal: 0, strain: 0, n: 0 });
+    db.kcal += reading.calories || 0;
+    db.strain = Math.max(db.strain, strain);
+    db.n++;
     const cur = workouts[day];
     if (cur && cur.source !== 'whoop') {
       // Logged here: the sets are the record. Whoop adds what it measured.
@@ -791,6 +798,19 @@ function applyWhoopData(data, sleeps, workouts) {
     };
     took.workouts++;
   });
+
+  // What each day's training burned, for the calorie target and the training
+  // load (connect.js). The first day of a sync starts part way through, so it
+  // only fills a day not on record yet rather than shrinking one that is.
+  if (burns) {
+    const partial = data.since ? _whoopDay(data.since, lastOffset) : null;
+    Object.keys(dayBurn).forEach(day => {
+      if (partial && day <= partial && burns[day]) return;
+      const db = dayBurn[day];
+      burns[day] = { kcal: Math.round(db.kcal), strain: db.strain, n: db.n };
+    });
+    took.burnDays = Object.keys(dayBurn).length;
+  }
 
   return took;
 }
@@ -855,7 +875,12 @@ async function _syncWhoop() {
   const recoveries = await _whoopGet('/recovery', since);
   const workouts = await _whoopGet('/activity/workout', since);
 
-  const took = applyWhoopData({ sleeps, recoveries, workouts }, sleepLog, workoutLog);
+  const burns = LS.get('hvi_burn_log', {}) || {};
+  const took = applyWhoopData({ sleeps, recoveries, workouts, since }, sleepLog, workoutLog, burns);
+  // Eight weeks is plenty for a usual day (connect.js looks back four).
+  const keepFrom = new Date(Date.now() - 56 * 86400000).toISOString().slice(0, 10);
+  Object.keys(burns).forEach(d => { if (d < keepFrom) delete burns[d]; });
+  LS.set('hvi_burn_log', burns);
   LS.set('hvi_sleep_log', sleepLog);
   LS.set('hvi_workout_log', workoutLog);
   // Connections made before body measurements were asked for get a 401 here;
@@ -864,9 +889,9 @@ async function _syncWhoop() {
     const res = await _authedFetch('whoop', _whoopUrl('/user/measurement/body'));
     if (res && res.ok) Object.assign(took, applyWhoopBody(await res.json()));
   } catch {}
-  // The score on home, the Sleep screen and today's session are built from
-  // this; show the new night without a relaunch. Not mid-workout.
-  if ((took.nights || took.recoveries) && typeof go === 'function' && typeof curView !== 'undefined' && ['home', 'sleep', 'workout'].includes(curView)) {
+  // The score on home, the Sleep screen, today's session and today's calorie
+  // target are built from this; show them without a relaunch. Not mid-workout.
+  if ((took.nights || took.recoveries || took.workouts) && typeof go === 'function' && typeof curView !== 'undefined' && ['home', 'sleep', 'workout', 'diet'].includes(curView)) {
     try { go(curView, {}, false); } catch {}
   }
   return took;
