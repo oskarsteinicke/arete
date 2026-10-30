@@ -29,7 +29,7 @@ const INTEGRATIONS = {
   },
   whoop: {
     name: 'Whoop',
-    icon: '<svg viewBox="0 0 24 24" width="20" height="20"><path d="M4 8c0-2.2 1.8-4 4-4s4 1.8 4 4c0 2.2 1.8 4 4 4s4-1.8 4-4" fill="none" stroke="#1A1A1A" stroke-width="2.5" stroke-linecap="round"/><path d="M4 14c0-2.2 1.8-4 4-4s4 1.8 4 4c0 2.2 1.8 4 4 4s4-1.8 4-4" fill="none" stroke="#1A1A1A" stroke-width="2.5" stroke-linecap="round"/></svg>',
+    icon: '<svg viewBox="0 0 24 24" width="20" height="20"><path d="M4 8c0-2.2 1.8-4 4-4s4 1.8 4 4c0 2.2 1.8 4 4 4s4-1.8 4-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><path d="M4 14c0-2.2 1.8-4 4-4s4 1.8 4 4c0 2.2 1.8 4 4 4s4-1.8 4-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>',
     // offline is what makes Whoop hand back a refresh token. Without it the
     // connection dies when the first access token does, an hour in.
     // body_measurement brings weight and height across when they change there.
@@ -247,7 +247,8 @@ function _listenForNativeSignIn() {
   try {
     if (P.App) P.App.addListener('appUrlOpen', ev => {
       if (String(ev && ev.url).indexOf('com.getarete.app://oauth') !== 0) return;
-      try { if (P.Browser) P.Browser.close(); } catch {}
+      // Rejects when the sheet is already gone (closed by hand); that is fine.
+      try { if (P.Browser) Promise.resolve(P.Browser.close()).catch(() => {}); } catch {}
       _claimNative();
     });
     if (P.Browser) P.Browser.addListener('browserFinished', () => _claimNative());

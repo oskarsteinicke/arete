@@ -133,7 +133,7 @@ nav {
 /* INTEGRATIONS */
 .intg-list { display: flex; flex-direction: column; gap: 10px; }
 .intg-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border2); border-radius: 10px; }
-.intg-icon { flex-shrink: 0; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: var(--surface2); border-radius: 8px; padding: 4px; }
+.intg-icon { flex-shrink: 0; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: var(--surface2); border-radius: 8px; padding: 4px; color: var(--text); }
 .intg-icon svg { width: 20px; height: 20px; }
 .intg-info { flex: 1; min-width: 0; }
 .intg-name { font-size: 13px; color: var(--text); font-weight: 500; }

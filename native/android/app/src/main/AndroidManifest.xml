@@ -22,6 +22,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Connected devices: the sign-in page sends people back to the app at com.getarete.app://oauth-done -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="com.getarete.app" android:host="oauth-done" />
+            </intent-filter>
+
         </activity>
 
         <provider

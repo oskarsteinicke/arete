@@ -28,6 +28,12 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // one; without this, anything doing that silently gets nil.
         (UIApplication.shared.delegate as? AppDelegate)?.window = window
         window.makeKeyAndVisible()
+        // A link that launched the app from closed (the return from a
+        // Connected Devices sign-in, or a ?join= invite) comes in here rather
+        // than through openURLContexts. Capacitor keeps it as the launch URL.
+        if let url = connectionOptions.urlContexts.first?.url {
+            ApplicationDelegateProxy.shared.application(UIApplication.shared, open: url, options: [:])
+        }
     }
 
     func sceneDidBecomeActive(_ scene: UIScene) {
