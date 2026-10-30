@@ -79,19 +79,23 @@ Arete is Greek for excellence. Living up to your potential, daily, in the things
 All in `store-assets/`, checked against Play's rules: screenshots are min 320px
 on the short side, max 3840 on the long, and no more than 2x the short side.
 
-| File | Size | Use |
+| File | Size | Headline and screen |
 |---|---|---|
-| `00-feature-graphic.png` | 1024x500 | Feature graphic |
-| `01-home.png` | 960x1920 | Home, character and readiness |
-| `02-habits.png` | 960x1920 | Habits and streaks |
-| `03-workout.png` | 960x1920 | Training and today's session |
-| `04-diet.png` | 960x1920 | Nutrition and macros |
-| `05-musclemap.png` | 960x1920 | Muscle map. The most distinctive screen. |
-| `06-character.png` | 960x1920 | Levels and progression |
+| `00-feature-graphic.png` | 1024x500 | Feature graphic: mark, name, "Become your best self, daily" |
+| `01-sleep-sets-the-session.png` | 1440x2880 | YOUR SLEEP SETS THE SESSION. Workout, with today's lighter session after a short night |
+| `02-coach.png` | 1440x2880 | A COACH THAT KNOWS YOUR DAY. The coach answering from last night's sleep |
+| `03-habits.png` | 1440x2880 | BUILD HABITS THAT STICK. Habits ticked, activity map |
+| `04-nutrition.png` | 1440x2880 | TYPE A MEAL. IT'S LOGGED. A typed meal turned into macros |
+| `05-every-set.png` | 1440x2880 | EVERY SET. EVERY PR. A session mid-workout, new PR, rest timer |
+| `06-muscle-map.png` | 1440x2880 | SEE WHAT YOU TRAINED. The muscle map |
+| `07-journal.png` | 1440x2880 | THREE QUESTIONS. EVERY NIGHT. The evening journal |
 | `app-icon-512.png` | 512x512 | Store icon |
 
-Screenshots were taken from the real app with a month of plausible data seeded:
-ordinary numbers a committed person would actually log, nothing exaggerated.
+Made by `native/store-shots/store.js play` (and `graphic` for the feature
+graphic) from the real app with a month of plausible data seeded: ordinary
+numbers a committed person would actually log, nothing exaggerated. The demo
+user is "Alex"; the founder's name never appears. No screenshot shows the
+character art, which is being redrawn.
 
 ## Data safety questionnaire
 

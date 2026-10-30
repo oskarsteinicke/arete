@@ -1,4 +1,6 @@
-// Regenerates the store screenshots from the real app.
+// Raw store screenshots from the real app, and the demo month (SEED) that
+// native/store-shots/store.js also uses. The listing screenshots themselves,
+// captioned and in the current brand, come from native/store-shots/store.js.
 //
 //   node --experimental-websocket native/shoot-store-assets.js play
 //   node --experimental-websocket native/shoot-store-assets.js ios

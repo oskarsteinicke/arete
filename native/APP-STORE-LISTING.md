@@ -86,17 +86,20 @@ Arete is Greek for excellence. Living up to your potential, daily, in the things
 
 ## Screenshots
 
-`store-assets-ios/`, 1320x2868 — the 6.9" iPhone size, which is the only
+`store-assets-ios/`, 1320x2868: the 6.9" iPhone size, which is the only
 iPhone size App Store Connect requires. No alpha channel, which Apple rejects.
+Made by `native/store-shots/store.js ios` from the real app (demo user "Alex",
+no character art while it is being redrawn).
 
-| File | Shows |
+| File | Headline and screen |
 |---|---|
-| `01-home.png` | Home: character, readiness, today's four numbers |
-| `02-habits.png` | Habits and the activity map |
-| `03-workout.png` | Training and today's session |
-| `04-diet.png` | Nutrition, macros, water |
-| `05-musclemap.png` | Muscle map. The most distinctive screen. |
-| `06-character.png` | Levels and progression |
+| `01-sleep-sets-the-session.png` | YOUR SLEEP SETS THE SESSION. Workout, with today's lighter session after a short night |
+| `02-coach.png` | A COACH THAT KNOWS YOUR DAY. The coach answering from last night's sleep |
+| `03-habits.png` | BUILD HABITS THAT STICK. Habits ticked, activity map |
+| `04-nutrition.png` | TYPE A MEAL. IT'S LOGGED. A typed meal turned into macros |
+| `05-every-set.png` | EVERY SET. EVERY PR. A session mid-workout, new PR, rest timer |
+| `06-muscle-map.png` | SEE WHAT YOU TRAINED. The muscle map |
+| `07-journal.png` | THREE QUESTIONS. EVERY NIGHT. The evening journal |
 
 The app icon comes from the build (1024x1024 in Assets.xcassets), so there is
 nothing to upload separately.

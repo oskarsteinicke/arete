@@ -1,0 +1,93 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Arete store art</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..900&display=block">
+<style>
+  html, body { margin: 0; padding: 0; background: #0B0B0B; }
+  body { font-family: Inter, sans-serif; font-optical-sizing: auto; -webkit-font-smoothing: antialiased; }
+  #c { position: relative; overflow: hidden; }
+  .cap { position: absolute; left: 0; right: 0; text-align: center; font-weight: 900; text-transform: uppercase; letter-spacing: -0.035em; line-height: 0.95; }
+  .cap div { white-space: nowrap; }
+  .dot { color: #FF561E; }
+  .dev { position: absolute; background: #050505; }
+  .scr { position: absolute; overflow: hidden; background: #0B0B0B; }
+  .scr img { position: absolute; left: 0; top: 0; width: 100%; display: block; }
+</style>
+</head><body><div id="c"></div>
+<script>
+// Brand palette (tokens.css): ink, cream, white, muted, orange.
+const C = { ink: '#0B0B0B', cream: '#F2EEE6', white: '#F8F8F8', muted: '#8A8580', orange: '#FF561E' };
+const root = document.getElementById('c');
+// Inter loads with display=block: text stays invisible until each weight arrives,
+// and nothing asks for a weight until it is used. Ask up front.
+const fontsIn = () => Promise.all(['900', '800', '650', '600'].map(w => document.fonts.load(`${w} 40px Inter`))).then(() => document.fonts.ready);
+function textWidth(txt, px, weight = 900) {
+  const s = document.createElement('span');
+  s.style.cssText = `position:absolute;visibility:hidden;white-space:nowrap;font:${weight} ${px}px Inter;letter-spacing:-0.035em;text-transform:uppercase`;
+  s.textContent = txt; document.body.appendChild(s); const w = s.getBoundingClientRect().width; s.remove(); return w;
+}
+const statusIOS = (w, s) => `<svg width="${w}" height="${54 * s}" viewBox="0 0 ${w / s} 54" style="position:absolute;left:0;top:0">
+  <text x="${0.15 * w / s}" y="36" fill="#F8F8F8" font-family="Inter" font-weight="650" font-size="17" text-anchor="middle" letter-spacing="-0.3">7:42</text>
+  <g transform="translate(${w / s - 103},0)">
+  <g fill="#F8F8F8"><rect x="0" y="27" width="3.2" height="5" rx="1"/><rect x="5" y="25" width="3.2" height="7" rx="1"/><rect x="10" y="22.5" width="3.2" height="9.5" rx="1"/><rect x="15" y="20" width="3.2" height="12" rx="1"/></g>
+  <g fill="none" stroke="#F8F8F8" stroke-width="2" stroke-linecap="round"><path d="M24.5 25.2a10.5 10.5 0 0 1 14 0"/><path d="M27.4 28.2a6.3 6.3 0 0 1 8.2 0"/></g><circle cx="31.5" cy="31.2" r="1.6" fill="#F8F8F8"/>
+  <rect x="46" y="20.5" width="25" height="12" rx="3.8" fill="none" stroke="rgba(248,248,248,.45)" stroke-width="1.2"/><rect x="48" y="22.5" width="17" height="8" rx="2.2" fill="#F8F8F8"/><rect x="72.3" y="24.5" width="1.6" height="4" rx=".8" fill="rgba(248,248,248,.45)"/></g>
+</svg>`;
+const statusAndroid = (w, s) => `<svg width="${w}" height="${30 * s}" viewBox="0 0 ${w / s} 30" style="position:absolute;left:0;top:0">
+  <text x="22" y="20" fill="#F8F8F8" font-family="Inter" font-weight="600" font-size="13.5">7:42</text>
+  <g transform="translate(${w / s - 74},0)" fill="#F8F8F8">
+  <path d="M8 21.5 L16 13.5 L16 21.5 Z"/>
+  <path d="M28 21 l-7-8.2a10.8 10.8 0 0 1 14 0z"/>
+  <rect x="42" y="11" width="9" height="13" rx="1.6" fill="none" stroke="#F8F8F8" stroke-width="1.4"/><rect x="44" y="14" width="5" height="8" rx=".6"/><rect x="45" y="9.4" width="3" height="1.8" rx=".5"/></g>
+</svg>`;
+
+// One captioned screenshot.
+window.render = async o => {
+  await fontsIn();
+  const { W, H } = o, dark = o.bg === 'ink';
+  root.innerHTML = '';
+  root.style.cssText = `width:${W}px;height:${H}px;background:${dark ? C.ink : C.cream}`;
+  const pad = 0.07 * W, maxW = W - 2 * pad;
+  const size = Math.min(0.1 * W, Math.floor(Math.min(...o.caption.map(l => maxW / textWidth(l + '.', 100))) * 100));
+  const capTop = 0.068 * H;
+  const cap = document.createElement('div');
+  cap.className = 'cap';
+  cap.style.cssText = `top:${capTop}px;font-size:${size}px;color:${dark ? C.white : C.ink}`;
+  cap.innerHTML = o.caption.map((l, i) => `<div>${l}${i === o.caption.length - 1 ? '<span class="dot">.</span>' : ''}</div>`).join('');
+  root.appendChild(cap);
+  const capH = o.caption.length * size * 0.95;
+  // the phone
+  const devW = 0.8 * W, b = devW * 0.026, scrW = devW - 2 * b, s = scrW / o.vw, scrH = o.vh * s;
+  const scrR = (o.device === 'ios' ? 62 : 34) * s, devR = scrR + b;
+  const devTop = capTop + capH + 0.05 * H, devLeft = (W - devW) / 2;
+  const dev = document.createElement('div');
+  dev.className = 'dev';
+  dev.style.cssText = `left:${devLeft}px;top:${devTop}px;width:${devW}px;height:${scrH + 2 * b}px;border-radius:${devR}px;` +
+    `box-shadow:inset 0 0 0 ${0.004 * devW}px #6e6862, inset 0 0 0 ${0.008 * devW}px #2b2927` + (dark ? '' : `, 0 ${0.03 * H}px ${0.06 * H}px rgba(40,30,20,0.28)`);
+  const scr = document.createElement('div');
+  scr.className = 'scr';
+  scr.style.cssText = `left:${b}px;top:${b}px;width:${scrW}px;height:${scrH}px;border-radius:${scrR}px`;
+  // the app sits between the status bar and the home indicator, as the native shell places it
+  scr.innerHTML = `<img src="${o.img}" style="top:${o.statusH * s}px;height:${(o.vh - o.statusH - o.bottomH) * s}px">` +
+    (o.device === 'ios' ? `<div style="position:absolute;left:${(scrW - 136 * s) / 2}px;top:${(o.vh - 13) * s}px;width:${136 * s}px;height:${5 * s}px;border-radius:${3 * s}px;background:rgba(248,248,248,0.82)"></div>` : '') +
+    (o.device === 'ios'
+      ? statusIOS(scrW, s) + `<div style="position:absolute;left:${(scrW - 126 * s) / 2}px;top:${11 * s}px;width:${126 * s}px;height:${37 * s}px;border-radius:${19 * s}px;background:#000"></div>`
+      : statusAndroid(scrW, s) + `<div style="position:absolute;left:${scrW / 2 - 6 * s}px;top:${9 * s}px;width:${12 * s}px;height:${12 * s}px;border-radius:50%;background:#000"></div>`);
+  dev.appendChild(scr);
+  root.appendChild(dev);
+  return Promise.all([...root.querySelectorAll('img')].map(i => i.decode().catch(() => {})));
+};
+
+// Play's 1024x500 feature graphic: the mark, the name, the promise.
+window.featureGraphic = async () => {
+  await fontsIn();
+  root.innerHTML = '';
+  root.style.cssText = `width:1024px;height:500px;background:${C.ink}`;
+  root.innerHTML = `
+    <img src="logo.svg" style="position:absolute;left:30px;top:88px;width:330px;height:330px">
+    <div style="position:absolute;left:350px;top:150px;font:900 128px/0.9 Inter;letter-spacing:-0.035em;color:${C.white}">ARETE<span class="dot">.</span></div>
+    <div style="position:absolute;left:356px;top:285px;font:800 30px/1 Inter;letter-spacing:-0.01em;text-transform:uppercase;color:${C.cream}">Become your best self, daily</div>
+    <div style="position:absolute;left:358px;top:338px;font:600 17px/1 Inter;letter-spacing:0.24em;color:${C.muted}">HABITS&nbsp;&nbsp;&nbsp;TRAINING&nbsp;&nbsp;&nbsp;NUTRITION&nbsp;&nbsp;&nbsp;AI COACH</div>`;
+  return Promise.all([...root.querySelectorAll('img')].map(i => i.decode().catch(() => {})));
+};
+</script></body></html>
