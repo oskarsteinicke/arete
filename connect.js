@@ -658,6 +658,10 @@ function _coachInsightContext() {
     if (j && j.struggle) parts.push(`Recent journal struggle: "${String(j.struggle).slice(0, 100)}"`);
   } catch {}
   try {
+    const ps = typeof patternLinesForCoach === 'function' ? patternLinesForCoach(1) : [];
+    if (ps.length) parts.push(`A pattern in their own logs (went together, not a cause): ${ps[0]}`);
+  } catch {}
+  try {
     const why = LS.get('hvi_why', '');
     if (why) parts.push(`Their why: "${String(why).slice(0, 80)}"`);
   } catch {}

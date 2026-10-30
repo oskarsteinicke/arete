@@ -2821,6 +2821,31 @@ nav.has-pill .ni.active::before { display: none; }
 .ci-locked { cursor: pointer; transition: border-color 0.2s; }
 .ci-locked:hover { border-color: rgba(var(--accent-hi-rgb),0.35); }
 
+/* ══ YOUR PATTERNS (patterns.js) ═══════════════════════════════════════
+   One pattern on home, all of them in a sheet. The higher of the two bars is
+   full white, the lower a quieter grey: the gap is the point. */
+.pt-card {
+  margin: 0 16px 12px; padding: 16px;
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: var(--radius); cursor: pointer;
+}
+.pt-more { font-size: 12.5px; font-weight: 600; color: var(--text-muted); }
+.pt-text { font-size: 15px; color: var(--text); line-height: 1.45; margin-bottom: 12px; }
+.pt-bars { display: grid; gap: 4px; }
+.pt-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 12.5px; color: var(--text-dim); margin-top: 4px; }
+.pt-val { font-family: var(--font); font-weight: var(--fw-head); font-size: 15px; color: var(--text); font-variant-numeric: tabular-nums; }
+.pt-bar { height: 6px; border-radius: 3px; background: rgba(var(--text-rgb), 0.07); overflow: hidden; }
+.pt-bar span { display: block; height: 100%; border-radius: 3px; background: rgba(var(--text-rgb), 0.32); animation: bar-from 0.9s var(--ease) 0.2s both; }
+.pt-bar.pt-hi span { background: var(--text); }
+.pt-sheet-title {
+  font-family: var(--font); font-weight: var(--fw-head); text-transform: uppercase;
+  letter-spacing: var(--track-head); line-height: var(--lh-head); font-size: var(--fs-h2);
+  color: var(--text); margin: 4px 44px 10px 0;
+}
+.pt-item { padding: 14px 0; border-top: 1px solid var(--border2); }
+.pt-item .pt-text { margin-bottom: 8px; }
+.pt-n { font-size: 12.5px; color: var(--text-muted); margin-top: 8px; }
+
 /* ══ BLACK & GOLD IDENTITY ══════════════════════════════════════════════
    Gold carries every screen the way the Diet section does: section labels
    in letterspaced gold caps, key values in gold, supporting labels and body

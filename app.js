@@ -3045,6 +3045,7 @@ function renderHome() {
 
     ${typeof todayBriefingHTML === 'function' ? todayBriefingHTML() : ''}
     ${typeof coachInsightCardHTML === 'function' ? coachInsightCardHTML() : ''}
+    ${typeof patternCardHTML === 'function' ? patternCardHTML() : ''}
 
     <div class="hm-pillars ani">${pillarStrip}</div>
 
