@@ -76,7 +76,7 @@ module.exports = function () {
   r.section('imported activities keep their name');
   {
     const s = sb({ hvi_workout_log: JSON.stringify({
-      [dayKey(1)]: { dayName: 'Morning Run', exercises: [], source: 'strava', duration: 1800 },
+      [dayKey(1)]: { dayName: 'Morning Run', exercises: [], source: 'strava', duration: 30 },
     })});
     run(s, 'renderWorkoutHistory()');
     const html = s._els['view'].innerHTML;

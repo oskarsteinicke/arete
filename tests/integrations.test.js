@@ -273,6 +273,19 @@ module.exports = async function () {
     r.check('the Worker allows the DELETE that revokes access', /Allow-Methods': '[^']*DELETE/.test(wsrc));
   }
 
+  r.section('a Whoop session in the history shows its length, strain and heart rate');
+  {
+    const s = sb({ hvi_whoop_body: JSON.stringify({ maxHr: 190 }) });
+    run(s, `workoutLog = { '2026-10-11': { dayName: 'Soccer', duration: 70, exercises: [], source: 'whoop', strain: 14.3, avgHr: 152 } };
+      document.getElementById = function(){ return this._v || (this._v = { innerHTML: '' }); }.bind({});`);
+    const html = run(s, `renderWorkoutHistory(); document.getElementById('view').innerHTML`);
+    r.check('70 minutes, not "1m"', /70m/.test(html) && !/>1m/.test(html));
+    r.check('no "0 sets" for an activity with no sets', !/0 sets/.test(html));
+    r.check('strain and heart rate as a share of max', /Strain 14\.3 · avg 152 bpm, 80% of max/.test(html), (html.match(/Strain[^<]*/) || [''])[0]);
+    r.check('a session logged here still counts its sets', run(s, `sessionMinutes({ duration: 3600, exercises: [] })`) === 60);
+    r.check('no max from Whoop, no percentage', run(s, `LS.set('hvi_whoop_body', null); whoopLine({ source: 'whoop', strain: 5, avgHr: 120 })`) === 'Strain 5 · avg 120 bpm');
+  }
+
   // Whoop's refresh token works once. Synced to a second device, one device's
   // refresh broke the other's connection, and the disconnect then synced back.
   r.section('connection logins stay on the device');

@@ -66,9 +66,12 @@ function _coachSessionLine(w, label) {
     return sets ? `${meta ? meta.name : 'Exercise'} ${sets}` : '';
   }).filter(Boolean).join('; ');
   const bits = [label, _coachSessionName(w)].filter(Boolean);
-  if (w.duration) bits.push(`${w.duration} min`);
+  const mins = typeof sessionMinutes === 'function' ? sessionMinutes(w) : 0;
+  if (mins) bits.push(`${mins} min`);
   if (vol) bits.push(`${_cNum(vol)} ${u} volume`);
   if (w.source) bits.push(`from ${w.source}`);
+  const wh = typeof whoopLine === 'function' ? whoopLine(w) : '';
+  if (wh) bits.push(`Whoop: ${wh}`);
   if (w.tier === 'trim' || w.tier === 'deload') bits.push(w.tier === 'deload' ? 'deload day' : 'lighter day');
   return `${bits.join(' · ')}${lifts ? ' · ' + lifts : ''}`;
 }

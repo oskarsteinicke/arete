@@ -1554,6 +1554,35 @@ function renderWorkoutAI() {
     </div>`;
 }
 
+// How long a session ran, in minutes. Sessions logged here store seconds;
+// sessions brought in from Whoop, Strava, Google Fit or Apple Health store
+// minutes. Reading one as the other showed a 70-minute Whoop session as "1m"
+// in the history, and told the coach a 55-minute lift took 3,300 minutes.
+function sessionMinutes(w) {
+  const d = +(w && w.duration) || 0;
+  if (!(d > 0)) return 0;
+  return w.source ? Math.round(d) : Math.round(d / 60);
+}
+
+// Average heart rate as a share of the max Whoop has for the person.
+function hrOfMax(avg) {
+  let body = null;
+  try { body = LS.get('hvi_whoop_body', null); } catch {}
+  const max = body && body.maxHr;
+  return avg > 0 && max > 0 ? Math.round(avg / max * 100) : null;
+}
+
+// What Whoop measured for a session: a Whoop activity of its own, or the
+// reading attached to a session logged here. Empty when Whoop has nothing.
+function whoopLine(w) {
+  const r = !w ? null : w.source === 'whoop' ? { strain: w.strain, avgHr: w.avgHr } : w.whoop;
+  if (!r) return '';
+  const bits = [];
+  if (r.strain > 0) bits.push(`Strain ${r.strain}`);
+  if (r.avgHr > 0) { const p = hrOfMax(r.avgHr); bits.push(`avg ${r.avgHr} bpm${p ? `, ${p}% of max` : ''}`); }
+  return bits.join(' · ');
+}
+
 let _workoutHistorySearch = '';
 function renderWorkoutHistory() {
   const allDates = Object.keys(workoutLog).sort().reverse();
@@ -1573,13 +1602,15 @@ function renderWorkoutHistory() {
     const dayInfo = prog ? prog.days[wl.dayIndex % prog.days.length] : null;
     const totalVol = wl.exercises.reduce((sum, we) => sum + we.sets.reduce((s2, st) => s2 + (st.completed && !st.warmup ? st.weight * st.reps : 0), 0), 0);
     const totalSets = wl.exercises.reduce((sum, we) => sum + we.sets.filter(s => s.completed && !s.warmup).length, 0);
-    const durSecs = wl.duration || 0;
-    const durStr = durSecs > 0 ? `${Math.floor(durSecs/60)}m` : '';
+    const mins = sessionMinutes(wl);
+    const durStr = mins > 0 ? `${mins}m` : '';
+    const whoopStr = whoopLine(wl);
     const noteSnip = wl.notes ? ` · "${wl.notes.slice(0,40)}${wl.notes.length>40?'…':''}"` : '';
     const volPRBadge = wl.volumePR ? ' <span class="pr-badge" style="animation:none">🏆 Vol PR</span>' : '';
     return `<div class="w-hist-item" style="position:relative"><div class="w-hist-date">${fmtDate(d)}</div>
       <div class="w-hist-prog">${esc(dayInfo ? dayInfo.name : (wl.dayName || 'Workout'))} ${prog ? '· ' + prog.name : ''}${volPRBadge}</div>
-      <div class="w-hist-vol">${totalSets} sets · ${totalVol.toLocaleString()} ${wtUnit()} vol${durStr ? ' · ' + durStr : ''}${noteSnip}</div>
+      <div class="w-hist-vol">${totalSets || !wl.source ? `${totalSets} sets · ${totalVol.toLocaleString()} ${wtUnit()} vol${durStr ? ' · ' + durStr : ''}` : [durStr, wl.distance].filter(Boolean).join(' · ') || 'From ' + esc(wl.source)}${noteSnip}</div>${whoopStr ? `
+      <div class="w-hist-vol">${esc(whoopStr)}</div>` : ''}
       <button class="w-repeat-btn" onclick="event.stopPropagation();repeatWorkout('${d}')" title="Repeat this workout">↻</button></div>`;
   }).join('') : '<div class="empty-state"><div class="empty-state-icon">🏋️</div><div class="empty-state-title">No workouts yet</div><div class="empty-state-sub">Start your first workout to see your history here.</div><button class="empty-state-btn" onclick="go(\'workoutActive\')">Start Workout</button></div>';
 

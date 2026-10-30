@@ -21,10 +21,10 @@ const sets = (n, w, r) => Array.from({ length: n }, () => ({ weight: w, reps: r,
 
 function sb({ sleepToday, units = 'metric', goal = 'cut', target = 2300 } = {}) {
   const workoutLog = {
-    [dk(14)]: { programId: 'cp_t', dayIndex: 0, touched: true, duration: 55, exercises: [{ exerciseId: 'bench_press', sets: sets(4, 75, 6) }, { exerciseId: 'ohp', sets: sets(3, 45, 6) }] },
-    [dk(7)]: { programId: 'cp_t', dayIndex: 0, touched: true, duration: 56, exercises: [{ exerciseId: 'bench_press', sets: sets(4, 77.5, 6) }, { exerciseId: 'ohp', sets: sets(3, 47.5, 6) }] },
-    [dk(3)]: { programId: 'cp_t', dayIndex: 0, touched: true, duration: 57, exercises: [{ exerciseId: 'bench_press', sets: sets(4, 80, 6) }, { exerciseId: 'ohp', sets: sets(3, 47.5, 5) }] },
-    [dk(2)]: { programId: 'cp_t', dayIndex: 1, touched: true, duration: 61, exercises: [{ exerciseId: 'squat', sets: sets(4, 100, 5) }, { exerciseId: 'rdl', sets: sets(3, 85, 8) }] },
+    [dk(14)]: { programId: 'cp_t', dayIndex: 0, touched: true, duration: 3300, exercises: [{ exerciseId: 'bench_press', sets: sets(4, 75, 6) }, { exerciseId: 'ohp', sets: sets(3, 45, 6) }] },
+    [dk(7)]: { programId: 'cp_t', dayIndex: 0, touched: true, duration: 3360, exercises: [{ exerciseId: 'bench_press', sets: sets(4, 77.5, 6) }, { exerciseId: 'ohp', sets: sets(3, 47.5, 6) }] },
+    [dk(3)]: { programId: 'cp_t', dayIndex: 0, touched: true, duration: 3420, exercises: [{ exerciseId: 'bench_press', sets: sets(4, 80, 6) }, { exerciseId: 'ohp', sets: sets(3, 47.5, 5) }] },
+    [dk(2)]: { programId: 'cp_t', dayIndex: 1, touched: true, duration: 3660, exercises: [{ exerciseId: 'squat', sets: sets(4, 100, 5) }, { exerciseId: 'rdl', sets: sets(3, 85, 8) }] },
   };
   // 2,000 kcal every day for three weeks, weight flat: maintenance is 2,000.
   const mealLog = {}, weightLog = {};
@@ -170,6 +170,19 @@ module.exports = async function () {
     r.check('an action the app does not know is never offered', !JSON.parse(run(s, 'JSON.stringify(_coachHistory)')).some(m => m.content.startsWith('[[PROPOSED]]')));
     const src = fs.readFileSync(path.join(APP, 'coach.js'), 'utf8');
     r.check('the coach is told the card is the question', /NEVER ask "do you want me to…" in a reply that also carries the action/.test(src));
+  }
+
+  // A logged session stores seconds; one brought in from a device, minutes.
+  // The coach read both as minutes, so a 55-minute lift came out as 3,300.
+  r.section('session length and what Whoop measured');
+  {
+    const s = sb();
+    r.check('a logged session is told in minutes', /Upper Push · 57 min/.test(prompt(s)) && !/3420 min/.test(prompt(s)));
+    run(s, `LS.set('hvi_whoop_body', { maxHr: 195 })`);
+    const own = run(s, `_coachSessionLine({ dayName: 'Soccer', source: 'whoop', duration: 70, strain: 14.3, avgHr: 151, exercises: [] }, 'Sat')`);
+    r.check('a Whoop activity keeps its own minutes, strain and heart rate', /70 min/.test(own) && /Strain 14\.3/.test(own) && /avg 151 bpm, 77% of max/.test(own), own);
+    const lifted = run(s, `_coachSessionLine({ programId: 'cp_t', dayIndex: 0, duration: 3000, exercises: [], whoop: { strain: 9.8, avgHr: 122 } }, 'Fri')`);
+    r.check('a session logged here carries Whoop\'s reading of it', /50 min/.test(lifted) && /Whoop: Strain 9\.8 · avg 122 bpm, 63% of max/.test(lifted), lifted);
   }
 
   return r.finish();
