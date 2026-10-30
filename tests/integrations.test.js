@@ -159,8 +159,9 @@ module.exports = async function () {
     const s = sb({});
     const scopes = run(s, 'INTEGRATIONS.whoop.scopes').split(' ');
     r.check('it can refresh itself', scopes.includes('offline'), '(connection dies after an hour)');
-    r.check('it reads recovery, sleep and workouts', ['read:recovery', 'read:sleep', 'read:workout'].every(x => scopes.includes(x)));
-    r.check('and nothing it does not use', scopes.length === 4, `(${scopes.join(' ')})`);
+    r.check('it reads recovery, sleep, workouts and body measurements', ['read:recovery', 'read:sleep', 'read:workout', 'read:body_measurement'].every(x => scopes.includes(x)));
+    r.check('and nothing it does not use', scopes.length === 5, `(${scopes.join(' ')})`);
+    r.check('the sync reads body measurements', /\/user\/measurement\/body/.test(require('fs').readFileSync(require('path').join(require('./harness').APP, 'integrations.js'), 'utf8')));
     r.check('it talks to the current API', /\/developer\/v2$/.test(run(s, 'WHOOP_API')));
     const src = require('fs').readFileSync(require('path').join(require('./harness').APP, 'integrations.js'), 'utf8');
     r.check('nothing still calls the retired one', !/developer\/v1\//.test(src), '(v1 endpoint left in)');
@@ -168,6 +169,33 @@ module.exports = async function () {
       run(s, `location.origin = 'https://get-arete.com'; location.pathname = '/index.html'; _oauthRedirectUri()`) === 'https://get-arete.com/');
     r.check('a connected Whoop is why the sleep question is not asked',
       /_getIntegrations\(\)\.whoop\) return;/.test(require('fs').readFileSync(require('path').join(require('./harness').APP, 'app.js'), 'utf8')));
+  }
+
+  // Weight and height follow Whoop, but only when Whoop's own value changes:
+  // an unchanged Whoop number must never overwrite a weigh-in typed in Arete.
+  r.section('weight and height follow Whoop when they change there');
+  {
+    const T = new Date().toLocaleDateString('en-CA');
+    const body = (kg, m) => JSON.stringify({ weight_kilogram: kg, height_meter: m, max_heart_rate: 195 });
+    const s = sb({ hvi_tdee_profile: JSON.stringify({ age: 21, sex: 'male', weight_kg: 80, height_cm: 180, activity: 'high' }) });
+    run(s, `applyWhoopBody(${body(80.4, 1.83)})`);
+    r.check('the first sync fills today\'s weight', run(s, `weightLog['${T}']`) === 80.4);
+    r.check('and the height in the profile', run(s, `LS.get('hvi_tdee_profile').height_cm`) === 183);
+    run(s, `weightLog['${T}'] = 79.9; LS.set('hvi_weight_log', weightLog); applyWhoopBody(${body(80.4, 1.83)})`);
+    r.check('an unchanged Whoop weight leaves a typed-in weigh-in alone', run(s, `weightLog['${T}']`) === 79.9);
+    run(s, `applyWhoopBody(${body(81.2, 1.83)})`);
+    r.check('a changed Whoop weight comes across', run(s, `weightLog['${T}']`) === 81.2);
+    run(s, `applyWhoopBody(${body(-5, 0.2)})`);
+    r.check('nonsense values are ignored', run(s, `weightLog['${T}']`) === 81.2 && run(s, `LS.get('hvi_tdee_profile').height_cm`) === 183);
+    r.check('the max heart rate is kept for later', run(s, `LS.get('hvi_whoop_body').maxHr`) === 195);
+
+    const first = sb({ hvi_weight_log: JSON.stringify({ [T]: 78.5 }) });
+    run(first, `applyWhoopBody(${body(80.4, 1.83)})`);
+    r.check('a first sync does not overwrite a weight already logged today', run(first, `weightLog['${T}']`) === 78.5);
+
+    const imp = sb({}, { settings: { units: 'imperial' } });
+    run(imp, `applyWhoopBody(${body(80, 1.8)})`);
+    r.check('in pounds for an imperial user', run(imp, `weightLog['${T}']`) === 176.4, run(imp, `weightLog['${T}']`));
   }
 
   return r.finish();

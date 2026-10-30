@@ -32,10 +32,11 @@ const INTEGRATIONS = {
     icon: '<svg viewBox="0 0 24 24" width="20" height="20"><path d="M4 8c0-2.2 1.8-4 4-4s4 1.8 4 4c0 2.2 1.8 4 4 4s4-1.8 4-4" fill="none" stroke="#1A1A1A" stroke-width="2.5" stroke-linecap="round"/><path d="M4 14c0-2.2 1.8-4 4-4s4 1.8 4 4c0 2.2 1.8 4 4 4s4-1.8 4-4" fill="none" stroke="#1A1A1A" stroke-width="2.5" stroke-linecap="round"/></svg>',
     // offline is what makes Whoop hand back a refresh token. Without it the
     // connection dies when the first access token does, an hour in.
-    scopes: 'read:recovery read:sleep read:workout offline',
+    // body_measurement brings weight and height across when they change there.
+    scopes: 'read:recovery read:sleep read:workout read:body_measurement offline',
     authUrl: 'https://api.prod.whoop.com/oauth/oauth2/auth',
     tokenUrl: 'https://api.prod.whoop.com/oauth/oauth2/token',
-    provides: ['sleep', 'workouts', 'recovery']
+    provides: ['sleep', 'workouts', 'recovery', 'weight']
   }
 };
 
@@ -310,7 +311,7 @@ const _CLIENT_IDS = {
   strava: '246559',
   googlefit: '681305896160-s020jd287h1kdj7lh79k3m3keeis9q4p.apps.googleusercontent.com',
   fitbit: '',
-  whoop: ''
+  whoop: '71b54adc-a980-46a6-ba51-b6024c243e43'
 };
 function _getClientId(service) {
   return _CLIENT_IDS[service] || (settings.integrationClientIds || {})[service] || null;
@@ -640,6 +641,38 @@ async function _whoopGet(path, startISO) {
   return data.records || [];
 }
 
+// Weight and height as Whoop has them. They are written only when Whoop's own
+// value changes, so an unchanged Whoop number never overwrites a weigh-in typed
+// into Arete. The very first sync fills today's weight only if none is logged.
+// Weight goes into the weight log, where the bodyweight-drift check already
+// offers new targets; height goes into the profile the targets are built from.
+function applyWhoopBody(b) {
+  const prev = LS.get('hvi_whoop_body', null);
+  const out = Object.assign({}, prev || {}, { at: Date.now() });
+  const took = {};
+  const kg = Number(b && b.weight_kilogram), m = Number(b && b.height_meter), mhr = Number(b && b.max_heart_rate);
+  if (kg >= 20 && kg <= 300 && (!prev || Math.abs(kg - (prev.kg || 0)) >= 0.05)) {
+    const t = today();
+    if (prev || weightLog[t] == null) {
+      const val = Math.round(_kgToDisplayWeight(kg) * 10) / 10;
+      weightLog[t] = val;
+      LS.set('hvi_weight_log', weightLog);
+      if (window.Arete) window.Arete.emit('weight:logged', { value: val, source: 'whoop' });
+      took.weight = val;
+    }
+    out.kg = Math.round(kg * 100) / 100;
+  }
+  if (m >= 1 && m <= 2.6 && (!prev || Math.abs(m - (prev.m || 0)) >= 0.005)) {
+    const cm = Math.round(m * 100);
+    const p = LS.get('hvi_tdee_profile', null);
+    if (p && p.height_cm !== cm) { p.height_cm = cm; LS.set('hvi_tdee_profile', p); if (typeof tdeeProfile !== 'undefined') tdeeProfile = p; took.height = cm; }
+    out.m = m;
+  }
+  if (mhr >= 100 && mhr <= 230) out.maxHr = Math.round(mhr);
+  LS.set('hvi_whoop_body', out);
+  return took;
+}
+
 async function _syncWhoop() {
   // Ten days back: enough to fill a week and to pick up a night Whoop was
   // still scoring the last time this ran.
@@ -653,6 +686,12 @@ async function _syncWhoop() {
   const took = applyWhoopData({ sleeps, recoveries, workouts }, sleepLog, workoutLog);
   LS.set('hvi_sleep_log', sleepLog);
   LS.set('hvi_workout_log', workoutLog);
+  // Connections made before body measurements were asked for get a 401 here;
+  // the rest of the sync still stands.
+  try {
+    const res = await _authedFetch('whoop', `${WHOOP_API}/user/measurement/body`);
+    if (res && res.ok) Object.assign(took, applyWhoopBody(await res.json()));
+  } catch {}
   // The score on home is built from this; show the new one without a relaunch.
   if ((took.nights || took.recoveries) && typeof go === 'function' && typeof curView !== 'undefined' && curView === 'home') {
     try { go('home', {}, false); } catch {}
