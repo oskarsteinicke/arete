@@ -135,6 +135,15 @@ module.exports = async function () {
     r.check('and left done (a second tap would untick it)', run(s, 'log.h05.completedToday') === true);
   }
 
+  r.section('no mic button inside the native apps');
+  {
+    const s = sb();
+    run(s, `window.webkitSpeechRecognition = function () {};`);
+    r.check('on the web, where the browser can listen, there is one', !!run(s, '_laSR()'));
+    run(s, `window.Capacitor = { isNativePlatform: function () { return true; } };`);
+    r.check('in the app, where it would need microphone permission, there is not', !run(s, '_laSR()'));
+  }
+
   r.section('the words follow the brand');
   {
     const code = fs.readFileSync(path.join(APP, 'logany.js'), 'utf8').split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');

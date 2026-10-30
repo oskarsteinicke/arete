@@ -17,7 +17,10 @@
 
 let _laEntries = [], _laBusy = false, _laRec = null, _laNote = '';
 const LA_MEALS = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
-const _laSR = () => (typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition)) || null;
+// Not inside the native apps: there the microphone would need permission text
+// in the app's settings (iOS ends an app that uses it without), and the
+// keyboard's own microphone already works with none.
+const _laSR = () => (typeof window !== 'undefined' && !window.Capacitor && (window.SpeechRecognition || window.webkitSpeechRecognition)) || null;
 
 // ── reading the words ──────────────────────────────────────────────────────
 function _laPrompt() {
