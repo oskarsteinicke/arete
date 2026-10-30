@@ -2547,11 +2547,14 @@ function go(view, params = {}, pushState = true) {
   const navKey = NAV_PARENT[view] || view;
   document.querySelectorAll('.ni').forEach(el => el.classList.toggle('active', el.dataset.n === navKey));
   const viewEl = document.getElementById('view');
-  viewEl.scrollTop = 0;
   // Redrawing the screen you are already on is not an arrival. Replaying the
   // slide and every card's entrance made a sync or a mood tap look like a page
   // change. A real move slides in from the side it is heading to.
   const redraw = _viewShown && prevView === view && !pushState;
+  // Only an arrival starts at the top. A redraw (logging water halfway down
+  // Nutrition, a sync, Log anything) used to jump back to the top as well.
+  const keepY = redraw ? viewEl.scrollTop : 0;
+  viewEl.scrollTop = 0;
   _viewShown = true;
   viewEl.classList.remove('view-slide-in');
   clearTimeout(_arriveTimer);
@@ -2603,6 +2606,7 @@ function go(view, params = {}, pushState = true) {
   _arriving = !redraw;
   try { (typeof render === 'function' ? render : renderHome)(); }
   finally { _arriving = false; }
+  if (keepY) viewEl.scrollTop = keepY;
   // The screen's big heading rises in as it arrives, not on every redraw.
   if (!redraw) { try { riseText(viewEl.querySelector('.page-title, .hm-hero-name, .w-hero-day')); } catch {} }
 }

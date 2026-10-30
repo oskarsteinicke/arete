@@ -193,6 +193,19 @@ module.exports = function () {
       run(s, `document.getElementById('view').style.getPropertyValue('--view-dx')`));
   }
 
+  // A redraw used to jump to the top as well: log water halfway down Nutrition
+  // and the screen threw you back up to the heading.
+  r.section('a redraw keeps your place; an arrival starts at the top');
+  {
+    const s = boot(EAGER);
+    run(s, `renderHome = function () {}; renderHabits = function () {}; go('home');`);
+    run(s, `document.getElementById('view').scrollTop = 640; go('home', {}, false);`);
+    r.check('redrawing the same screen stays where you were', run(s, `document.getElementById('view').scrollTop`) === 640,
+      run(s, `document.getElementById('view').scrollTop`));
+    run(s, `go('habits');`);
+    r.check('moving to another screen starts at the top', run(s, `document.getElementById('view').scrollTop`) === 0);
+  }
+
   // Redrawn rings emptied and refilled from zero. After a meal they should move
   // on from where they were.
   r.section('rings carry on from where they stood');
