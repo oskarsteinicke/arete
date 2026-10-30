@@ -267,21 +267,37 @@ async function _exchangeCode(service, code) {
 async function _refreshToken(service) {
   const token = _getToken(service);
   if (!token || !token.refresh_token) return null;
+  let res;
   try {
-    const res = await fetch(_OAUTH_PROXY + '/oauth/refresh', {
+    res = await fetch(_OAUTH_PROXY + '/oauth/refresh', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ service, refresh_token: token.refresh_token })
     });
-    if (!res.ok) throw new Error('Refresh failed');
-    const newToken = await res.json();
-    _saveToken(service, { ...token, ...newToken });
-    return newToken.access_token;
   } catch (err) {
-    console.error('[integrations] Token refresh failed:', err);
-    _removeToken(service);
+    // Offline, or the Worker out of reach. This used to drop the connection,
+    // so opening the app without signal could disconnect Whoop. Try next time.
+    console.warn('[integrations] Token refresh could not be sent:', err);
     return null;
   }
+  if (res.ok) {
+    try {
+      const newToken = await res.json();
+      _saveToken(service, { ...token, ...newToken });
+      return newToken.access_token;
+    } catch { return null; }
+  }
+  // Another tab, or an overlapping sync, refreshed first. Whoop's refresh token
+  // works once, so this one was refused, but the stored token is newer and good.
+  const now = _getToken(service);
+  if (now && now.refresh_token && now.refresh_token !== token.refresh_token) return now.access_token;
+  // Refused outright (access revoked in Whoop, or the token expired): the
+  // connection is over. A server hiccup (5xx, rate limit) keeps it.
+  if (res.status === 400 || res.status === 401) {
+    console.error('[integrations] Token refresh refused:', res.status);
+    _removeToken(service);
+  }
+  return null;
 }
 
 async function _authedFetch(service, url, opts = {}) {
@@ -320,7 +336,18 @@ function _getClientId(service) {
 }
 
 // ── SYNC FUNCTIONS ───────────────────────────────────────────────────────
-async function syncIntegration(service) {
+// One sync per service at a time. Whoop's refresh token works once, so two
+// overlapping syncs (↻ tapped while the app-open sync runs) could both try to
+// refresh. A second call while one runs gets the running one.
+const _syncRuns = {};
+function syncIntegration(service) {
+  if (_syncRuns[service]) return _syncRuns[service];
+  const run = _runSync(service).finally(() => { delete _syncRuns[service]; });
+  _syncRuns[service] = run;
+  return run;
+}
+
+async function _runSync(service) {
   const token = _getToken(service);
   if (!token) return;
 
@@ -845,26 +872,39 @@ function _timeAgo(ts) {
   return Math.floor(diff / 86400000) + 'd ago';
 }
 
-// ── AUTO-SYNC ON LOAD ────────────────────────────────────────────────────
-function _initIntegrations() {
-  _handleOAuthCallback();
-  const int = _getIntegrations();
-  // Auto-sync Apple Health
-  if (int.applehealth && _getHealthToken()) {
-    const lastSync = int.applehealth?.lastSync || 0;
-    if (Date.now() - lastSync > 2 * 3600000) {
-      setTimeout(() => syncAppleHealth(), 2500);
-    }
-  }
-  // Auto-sync connected OAuth services every 2 hours
+// ── AUTO-SYNC ────────────────────────────────────────────────────────────
+// Runs when Arete opens and whenever it comes back on screen. A phone often
+// resumes the app rather than reloading it, and the sync used to run on a
+// reload only, so last night could stay missing until the next restart.
+//
+// Due every 2 hours. Whoop is checked every 10 minutes in the morning until
+// last night arrives: it scores the night a little after you wake, so an
+// early look often finds nothing yet. A failed sync waits 10 minutes too.
+function _syncDue(service, now) {
+  const i = _getIntegrations()[service];
+  if (!i) return false;
+  const last = Math.max(i.lastSync || 0, i.lastError || 0);
+  const morning = new Date(now).getHours() < 14;
+  const waiting = service === 'whoop' && morning && !whoopHasNight(today());
+  return now - last > (waiting || (i.lastError || 0) > (i.lastSync || 0) ? 10 * 60000 : 2 * 3600000);
+}
+
+function _autoSync() {
+  const int = _getIntegrations(), now = Date.now();
+  if (int.applehealth && _getHealthToken() && now - (int.applehealth.lastSync || 0) > 2 * 3600000) syncAppleHealth();
   Object.keys(int).forEach(service => {
-    if (service === 'applehealth') return;
-    const lastSync = int[service]?.lastSync || 0;
-    if (Date.now() - lastSync > 2 * 3600000) {
-      setTimeout(() => syncIntegration(service), 3000);
-    }
+    if (service !== 'applehealth' && _syncDue(service, now)) syncIntegration(service);
   });
 }
 
-// Run on load
+function _initIntegrations() {
+  _handleOAuthCallback();
+  setTimeout(_autoSync, 3000);
+  if (typeof document !== 'undefined' && document.addEventListener) {
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') setTimeout(_autoSync, 800);
+    });
+  }
+}
+
 _initIntegrations();

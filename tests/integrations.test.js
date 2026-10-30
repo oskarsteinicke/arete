@@ -286,6 +286,52 @@ module.exports = async function () {
     r.check('no max from Whoop, no percentage', run(s, `LS.set('hvi_whoop_body', null); whoopLine({ source: 'whoop', strain: 5, avgHr: 120 })`) === 'Strain 5 · avg 120 bpm');
   }
 
+  r.section('Whoop syncs when the app comes back, and checks again until last night arrives');
+  {
+    const T = new Date().toLocaleDateString('en-CA');
+    const at = h => { const d = new Date(); d.setHours(h, 0, 0, 0); return d.getTime(); };
+    const s = sb({ hvi_integrations: JSON.stringify({ whoop: { access_token: 't', lastSync: at(9) - 15 * 60000 } }) });
+    r.check('at 9:00 with no night yet, a sync 15 minutes ago is not enough', run(s, `_syncDue('whoop', ${at(9)})`) === true);
+    run(s, `sleepLog['${T}'] = { hours: 7, source: 'whoop' }`);
+    r.check('once the night is in, it waits the usual 2 hours', run(s, `_syncDue('whoop', ${at(9)})`) === false);
+    run(s, `delete sleepLog['${T}']; var i = _getIntegrations(); i.whoop.lastSync = ${at(15)} - 15 * 60000; _saveIntegrations(i);`);
+    r.check('in the afternoon it stops checking every 10 minutes', run(s, `_syncDue('whoop', ${at(15)})`) === false);
+    const src = require('fs').readFileSync(require('path').join(require('./harness').APP, 'integrations.js'), 'utf8');
+    r.check('it runs when the app comes back on screen, not only on a reload', /visibilitychange[\s\S]{0,120}_autoSync/.test(src));
+
+    // Two syncs at once used to mean two refreshes of a token that works once.
+    let calls = 0;
+    const slow = () => { calls++; return new Promise(res => setTimeout(() => res({ ok: true, status: 200, json: () => Promise.resolve({ records: [] }) }), 5)); };
+    const two = sb({ hvi_integrations: JSON.stringify({ whoop: { access_token: 't', expires_at: Date.now() + 1e7 } }) }, { fetch: slow });
+    await run(two, `Promise.all([syncIntegration('whoop'), syncIntegration('whoop')])`);
+    r.check('a second sync while one runs joins it instead of starting another', calls === 4, `(${calls} requests, one sync is 4)`);
+  }
+
+  r.section('a failed token refresh only disconnects when Whoop refuses it');
+  {
+    const expired = () => JSON.stringify({ whoop: { access_token: 'old', refresh_token: 'r1', expires_at: Date.now() - 1000 } });
+    const offline = sb({ hvi_integrations: expired() }, { fetch: () => Promise.reject(new TypeError('Failed to fetch')) });
+    await run(offline, `_refreshToken('whoop')`);
+    r.check('offline, Whoop stays connected', run(offline, `!!_getIntegrations().whoop`) === true);
+
+    const down = sb({ hvi_integrations: expired() }, { fetch: () => Promise.resolve({ ok: false, status: 503, json: () => Promise.resolve({}) }) });
+    await run(down, `_refreshToken('whoop')`);
+    r.check('a server hiccup keeps it too', run(down, `!!_getIntegrations().whoop`) === true);
+
+    const refused = sb({ hvi_integrations: expired() }, { fetch: () => Promise.resolve({ ok: false, status: 400, json: () => Promise.resolve({ error: 'invalid_grant' }) }) });
+    await run(refused, `_refreshToken('whoop')`);
+    r.check('refused by Whoop, it disconnects', run(refused, `!!_getIntegrations().whoop`) === false);
+
+    // Another tab refreshed between this one reading the token and asking.
+    let raced;
+    raced = sb({ hvi_integrations: expired() }, { fetch: () => {
+      run(raced, `_saveToken('whoop', { access_token: 'fresh', refresh_token: 'r2', expires_at: Date.now() + 3600000 })`);
+      return Promise.resolve({ ok: false, status: 400, json: () => Promise.resolve({ error: 'invalid_grant' }) });
+    } });
+    const got = await run(raced, `_refreshToken('whoop')`);
+    r.check('when another tab refreshed first, its new token is used', got === 'fresh' && run(raced, `_getIntegrations().whoop.refresh_token`) === 'r2', `(${got})`);
+  }
+
   // Whoop's refresh token works once. Synced to a second device, one device's
   // refresh broke the other's connection, and the disconnect then synced back.
   r.section('connection logins stay on the device');
