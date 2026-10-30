@@ -1,7 +1,7 @@
 // Imported data: date attribution, units, and the sync paths actually running.
 const { createSandbox, run, createReporter } = require('./harness');
 
-const FILES = ['data.js','app.js','workout.js','diet.js','connect.js','integrations.js'];
+const FILES = ['data.js','app.js','workout.js','diet.js','connect.js','social.js','integrations.js'];
 
 function sb(store, opts) {
   const s = createSandbox({ files: FILES, store, fetch: (opts||{}).fetch });
@@ -97,7 +97,7 @@ module.exports = async function () {
         night('s1', '2026-10-11T03:10:00.000Z', '2026-10-11T11:05:00.000Z', 7.9, 0.5, 86),   // 23:10 to 07:05 in Philadelphia
         night('nap', '2026-10-11T18:00:00.000Z', '2026-10-11T18:40:00.000Z', 0.6, 0, 50, { nap: true }),
         night('s2', '2026-10-12T03:00:00.000Z', '2026-10-12T10:30:00.000Z', 7.5, 0.4, 92, { score_state: 'PENDING_SCORE' }),
-        night('s0', '2026-10-10T04:00:00.000Z', '2026-10-10T11:00:00.000Z', 7.0, 0.5, 71),
+        night('s0', '2026-10-10T04:00:00.000Z', '2026-10-10T11:00:00.000Z', 7.0, 0.3, 71),
       ],
       recoveries: [
         { cycle_id: 1, sleep_id: 's1', created_at: '2026-10-11T11:06:00.000Z', score_state: 'SCORED',
@@ -128,9 +128,11 @@ module.exports = async function () {
     r.check('recovery, resting heart rate and HRV attach to that night',
       sl['2026-10-11'].whoopRecovery === 67 && sl['2026-10-11'].restingHR === 52 && sl['2026-10-11'].hrv === 79, JSON.stringify(sl['2026-10-11']));
     r.check('sleep performance becomes a rating where there was none', sl['2026-10-11'].quality === 4 && sl['2026-10-11'].sleepPerf === 86);
-    r.check('a recovery score is not written into the rating', sl['2026-10-10'].quality === 2, `(quality ${sl['2026-10-10'].quality})`);
-    r.check('hours you typed yourself are kept', sl['2026-10-10'].hours === 6.5 && sl['2026-10-10'].bedtime === '00:00', JSON.stringify(sl['2026-10-10']));
-    r.check('and still gain Whoop\'s own readings', sl['2026-10-10'].whoopRecovery === 41 && sl['2026-10-10'].hrv === 60);
+    r.check('bed and wake times come from Whoop, in local time', sl['2026-10-11'].bedtime === '23:10' && sl['2026-10-11'].wake === '07:05', JSON.stringify(sl['2026-10-11']));
+    // With Whoop connected, its night is the one Arete uses.
+    r.check('Whoop\'s night replaces one typed in by hand', sl['2026-10-10'].hours === 6.7 && sl['2026-10-10'].wake === '07:00' && sl['2026-10-10'].source === 'whoop', JSON.stringify(sl['2026-10-10']));
+    r.check('the rating comes from sleep performance, not recovery', sl['2026-10-10'].quality === 3 && sl['2026-10-10'].qualityFrom === 'whoop', `(quality ${sl['2026-10-10'].quality})`);
+    r.check('and the night carries Whoop\'s own readings', sl['2026-10-10'].whoopRecovery === 41 && sl['2026-10-10'].hrv === 60);
     r.check('a nap is not a night', took.nights === 2, `(${took.nights})`);
     r.check('a night Whoop is still scoring is left for next time', !sl['2026-10-12']);
 
@@ -152,6 +154,42 @@ module.exports = async function () {
     data.sleeps[0].score.stage_summary.total_awake_time_milli = 1.0 * 3600000;
     run(s, `applyWhoopData(${JSON.stringify(data)}, sleepLog, workoutLog)`);
     r.check('a rescored night updates', run(s, `sleepLog['2026-10-11'].hours`) === 6.9, `(${run(s, `sleepLog['2026-10-11'].hours`)})`);
+  }
+
+  r.section('with Whoop connected, its sleep is the one Arete uses');
+  {
+    const night = (id, start, end, inBedH, awakeH, perf) => ({ id, start, end, timezone_offset: '-04:00', nap: false, score_state: 'SCORED',
+      score: { stage_summary: { total_in_bed_time_milli: inBedH * 3600000, total_awake_time_milli: awakeH * 3600000 }, sleep_performance_percentage: perf } });
+    // Asleep 23:00 to 03:00, awake an hour, asleep again 04:00 to 07:00.
+    const split = { sleeps: [
+      night('b', '2026-10-15T08:00:00.000Z', '2026-10-15T11:00:00.000Z', 3, 0, 60),
+      night('a', '2026-10-15T03:00:00.000Z', '2026-10-15T07:00:00.000Z', 4, 0, 80),
+    ] };
+    const s = sb({ hvi_sleep_log: JSON.stringify({ '2026-10-15': { hours: 5, bedtime: '01:00', wake: '06:00', quality: 1 } }) });
+    run(s, `applyWhoopData(${JSON.stringify(split)}, sleepLog, workoutLog)`);
+    const n = JSON.parse(run(s, `JSON.stringify(sleepLog['2026-10-15'])`));
+    r.check('a night split in two counts as one night', n.hours === 7 && n.bedtime === '23:00' && n.wake === '07:00', JSON.stringify(n));
+    r.check('rated on its main sleep', n.sleepPerf === 80 && n.quality === 4, JSON.stringify(n));
+
+    // Today's night came from Whoop: the screens that take sleep by hand step aside.
+    const T = new Date().toLocaleDateString('en-CA');
+    const w = sb({ hvi_integrations: JSON.stringify({ whoop: { access_token: 't' } }),
+      hvi_sleep_log: JSON.stringify({ [T]: { hours: 7.4, bedtime: '23:10', wake: '07:05', source: 'whoop', quality: 4, qualityFrom: 'whoop', sleepPerf: 86, whoopRecovery: 67 } }) });
+    run(w, `saveSleepField('wake', '09:00'); setSleepQuality(1)`);
+    r.check('the Sleep screen cannot overwrite it', run(w, `sleepLog['${T}'].wake`) === '07:05' && run(w, `sleepLog['${T}'].quality`) === 4);
+    run(w, `document.getElementById = function(){ return this._v || (this._v = { innerHTML: '' }); }.bind({});`);
+    const html = run(w, `renderSleep(); document.getElementById('view').innerHTML`);
+    r.check('which shows Whoop\'s night instead of inputs', /FROM WHOOP/.test(html) && !/type="time"/.test(html) && /86%/.test(html) && /67%/.test(html));
+
+    const waiting = sb({ hvi_integrations: JSON.stringify({ whoop: { access_token: 't' } }) });
+    run(waiting, `document.getElementById = function(){ return this._v || (this._v = { innerHTML: '' }); }.bind({});`);
+    const wh = run(waiting, `renderSleep(); document.getElementById('view').innerHTML`);
+    r.check('before Whoop sends the night, it can be typed, and says it will be replaced', /type="time"/.test(wh) && /hasn't sent last night yet/.test(wh));
+
+    // Cloud: a Whoop night from another device beats one typed here.
+    const m = JSON.parse(run(w, `JSON.stringify(mergeWhoopNights({ '2026-10-20': { hours: 5, source: undefined }, '2026-10-21': { hours: 6 } }, { '2026-10-20': { hours: 7.2, source: 'whoop' }, '2026-10-21': { hours: 8, source: 'applehealth' } }))`));
+    r.check('a Whoop night synced from another device wins', m['2026-10-20'].hours === 7.2 && m['2026-10-20'].source === 'whoop');
+    r.check('other synced nights still lose to this device', m['2026-10-21'].hours === 6);
   }
 
   r.section('the Whoop connection asks for what it needs and no more');

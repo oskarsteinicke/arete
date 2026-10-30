@@ -159,7 +159,12 @@ function _laDescribe(e) {
     return { kind: e.meal || 'Meal', main: `${cal.toLocaleString()} cal, ${p} g protein`, sub: e.items.map(it => it.name).join(', ') };
   }
   if (e.type === 'water') return { kind: 'Water', main: e.ml >= 1000 ? `+${(e.ml / 1000).toFixed(1)} L` : `+${e.ml} ml` };
-  if (e.type === 'sleep') return { kind: 'Sleep', main: `Last night, ${typeof formatSleep === 'function' ? formatSleep(e.hours) : e.hours + 'h'}`, sub: e.bedtime ? `${e.bedtime} to ${e.wake}` : '' };
+  if (e.type === 'sleep') {
+    // With Whoop connected, Whoop's night is the record.
+    const fromWhoop = typeof whoopHasNight === 'function' && whoopHasNight(today());
+    return { kind: 'Sleep', main: `Last night, ${typeof formatSleep === 'function' ? formatSleep(e.hours) : e.hours + 'h'}`,
+      sub: fromWhoop ? 'Whoop already has last night' : e.bedtime ? `${e.bedtime} to ${e.wake}` : '', already: fromWhoop };
+  }
   if (e.type === 'habit') {
     const h = (habits || []).find(x => x.id === e.id);
     const done = !!(typeof log !== 'undefined' && log && log[e.id] && log[e.id].completedToday);
@@ -313,6 +318,7 @@ function _laApply(entries) {
         _laAddWater(e.ml);
         undo.push(() => _laAddWater(-e.ml));
       } else if (e.type === 'sleep') {
+        if (typeof whoopHasNight === 'function' && whoopHasNight(t)) continue;
         const prev = sleepLog[t] ? JSON.parse(JSON.stringify(sleepLog[t])) : null;
         const cur = Object.assign({}, sleepLog[t] || {});
         if (e.bedtime && e.wake) { cur.bedtime = e.bedtime; cur.wake = e.wake; cur.hours = e.hours; }

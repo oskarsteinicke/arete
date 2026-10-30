@@ -236,11 +236,26 @@ function renderSleep() {
     `<button class="sl-q-btn${(entry.quality||0)===q?' active':''}" onclick="setSleepQuality(${q})">${q}</button>`
   ).join('');
 
-  document.getElementById('view').innerHTML = `
-    <button class="back" onclick="go('home')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
-    <div class="page-head ani"><div class="page-title">Sleep</div><div class="page-sub">Recovery is where growth happens.</div></div>
-    <div class="da-section ani" style="margin:0 24px 16px;padding:20px">
-      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px">Last Night's Sleep</div>
+  // With Whoop connected, Whoop's night is the record: shown here, not typed.
+  // Until it arrives, a night entered by hand stands in and is then replaced.
+  const fromWhoop = typeof whoopHasNight === 'function' && whoopHasNight(t);
+  const waitingWhoop = !fromWhoop && typeof whoopConnected === 'function' && whoopConnected();
+  const hasPerf = typeof entry.sleepPerf === 'number', hasRec = typeof entry.whoopRecovery === 'number';
+  const lastNight = fromWhoop ? `
+      <div class="sl-ro-row">
+        <div class="sl-ro"><div class="sl-ro-lbl">Bedtime</div><div class="sl-ro-val">${esc(entry.bedtime || '')}</div></div>
+        <div class="sl-ro"><div class="sl-ro-lbl">Wake time</div><div class="sl-ro-val">${esc(entry.wake || '')}</div></div>
+      </div>
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-family:var(--serif);font-size:32px;color:var(--accent-b)">${formatSleep(entry.hours)}</div>
+        <div style="font-size:10px;color:var(--text-muted);letter-spacing:1px">TIME ASLEEP · FROM WHOOP</div>
+      </div>
+      ${hasPerf || hasRec ? `<div class="sl-whoop-stats">
+        ${hasPerf ? `<div><b>${entry.sleepPerf}%</b>Sleep performance</div>` : ''}
+        ${hasRec ? `<div><b>${entry.whoopRecovery}%</b>Recovery</div>` : ''}
+      </div>` : ''}
+      <div class="sl-whoop-note">Whoop is connected, so its sleep is used. To change a night, edit it in the Whoop app.</div>`
+    : `
       <div style="display:flex;gap:12px;align-items:flex-end;margin-bottom:14px">
         <div style="flex:1;min-width:0">
           <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Bedtime</div>
@@ -254,10 +269,19 @@ function renderSleep() {
       <div style="text-align:center;margin-bottom:16px">
         <div style="font-family:var(--serif);font-size:32px;color:var(--accent-b)">${formatSleep(entry.hours)}</div>
         <div style="font-size:10px;color:var(--text-muted);letter-spacing:1px">TIME ASLEEP${
-          (entry.hours > 0 && !(entry.bedtime && entry.wake)) ? ' \u00b7 SYNCED' : ''}</div>
+          (entry.hours > 0 && !(entry.bedtime && entry.wake)) ? ' · SYNCED' : ''}</div>
       </div>
       <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">Sleep quality</div>
-      <div class="sl-q-row">${qualOpts}</div>
+      <div class="sl-q-row">${qualOpts}</div>${waitingWhoop ? `
+      <div class="sl-whoop-note">Whoop hasn't sent last night yet. Anything entered here is replaced when it does.
+        <button class="sl-whoop-sync" onclick="this.textContent='Syncing…';syncIntegration('whoop').then(function(){ if (curView==='sleep') renderSleep(); })">Sync now</button></div>` : ''}`;
+
+  document.getElementById('view').innerHTML = `
+    <button class="back" onclick="go('home')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
+    <div class="page-head ani"><div class="page-title">Sleep</div><div class="page-sub">Recovery is where growth happens.</div></div>
+    <div class="da-section ani" style="margin:0 24px 16px;padding:20px">
+      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px">Last Night's Sleep</div>
+${lastNight}
     </div>
     <div class="da-section ani" style="margin:0 24px 16px;padding:20px">
       <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px">This Week</div>
@@ -271,6 +295,7 @@ function renderSleep() {
 
 function setSleepQuality(q) {
   const t = today();
+  if (typeof whoopHasNight === 'function' && whoopHasNight(t)) return;   // Whoop's night
   if (!sleepLog[t]) sleepLog[t] = {};
   sleepLog[t].quality = q;
   LS.set('hvi_sleep_log', sleepLog);
@@ -280,6 +305,7 @@ function setSleepQuality(q) {
 // be saved and never read, so setting them changed nothing.
 function saveSleepField(field, val) {
   const t = today();
+  if (typeof whoopHasNight === 'function' && whoopHasNight(t)) return;   // Whoop's night
   if (!sleepLog[t]) sleepLog[t] = {};
   sleepLog[t][field] = val;
   const h = recalcSleepHours(t);

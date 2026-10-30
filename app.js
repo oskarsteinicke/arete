@@ -544,6 +544,16 @@ function _hasLoggedWorkoutToday() {
   } catch { return false; }
 }
 
+// For each day the cloud has a Whoop night and this device has some other
+// record, the Whoop night wins. Changes `merged` in place.
+function mergeWhoopNights(merged, cloudSleep) {
+  Object.keys(cloudSleep || {}).forEach(d => {
+    const c = cloudSleep[d], l = merged[d];
+    if (c && c.source === 'whoop' && c.hours > 0 && (!l || l.source !== 'whoop')) merged[d] = { ...(l || {}), ...c };
+  });
+  return merged;
+}
+
 async function cloudPull() {
   const uid = getCurrentUserId();
   if (!uid) return false;
@@ -574,6 +584,9 @@ async function cloudPull() {
           const local = JSON.parse(localStorage.getItem(k) || '{}');
           // Local wins — cloud fills in missing keys only
           const merged = { ...cloud[k], ...local };
+          // Except a night from Whoop: it is the record, so it beats one typed
+          // on this device, whichever device the Whoop sync ran on.
+          if (k === 'hvi_sleep_log') mergeWhoopNights(merged, cloud[k]);
           localStorage.setItem(k, JSON.stringify(merged));
         } catch { localStorage.setItem(k, JSON.stringify(cloud[k])); }
       } else if (k === 'hvi_log') {

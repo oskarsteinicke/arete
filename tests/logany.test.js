@@ -135,6 +135,20 @@ module.exports = async function () {
     r.check('and left done (a second tap would untick it)', run(s, 'log.h05.completedToday') === true);
   }
 
+  // With Whoop connected, Whoop's night is the record.
+  r.section('a night Whoop already sent is not overwritten');
+  {
+    const s = sb();
+    run(s, `sleepLog[today()] = { hours: 7.4, bedtime: '23:10', wake: '07:05', source: 'whoop' };
+      whoopHasNight = function (d) { return !!(sleepLog[d] && sleepLog[d].source === 'whoop'); };`);
+    const d = run(s, `JSON.stringify(_laDescribe({ type: 'sleep', hours: 5 }))`);
+    r.check('the sleep line says Whoop has it and is not ticked', JSON.parse(d).already === true && /Whoop/.test(JSON.parse(d).sub), d);
+    run(s, `_laApply([{ type: 'sleep', hours: 5 }])`);
+    r.check('and logging leaves Whoop\'s night alone', run(s, `sleepLog[today()].hours`) === 7.4);
+    run(s, `sleepLog[today()] = { hours: 6 }`);
+    r.check('a night typed in by hand can still be changed', run(s, `_laDescribe({ type: 'sleep', hours: 5 }).already`) === false);
+  }
+
   r.section('no mic button inside the native apps');
   {
     const s = sb();

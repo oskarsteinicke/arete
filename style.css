@@ -1387,6 +1387,16 @@ input.d-input[type="date"]::-webkit-date-and-time-value { text-align: left; min-
   color: var(--text-dim); cursor: pointer; transition: all 0.15s;
 }
 .sl-q-btn.active { background: rgba(var(--accent-rgb),0.15); border-color: var(--accent); color: var(--accent-b); }
+/* A night from Whoop is shown, not typed. */
+.sl-ro-row { display: flex; gap: 12px; margin-bottom: 14px; }
+.sl-ro { flex: 1; min-width: 0; }
+.sl-ro-lbl { font-size: 11px; color: var(--text-dim); margin-bottom: 4px; }
+.sl-ro-val { font-size: 20px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+.sl-whoop-stats { display: flex; gap: 12px; margin-bottom: 14px; }
+.sl-whoop-stats > div { flex: 1; background: var(--surface); border: 1px solid var(--border2); border-radius: 12px; padding: 10px 12px; font-size: 11px; color: var(--text-dim); }
+.sl-whoop-stats b { display: block; font-size: 18px; color: var(--text); margin-bottom: 2px; }
+.sl-whoop-note { font-size: 12px; line-height: 1.45; color: var(--text-dim); margin-top: 12px; }
+.sl-whoop-sync { display: inline; background: none; border: 0; padding: 0; margin-left: 4px; font: inherit; font-weight: 600; color: var(--text); text-decoration: underline; cursor: pointer; }
 .sl-bars { display: flex; gap: 4px; align-items: flex-end; height: 80px; }
 .sl-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; height: 100%; }
 .sl-bar-val { font-size: 10px; color: var(--text-muted); height: 14px; }

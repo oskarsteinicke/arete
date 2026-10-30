@@ -74,7 +74,8 @@ async function syncAppleHealth() {
       if (d.sleepQuality && !sleepLog[dk]?.quality) {
         sleepLog[dk] = { ...sleepLog[dk], quality: d.sleepQuality };
       }
-      if (d.restingHR) {
+      // A Whoop night keeps Whoop's resting heart rate.
+      if (d.restingHR && !whoopHasNight(dk)) {
         sleepLog[dk] = { ...sleepLog[dk], restingHR: d.restingHR };
       }
       if (d.steps) {
@@ -555,12 +556,23 @@ const WHOOP_MIN_STRAIN = 4;
 
 // The calendar day a Whoop timestamp fell on, where it was recorded. Whoop
 // sends UTC plus the offset in force at the time.
-function _whoopDay(iso, offset) {
+function _whoopLocal(iso, offset) {
   const t = Date.parse(iso);
   if (!isFinite(t)) return null;
   const m = /^([+-])(\d{2}):(\d{2})$/.exec(offset || '');
   const mins = m ? (m[1] === '-' ? -1 : 1) * (+m[2] * 60 + +m[3]) : 0;
-  return new Date(t + mins * 60000).toISOString().slice(0, 10);
+  return new Date(t + mins * 60000).toISOString();
+}
+function _whoopDay(iso, offset) { const l = _whoopLocal(iso, offset); return l && l.slice(0, 10); }
+// The clock time, as HH:MM, in the same local time.
+function _whoopClock(iso, offset) { const l = _whoopLocal(iso, offset); return l && l.slice(11, 16); }
+
+// With Whoop connected, Whoop's night is the record. The screens that take
+// sleep by hand use these to step aside for a night Whoop has sent.
+function whoopConnected() { try { return !!_getIntegrations().whoop; } catch { return false; } }
+function whoopHasNight(day) {
+  const e = typeof sleepLog !== 'undefined' && sleepLog ? sleepLog[day] : null;
+  return !!(e && e.source === 'whoop' && e.hours > 0);
 }
 
 function _whoopSport(name) {
@@ -576,8 +588,11 @@ function _whoopQuality(perf) {
 // Folds one sync's worth of Whoop records into the sleep and workout logs it
 // is handed, and reports what it took. The rules:
 //  - a night belongs to the day you woke up on
+//  - Whoop's night replaces any other record of it: hours, bed and wake times
+//    and the rating, whether typed in or synced from another device. With
+//    Whoop connected, its sleep is the one Arete uses.
+//  - two main sleeps ending on one day (awake at 3, back to sleep) are one night
 //  - Whoop's own readings (recovery, HRV, resting heart rate) always update
-//  - hours or a rating you entered yourself are never overwritten
 //  - a session logged in Arete keeps its sets and gains Whoop's strain reading
 //  - naps, and anything Whoop has not finished scoring, are left alone
 function applyWhoopData(data, sleeps, workouts) {
@@ -585,6 +600,7 @@ function applyWhoopData(data, sleeps, workouts) {
   const dayOfSleep = {};
   let lastOffset = null;
 
+  const nights = {};
   (data.sleeps || []).forEach(s => {
     if (!s || s.nap || s.score_state !== 'SCORED' || !s.score) return;
     const day = _whoopDay(s.end, s.timezone_offset);
@@ -592,18 +608,27 @@ function applyWhoopData(data, sleeps, workouts) {
     dayOfSleep[s.id] = day;
     lastOffset = s.timezone_offset;
     const st = s.score.stage_summary || {};
-    const asleepMs = (st.total_in_bed_time_milli || 0) - (st.total_awake_time_milli || 0);
-    const cur = sleeps[day] || {};
-    const next = { ...cur };
+    const asleep = Math.max(0, (st.total_in_bed_time_milli || 0) - (st.total_awake_time_milli || 0));
+    const n = nights[day] || (nights[day] = { asleep: 0, start: null, end: null, perf: null, longest: -1 });
+    n.asleep += asleep;
+    if (!n.start || Date.parse(s.start) < Date.parse(n.start.iso)) n.start = { iso: s.start, off: s.timezone_offset };
+    if (!n.end || Date.parse(s.end) > Date.parse(n.end.iso)) n.end = { iso: s.end, off: s.timezone_offset };
+    // The rating follows the main sleep of the night.
     const perf = s.score.sleep_performance_percentage;
-    if (typeof perf === 'number') next.sleepPerf = Math.round(perf);
-    // Hours typed in by hand, or brought in from another device, stay.
-    if (asleepMs > 0 && !(cur.hours > 0 && cur.source !== 'whoop')) {
-      next.hours = Math.round(asleepMs / 360000) / 10;
-      next.source = 'whoop';
-    }
-    if (typeof perf === 'number' && (!cur.quality || cur.qualityFrom === 'whoop')) {
-      next.quality = _whoopQuality(perf);
+    if (typeof perf === 'number' && asleep > n.longest) { n.longest = asleep; n.perf = perf; }
+  });
+
+  Object.keys(nights).forEach(day => {
+    const n = nights[day];
+    if (!(n.asleep > 0)) return;
+    const next = { ...(sleeps[day] || {}) };
+    next.hours = Math.round(n.asleep / 360000) / 10;
+    next.bedtime = _whoopClock(n.start.iso, n.start.off);
+    next.wake = _whoopClock(n.end.iso, n.end.off);
+    next.source = 'whoop';
+    if (n.perf !== null) {
+      next.sleepPerf = Math.round(n.perf);
+      next.quality = _whoopQuality(n.perf);
       next.qualityFrom = 'whoop';
     }
     sleeps[day] = next;
@@ -724,9 +749,10 @@ async function _syncWhoop() {
     const res = await _authedFetch('whoop', _whoopUrl('/user/measurement/body'));
     if (res && res.ok) Object.assign(took, applyWhoopBody(await res.json()));
   } catch {}
-  // The score on home is built from this; show the new one without a relaunch.
-  if ((took.nights || took.recoveries) && typeof go === 'function' && typeof curView !== 'undefined' && curView === 'home') {
-    try { go('home', {}, false); } catch {}
+  // The score on home, the Sleep screen and today's session are built from
+  // this; show the new night without a relaunch. Not mid-workout.
+  if ((took.nights || took.recoveries) && typeof go === 'function' && typeof curView !== 'undefined' && ['home', 'sleep', 'workout'].includes(curView)) {
+    try { go(curView, {}, false); } catch {}
   }
   return took;
 }
