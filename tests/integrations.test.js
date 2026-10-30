@@ -198,5 +198,42 @@ module.exports = async function () {
     r.check('in pounds for an imperial user', run(imp, `weightLog['${T}']`) === 176.4, run(imp, `weightLog['${T}']`));
   }
 
+  // Whoop's API sends no CORS headers, so a browser call to it fails before it
+  // starts. That is why the first connection read "synced never" forever.
+  r.section('Whoop is reached through the Worker, and a failed sync says so');
+  {
+    const now = Date.now();
+    const calls = [];
+    const page = (records, next) => ({ ok: true, status: 200, json: () => Promise.resolve({ records, next_token: next }) });
+    const whoop = (url, opts) => {
+      calls.push({ url, auth: opts && opts.headers && opts.headers.Authorization });
+      const u = new URL(url);
+      const p = u.searchParams.get('path');
+      if (p === '/activity/workout' && !u.searchParams.get('nextToken')) return Promise.resolve(page([], 'more'));
+      if (p === '/user/measurement/body') return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ weight_kilogram: 80, height_meter: 1.8 }) });
+      return Promise.resolve(page([]));
+    };
+    const s = sb({ hvi_integrations: JSON.stringify({ whoop: { access_token: 'tok', expires_at: now + 1e7 } }) }, { fetch: whoop });
+    await run(s, `syncIntegration('whoop')`);
+    r.check('no call goes to Whoop directly', calls.length > 0 && calls.every(c => !c.url.startsWith('https://api.prod.whoop.com')), calls.map(c => c.url).join(' '));
+    r.check('every call goes to the Worker relay', calls.every(c => c.url.startsWith('https://arete-ai.oskarsteinicke.workers.dev/whoop/api?path=')));
+    r.check('with the person\'s own token', calls.every(c => c.auth === 'Bearer tok'));
+    r.check('sleep, recovery, workouts and body are all read', ['/activity/sleep', '/recovery', '/activity/workout', '/user/measurement/body'].every(p => calls.some(c => new URL(c.url).searchParams.get('path') === p)));
+    r.check('a second page of workouts is followed', calls.some(c => new URL(c.url).searchParams.get('nextToken') === 'more'));
+    r.check('a good sync records the time', run(s, `typeof _getIntegrations().whoop.lastSync`) === 'number' && run(s, `_getIntegrations().whoop.lastError`) === undefined);
+
+    const failing = sb({ hvi_integrations: JSON.stringify({ whoop: { access_token: 'tok', expires_at: now + 1e7 } }) },
+      { fetch: () => Promise.reject(new TypeError('Failed to fetch')) });
+    await run(failing, `syncIntegration('whoop')`);
+    r.check('a failed sync is recorded', run(failing, `typeof _getIntegrations().whoop.lastError`) === 'number');
+    const html = run(failing, `renderIntegrationsSection()`);
+    r.check('and the row says it failed instead of "synced never"', /Sync failed/.test(html) && !/synced never/.test(html.split('Whoop')[1] || ''), html.slice(html.indexOf('Whoop'), html.indexOf('Whoop') + 160));
+
+    const wsrc = require('fs').readFileSync(require('path').join(require('./harness').APP, 'worker', 'worker.js'), 'utf8');
+    r.check('the Worker forwards to the v2 API', /api\.prod\.whoop\.com\/developer\/v2'/.test(wsrc));
+    r.check('and only the reads Arete uses', /WHOOP_READS = \['\/activity\/sleep', '\/recovery', '\/activity\/workout', '\/user\/measurement\/body'\]/.test(wsrc));
+    r.check('the Worker allows the DELETE that revokes access', /Allow-Methods': '[^']*DELETE/.test(wsrc));
+  }
+
   return r.finish();
 };

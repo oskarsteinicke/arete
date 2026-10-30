@@ -119,6 +119,7 @@ async function syncAppleHealth() {
   } catch (err) {
     console.error('[integrations] Apple Health sync failed:', err);
   }
+  _redrawIntegrations();
 }
 
 // ── TOKEN STORAGE ────────────────────────────────────────────────────────
@@ -200,7 +201,7 @@ function _forgetOAuth() {
 // Whoop asks that access be revoked when someone disconnects, not just
 // forgotten on this side.
 function _revokeWhoop() {
-  try { _authedFetch('whoop', `${WHOOP_API}/user/access`, { method: 'DELETE' }).catch(() => {}); } catch {}
+  try { _authedFetch('whoop', _whoopUrl('/user/access'), { method: 'DELETE' }).catch(() => {}); } catch {}
 }
 
 function disconnectIntegration(service) {
@@ -331,10 +332,23 @@ async function syncIntegration(service) {
     }
     // Update last sync time
     const int = _getIntegrations();
-    if (int[service]) { int[service].lastSync = Date.now(); _saveIntegrations(int); }
+    if (int[service]) { int[service].lastSync = Date.now(); delete int[service].lastError; _saveIntegrations(int); }
   } catch (err) {
+    // This used to go to the console only, so a sync that never worked just
+    // read "synced never". The row now says it failed.
     console.error(`[integrations] ${service} sync failed:`, err);
+    const int = _getIntegrations();
+    if (int[service]) { int[service].lastError = Date.now(); _saveIntegrations(int); }
   }
+  _redrawIntegrations();
+}
+
+// Redraws just the Connected Devices list, if it is on screen, so the row
+// shows the new sync time or the failure instead of staying on "Syncing…".
+function _redrawIntegrations() {
+  if (typeof document === 'undefined') return;
+  const el = document.getElementById('intg-section');
+  if (el) el.outerHTML = renderIntegrationsSection(true);
 }
 
 function syncAllIntegrations() {
@@ -528,6 +542,13 @@ async function _syncFitbit() {
 // woke, hours were read from a field that does not exist, and a recovery of
 // 60 was written into the sleep-quality rating as a 3.
 const WHOOP_API = 'https://api.prod.whoop.com/developer/v2';
+// Whoop's API sends no CORS headers, so a browser cannot call it. Every call
+// goes through Arete's Worker, which forwards the person's own token to
+// WHOOP_API unchanged and stores nothing.
+function _whoopUrl(path, params) {
+  const qs = new URLSearchParams(Object.assign({ path }, params || {}));
+  return `${_OAUTH_PROXY}/whoop/api?${qs}`;
+}
 // Whoop logs the walk to class and the commute as workouts too. Below this
 // strain a Whoop-only activity is not counted as a training day in Arete.
 const WHOOP_MIN_STRAIN = 4;
@@ -634,11 +655,22 @@ function applyWhoopData(data, sleeps, workouts) {
   return took;
 }
 
+// Whoop pages at 25 records. Ten days of workouts can run past that for
+// someone whose band logs every walk, so follow the pages (up to 100).
 async function _whoopGet(path, startISO) {
-  const res = await _authedFetch('whoop', `${WHOOP_API}${path}?limit=25&start=${encodeURIComponent(startISO)}`);
-  if (!res || !res.ok) throw new Error(`Whoop ${path} ${res ? res.status : 'no token'}`);
-  const data = await res.json();
-  return data.records || [];
+  const records = [];
+  let next = null;
+  for (let page = 0; page < 4; page++) {
+    const params = { limit: 25, start: startISO };
+    if (next) params.nextToken = next;
+    const res = await _authedFetch('whoop', _whoopUrl(path, params));
+    if (!res || !res.ok) throw new Error(`Whoop ${path} ${res ? res.status : 'no token'}`);
+    const data = await res.json();
+    records.push(...(data.records || []));
+    next = data.next_token;
+    if (!next) break;
+  }
+  return records;
 }
 
 // Weight and height as Whoop has them. They are written only when Whoop's own
@@ -689,7 +721,7 @@ async function _syncWhoop() {
   // Connections made before body measurements were asked for get a 401 here;
   // the rest of the sync still stands.
   try {
-    const res = await _authedFetch('whoop', `${WHOOP_API}/user/measurement/body`);
+    const res = await _authedFetch('whoop', _whoopUrl('/user/measurement/body'));
     if (res && res.ok) Object.assign(took, applyWhoopBody(await res.json()));
   } catch {}
   // The score on home is built from this; show the new one without a relaunch.
@@ -719,7 +751,7 @@ function disconnectAppleHealth() {
   if (typeof renderStats === 'function') renderStats();
 }
 
-function renderIntegrationsSection() {
+function renderIntegrationsSection(still) {
   // Not in the store build yet. Each Connect starts an OAuth round trip whose
   // return address is this page's own URL, and inside the native app that is
   // capacitor://localhost, which no provider accepts: the button led to a
@@ -751,11 +783,15 @@ function renderIntegrationsSection() {
     const connected = !!int[key];
     const lastSync = int[key]?.lastSync;
     const syncAge = lastSync ? _timeAgo(lastSync) : null;
+    const failed = connected && int[key].lastError && int[key].lastError > (lastSync || 0);
+    const status = !connected ? cfg.provides.join(', ')
+      : failed ? 'Sync failed. Tap ↻ to try again.'
+      : `Connected · synced ${syncAge || 'never'}`;
     return `<div class="intg-row">
       <div class="intg-icon">${cfg.icon}</div>
       <div class="intg-info">
         <div class="intg-name">${cfg.name}</div>
-        <div class="intg-status">${connected ? `Connected · synced ${syncAge || 'never'}` : cfg.provides.join(', ')}</div>
+        <div class="intg-status${failed ? ' intg-failed' : ''}">${status}</div>
       </div>
       <div class="intg-action">
         ${connected
@@ -768,7 +804,7 @@ function renderIntegrationsSection() {
 
   const allConnected = Object.keys(int).length > 0;
   return `
-    <div class="da-section ani" style="margin:0 24px 16px;padding:16px">
+    <div class="da-section${still ? '' : ' ani'}" id="intg-section" style="margin:0 24px 16px;padding:16px">
       <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Connected Devices</div>
       <div class="intg-list">${appleRow}${rows}</div>
       ${allConnected ? `<button class="intg-sync-all" onclick="syncAllIntegrations();syncAppleHealth();this.textContent='Syncing all…'">Sync All Now</button>` : ''}

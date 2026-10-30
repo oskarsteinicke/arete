@@ -138,6 +138,7 @@ nav {
 .intg-info { flex: 1; min-width: 0; }
 .intg-name { font-size: 13px; color: var(--text); font-weight: 500; }
 .intg-status { font-size: 11px; color: var(--text-dim); margin-top: 1px; }
+.intg-status.intg-failed { color: var(--danger); }
 .intg-action { display: flex; gap: 6px; flex-shrink: 0; }
 .intg-btn { border: none; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
 .intg-btn-conn { background: var(--accent); color: var(--on-accent); padding: 6px 14px; }

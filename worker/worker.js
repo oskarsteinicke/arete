@@ -46,7 +46,7 @@ function cors(origin) {
   const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
 }
@@ -777,6 +777,43 @@ function handleWelcomeStatus(env, origin) {
   }, 200, origin);
 }
 
+// Whoop's API sends no CORS headers, so a browser cannot call it directly.
+// This relays the person's own token unchanged and stores nothing. Only the
+// reads Arete uses are forwarded, plus the revoke Whoop asks for on disconnect.
+const WHOOP_API = 'https://api.prod.whoop.com/developer/v2';
+const WHOOP_READS = ['/activity/sleep', '/recovery', '/activity/workout', '/user/measurement/body'];
+
+async function handleWhoopApi(request, url, origin) {
+  const p = url.searchParams.get('path') || '';
+  const allowed = request.method === 'GET' ? WHOOP_READS.includes(p)
+    : request.method === 'DELETE' ? p === '/user/access'
+    : false;
+  if (!allowed) return jsonResponse({ error: 'Not allowed' }, 400, origin);
+
+  const auth = request.headers.get('Authorization') || '';
+  if (!/^Bearer [\w.~+/=-]+$/.test(auth)) return jsonResponse({ error: 'No token' }, 401, origin);
+
+  const qs = new URLSearchParams();
+  for (const k of ['limit', 'start', 'end', 'nextToken']) {
+    const v = url.searchParams.get(k);
+    if (v) qs.set(k, v);
+  }
+  const q = qs.toString();
+
+  try {
+    const r = await fetch(`${WHOOP_API}${p}${q ? '?' + q : ''}`, {
+      method: request.method,
+      headers: { Authorization: auth },
+    });
+    return new Response(r.status === 204 ? null : await r.text(), {
+      status: r.status,
+      headers: { 'Content-Type': 'application/json', ...cors(origin) },
+    });
+  } catch (err) {
+    return jsonResponse({ error: 'Whoop unreachable' }, 502, origin);
+  }
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get('Origin') || '';
@@ -802,6 +839,11 @@ export default {
     // Stripe webhook (from Stripe servers — no CORS, raw body)
     if (path === '/stripe/webhook') {
       return handleStripeWebhook(request, env);
+    }
+
+    // Whoop data, relayed (GET reads, DELETE to revoke access)
+    if (path === '/whoop/api') {
+      return handleWhoopApi(request, url, origin);
     }
 
     if (request.method !== 'POST') {
