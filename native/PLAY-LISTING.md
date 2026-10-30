@@ -63,10 +63,13 @@ COMPETE
 Create a group, share the code and see where you stand against friends.
 ```
 
-No CONNECT section: the store builds hide Connected Devices (Apple Health,
-Google Fit, Strava, Whoop) until they get native sign-in, so a reviewer
-would not find them. Add it back when that ships. On get-arete.com they
-all work, Whoop included.
+No CONNECT section yet. The store builds now have Connected Devices (Whoop,
+Strava and Google Fit; Apple Health stays on the website, since it is a
+Shortcut there). Once Whoop has been connected on a real phone, put this
+back above NO ACCOUNT NEEDED:
+
+    CONNECT
+    Whoop, Strava and Google Fit.
 
 ---
 

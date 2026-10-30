@@ -75,10 +75,13 @@ Open it and start. Tracking works offline and stays on your device. The AI featu
 Arete is Greek for excellence. Living up to your potential, daily.
 ```
 
-No CONNECT section: the store builds hide Connected Devices (Apple Health,
-Google Fit, Strava, Whoop) until they get native sign-in, so a reviewer
-would not find them. Add it back when that ships. On get-arete.com they
-all work, Whoop included.
+No CONNECT section yet. The store builds now have Connected Devices (Whoop,
+Strava and Google Fit; Apple Health stays on the website, since it is a
+Shortcut there). Once Whoop has been connected on a real phone, put this
+back above NO ACCOUNT NEEDED:
+
+    CONNECT
+    Whoop, Strava and Google Fit.
 
 ---
 
@@ -167,6 +170,8 @@ The camera is used for the meal scanner (photograph a meal to estimate its calor
 The AI features (coach, daily focus, Log anything, meal description, meal photo scan and the program builder) send data to Google Gemini and Groq through our own server. The app asks for permission the first time any of them is used, explaining what is sent and to whom, and nothing is sent before that. They can be turned off in Profile > Settings > "AI coach and meal scan".
 
 Log anything takes typed text. To speak instead, people use the microphone on the iOS keyboard; the app itself does not use the microphone.
+
+Connected Devices (Whoop, Strava, Google Fit) in Profile are optional and need an account with that service. Connect opens the service's own sign-in page in a browser sheet; nothing is connected until the person signs in there.
 
 There are no in-app purchases and nothing is for sale.
 ```
