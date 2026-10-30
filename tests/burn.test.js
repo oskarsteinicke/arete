@@ -71,6 +71,16 @@ module.exports = async function () {
     r.check('and the hard day keeps its extra protein', t.protein === 198);
     r.check('it says why, in plain words', run(s, 'macroAdjustReason()') === 'Soccer burned 900 cal, 600 more than a usual day · +600 cal as carbs, protein +10%', run(s, 'macroAdjustReason()'));
 
+    // On a cut only half comes back, so a hard day widens the deficit.
+    run(s, `dietMeta.goalType = 'cut'`);
+    const tc = targets(s);
+    r.check('on a cut, half of the extra comes back', tc.calories === 2500 + 300 + 18 * 4 && tc.carbs === 300 + 75, JSON.stringify(tc));
+    r.check('and it says so', run(s, 'macroAdjustReason()') === 'Soccer burned 900 cal, 600 more than a usual day · +300 cal as carbs, half of it so you stay in a deficit · protein +10%', run(s, 'macroAdjustReason()'));
+    const hugeCut = sb({ worn: 10, burns: Object.assign({ 0: [2600, 19] }, usual), today: soccer(19) });
+    run(hugeCut, `dietMeta.goalType = 'cut'`);
+    r.check('at most 500 on a cut', targets(hugeCut).burn.extra === 500);
+    run(s, `dietMeta.goalType = 'maintain'`);
+
     const low = sb({ worn: 10, burns: Object.assign({ 0: [200, 9] }, usual), today: soccer(9) });
     const tl = targets(low);
     r.check('a session under a usual day\'s burn takes nothing away', tl.calories === 2500 && tl.carbs === 300 && tl.adjusted === false, JSON.stringify(tl));

@@ -406,12 +406,19 @@ function getTodaysMacroTargets(sess) {
   // the intake and weight trend it was worked out from), so adding a whole
   // session would count it twice: the day earns what it burned beyond a usual
   // day, up to 1,000 cal, as carbs. A quiet day never loses calories for it.
+  //
+  // On a cut only half comes back, up to 500. Wearables tend to overcount what
+  // a session burned, and eating all of it back could quietly close the
+  // deficit; this way a hard day widens the deficit instead, even if Whoop
+  // read high.
   let burn = null;
   if (sess.source === 'logged' && sess.type !== 'rest') {
     const b = burnOn(today()), usual = b ? typicalBurn() : null;
     if (b && usual !== null) {
-      const extra = Math.max(0, Math.min(1000, Math.round((b.kcal - usual) / 10) * 10));
-      burn = { kcal: b.kcal, usual, extra };
+      const over = Math.max(0, b.kcal - usual);
+      const cutting = typeof dietMeta !== 'undefined' && dietMeta && dietMeta.goalType === 'cut';
+      const extra = Math.min(cutting ? 500 : 1000, Math.round(over * (cutting ? 0.5 : 1) / 10) * 10);
+      burn = { kcal: b.kcal, usual, over: Math.round(over / 10) * 10, extra, cutting };
       adjCarbs = carbs + Math.round(extra / 4);
     }
   }
@@ -436,7 +443,9 @@ function macroAdjustReason() {
     const what = t.dayName || 'Today\'s training';
     const prot = t.type === 'hard' ? 'protein +10%' : '';
     if (!t.burn.extra) return `${what} burned ${n(t.burn.kcal)} cal, about a usual day${prot ? ' · ' + prot : ''}`;
-    return `${what} burned ${n(t.burn.kcal)} cal, ${n(t.burn.extra)} more than a usual day · +${n(t.burn.extra)} cal as carbs${prot ? ', ' + prot : ''}`;
+    // On a cut, half comes back, so the deficit stays (getTodaysMacroTargets).
+    if (t.burn.cutting) return `${what} burned ${n(t.burn.kcal)} cal, ${n(t.burn.over)} more than a usual day · +${n(t.burn.extra)} cal as carbs, half of it so you stay in a deficit${prot ? ' · ' + prot : ''}`;
+    return `${what} burned ${n(t.burn.kcal)} cal, ${n(t.burn.over)} more than a usual day · +${n(t.burn.extra)} cal as carbs${prot ? ', ' + prot : ''}`;
   }
   if (t.type === 'hard') return `${t.dayName || 'Heavy day'} · carbs +20%, protein +10%`;
   if (t.type === 'rest') return 'Rest day · carbs -25%';
