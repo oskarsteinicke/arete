@@ -62,7 +62,7 @@
       document.getElementById('title').textContent = title;
       document.getElementById('msg').textContent = msg;
       document.getElementById('back').hidden = false;
-      document.getElementById('hint').hidden = false;
+      document.getElementById('hint').hidden = !ok;   // only true once it worked
       if (ok) setTimeout(function () { location.href = 'com.getarete.app://oauth-done'; }, 300);
     }
 
