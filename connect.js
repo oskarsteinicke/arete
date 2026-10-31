@@ -756,6 +756,10 @@ function _coachInsightContext() {
     if (why) parts.push(`Their why: "${String(why).slice(0, 80)}"`);
   } catch {}
   try {
+    const wf = typeof weekFocus === 'function' ? weekFocus() : null;
+    if (wf) parts.push(`This week's focus, from their weekly review: ${wf}`);
+  } catch {}
+  try {
     const goals = (LS.get('hvi_goals', []) || []).filter(g => !g.done).slice(0, 3).map(g => g.text);
     if (goals.length) parts.push('Active goals: ' + goals.join('; '));
   } catch {}

@@ -247,7 +247,7 @@ TODAY: ${now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', mont
 USER PROFILE:
 Name: ${name}
 Level ${lvl} (${getLevelTitle(lvl)}) | ${g.xp || 0} XP | Best current streak: ${maxStreak}d
-${_why ? `WHY THEY GRIND: "${_why}"\n` : ''}${_activeGoals.length ? `ACTIVE GOALS:\n${_activeGoals.map(gg => `  - ${gg.text}${gg.target ? ` (target ${gg.target})` : ''}`).join('\n')}\n` : ''}
+${_why ? `WHY THEY GRIND: "${_why}"\n` : ''}${_activeGoals.length ? `ACTIVE GOALS:\n${_activeGoals.map(gg => `  - ${gg.text}${gg.target ? ` (target ${gg.target})` : ''}`).join('\n')}\n` : ''}${(() => { const wf = typeof weekFocus === 'function' ? weekFocus() : null; return wf ? `THIS WEEK'S FOCUS (set in their weekly review; help them hit it): ${wf}\n` : ''; })()}
 HABITS (${todayDone} of ${habits.length} done today):
 ${_coachHabits()}
 

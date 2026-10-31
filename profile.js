@@ -2398,13 +2398,18 @@ function checkWeeklyRecap() {
   // Show on Monday, or Sunday after 4pm
   if (dow !== 1 && !(dow === 0 && hour >= 16)) return;
   const recapKey = 'hvi_last_recap_week';
-  const weekId = getWeekKey();
+  // Keyed by the week the review covers (its Sunday), so Sunday evening and
+  // Monday are the same week and it shows once.
+  const weekId = typeof reviewWeek === 'function' ? reviewWeek().id : getWeekKey();
   if (LS.get(recapKey, '') === weekId) return; // already shown this week
   LS.set(recapKey, weekId);
   showWeeklyRecap();
 }
 
+// The weekly review (review.js) took the place of this recap. The old grid
+// below stays only as the fallback should that file fail to load.
 function showWeeklyRecap() {
+  if (typeof showWeekReview === 'function') { showWeekReview(); return; }
   ensureWeeklyStats();
   const ws = gamification.weeklyStats;
   const best = Math.max(0, ...habits.map(h => log[h.id]?.streak || 0));

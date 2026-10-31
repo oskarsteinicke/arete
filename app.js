@@ -123,7 +123,7 @@ function _convertStoredWeights(f) {
 // ── SUPABASE AUTH + CLOUD SYNC ────────────────────────────────────────────
 const SUPABASE_URL = 'https://socflncohsenjptgkkax.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_J2qJ8iTfCESrML5Hm6NGbQ_mz9uPeug';
-const SYNC_KEYS = ['hvi_habits','hvi_log','hvi_journal3','hvi_meta','hvi_workout_log','hvi_workout_meta','hvi_meal_log','hvi_diet_meta','hvi_weight_log','hvi_water_log','hvi_prs','hvi_gamification','hvi_achievements','hvi_tdee_profile','hvi_custom_programs','hvi_onboarded','hvi_sleep_log','hvi_settings','hvi_habit_history','hvi_meal_favorites','hvi_routines','hvi_routine_log','hvi_challenges','hvi_habit_links','hvi_why','hvi_goals','hvi_mood_log','hvi_rest_by_exercise','hvi_burn_log'];
+const SYNC_KEYS = ['hvi_habits','hvi_log','hvi_journal3','hvi_meta','hvi_workout_log','hvi_workout_meta','hvi_meal_log','hvi_diet_meta','hvi_weight_log','hvi_water_log','hvi_prs','hvi_gamification','hvi_achievements','hvi_tdee_profile','hvi_custom_programs','hvi_onboarded','hvi_sleep_log','hvi_settings','hvi_habit_history','hvi_meal_favorites','hvi_routines','hvi_routine_log','hvi_challenges','hvi_habit_links','hvi_why','hvi_goals','hvi_mood_log','hvi_rest_by_exercise','hvi_burn_log','hvi_week_review'];
 // Keys that are date-keyed objects — these get merged instead of overwritten
 // Kept on this device only, and cleared on sign-out. Connected devices hold
 // login tokens: Whoop's refresh token works once, so a copy synced to a second
@@ -131,7 +131,7 @@ const SYNC_KEYS = ['hvi_habits','hvi_log','hvi_journal3','hvi_meta','hvi_workout
 // not belong in the backup anyway. Each device connects on its own; the data a
 // sync brings in (sleep, workouts, weight) still syncs as usual.
 const DEVICE_KEYS = ['hvi_integrations', 'hvi_whoop_body'];
-const MERGE_KEYS = ['hvi_workout_log','hvi_meal_log','hvi_journal3','hvi_weight_log','hvi_water_log','hvi_sleep_log','hvi_habit_history','hvi_rest_by_exercise','hvi_burn_log'];
+const MERGE_KEYS = ['hvi_workout_log','hvi_meal_log','hvi_journal3','hvi_weight_log','hvi_water_log','hvi_sleep_log','hvi_habit_history','hvi_rest_by_exercise','hvi_burn_log','hvi_week_review'];
 
 // ── AUTH HELPERS ──────────────────────────────────────────────────────────
 async function authResetPassword(email) {

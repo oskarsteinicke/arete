@@ -177,7 +177,8 @@ module.exports = function () {
   r.section('the app copy has no em dashes');
   {
     const files = ['app.js', 'coach.js', 'diet.js', 'workout.js', 'connect.js', 'today.js', 'profile.js', 'social.js',
-      'premium.js', 'integrations.js', 'data.js', 'index.html', 'manifest.json'];
+      'premium.js', 'integrations.js', 'data.js', 'index.html', 'manifest.json',
+      'review.js', 'patterns.js', 'logany.js', 'oauth-return.html'];
     const bad = [];
     for (const f of files) {
       fs.readFileSync(path.join(APP, f), 'utf8').split('\n').forEach((l, i) => {

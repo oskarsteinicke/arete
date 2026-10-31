@@ -3170,3 +3170,23 @@ em, i { font-style: normal; }
   font-weight: var(--fw-head); letter-spacing: var(--track-head); font-variant-numeric: tabular-nums;
 }
 
+
+/* Weekly review (review.js): the coach's read first, the numbers under it. */
+.wr-back { position: fixed; inset: 0; background: rgba(var(--c-ink-rgb), 0.7); z-index: 4000; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.wr-card { background: var(--bg); border: 1px solid var(--border2); border-radius: 24px; padding: 26px 22px 18px; max-width: 380px; width: 100%; max-height: calc(100vh - 32px); overflow-y: auto; text-align: left; }
+.wr-range { font-size: 13px; color: var(--text-dim); margin-bottom: 4px; }
+.wr-title { font-family: var(--font); font-weight: var(--fw-head); text-transform: uppercase; letter-spacing: var(--track-head); line-height: var(--lh-head); font-size: 30px; color: var(--text); margin: 0 0 14px; }
+.wr-read { font-size: 16px; line-height: 1.5; color: var(--text); margin-bottom: 16px; min-height: 48px; }
+.wr-wait { color: var(--text-dim); }
+.wr-focus { background: var(--surface); border: 1px solid var(--border2); border-radius: 14px; padding: 12px 14px; margin-bottom: 16px; }
+.wr-focus-k { font-size: 12px; color: var(--text-dim); margin-bottom: 3px; }
+.wr-focus-v { font-size: 16px; font-weight: 600; color: var(--text); line-height: 1.35; }
+.wr-rows { border-top: 1px solid var(--border2); margin-bottom: 18px; }
+.wr-row { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border2); font-size: 14px; line-height: 1.4; }
+.wr-k { flex: 0 0 64px; color: var(--text-dim); }
+.wr-v { flex: 1; min-width: 0; color: var(--text); }
+.wr-actions { display: flex; gap: 10px; }
+.wr-btn { flex: 1; width: auto; margin: 0; }
+.wr-btn-main { background: var(--text); color: var(--bg); border-color: var(--text); }
+.wr-share { display: block; margin: 12px auto 0; background: none; border: 0; padding: 6px; font: inherit; font-size: 13px; color: var(--text-dim); text-decoration: underline; cursor: pointer; }
+.wr-btn:focus-visible, .wr-share:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
