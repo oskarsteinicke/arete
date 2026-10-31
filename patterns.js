@@ -48,6 +48,16 @@ const _pBed = key => {
   return (((+m[1] * 60 + +m[2]) - 18 * 60) + 1440) % 1440;
 };
 const _pTrained = key => (typeof trainedOnDay === 'function' ? trainedOnDay(key) : false);
+// Whoop's recovery for the morning of `key`. It belongs to the night that
+// ended then, so what was done the day before lines up with it.
+const _pRec = key => { const s = (sleepLog || {})[key]; return s && typeof s.whoopRecovery === 'number' ? s.whoopRecovery : null; };
+// A hard day: strain 14+ on Whoop, or a session the app counts as hard.
+function _pHard(key) {
+  const b = typeof burnOn === 'function' ? burnOn(key) : null;
+  if (b && b.strain >= 14) return true;
+  const w = (typeof workoutLog !== 'undefined' && workoutLog) ? workoutLog[key] : null;
+  return !!(w && _pTrained(key) && typeof _intensityOf === 'function' && _intensityOf(w) === 'hard');
+}
 function _pProtein(key) {
   const meals = (((mealLog || {})[key]) || {}).meals || [];
   if (!meals.length) return null;
@@ -166,6 +176,48 @@ function findPatterns() {
       add('bedtime-habits', _pCompare(a, b, 0.15), c => ({
         text: `When you are in bed by 11, you finish ${_pPct(c.ma)} of your habits the next day. After midnight, ${_pPct(c.mb)}.`,
         a: { label: 'In bed by 11', value: c.ma, show: _pPct(c.ma) }, b: { label: 'After midnight', value: c.mb, show: _pPct(c.mb) }, max: 1,
+      }));
+    }
+    // ── With Whoop: what goes with how recovered you wake up ──
+    // Recovery is 0 to 100, Whoop's green from 67. A gap of 8 points is the
+    // smallest worth mentioning. Hours of sleep against recovery is left out:
+    // Whoop builds recovery from the night, so that one is true by definition.
+    const recPct = v => `${Math.round(v)}%`;
+    const nextRec = days.map(d => [d, _pRec(_pShift(d, 1))]).filter(([, r]) => r !== null);
+    // The journal and recovery the next morning
+    {
+      const a = nextRec.filter(([d]) => _pJournaled(d)).map(([, r]) => r);
+      const b = nextRec.filter(([d]) => !_pJournaled(d)).map(([, r]) => r);
+      add('journal-recovery', _pCompare(a, b, 8), c => ({
+        text: `The morning after you journal, your recovery averages ${recPct(c.ma)}. After days you skip it, ${recPct(c.mb)}.`,
+        a: { label: 'After journaling', value: c.ma, show: recPct(c.ma) }, b: { label: 'After skipping it', value: c.mb, show: recPct(c.mb) }, max: 100,
+      }));
+    }
+    // Bedtime and recovery (both belong to the same night)
+    {
+      const a = days.concat([today()]).filter(d => _pBed(d) !== null && _pBed(d) <= 300 && _pRec(d) !== null).map(_pRec);
+      const b = days.concat([today()]).filter(d => _pBed(d) !== null && _pBed(d) >= 360 && _pRec(d) !== null).map(_pRec);
+      add('bedtime-recovery', _pCompare(a, b, 8), c => ({
+        text: `When you are in bed by 11, your recovery averages ${recPct(c.ma)}. After midnight, ${recPct(c.mb)}.`,
+        a: { label: 'In bed by 11', value: c.ma, show: recPct(c.ma) }, b: { label: 'After midnight', value: c.mb, show: recPct(c.mb) }, max: 100,
+      }));
+    }
+    // Hard days and recovery the next morning
+    {
+      const a = nextRec.filter(([d]) => _pHard(d)).map(([, r]) => r);
+      const b = nextRec.filter(([d]) => !_pTrained(d) && !_pHard(d)).map(([, r]) => r);
+      add('hard-recovery', _pCompare(a, b, 8), c => ({
+        text: `After hard training days your recovery averages ${recPct(c.ma)}. After rest days, ${recPct(c.mb)}.`,
+        a: { label: 'After hard days', value: c.ma, show: recPct(c.ma) }, b: { label: 'After rest days', value: c.mb, show: recPct(c.mb) }, max: 100,
+      }));
+    }
+    // Recovery and the habits done that day
+    {
+      const a = days.filter(d => _pRec(d) !== null && _pRec(d) >= 67 && rate[d] !== null).map(d => rate[d]);
+      const b = days.filter(d => _pRec(d) !== null && _pRec(d) < 50 && rate[d] !== null).map(d => rate[d]);
+      add('recovery-habits', _pCompare(a, b, 0.15), c => ({
+        text: `On mornings your recovery is green (67%+), you finish ${_pPct(c.ma)} of your habits. Under 50%, ${_pPct(c.mb)}.`,
+        a: { label: 'Green recovery', value: c.ma, show: _pPct(c.ma) }, b: { label: 'Under 50%', value: c.mb, show: _pPct(c.mb) }, max: 1,
       }));
     }
     return out.sort((x, y) => y.score - x.score);

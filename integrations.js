@@ -816,11 +816,12 @@ function applyWhoopData(data, sleeps, workouts, burns) {
 }
 
 // Whoop pages at 25 records. Ten days of workouts can run past that for
-// someone whose band logs every walk, so follow the pages (up to 100).
-async function _whoopGet(path, startISO) {
+// someone whose band logs every walk, so follow the pages (up to 100, or more
+// for the first sync's 60 days).
+async function _whoopGet(path, startISO, maxPages) {
   const records = [];
   let next = null;
-  for (let page = 0; page < 4; page++) {
+  for (let page = 0; page < (maxPages || 4); page++) {
     const params = { limit: 25, start: startISO };
     if (next) params.nextToken = next;
     const res = await _authedFetch('whoop', _whoopUrl(path, params));
@@ -867,13 +868,17 @@ function applyWhoopBody(b) {
 
 async function _syncWhoop() {
   // Ten days back: enough to fill a week and to pick up a night Whoop was
-  // still scoring the last time this ran.
-  const since = new Date(Date.now() - 10 * 86400000).toISOString();
+  // still scoring the last time this ran. The first sync on a device goes back
+  // 60 days instead, so Your patterns and a usual day's burn have weeks to work
+  // from straight away rather than a month later.
+  const first = !(_getIntegrations().whoop || {}).backfilled;
+  const since = new Date(Date.now() - (first ? 60 : 10) * 86400000).toISOString();
+  const pages = first ? 12 : 4;
   // One after another, not together: the first call may refresh the token, and
   // Whoop cancels a refresh token the moment it is used.
-  const sleeps = await _whoopGet('/activity/sleep', since);
-  const recoveries = await _whoopGet('/recovery', since);
-  const workouts = await _whoopGet('/activity/workout', since);
+  const sleeps = await _whoopGet('/activity/sleep', since, pages);
+  const recoveries = await _whoopGet('/recovery', since, pages);
+  const workouts = await _whoopGet('/activity/workout', since, pages);
 
   const burns = LS.get('hvi_burn_log', {}) || {};
   const took = applyWhoopData({ sleeps, recoveries, workouts, since }, sleepLog, workoutLog, burns);
@@ -889,6 +894,7 @@ async function _syncWhoop() {
     const res = await _authedFetch('whoop', _whoopUrl('/user/measurement/body'));
     if (res && res.ok) Object.assign(took, applyWhoopBody(await res.json()));
   } catch {}
+  if (first) { const i = _getIntegrations(); if (i.whoop) { i.whoop.backfilled = true; _saveIntegrations(i); } }
   // The score on home, the Sleep screen, today's session and today's calorie
   // target are built from this; show them without a relaunch. Not mid-workout.
   if ((took.nights || took.recoveries || took.workouts) && typeof go === 'function' && typeof curView !== 'undefined' && ['home', 'sleep', 'workout', 'diet'].includes(curView)) {

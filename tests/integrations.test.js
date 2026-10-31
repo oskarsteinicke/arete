@@ -388,6 +388,24 @@ module.exports = async function () {
     r.check('which index.html sends them to before the landing page could', /_nativeSignIn\) location\.replace\('\/oauth-return\.html' \+ location\.search\);\s*\/\/[^\n]*\n[^\n]*\n\s*else if \(!window\.Capacitor/.test(idx));
   }
 
+  // Patterns and a usual day's burn need weeks of history; ten days would make
+  // someone wait a month for them.
+  r.section('the first Whoop sync brings 60 days, later ones 10');
+  {
+    const starts = [];
+    const s = sb({ hvi_integrations: JSON.stringify({ whoop: { access_token: 't', expires_at: Date.now() + 1e7 } }) }, { fetch: url => {
+      const u = new URL(url);
+      if (u.searchParams.get('path') === '/activity/sleep') starts.push(u.searchParams.get('start'));
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ records: [] }) });
+    } });
+    const daysBack = iso => Math.round((Date.now() - Date.parse(iso)) / 86400000);
+    await run(s, `syncIntegration('whoop')`);
+    r.check('the first goes back 60 days', daysBack(starts[0]) === 60, `(${daysBack(starts[0])})`);
+    r.check('and is remembered', run(s, `_getIntegrations().whoop.backfilled`) === true);
+    await run(s, `syncIntegration('whoop')`);
+    r.check('the next goes back 10', daysBack(starts[1]) === 10, `(${daysBack(starts[1])})`);
+  }
+
   // Whoop's refresh token works once. Synced to a second device, one device's
   // refresh broke the other's connection, and the disconnect then synced back.
   r.section('connection logins stay on the device');

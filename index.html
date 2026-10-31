@@ -50,8 +50,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="tokens.css?v=227">
-  <link rel="stylesheet" href="style.css?v=227">
+  <link rel="stylesheet" href="tokens.css?v=228">
+  <link rel="stylesheet" href="style.css?v=228">
 </head>
 <body>
 <div id="grain" aria-hidden="true"></div>
@@ -114,28 +114,28 @@
     </button>
   </nav>
 </div>
-<script src="data.js?v=227"></script>
-<script src="app.js?v=227"></script>
-<script src="connect.js?v=227"></script>
-<script src="patterns.js?v=227"></script>
-<script src="today.js?v=227"></script>
-<script src="premium.js?v=227"></script>
-<script src="workout.js?v=227"></script>
-<script src="diet.js?v=227"></script>
-<script src="logany.js?v=227"></script>
+<script src="data.js?v=228"></script>
+<script src="app.js?v=228"></script>
+<script src="connect.js?v=228"></script>
+<script src="patterns.js?v=228"></script>
+<script src="today.js?v=228"></script>
+<script src="premium.js?v=228"></script>
+<script src="workout.js?v=228"></script>
+<script src="diet.js?v=228"></script>
+<script src="logany.js?v=228"></script>
 <script>
 // Stub coach functions until lazy-loaded
 if(typeof openCoach==='undefined'){window.openCoach=function(){};window.closeCoach=function(){};window.sendCoachMsg=function(){};window.clearCoachHistory=function(){}}
 // Lazy-load coach + social after first paint for faster startup
 (window.requestIdleCallback||function(cb){setTimeout(cb,800)})(function(){
-  var s1=document.createElement('script');s1.src='coach.js?v=227';document.body.appendChild(s1);
-  var s2=document.createElement('script');s2.src='social.js?v=227';document.body.appendChild(s2);
-  var s3=document.createElement('script');s3.src='bodymap.js?v=227';document.body.appendChild(s3);
+  var s1=document.createElement('script');s1.src='coach.js?v=228';document.body.appendChild(s1);
+  var s2=document.createElement('script');s2.src='social.js?v=228';document.body.appendChild(s2);
+  var s3=document.createElement('script');s3.src='bodymap.js?v=228';document.body.appendChild(s3);
 });
 </script>
-<script src="integrations.js?v=227"></script>
-<script src="profile.js?v=227"></script>
-<script src="review.js?v=227"></script>
+<script src="integrations.js?v=228"></script>
+<script src="profile.js?v=228"></script>
+<script src="review.js?v=228"></script>
 <script>
   // No service worker inside the native (Capacitor) app — assets are bundled locally
   if ('serviceWorker' in navigator && !window.Capacitor) {
