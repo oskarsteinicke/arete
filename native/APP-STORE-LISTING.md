@@ -102,18 +102,20 @@ back above NO ACCOUNT NEEDED:
 
 `store-assets-ios/`, 1320x2868: the 6.9" iPhone size, which is the only
 iPhone size App Store Connect requires. No alpha channel, which Apple rejects.
-Made by `native/store-shots/store.js ios` from the real app (demo user "Alex",
-no character art while it is being redrawn).
+Made by `native/store-shots/store.js ios` from the real app (demo user "Alex").
+Log anything leads because the subtitle is "Your whole day, one sentence";
+it is shown as the store apps show it, without a mic button.
 
 | File | Headline and screen |
 |---|---|
-| `01-sleep-sets-the-session.png` | YOUR SLEEP SETS THE SESSION. Workout, with today's lighter session after a short night |
-| `02-coach.png` | A COACH THAT KNOWS YOUR DAY. The coach answering from last night's sleep |
-| `03-habits.png` | BUILD HABITS THAT STICK. Habits ticked, activity map |
-| `04-nutrition.png` | TYPE A MEAL. IT'S LOGGED. A typed meal turned into macros |
-| `05-every-set.png` | EVERY SET. EVERY PR. A session mid-workout, new PR, rest timer |
-| `06-muscle-map.png` | SEE WHAT YOU TRAINED. The muscle map |
-| `07-journal.png` | THREE QUESTIONS. EVERY NIGHT. The evening journal |
+| `01-log-anything.png` | YOUR WHOLE DAY IN ONE SENTENCE. Log anything: one sentence turned into breakfast, water, a habit and last night's sleep |
+| `02-character.png` | YOUR CHARACTER GROWS WITH YOU. Home at level 12 (Philosophos), with the day underneath |
+| `03-sleep-sets-the-session.png` | YOUR SLEEP SETS THE SESSION. Workout, with today's lighter session after a short night |
+| `04-coach.png` | A COACH THAT KNOWS YOUR DAY. The coach answering from last night's sleep |
+| `05-habits.png` | BUILD HABITS THAT STICK. Habits ticked, activity map |
+| `06-every-set.png` | EVERY SET. EVERY PR. A session mid-workout, new PR, rest timer |
+| `07-muscle-map.png` | SEE WHAT YOU TRAINED. The muscle map |
+| `08-journal.png` | THREE QUESTIONS. EVERY NIGHT. The evening journal |
 
 The app icon comes from the build (1024x1024 in Assets.xcassets), so there is
 nothing to upload separately.

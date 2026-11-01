@@ -8,8 +8,8 @@
 // The app runs on a virtual clock (vclock.js): timers and animations only move
 // when the script advances them, so every capture is a settled, repeatable
 // state. AI replies are canned (see mock), and the user is "Alex": the brand is
-// faceless, so the founder's name never appears. No screen shows the character
-// art, which is being redrawn.
+// faceless, so the founder's name never appears. Google Play takes at most 8
+// phone screenshots, so the set stays at 8.
 const http = require('http'), fs = require('fs'), os = require('os'), path = require('path');
 const { execFileSync } = require('child_process');
 const { chrome, sleep } = require('./studio');
@@ -60,10 +60,20 @@ const MEAL = [
   { name: 'Coffee with milk', calories: 30, protein: 2, carbs: 3, fat: 1 },
 ];
 const COACH = 'You slept **5 h 30 min** and your recovery is low. Keep Push A, drop the top set and go heavy on Saturday.';
+// What Log anything reads out of the sentence typed in shot 01.
+const LOGANY = JSON.stringify({ entries: [
+  { type: 'meal', meal: 'Breakfast', items: [
+    { name: 'Eggs (2 large)', calories: 156, protein: 13, carbs: 1, fat: 11 },
+    { name: 'Toast (2 slices)', calories: 160, protein: 6, carbs: 30, fat: 2 }] },
+  { type: 'water', ml: 500 },
+  { type: 'habit', id: 'h01' },
+  { type: 'sleep', hours: 6 },
+] });
 const MOCK = `(url, opts) => {
   if (!/workers\\.dev/.test(url)) return null;
   const body = String(opts.body || '');
   if (/nutrition macro calculator/.test(body)) return { delay: 900, body: { choices: [{ message: { content: ${JSON.stringify(JSON.stringify(MEAL))} } }] } };
+  if (/turn one message about someone/.test(body)) return { delay: 1100, body: { choices: [{ message: { content: ${JSON.stringify(LOGANY)} } }] } };
   if (/groq/.test(url)) return { delay: 1500, body: { choices: [{ message: { content: ${JSON.stringify(COACH)} } }] } };
   return null; }`;
 
@@ -82,33 +92,37 @@ const setVal = (sel, v) => `(() => { const el = document.querySelector(${JSON.st
 
 // [file, caption lines, background, start view, steps]
 const SHOTS = [
-  ['01-sleep-sets-the-session', ['YOUR SLEEP', 'SETS THE SESSION'], 'ink', 'stats', async d => {
+  // The listing's subtitle is "Your whole day, one sentence", so it leads.
+  ['01-log-anything', ['YOUR WHOLE DAY', 'IN ONE SENTENCE'], 'ink', 'stats', async d => {
+    // As the store apps show it: no mic button there (the keyboard's own mic is the way to speak).
+    await d.js(`window.Capacitor = {}; openLogAnything('Two eggs and toast, half a litre of water, meditated 10 minutes, slept about 6 hours'); delete window.Capacitor; 0`); await d.settle(900);
+    await d.js(`readLogAnything(); 0`); await d.settle(2400); }],   // not awaited: the reply comes on the virtual clock
+  // Home at level 12, Philosophos: the first screen people see, the character
+  // large over the day's numbers, and the cream knit reads well on the dark card.
+  ['02-character', ['YOUR CHARACTER', 'GROWS WITH YOU'], 'cream', 'stats', async d => {
+    await d.js(`(() => { let x = gamification.xp || 0; while (getLevel(x) < 12) x += 50; gamification.xp = x + 300; return 0; })()`);
+    await d.js(`go('home', {}, false)`); await d.settle(2600); await d.js(clean); await d.settle(200); }],
+  ['03-sleep-sets-the-session', ['YOUR SLEEP', 'SETS THE SESSION'], 'ink', 'stats', async d => {
     await d.js(`go('workout', {}, false)`); await d.settle(2600); }],
   // Opened over the nutrition screen: over home, the character shows behind the sheet.
-  ['02-coach', ['A COACH THAT', 'KNOWS YOUR DAY'], 'cream', 'diet', async d => {
+  ['04-coach', ['A COACH THAT', 'KNOWS YOUR DAY'], 'cream', 'diet', async d => {
     await d.js(tickThree); await d.settle(2000); await d.js(clean);
     await d.js(`openCoach()`); await d.settle(900);
     await d.js(setVal('#coach-input', 'Should I go heavy today?'));
     await d.tap('#coach-send-btn'); await d.settle(3200); }],
-  ['03-habits', ['BUILD HABITS', 'THAT STICK'], 'ink', 'stats', async d => {
+  ['05-habits', ['BUILD HABITS', 'THAT STICK'], 'ink', 'stats', async d => {
     await d.js(tickThree); await d.settle(2500); await d.js(clean);
     await d.js(`go('habits', {}, false)`); await d.settle(1000);
     await d.tap(`[onclick^="tapHabit('h04'"]`); await d.settle(2800); await d.js(clean); await d.settle(200); }],
-  ['04-nutrition', ['TYPE A MEAL.', "IT'S LOGGED"], 'cream', 'diet', async d => {
-    await d.js(`go('dietAddMeal', {}, false)`); await d.settle(800);
-    await d.js(`(() => { const sec = document.getElementById('describe-textarea').closest('.dm-section'); const v = document.getElementById('view'); v.scrollTop += sec.getBoundingClientRect().top - __TOP__; return 0; })()`);
-    await d.settle(200);
-    await d.js(setVal('#describe-textarea', 'Two eggs, toast and a coffee'));
-    await d.tap('#calc-macros-btn'); await d.settle(1800); }],
-  ['05-every-set', ['EVERY SET.', 'EVERY PR'], 'ink', 'workout', async d => {
+  ['06-every-set', ['EVERY SET.', 'EVERY PR'], 'cream', 'workout', async d => {
     await d.js(`go('workoutActive', {}, false)`); await d.settle(1500); await d.js(clean);
     await d.tap('#w-check-0-0'); await d.settle(700);
     await d.tap('#w-check-0-1'); await d.settle(1600); }],
-  ['06-muscle-map', ['SEE WHAT', 'YOU TRAINED'], 'cream', 'stats', async d => {
+  ['07-muscle-map', ['SEE WHAT', 'YOU TRAINED'], 'ink', 'stats', async d => {
     await d.js(`go('workoutProgress', {}, false)`); await d.settle(2200);
     await d.js(`(() => { const el = document.querySelector('[aria-label="Muscle map coloured by training"]'); const v = document.getElementById('view'); v.scrollTop += el.getBoundingClientRect().top - __TOP__ - 120; return 0; })()`);
     await d.settle(900); }],
-  ['07-journal', ['THREE QUESTIONS.', 'EVERY NIGHT'], 'ink', 'stats', async d => {
+  ['08-journal', ['THREE QUESTIONS.', 'EVERY NIGHT'], 'cream', 'stats', async d => {
     await d.js(`libTab = 'journal'; go('library', {}, false)`); await d.settle(900);
     const tas = await d.js(`[...document.querySelectorAll('.j-ta')].map(t => '#' + t.id)`);
     const answers = ['Hit every set, even the last one.', 'Sleep matters more than I thought.', 'In bed by 11.'];

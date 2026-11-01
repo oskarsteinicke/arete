@@ -94,20 +94,21 @@ on the short side, max 3840 on the long, and no more than 2x the short side.
 | File | Size | Headline and screen |
 |---|---|---|
 | `00-feature-graphic.png` | 1024x500 | Feature graphic: mark, name, "Become your best self, daily" |
-| `01-sleep-sets-the-session.png` | 1440x2880 | YOUR SLEEP SETS THE SESSION. Workout, with today's lighter session after a short night |
-| `02-coach.png` | 1440x2880 | A COACH THAT KNOWS YOUR DAY. The coach answering from last night's sleep |
-| `03-habits.png` | 1440x2880 | BUILD HABITS THAT STICK. Habits ticked, activity map |
-| `04-nutrition.png` | 1440x2880 | TYPE A MEAL. IT'S LOGGED. A typed meal turned into macros |
-| `05-every-set.png` | 1440x2880 | EVERY SET. EVERY PR. A session mid-workout, new PR, rest timer |
-| `06-muscle-map.png` | 1440x2880 | SEE WHAT YOU TRAINED. The muscle map |
-| `07-journal.png` | 1440x2880 | THREE QUESTIONS. EVERY NIGHT. The evening journal |
+| `01-log-anything.png` | 1440x2880 | YOUR WHOLE DAY IN ONE SENTENCE. Log anything: one sentence turned into breakfast, water, a habit and last night's sleep |
+| `02-character.png` | 1440x2880 | YOUR CHARACTER GROWS WITH YOU. Home at level 12 (Philosophos), with the day underneath |
+| `03-sleep-sets-the-session.png` | 1440x2880 | YOUR SLEEP SETS THE SESSION. Workout, with today's lighter session after a short night |
+| `04-coach.png` | 1440x2880 | A COACH THAT KNOWS YOUR DAY. The coach answering from last night's sleep |
+| `05-habits.png` | 1440x2880 | BUILD HABITS THAT STICK. Habits ticked, activity map |
+| `06-every-set.png` | 1440x2880 | EVERY SET. EVERY PR. A session mid-workout, new PR, rest timer |
+| `07-muscle-map.png` | 1440x2880 | SEE WHAT YOU TRAINED. The muscle map |
+| `08-journal.png` | 1440x2880 | THREE QUESTIONS. EVERY NIGHT. The evening journal |
 | `app-icon-512.png` | 512x512 | Store icon |
 
 Made by `native/store-shots/store.js play` (and `graphic` for the feature
 graphic) from the real app with a month of plausible data seeded: ordinary
 numbers a committed person would actually log, nothing exaggerated. The demo
-user is "Alex"; the founder's name never appears. No screenshot shows the
-character art, which is being redrawn.
+user is "Alex"; the founder's name never appears. Play takes at most 8 phone
+screenshots, which is why the set is 8.
 
 ## Data safety questionnaire
 
