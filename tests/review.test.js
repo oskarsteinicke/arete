@@ -140,5 +140,63 @@ module.exports = async function () {
     r.check('the old recap button opens it', /showWeekReview\(\); return;/.test(require('fs').readFileSync(require('path').join(require('./harness').APP, 'profile.js'), 'utf8')));
   }
 
+  // A week with little or nothing in it. A sheet saying "nothing to
+  // celebrate" was the first thing a new install could see on a Sunday.
+  function bare(extra, setup) {
+    const s = createSandbox({ files: FILES, store: Object.assign({ hvi_onboarded: 'true' }, extra || {}) });
+    const days = JSON.parse(run(s, 'JSON.stringify(reviewWeek().days)'));
+    run(s, `settings = { units: 'metric', trainingDays: [1, 3, 5, 6] }; curView = 'home'; track = function () {}; showToast = function () {};
+      habits = []; log = {}; journal = {}; workoutLog = {}; sleepLog = {}; dietMeta = { dailyGoals: { calories: 2500, protein: 180 }, goalType: 'maintain' };
+      LS.set('hvi_meal_log', {}); LS.set('hvi_habit_history', {}); LS.set('hvi_weight_log', {});
+      _called = false; _aiFetch = function () { _called = true; return Promise.reject(new Error('no')); };`);
+    if (setup) run(s, setup(days));
+    return { s, days };
+  }
+  const meal = JSON.stringify({ meals: [{ id: 'm', name: 'Food', items: [{ name: 'x', calories: 2400, protein: 150, carbs: 0, fat: 0 }] }] });
+  const _shift = (k, n) => { const x = new Date(k + 'T12:00:00'); x.setDate(x.getDate() + n); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; };
+
+  r.section('an empty week gets no review');
+  {
+    const { s } = bare({ hvi_ai_consent: 'yes' });
+    r.check('nothing logged: not ready', run(s, 'weekReviewReady(reviewWeek())') === false);
+    const { s: two } = bare({}, d => `sleepLog = { '${d[1]}': { hours: 7 } }; journal = { '${d[3]}': { win: 'x' } };`);
+    r.check('two days logged: still not ready', run(two, 'weekReviewReady(reviewWeek())') === false);
+    const { s: three } = bare({}, d => `sleepLog = { '${d[1]}': { hours: 7 } }; journal = { '${d[3]}': { win: 'x' } }; LS.set('hvi_habit_history', { h: ['${d[5]}'] });`);
+    r.check('three days with anything logged: ready', run(three, 'weekReviewReady(reviewWeek())') === true);
+    r.check('a full week is ready', run(sb().s, 'weekReviewReady(reviewWeek())') === true);
+
+    const src = require('fs').readFileSync(require('path').join(require('./harness').APP, 'profile.js'), 'utf8');
+    const chk = src.slice(src.indexOf('function checkWeeklyRecap'), src.indexOf('function showWeeklyRecap'));
+    const gate = chk.indexOf('weekReviewReady(reviewWeek())');
+    r.check('it does not pop up on its own for an empty week', gate !== -1 && /!weekReviewReady/.test(chk));
+    r.check('and is not marked as shown, so it can still come once they log', gate !== -1 && gate < chk.indexOf('LS.set(recapKey'));
+
+    run(s, `document.body.contains = function () { return true; };`);
+    const rec = await run(s, 'showWeekReview()');
+    r.check('opened by hand, it says how to get one', /Too little was logged that week for a review\. Log on 3 or more days/.test(s._els['wr-read'].textContent) && rec === null);
+    r.check('without asking the coach about nothing', run(s, '_called') === false && run(s, `JSON.stringify(LS.get('hvi_week_review', {}))`) === '{}');
+    r.check('and with nothing to share, no share button', !/Share your week/.test(s._els._boundary.innerHTML));
+    const full = sb().s;
+    run(full, `document.body.contains = function () { return true; };`);
+    await run(full, 'showWeekReview()');
+    r.check('a real week still has one', /Share your week/.test(full._els._boundary.innerHTML));
+  }
+
+  r.section('a first week counts from the first day');
+  {
+    // Started on Friday: nothing the week before.
+    const { s } = bare({}, d => `sleepLog = { '${d[4]}': { hours: 7 }, '${d[5]}': { hours: 7.5 }, '${d[6]}': { hours: 8 } };
+      LS.set('hvi_meal_log', { '${d[4]}': ${meal}, '${d[5]}': ${meal}, '${d[6]}': ${meal} });`);
+    const f = facts(s);
+    r.check('reviewed over the days since they started', f.week.days === 3 && f.week.start === JSON.parse(run(s, 'JSON.stringify(reviewWeek().days)'))[4], JSON.stringify(f.week));
+    r.check('planned sessions only on training days since then', f.training.planned === 2, JSON.stringify(f.training));
+    r.check('food logged on every one of them, not 3 of 7', f.food.logged === 3 && !/of 7 days/.test(JSON.parse(run(s, 'JSON.stringify(weekReviewLines(weekReviewFacts(reviewWeek())))')).food));
+
+    // Logged the week before, then skipped Monday to Thursday: the whole week counts.
+    const { s: back } = bare({}, d => `sleepLog = { '${_shift(d[0], -3)}': { hours: 7 }, '${d[4]}': { hours: 7 }, '${d[5]}': { hours: 7.5 }, '${d[6]}': { hours: 8 } };`);
+    const g = facts(back);
+    r.check('someone who just missed days is not let off them', g.week.days === 7 && g.training.planned === 4, JSON.stringify(g.week));
+  }
+
   return r.finish();
 };

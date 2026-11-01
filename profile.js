@@ -2402,6 +2402,8 @@ function checkWeeklyRecap() {
   // Monday are the same week and it shows once.
   const weekId = typeof reviewWeek === 'function' ? reviewWeek().id : getWeekKey();
   if (LS.get(recapKey, '') === weekId) return; // already shown this week
+  // An empty week gets no sheet; checked again on the next visit, as they log.
+  if (typeof weekReviewReady === 'function' && !weekReviewReady(reviewWeek())) return;
   LS.set(recapKey, weekId);
   showWeeklyRecap();
 }

@@ -47,9 +47,37 @@ function _rvDue(h, key) {
   return true;
 }
 
+// The days with anything logged: a session, a meal, a night's sleep, a
+// journal entry, a habit done or a weigh-in.
+function _rvActiveDays(days) {
+  const ml = LS.get('hvi_meal_log', null) || (typeof mealLog !== 'undefined' ? mealLog : {}) || {};
+  const sl = (typeof sleepLog !== 'undefined' && sleepLog) || {};
+  const jr = (typeof journal !== 'undefined' && journal) || {};
+  const wtl = LS.get('hvi_weight_log', null) || (typeof weightLog !== 'undefined' ? weightLog : {}) || {};
+  const done = new Set();
+  Object.values(LS.get('hvi_habit_history', {}) || {}).forEach(l => (Array.isArray(l) ? l : []).forEach(d => done.add(d)));
+  return days.filter(d => (typeof trainedOnDay === 'function' && trainedOnDay(d))
+    || (((ml[d] || {}).meals) || []).length > 0
+    || !!(sl[d] && sl[d].hours > 0)
+    || !!(jr[d] && Object.values(jr[d]).some(v => typeof v === 'string' && v.trim()))
+    || done.has(d)
+    || typeof wtl[d] === 'number');
+}
+
+// Whether a week has enough in it to review: something logged on at least
+// three of its days. An empty week gets no sheet telling them so.
+function weekReviewReady(week) {
+  const t = today();
+  return _rvActiveDays(week.days.filter(d => d <= t)).length >= 3;
+}
+
 function weekReviewFacts(week) {
   const t = today();
-  const days = week.days.filter(d => d <= t);
+  let days = week.days.filter(d => d <= t);
+  // Someone who started, or came back, partway through the week is reviewed
+  // from their first day, not marked down for the days before it.
+  const first = _rvActiveDays(days)[0];
+  if (first && !_rvActiveDays(week.days.map(d => _rvShift(d, -7))).length) days = days.filter(d => d >= first);
   const goals = (typeof dietMeta !== 'undefined' && dietMeta && dietMeta.dailyGoals) || {};
   const wlog = (typeof workoutLog !== 'undefined' && workoutLog) || {};
 
@@ -64,8 +92,12 @@ function weekReviewFacts(week) {
   });
   let burned = 0;
   days.forEach(d => { const b = typeof burnOn === 'function' ? burnOn(d) : null; if (b) burned += b.kcal; });
+  // Planned sessions: the training weekdays that fall in the days reviewed.
   let planned = null;
-  try { planned = typeof getTrainingDays === 'function' ? getTrainingDays().length : null; } catch {}
+  try {
+    const td = typeof getTrainingDays === 'function' ? getTrainingDays() : null;
+    if (Array.isArray(td)) planned = days.filter(d => td.includes(new Date(d + 'T12:00:00').getDay())).length;
+  } catch {}
 
   // Food, on the days something was logged.
   const ml = LS.get('hvi_meal_log', null) || (typeof mealLog !== 'undefined' ? mealLog : {}) || {};
@@ -104,7 +136,7 @@ function weekReviewFacts(week) {
   const weight = weighed.length >= 2 ? { from: wtl[weighed[0]], to: wtl[weighed[weighed.length - 1]] } : null;
 
   return {
-    week: { id: week.id, start: week.start, end: week.end, days: days.length },
+    week: { id: week.id, start: days[0] || week.start, end: week.end, days: days.length },
     training: { sessions: sessions.length, hard: sessions.filter(s => s.hard).length, planned, burned, list: sessions },
     food: { logged: fed.length, cal: avg(fed, 'cal'), protein: avg(fed, 'p'), calorieGoal, proteinGoal,
       proteinDays: proteinGoal ? fed.filter(x => x.p >= proteinGoal * 0.9).length : null,
@@ -286,7 +318,8 @@ async function showWeekReview(opts) {
   const old = document.getElementById('weekly-recap-modal');
   if (old) old.remove();
   const L = weekReviewLines(weekReviewFacts(week));
-  const row = (k, label) => L[k] ? `<div class="wr-row"><div class="wr-k">${label}</div><div class="wr-v">${esc(L[k])}</div></div>` : '';
+  const ready = weekReviewReady(week);
+  const row =(k, label) => L[k] ? `<div class="wr-row"><div class="wr-k">${label}</div><div class="wr-v">${esc(L[k])}</div></div>` : '';
   const el = document.createElement('div');
   el.id = 'weekly-recap-modal';     // the sleep prompt waits while this is open
   el.innerHTML = `
@@ -301,11 +334,17 @@ async function showWeekReview(opts) {
           <button class="w-action-btn wr-btn" onclick="closeWeekReview()">Done</button>
           <button class="w-action-btn wr-btn wr-btn-main" id="wr-ask" onclick="askCoachAboutWeek()">Plan it with the coach</button>
         </div>
-        <button class="wr-share" onclick="closeWeekReview();if(typeof shareRecap==='function')shareRecap()">Share your week</button>
+        ${ready ? `<button class="wr-share" onclick="closeWeekReview();if(typeof shareRecap==='function')shareRecap()">Share your week</button>` : ''}
       </div>
     </div>`;
   document.body.appendChild(el);
   if (typeof track === 'function') track('week_review_open');
+  // Too little to read: say how to get a review instead of asking the coach
+  // to write one about nothing.
+  if (!ready) {
+    document.getElementById('wr-read').textContent = 'Too little was logged that week for a review. Log on 3 or more days and your coach reads the week on Sunday evening.';
+    return null;
+  }
   let rec = null;
   try { rec = await buildWeekReview(week); } catch (e) { console.warn('[review]', e); }
   if (!document.body.contains(el)) return rec;
