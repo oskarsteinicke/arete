@@ -1566,8 +1566,9 @@ function renderStats() {
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
         <div style="font-size:14px;color:var(--text)">Theme</div>
         <div class="unit-toggle">
-          <button class="unit-btn${settings.theme!=='light'?' unit-btn-active':''}" onclick="settings.theme='dark';LS.set('hvi_settings',settings);applyTheme();renderStats()">Dark</button>
-          <button class="unit-btn${settings.theme==='light'?' unit-btn-active':''}" onclick="settings.theme='light';LS.set('hvi_settings',settings);applyTheme();renderStats()">Light</button>
+          <button class="unit-btn${themeChoice()==='dark'?' unit-btn-active':''}" onclick="chooseTheme('dark')">Dark</button>
+          <button class="unit-btn${themeChoice()==='light'?' unit-btn-active':''}" onclick="chooseTheme('light')">Light</button>
+          <button class="unit-btn${themeChoice()==='aubs'?' unit-btn-active':''}" onclick="chooseTheme('aubs')">AuBs</button>
         </div>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
@@ -2692,20 +2693,29 @@ function importData(input) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// DARK/LIGHT THEME
+// THEMES
 // ══════════════════════════════════════════════════════════════════════════
-function toggleTheme() {
-  const cur = settings.theme || 'dark';
-  settings.theme = cur === 'dark' ? 'light' : 'dark';
+// Three themes: dark (ink), light (cream) and AuBs, a light theme in pinks
+// that sits on top of light (tokens.css). Winter was retired with the brand
+// palette, and anyone who had it, or anything else unknown, gets dark.
+function themeChoice() {
+  const t = (typeof settings !== 'undefined' && settings || {}).theme;
+  return t === 'light' || t === 'aubs' ? t : 'dark';
+}
+function chooseTheme(t) {
+  settings.theme = t;
   LS.set('hvi_settings', settings);
   applyTheme();
+  if (typeof renderStats === 'function') renderStats();
 }
-// Two themes: dark (ink) and light (cream). Winter was retired with the brand
-// palette, and anyone who had it chosen gets dark.
+function toggleTheme() {
+  chooseTheme(themeChoice() === 'dark' ? 'light' : 'dark');
+}
 function applyTheme() {
-  const t = (settings || {}).theme;
-  const theme = t === 'light' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', theme);
+  const t = themeChoice(), root = document.documentElement;
+  root.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+  if (t === 'aubs') root.setAttribute('data-palette', 'aubs');
+  else root.removeAttribute('data-palette');
 }
 
 // ══════════════════════════════════════════════════════════════════════════

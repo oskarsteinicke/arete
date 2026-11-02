@@ -126,3 +126,52 @@
   --success: var(--c-success-light);
   --success-rgb: var(--c-success-light-rgb);
 }
+
+/* ══ AuBs: a light theme in pinks ══
+   Five pinks and a warm near-black. It sits on top of the light theme
+   (data-theme="light" data-palette="aubs"), so every light-ground fix in
+   style.css applies to it as well. The pinks are too light to read as text,
+   so text stays dark everywhere, the labels on pink buttons included
+   (ink on Petal Rouge is 6:1, white would be 2.7:1). The pinks go on fills:
+   see the AuBs section at the end of style.css. Share images keep the brand
+   palette above, whichever theme is chosen. */
+[data-theme="light"][data-palette="aubs"] {
+  --aubs-blush: #FFE5EC;
+  --aubs-pastel: #FFC2D1;
+  --aubs-cherry: #FFB3C6;
+  --aubs-candy: #FF8FAB;
+  --aubs-rouge: #FB6F92;
+  --aubs-ink: #2B1E20;
+  --aubs-ink-rgb: 43,30,32;
+  --aubs-rouge-rgb: 251,111,146;
+
+  --bg: var(--aubs-pastel);
+  --surface: var(--aubs-blush);
+  --surface-rgb: 255,229,236;
+  --surface2: rgba(var(--aubs-rouge-rgb), 0.14);
+  --raised: var(--aubs-blush);
+  --border: var(--aubs-cherry);
+  --border2: rgba(var(--aubs-rouge-rgb), 0.22);
+  --text: var(--aubs-ink);
+  --text-rgb: var(--aubs-ink-rgb);
+  /* 5.1:1 on the background, 4.8:1 on a chip */
+  --text-dim: rgba(var(--aubs-ink-rgb), 0.72);
+  --text-muted: rgba(var(--aubs-ink-rgb), 0.72);
+  --overlay: rgba(var(--aubs-ink-rgb), 0.45);
+  /* Petal Rouge takes orange's place: progress, the main action, the active tab */
+  --orange: var(--aubs-rouge);
+  --orange-rgb: var(--aubs-rouge-rgb);
+  --on-orange: var(--aubs-ink);
+  /* The accent itself stays ink, since it is used as text. Its tints (washes
+     behind pills and chips, the activity heat map, faint marks) are pink. */
+  --accent-rgb: var(--aubs-rouge-rgb);
+  --accent-b-rgb: var(--aubs-rouge-rgb);
+  --accent-d-rgb: var(--aubs-rouge-rgb);
+  --accent-hi-rgb: var(--aubs-rouge-rgb);
+  --accent-glow-rgb: var(--aubs-rouge-rgb);
+  /* The light theme's shades read 3.9:1 on pastel; these read 5:1 */
+  --danger: #843D33;
+  --danger-rgb: 132,61,51;
+  --success: #40593D;
+  --success-rgb: 64,89,61;
+}

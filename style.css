@@ -3190,3 +3190,14 @@ em, i { font-style: normal; }
 .wr-btn-main { background: var(--text); color: var(--bg); border-color: var(--text); }
 .wr-share { display: block; margin: 12px auto 0; background: none; border: 0; padding: 6px; font: inherit; font-size: 13px; color: var(--text-dim); text-decoration: underline; cursor: pointer; }
 .wr-btn:focus-visible, .wr-share:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+
+/* ── AuBs (tokens.css): her pinks on the fills ──
+   Text keeps the dark accent, since the pinks are too light to read as text.
+   Progress bars and the active tab take Petal Rouge, selected toggles Cotton
+   Candy, and the level bar runs on a Cherry Blossom track. */
+[data-palette="aubs"] :is(.h-prog-fill, .ps-fill, .wp-mfill, .hm-hero-xp span, .hm-xp-fill, .hm-habits-fill, .hm-chal-fill, .rt-fill) { background: var(--orange); }
+[data-palette="aubs"] .hm-hero-xp { background: var(--aubs-cherry); }
+[data-palette="aubs"] .ni.active svg { stroke: var(--orange); }
+[data-palette="aubs"] .ni.active::before { background: var(--orange); }
+[data-palette="aubs"] :is(.unit-btn-active, .cal-vbtn-active, .sched-day-btn.active) { background: var(--aubs-candy); color: var(--text); border-color: var(--aubs-candy); }
+[data-palette="aubs"] .coach-bubble.user { background: var(--aubs-cherry); color: var(--text); }
