@@ -40,7 +40,7 @@
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap"></noscript>
-  <link rel="preload" as="image" href="/assets/arete_hero_poster.jpg" fetchpriority="high">
+  <link rel="preload" as="image" href="/assets/arete_hero_poster.jpg?v=2" fetchpriority="high">
   <!-- The app's palette, type scale and easing -->
   <link rel="stylesheet" href="/tokens.css?v=209">
   <style>
@@ -378,13 +378,12 @@
       </div>
     </div>
     <div class="phone">
-      <video id="hero-video" autoplay muted loop playsinline preload="metadata" poster="/assets/arete_hero_poster.jpg" width="360" height="640" aria-label="The Arete app in use">
-        <source src="/assets/arete_hero_web.webm" type="video/webm">
+      <video id="hero-video" autoplay muted loop playsinline preload="metadata" poster="/assets/arete_hero_poster.jpg?v=2" width="360" height="640" aria-label="The Arete app in use">
         <source src="/assets/arete_hero_web.mp4" type="video/mp4">
       </video>
       <script>
         // Reduced motion: the video never plays, so only its poster shows.
-        // If neither file loads, the element is stopped and keeps its poster,
+        // If the file does not load, the element is stopped and keeps its poster,
         // instead of the browser working on a source that is not there.
         (function () {
           var v = document.getElementById('hero-video');

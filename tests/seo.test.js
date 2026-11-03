@@ -259,6 +259,15 @@ module.exports = function () {
       ['autoplay', 'muted', 'loop', 'playsinline', 'preload="metadata"'].every(a => vid.includes(a)));
     r.check('and has a size, so it cannot shift the layout', /width="\d+"/.test(vid) && /height="\d+"/.test(vid) && /aspect-ratio:\s*9\s*\/\s*16/.test(html));
     r.check('its poster exists', fs.existsSync(path.join(APP, 'assets/arete_hero_poster.jpg')));
+    // The page pointed at a clip that was never added, so every visitor got
+    // the poster and two 404s for months. Whatever it points at has to exist.
+    const media = [...html.matchAll(/<source[^>]+src="\/([^"?]+)/g)].map(m => m[1])
+      .concat([...html.matchAll(/poster="\/([^"?]+)/g)].map(m => m[1]), [...html.matchAll(/rel="preload" as="image" href="\/([^"?]+)/g)].map(m => m[1]));
+    const missing = media.filter(f => !fs.existsSync(path.join(APP, f)));
+    r.check('every video, poster and preload it points at exists', media.length >= 3 && missing.length === 0, `(${missing.join(', ') || media.length})`);
+    const clip = (html.match(/<source[^>]+src="\/([^"?]+\.mp4)"/) || [])[1];
+    r.check('the clip is an MP4, small enough for a landing page', !!clip && fs.existsSync(path.join(APP, clip)) && fs.statSync(path.join(APP, clip)).size < 3e6, `(${clip})`);
+    r.check('the preloaded poster is the one the video shows', (html.match(/rel="preload" as="image" href="([^"]+)"/) || [])[1] === (vid.match(/poster="([^"]+)"/) || [])[1]);
     // The video never starts under reduced motion, so only its poster shows.
     r.check('reduced motion gets the poster only', /prefers-reduced-motion: reduce\)'\)\.matches\) \{ still\(\); return; \}/.test(html) && /function still\(\) \{ v\.removeAttribute\('autoplay'\)/.test(html));
     r.check('the heading reads as two sentences, whatever the animation does', /id="hero-title" aria-label="Everyone wants to change\. Almost nobody tracks it\."/.test(html));
