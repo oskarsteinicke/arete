@@ -50,8 +50,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="tokens.css?v=232">
-  <link rel="stylesheet" href="style.css?v=232">
+  <link rel="stylesheet" href="tokens.css?v=233">
+  <link rel="stylesheet" href="style.css?v=233">
 </head>
 <body>
 <!-- The loading screen: the Arete mark on brand black, as the iPhone app's
@@ -73,14 +73,22 @@
       gone = true;
       var wait = Math.max(0, 600 - (window.performance && performance.now ? performance.now() : 0));
       setTimeout(function () {
-        requestAnimationFrame(function () {
+        var left = false;
+        function leave() {
+          if (left) return;
+          left = true;
           try {
             var sp = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SplashScreen;
             if (sp) sp.hide({ fadeOutDuration: 0 });
           } catch (e) {}
           boot.classList.add('boot-out');
           setTimeout(function () { if (boot.parentNode) boot.parentNode.removeChild(boot); }, 450);
-        });
+        }
+        // On the next frame, so the first screen is painted underneath. A
+        // page that is drawing no frames (a background tab, a web view behind
+        // the launch screen) gets no frame, so it goes after 100 ms regardless.
+        requestAnimationFrame(leave);
+        setTimeout(leave, 100);
       }, wait);
     };
     window.addEventListener('error', function (e) { if (e && e.message) window.bootDone(); });
@@ -147,33 +155,35 @@
     </button>
   </nav>
 </div>
-<script src="data.js?v=232"></script>
-<script src="app.js?v=232"></script>
-<script src="connect.js?v=232"></script>
-<script src="patterns.js?v=232"></script>
-<script src="today.js?v=232"></script>
-<script src="premium.js?v=232"></script>
-<script src="workout.js?v=232"></script>
-<script src="diet.js?v=232"></script>
-<script src="logany.js?v=232"></script>
+<script src="data.js?v=233"></script>
+<script src="app.js?v=233"></script>
+<script src="connect.js?v=233"></script>
+<script src="patterns.js?v=233"></script>
+<script src="today.js?v=233"></script>
+<script src="premium.js?v=233"></script>
+<script src="workout.js?v=233"></script>
+<script src="diet.js?v=233"></script>
+<script src="logany.js?v=233"></script>
 <script>
 // Stub coach functions until lazy-loaded
 if(typeof openCoach==='undefined'){window.openCoach=function(){};window.closeCoach=function(){};window.sendCoachMsg=function(){};window.clearCoachHistory=function(){}}
 // Lazy-load coach + social after first paint for faster startup
 (window.requestIdleCallback||function(cb){setTimeout(cb,800)})(function(){
-  var s1=document.createElement('script');s1.src='coach.js?v=232';document.body.appendChild(s1);
-  var s2=document.createElement('script');s2.src='social.js?v=232';document.body.appendChild(s2);
-  var s3=document.createElement('script');s3.src='bodymap.js?v=232';document.body.appendChild(s3);
+  var s1=document.createElement('script');s1.src='coach.js?v=233';document.body.appendChild(s1);
+  var s2=document.createElement('script');s2.src='social.js?v=233';document.body.appendChild(s2);
+  var s3=document.createElement('script');s3.src='bodymap.js?v=233';document.body.appendChild(s3);
 });
 </script>
-<script src="integrations.js?v=232"></script>
-<script src="profile.js?v=232"></script>
-<script src="review.js?v=232"></script>
+<script src="integrations.js?v=233"></script>
+<script src="profile.js?v=233"></script>
+<script src="review.js?v=233"></script>
 <script>
   // No service worker inside the native (Capacitor) app — assets are bundled locally
   if ('serviceWorker' in navigator && !window.Capacitor) {
-    // Purge ALL old caches on load to ensure fresh files
-    caches.keys().then(ks => ks.filter(k => k !== 'arete-v180').forEach(k => caches.delete(k)));
+    // Old caches are the service worker's to clear, when a new version
+    // activates (service-worker.js). This page used to delete every cache but
+    // one by a name it had hard-coded, which went stale a release later: from
+    // then on each load threw away the offline copy the app had just saved.
     navigator.serviceWorker.register('/service-worker.js').then(reg => {
       reg.update();
     });

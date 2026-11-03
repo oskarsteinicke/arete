@@ -19,7 +19,7 @@ const IOS = 'native/ios/App/App';
 const pngSize = f => { const b = fs.readFileSync(path.join(APP, f)); return [b.readUInt32BE(16), b.readUInt32BE(20)]; };
 
 // The page's own boot script, run against a stand-in for the page.
-function bootPage(now, native) {
+function bootPage(now, native, noFrames) {
   const events = [];
   const boot = { classes: [], parentNode: null, classList: { add(c) { boot.classes.push(c); events.push('fade'); } } };
   const body = { removeChild(el) { if (el === boot) boot.removed = true; } };
@@ -27,7 +27,7 @@ function bootPage(now, native) {
   const timers = [], listeners = {};
   const win = {
     performance: { now: () => now },
-    requestAnimationFrame: fn => fn(),
+    requestAnimationFrame: fn => { if (!noFrames) fn(); },
     setTimeout: (fn, ms) => timers.push({ fn, ms }),
     addEventListener: (k, fn) => { listeners[k] = fn; },
   };
@@ -135,6 +135,9 @@ module.exports = function () {
     const app = bootPage(2400, true);
     app.win.bootDone(); app.flush();
     r.check('the first screen drawn: the launch screen goes at once, then this one fades', JSON.stringify(app.events) === JSON.stringify(['native:{"fadeOutDuration":0}', 'fade']), `(${app.events.join(', ')})`);
+    const still = bootPage(2400, true, true);
+    still.win.bootDone(); still.flush();
+    r.check('a page drawing no frames (a background tab, a web view behind the launch screen) still hands over', still.boot.removed === true && JSON.stringify(still.events) === JSON.stringify(['native:{"fadeOutDuration":0}', 'fade']), `(${still.events.join(', ')})`);
     const web = bootPage(2400, false);
     web.win.bootDone(); web.flush();
     r.check('on the website there is no launch screen to hide, and nothing breaks', web.boot.removed === true && web.events.join() === 'fade');

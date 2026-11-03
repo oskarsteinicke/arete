@@ -1,4 +1,4 @@
-const CACHE = 'arete-v203';
+const CACHE = 'arete-v204';
 const ASSETS = [
   '/',
   '/index.html',
@@ -88,7 +88,10 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
   if (url.origin !== location.origin) return; // never intercept API calls
-  // Network first, fall back to cache for offline
+  // Network first, fall back to cache for offline. The page asks for files
+  // with a version on the end (app.js?v=233) while the install saved them
+  // plain (/app.js), and both are this release's, so offline the plain copy
+  // stands in for a versioned one that has not been saved yet.
   e.respondWith(
     fetch(e.request)
       .then(res => {
@@ -96,6 +99,6 @@ self.addEventListener('fetch', e => {
         caches.open(CACHE).then(c => c.put(e.request, clone));
         return res;
       })
-      .catch(() => caches.match(e.request))
+      .catch(() => caches.match(e.request).then(hit => hit || caches.match(e.request, { ignoreSearch: true })))
   );
 });
