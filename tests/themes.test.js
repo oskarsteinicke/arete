@@ -88,7 +88,8 @@ module.exports = function () {
     r.check('and no text is drawn in a strong accent tint', strongText.length === 0, `(${strongText.length})`);
     r.check('no brand colour is redefined, so share images stay on-brand', !/--c-[\w-]+\s*:/.test(aubs));
     r.check('the macro colours are not repainted', !/--(pro|carb|fat|cal)\s*:/.test(aubs));
-    const sec = css.slice(css.indexOf('AuBs (tokens.css)'));
+    const from = css.indexOf('AuBs (tokens.css)'), to = css.indexOf('/* ──', from);
+    const sec = css.slice(from, to === -1 ? undefined : to);
     r.check('the pinks go on the fills: progress bars and the active tab', /\.hm-hero-xp span[^{]*\{\s*background:\s*var\(--orange\)/.test(sec) && /\.ni\.active svg\s*\{\s*stroke:\s*var\(--orange\)/.test(sec));
     r.check('every AuBs rule is keyed on the theme', sec.split('\n').filter(l => /^\S.*\{/.test(l)).every(l => l.startsWith('[data-palette="aubs"]')));
   }

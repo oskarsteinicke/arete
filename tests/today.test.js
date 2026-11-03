@@ -66,7 +66,9 @@ module.exports = function () {
   // A Mon/Wed/Fri habit kept every Mon, Wed and Fri is perfect, not 43%.
   r.section('a habit due three days a week is judged on those three days');
   {
-    const dows = [0, 1, 2, 3, 4, 5, 6].map(i => new Date(Date.now() - i * 86400000).getDay());
+    // Calendar days back, not 24-hour steps: the day the clocks go back has 25
+    // hours, and in its last hour "24 hours ago" is still today.
+    const dows = [0, 1, 2, 3, 4, 5, 6].map(i => { const d = new Date(); d.setDate(d.getDate() - i); return d.getDay(); });
     const dueDays = [1, 3, 5];                       // Mon, Wed, Fri
     const dueOffsets = [0, 1, 2, 3, 4, 5, 6].filter(i => dueDays.includes(dows[i]));
     const s = sb({

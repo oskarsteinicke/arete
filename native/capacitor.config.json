@@ -9,6 +9,13 @@
   "plugins": {
     "Keyboard": {
       "resize": "native"
+    },
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "launchShowDuration": 10000,
+      "launchFadeOutDuration": 0,
+      "backgroundColor": "#0B0B0B",
+      "showSpinner": false
     }
   }
 }

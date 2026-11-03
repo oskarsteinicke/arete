@@ -79,8 +79,10 @@ module.exports = function () {
     const s = sb({ hvi_habits: JSON.stringify(H), hvi_log: '{}', hvi_meta: '{}' });
     r.check('dateKey matches today()', run(s, 'dateKey(new Date()) === today()') === true,
       `(${run(s, 'dateKey(new Date())')} vs ${run(s, 'today()')})`);
+    // A calendar day back, not 24 hours: on the day the clocks go back, 24
+    // hours before 23:30 is still the same date.
     r.check('handles a Date for a past day',
-      run(s, `dateKey(new Date(Date.now() - 86400000)) === yesterday()`) === true);
+      run(s, `(function(){ var d = new Date(); d.setDate(d.getDate() - 1); return dateKey(d) === yesterday(); })()`) === true);
     // 23:00 local must stay on today's date whatever the offset
     r.check('late evening stays on the same local day', run(s, `(function(){
       var d=new Date(); d.setHours(23,0,0,0);

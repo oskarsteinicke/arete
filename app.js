@@ -1997,6 +1997,8 @@ async function init() {
     // onboarding overlay and be replaced by home the moment onboarding ends.
     // obFinish() picks it up instead.
     renderOnboarding(0);
+    // The first screen is drawn: the loading screen (index.html) can go.
+    if (typeof bootDone === 'function') bootDone();
     return;
   } else {
     (() => {
@@ -2009,6 +2011,7 @@ async function init() {
       const NEEDS_PARAM = ['pillar', 'dietRecipeDetail'];
       const view = (validViews.includes(hash) && !NEEDS_PARAM.includes(hash)) ? hash : 'home';
       go(view, {}, false);
+      if (typeof bootDone === 'function') bootDone();
       // Show weekly recap on Monday (or Sunday afternoon)
       setTimeout(() => checkWeeklyRecap(), 600);
       setTimeout(() => checkSleepPrompt(), 900);

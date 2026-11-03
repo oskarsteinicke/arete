@@ -3201,3 +3201,22 @@ em, i { font-style: normal; }
 [data-palette="aubs"] .ni.active::before { background: var(--orange); }
 [data-palette="aubs"] :is(.unit-btn-active, .cal-vbtn-active, .sched-day-btn.active) { background: var(--aubs-candy); color: var(--text); border-color: var(--aubs-candy); }
 [data-palette="aubs"] .coach-bubble.user { background: var(--aubs-cherry); color: var(--text); }
+
+/* ── Loading screen (#boot in index.html) ──
+   The mark on brand black at the size and place of the iPhone launch screen
+   (96 points, centred), whatever the theme, so the hand-over from the launch
+   screen is seamless. A thin orange line sweeps under it only if loading
+   takes longer than half a second. bootDone() fades it out once the first
+   screen is drawn, the mark easing a touch larger as it goes. */
+#boot { position: fixed; inset: 0; z-index: 100000; background: var(--c-ink); color: var(--c-white); display: flex; align-items: center; justify-content: center; transition: opacity 0.4s var(--ease); }
+#boot .boot-mark { width: 96px; height: 96px; display: block; transition: transform 0.4s var(--ease); }
+#boot .boot-line { position: absolute; left: 50%; top: calc(50% + 72px); width: 56px; height: 2px; margin-left: -28px; border-radius: 1px; background: rgba(var(--c-white-rgb), 0.12); overflow: hidden; opacity: 0; animation: boot-line-in 0.3s var(--ease) 0.5s forwards; }
+#boot .boot-line::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 40%; border-radius: 1px; background: var(--c-orange); animation: boot-sweep 1.1s cubic-bezier(0.65, 0, 0.35, 1) infinite; }
+@keyframes boot-line-in { to { opacity: 1; } }
+@keyframes boot-sweep { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+#boot.boot-out { opacity: 0; pointer-events: none; }
+#boot.boot-out .boot-mark { transform: scale(1.06); }
+@media (prefers-reduced-motion: reduce) {
+  #boot .boot-line::after { animation: none; transform: translateX(75%); }
+  #boot.boot-out .boot-mark { transform: none; }
+}
