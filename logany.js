@@ -14,6 +14,10 @@
 // setTodayMood, the sleep and weight logs and their events), so XP, linked
 // habits, quests and patterns all see it exactly as if it had been logged on
 // its own screen.
+//
+// Training too: "bench 3x8 at 80, squats 5x5 at 100" becomes finished sets in
+// today's workout log, PRs and all, and a new session is finished the way the
+// workout screen's Finish button finishes one (see _laLogWorkout).
 
 let _laEntries = [], _laBusy = false, _laRec = null, _laNote = '';
 const LA_MEALS = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
@@ -33,13 +37,123 @@ function _laPrompt() {
     '- {"type":"sleep","hours":6.5}, or with times {"type":"sleep","bedtime":"23:30","wake":"07:00"} in 24-hour time. Only last night\'s sleep.\n' +
     '- {"type":"habit","id":"<id>"}: only habits from the list below that they say they did today. Copy the id exactly.\n' +
     '- {"type":"weight","value":80.4,"unit":"kg"} (unit "kg" or "lb", as they said it)\n' +
-    '- {"type":"mood","mood":4}: 1 to 5, only if they say how they feel.\n\n' +
+    '- {"type":"mood","mood":4}: 1 to 5, only if they say how they feel.\n' +
+    '- {"type":"workout","exercises":[{"id":"bench_press","sets":3,"reps":8,"weight":80,"unit":"kg"}]}: strength training they did today, one entry for the whole session. When the sets differ, list them: "sets":[{"reps":8,"weight":80},{"reps":6,"weight":85}]. weight 0 for bodyweight. unit "kg" or "lb" as they said it, "' + (typeof isImperial === 'function' && isImperial() ? 'lb' : 'kg') + '" if they did not say. Only ids from the exercise list below.\n\n' +
     'Rules: only what they say happened today or last night, never plans. Never invent anything they did not say. If nothing fits, {"entries":[]}.\n\n' +
-    `Habits:\n${hl}\n\nNow: ${now.toLocaleDateString('en-GB', { weekday: 'long' })} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}.`;
+    `Habits:\n${hl}\n\nExercises:\n${_laExerciseList()}\n\nNow: ${now.toLocaleDateString('en-GB', { weekday: 'long' })} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}.`;
 }
 
 const _laNum = (v, lo, hi) => { const n = Number(v); return Number.isFinite(n) && n >= lo && n <= hi ? n : null; };
 const _laTime = v => (/^([01]?\d|2[0-3]):[0-5]\d$/.test(String(v || '').trim()) ? String(v).trim().padStart(5, '0') : null);
+
+// ── workouts ───────────────────────────────────────────────────────────────
+// The built-in exercises (data.js) are the ones a sentence can name: they have
+// ids the AI can be held to, and names a phone can match.
+const _laExName = id => (typeof EXERCISES !== 'undefined' && Object.prototype.hasOwnProperty.call(EXERCISES, id) ? EXERCISES[id].name : null);
+const _laExerciseList = () => (typeof EXERCISES !== 'undefined' ? Object.keys(EXERCISES).map(id => `  [${id}] ${EXERCISES[id].name}`).join('\n') : '  (none)');
+const _laUnit = () => (typeof wtUnit === 'function' ? wtUnit() : 'kg');
+const _laLb = u => /^(lb|lbs|pound|pounds)$/i.test(String(u || ''));
+
+// What people call them, besides their names.
+const _LA_EX_ALIAS = {
+  bench: 'bench_press', 'flat bench': 'bench_press', squat: 'squat', squats: 'squat', 'back squat': 'squat', 'back squats': 'squat',
+  deadlift: 'deadlift', deadlifts: 'deadlift', ohp: 'ohp', 'shoulder press': 'ohp', 'military press': 'ohp',
+  'pull up': 'pullup', 'pull ups': 'pullup', pullups: 'pullup', 'chin up': 'chinup', 'chin ups': 'chinup', chinups: 'chinup',
+  'push up': 'pushup', 'push ups': 'pushup', pushups: 'pushup', rows: 'barbell_row', 'bent over row': 'barbell_row', 'bent over rows': 'barbell_row',
+  curls: 'barbell_curl', 'bicep curls': 'barbell_curl', 'biceps curls': 'barbell_curl', rdl: 'rdl', rdls: 'rdl', lunges: 'lunge',
+  pulldowns: 'lat_pulldown', 'lat pulldowns': 'lat_pulldown', pushdowns: 'tricep_pushdown', 'tricep pushdown': 'tricep_pushdown',
+  'leg extensions': 'leg_ext', 'leg extension': 'leg_ext', 'calf raise': 'calf_raise', 'lateral raise': 'lateral_raise', laterals: 'lateral_raise',
+  'face pull': 'face_pull', 'hammer curl': 'hammer_curl', 'incline bench': 'incline_bench', 'hip thrusts': 'hip_thrust', 'leg curls': 'leg_curl',
+  'incline db': 'incline_db', 'db press': 'db_flat_press', 'db bench': 'db_flat_press', 'db row': 'db_row', 'db rows': 'db_row', 'db fly': 'db_fly', 'db flyes': 'db_fly',
+};
+// "Dumbbell" and "DB" are one word here, as the exercise names use both.
+const _laNorm = s => String(s || '').toLowerCase().replace(/[^a-z0-9.\s]/g, ' ').replace(/\.(?!\d)/g, ' ').replace(/\bdumbbells?\b/g, 'db').replace(/\s+/g, ' ').trim();
+let _laAliasList = null;
+function _laAliases() {
+  if (_laAliasList) return _laAliasList;
+  const m = new Map();
+  if (typeof EXERCISES !== 'undefined') Object.keys(EXERCISES).forEach(id => {
+    const n = _laNorm(EXERCISES[id].name);
+    m.set(n, id);
+    m.set(n.endsWith('s') ? n.slice(0, -1) : n + 's', id);
+  });
+  Object.keys(_LA_EX_ALIAS).forEach(k => { if (!m.has(_laNorm(k))) m.set(_laNorm(k), _LA_EX_ALIAS[k]); });
+  // Longest first, so "front squat" wins over "squat".
+  _laAliasList = [...m.entries()].filter(([, id]) => _laExName(id)).sort((a, b) => b[0].length - a[0].length);
+  return _laAliasList;
+}
+
+// The plain reader's part: "bench 3x8 at 80", "3 sets of 10 pull-ups",
+// "squats 5x5 100kg". A clause needs sets and reps to count, so "2 eggs" is
+// never a workout.
+function _laLocalWorkout(text) {
+  const exercises = [];
+  for (const part of String(text || '').replace(/×/g, 'x').replace(/@/g, ' at ').split(/[,;]|\band\b|\bthen\b|\bplus\b/i)) {
+    const c = ' ' + _laNorm(part) + ' ';
+    const sr = /\b(\d{1,2})\s*x\s*(\d{1,3})\b/.exec(c) || /\b(\d{1,2})\s*sets?\s*(?:of\s*)?(\d{1,3})\b/.exec(c);
+    if (!sr) continue;
+    const hit = _laAliases().find(([name]) => c.includes(' ' + name + ' '));
+    if (!hit) continue;
+    const wm = /\b(?:at|with)\s*(\d+(?:\.\d+)?)\s*(kg|kgs|kilos?|lbs?|pounds?)?\b/.exec(c) || /\b(\d+(?:\.\d+)?)\s*(kg|kgs|kilos?|lbs?|pounds?)\b/.exec(c);
+    exercises.push(Object.assign({ id: hit[1], sets: +sr[1], reps: +sr[2], weight: wm ? parseFloat(wm[1]) : 0 },
+      wm && wm[2] ? { unit: /^(lb|pound)/.test(wm[2]) ? 'lb' : 'kg' } : {}));
+  }
+  return exercises.length ? { type: 'workout', exercises } : null;
+}
+
+// One exercise's sets from what came back: a list, or a count with one reps
+// and weight. Weights end up in the person's own unit, as every set is stored.
+function _laSets(x, unit) {
+  const raw = Array.isArray(x.sets) ? x.sets
+    : Array.from({ length: Math.round(_laNum(x.sets, 1, 20) || 0) }, () => ({ reps: x.reps, weight: x.weight }));
+  const lb = _laLb(unit), imperial = typeof isImperial === 'function' && isImperial();
+  const inLb = unit ? lb : imperial;
+  return raw.slice(0, 20).map(st => {
+    const reps = _laNum(st && st.reps, 1, 100);
+    const w = _laNum(st && st.weight != null && st.weight !== '' ? st.weight : 0, 0, inLb ? 1100 : 500);
+    if (!reps || w === null) return null;
+    const kg = unit ? (lb ? w / 2.20462 : w) : null;
+    const mine = kg === null ? w : imperial ? kg * 2.20462 : kg;
+    return { reps: Math.round(reps), weight: Math.round(mine * 10) / 10 };
+  }).filter(Boolean);
+}
+
+// "3×8 at 80 kg", or set by set when they differ: "80×8, 85×6 kg".
+function _laSetsText(sets) {
+  const u = _laUnit(), same = sets.every(s => s.reps === sets[0].reps && s.weight === sets[0].weight);
+  if (same) return `${sets.length}×${sets[0].reps}${sets[0].weight > 0 ? ` at ${sets[0].weight} ${u}` : ''}`;
+  const heavy = sets.some(s => s.weight > 0);
+  return sets.map(s => (heavy ? `${s.weight}×${s.reps}` : `${s.reps}`)).join(', ') + (heavy ? ` ${u}` : ' reps');
+}
+
+// The set that ends up as the exercise's record, by the workout screen's own
+// rule (heavier, or more weight times reps), or null when nothing beats it.
+function _laPRSet(x) {
+  let best = (typeof prs !== 'undefined' && prs && prs[x.id]) || null, beat = false;
+  for (const s of x.sets) {
+    if (!(s.weight > 0 && s.reps > 0)) continue;
+    if (!best || s.weight > best.weight || s.weight * s.reps > best.weight * best.reps) { best = s; beat = true; }
+  }
+  return beat ? best : null;
+}
+
+// The same test the workout screen uses for a session someone has started.
+const _laTouched = wl => (typeof _wIsTouched === 'function' ? _wIsTouched(wl)
+  : !!(wl && (wl.touched || wl.notes || (wl.exercises || []).some(x => (x.sets || []).some(s => s.completed || s.warmup)))));
+
+// Today's planned program day, when the sets are mostly from it: then the
+// session counts as that day and the program moves on, as Finish does.
+function _laPlanned(e) {
+  try {
+    const meta = (typeof workoutMeta !== 'undefined' && workoutMeta) || {};
+    const prog = (typeof findProgram === 'function' && findProgram(meta.activeProgram)) || (typeof WORKOUT_PROGRAMS !== 'undefined' ? WORKOUT_PROGRAMS[0] : null);
+    if (!prog || !Array.isArray(prog.days) || !prog.days.length) return null;
+    const dayIndex = (meta.currentDayIndex || 0) % prog.days.length, day = prog.days[dayIndex];
+    const planned = new Set((day && day.ex) || []);
+    const hits = e.exercises.filter(x => planned.has(x.id)).length;
+    return hits && hits * 2 >= e.exercises.length ? { prog, dayIndex, day } : null;
+  } catch { return null; }
+}
 
 // Everything that comes back is checked: types, ids, ranges. Anything odd is
 // dropped rather than guessed at.
@@ -82,6 +196,22 @@ function _laSanitize(raw) {
     } else if (e.type === 'mood' && !seen.has('mood')) {
       const m = _laNum(e.mood, 1, 5);
       if (m !== null) { seen.add('mood'); out.push({ type: 'mood', mood: Math.round(m) }); }
+    } else if (e.type === 'workout') {
+      // Only exercises the app knows, only sets that make sense. An exercise
+      // named twice is one exercise; two workout entries are one session.
+      const exercises = [];
+      for (const x of (Array.isArray(e.exercises) ? e.exercises : []).slice(0, 12)) {
+        const id = String((x && x.id) || '');
+        if (!_laExName(id)) continue;
+        const sets = _laSets(x, x.unit || e.unit);
+        if (!sets.length) continue;
+        const same = exercises.find(y => y.id === id);
+        if (same) same.sets = same.sets.concat(sets).slice(0, 20); else exercises.push({ id, sets });
+      }
+      if (!exercises.length) continue;
+      const prior = out.find(y => y.type === 'workout');
+      if (!prior) out.push({ type: 'workout', exercises });
+      else exercises.forEach(x => { const same = prior.exercises.find(y => y.id === x.id); if (same) same.sets = same.sets.concat(x.sets).slice(0, 20); else prior.exercises.push(x); });
     }
   }
   return out;
@@ -130,6 +260,9 @@ function _laLocal(text) {
     const items = typeof _localFoodLookup === 'function' ? _localFoodLookup(text) : null;
     if (items && items.length) out.push({ type: 'meal', items });
   } catch {}
+  // sets and reps
+  const wo = _laLocalWorkout(text);
+  if (wo) out.push(wo);
   return _laSanitize(out);
 }
 
@@ -172,6 +305,17 @@ function _laDescribe(e) {
   }
   if (e.type === 'weight') return { kind: 'Weight', main: `${e.value} ${typeof wtUnit === 'function' ? wtUnit() : 'kg'}` };
   if (e.type === 'mood') return { kind: 'Mood', main: `${e.mood} out of 5` };
+  if (e.type === 'workout') {
+    const lines = e.exercises.map(x => `${_laExName(x.id)} ${_laSetsText(x.sets)}`);
+    const sets = e.exercises.reduce((n, x) => n + x.sets.length, 0);
+    const pr = e.exercises.filter(x => _laPRSet(x)).map(x => _laExName(x.id));
+    const wl = typeof workoutLog !== 'undefined' && workoutLog ? workoutLog[today()] : null;
+    const adding = !!(wl && wl.source !== 'whoop' && _laTouched(wl));
+    const plan = adding ? null : _laPlanned(e);
+    const sub = [e.exercises.length > 1 ? lines.join(', ') : '', pr.length ? `New PR: ${pr.join(', ')}` : '',
+      adding ? "Added to today's session" : plan ? `Counts as ${plan.day.name}` : ''].filter(Boolean).join('. ');
+    return { kind: 'Workout', main: e.exercises.length === 1 ? lines[0] : `${e.exercises.length} exercises, ${sets} sets`, sub };
+  }
   return { kind: '', main: '' };
 }
 
@@ -190,7 +334,7 @@ function openLogAnything(prefill) {
         <div class="pt-sheet-title">Log anything</div>
         <div class="rd-intro">Say what you ate, drank, slept and did. Arete sorts it into the right places.</div>
         <div class="la-field">
-          <textarea id="la-text" class="la-ta" rows="3" oninput="_laEdited()" placeholder="Two eggs and toast, half a litre of water, did my meditation, slept about 6 hours"></textarea>
+          <textarea id="la-text" class="la-ta" rows="3" oninput="_laEdited()" placeholder="Two eggs and toast, half a litre of water, bench 3x8 at 80, slept about 6 hours"></textarea>
           ${sr ? `<button class="la-mic" id="la-mic" onclick="toggleLaMic()" aria-label="Speak instead of typing">${_LA_MIC}</button>` : ''}
         </div>
         <div class="la-hint">${sr ? 'Tap the mic and talk, or type.' : 'Type it, or tap the microphone on your keyboard and say it.'}</div>
@@ -306,6 +450,93 @@ function _laAddWater(ml) {
   LS.set('hvi_water_log', w);
 }
 
+// A workout entry into today's log. With a session already started today the
+// sets are added to it and it is left for its own Finish button. Otherwise it
+// is a new session, finished as Finish would finish it: the records, XP, the
+// week's count, today's quests, the program's next day when it was today's
+// planned day, and the habits linked to working out. Whoop's reading of a day
+// it alone had logged moves under the sets, as a sync would put it. Returns
+// the undo, which puts every one of those back.
+function _laLogWorkout(e) {
+  const t = today(), copy = v => (v == null ? v : JSON.parse(JSON.stringify(v)));
+  const g = (typeof gamification !== 'undefined' && gamification) || {};
+  if (typeof ensureWeeklyStats === 'function') { try { ensureWeeklyStats(); } catch {} }
+  const before = {
+    wl: copy(workoutLog[t]), prs: copy(prs || {}), meta: copy(workoutMeta || {}), vol: LS.get('hvi_volume_pr', 0),
+    xp: g.xp || 0, pxp: copy(g.pillarXP || {}), week: !!(g.weeklyStats && (g.weeklyStats.workoutDays || []).includes(t)),
+  };
+  const cur = workoutLog[t];
+  const whoopOnly = !!(cur && cur.source === 'whoop');
+  const ongoing = !!(cur && !whoopOnly && _laTouched(cur));
+  const done = x => x.sets.map(s => ({ weight: s.weight, reps: s.reps, completed: true }));
+  if (ongoing) {
+    cur.exercises = cur.exercises || [];
+    e.exercises.forEach(x => {
+      const same = cur.exercises.find(we => we.exerciseId === x.id);
+      if (same) same.sets = (same.sets || []).concat(done(x)); else cur.exercises.push({ exerciseId: x.id, sets: done(x) });
+    });
+    cur.touched = true;
+  } else {
+    const plan = _laPlanned(e);
+    const s = { exercises: e.exercises.map(x => ({ exerciseId: x.id, sets: done(x) })), touched: true, via: 'anything' };
+    if (plan) Object.assign(s, { programId: plan.prog.id, dayIndex: plan.dayIndex, dayName: plan.day.name });
+    if (whoopOnly) s.whoop = { id: cur.whoopId, sport: cur.dayName, strain: cur.strain, minutes: cur.duration, avgHr: cur.avgHr || null, calories: cur.calories || null };
+    workoutLog[t] = s;
+  }
+  LS.set('hvi_workout_log', workoutLog);
+
+  const xp = (n) => { if (typeof awardXP === 'function') awardXP(n, 'body'); };
+  let records = 0;
+  e.exercises.forEach(x => {
+    const best = _laPRSet(x);
+    if (!best) return;
+    prs[x.id] = { weight: best.weight, reps: best.reps, date: t, name: _laExName(x.id) || '' };
+    records++;
+    xp(100);
+  });
+  if (records) LS.set('hvi_prs', prs);
+
+  let linked = [];
+  if (!ongoing) {
+    const session = workoutLog[t];
+    if (session.programId) {
+      const prog = typeof findProgram === 'function' ? findProgram(session.programId) : null;
+      if (prog && prog.days && prog.days.length) workoutMeta.currentDayIndex = (session.dayIndex + 1) % prog.days.length;
+    }
+    workoutMeta.lastWorkoutDate = t;
+    LS.set('hvi_workout_meta', workoutMeta);
+    const vol = session.exercises.reduce((n, we) => n + (we.sets || []).filter(s => s.completed && !s.warmup).reduce((m, s) => m + (s.weight || 0) * (s.reps || 0), 0), 0);
+    if (vol > (before.vol || 0)) { LS.set('hvi_volume_pr', vol); session.volumePR = true; LS.set('hvi_workout_log', workoutLog); }
+    xp(50);
+    if (typeof trackWeeklyWorkout === 'function') trackWeeklyWorkout();
+    if (typeof checkDailyQuests === 'function') { try { checkDailyQuests(); } catch {} }
+  }
+  // What this added, before the linked habits (their own untick takes theirs back).
+  const gained = (g.xp || 0) - before.xp, pgained = {};
+  Object.keys(g.pillarXP || {}).forEach(k => { const d = (g.pillarXP[k] || 0) - (before.pxp[k] || 0); if (d) pgained[k] = d; });
+  if (!ongoing && window.Arete) {
+    const was = new Set((habits || []).filter(h => log[h.id] && log[h.id].completedToday).map(h => h.id));
+    window.Arete.emit('workout:completed');
+    linked = (habits || []).filter(h => !was.has(h.id) && log[h.id] && log[h.id].completedToday).map(h => h.id);
+  }
+
+  return () => {
+    linked.forEach(id => { if (log[id] && log[id].completedToday && typeof tapHabit === 'function') tapHabit(id, ''); });
+    if (before.wl) workoutLog[t] = before.wl; else delete workoutLog[t];
+    LS.set('hvi_workout_log', workoutLog);
+    Object.keys(prs).forEach(k => { delete prs[k]; }); Object.assign(prs, before.prs); LS.set('hvi_prs', prs);
+    Object.keys(workoutMeta).forEach(k => { delete workoutMeta[k]; }); Object.assign(workoutMeta, before.meta); LS.set('hvi_workout_meta', workoutMeta);
+    LS.set('hvi_volume_pr', before.vol);
+    if (gained || Object.keys(pgained).length) {
+      g.xp = Math.max(0, (g.xp || 0) - gained);
+      Object.keys(pgained).forEach(k => { g.pillarXP[k] = Math.max(0, (g.pillarXP[k] || 0) - pgained[k]); });
+    }
+    if (!before.week && g.weeklyStats && Array.isArray(g.weeklyStats.workoutDays)) g.weeklyStats.workoutDays = g.weeklyStats.workoutDays.filter(d => d !== t);
+    LS.set('hvi_gamification', g);
+    if (typeof refreshHeroXP === 'function') { try { refreshHeroXP(); } catch {} }
+  };
+}
+
 // Applies the chosen entries. Returns a function that undoes them all.
 function _laApply(entries) {
   const t = today(), undo = [];
@@ -341,6 +572,8 @@ function _laApply(entries) {
         LS.set('hvi_weight_log', weightLog);
         if (window.Arete) window.Arete.emit('weight:logged', { value: e.value });
         undo.push(() => { if (prev == null) delete weightLog[t]; else weightLog[t] = prev; LS.set('hvi_weight_log', weightLog); });
+      } else if (e.type === 'workout') {
+        undo.push(_laLogWorkout(e));
       } else if (e.type === 'mood' && typeof setTodayMood === 'function') {
         const prev = (LS.get('hvi_mood_log', {}) || {})[t];
         undo.push(() => { const all = LS.get('hvi_mood_log', {}) || {}; if (prev) all[t] = prev; else delete all[t]; LS.set('hvi_mood_log', all); });
@@ -354,13 +587,15 @@ function _laApply(entries) {
 function applyLogAnything() {
   const chosen = _laEntries.filter(e => e.on && !_laDescribe(e).already);
   if (!chosen.length) return;
+  // Counted before logging: once logged, the new sets are the records.
+  const records = chosen.filter(e => e.type === 'workout').reduce((n, e) => n + e.exercises.filter(x => _laPRSet(x)).length, 0);
   const undoAll = _laApply(chosen);
   if (typeof track === 'function') track('log_anything_logged', { count: chosen.length, types: chosen.map(e => e.type).join(',') });
   closeLogAnything();
   _laEntries = [];
   const redraw = () => { try { if (typeof go === 'function' && typeof curView !== 'undefined' && curView) go(curView, {}, false); } catch {} };
   redraw();
-  const n = chosen.length, msg = `Logged ${n} ${n === 1 ? 'thing' : 'things'}`;
+  const n = chosen.length, msg = `Logged ${n} ${n === 1 ? 'thing' : 'things'}${records ? `, ${records} new PR${records === 1 ? '' : 's'}` : ''}`;
   if (typeof showActionToast === 'function') showActionToast(msg, 'Undo', () => { undoAll(); redraw(); if (typeof showToast === 'function') showToast('Undone'); });
   else if (typeof showToast === 'function') showToast(msg);
 }

@@ -149,6 +149,161 @@ module.exports = async function () {
     r.check('a night typed in by hand can still be changed', run(s, `_laDescribe({ type: 'sleep', hours: 5 }).already`) === false);
   }
 
+  // ── workouts ──────────────────────────────────────────────────────────────
+  // The traps: "2 eggs" read as sets, "squat" winning over "front squat",
+  // pounds stored as kilos, a set of 500 reps, an exercise the app has never
+  // heard of, a session finished twice, the program skipping a day for a
+  // stray set of curls, Whoop's reading lost, and an Undo that leaves the
+  // record, the XP or the ticked habit behind.
+  const wo = list => of(list, 'workout')[0];
+  const ex = (w, id) => w && w.exercises.find(x => x.id === id);
+
+  r.section('the plain reader reads sets and reps');
+  {
+    const s = sb();
+    const one = wo(local(s, 'bench 3x8 at 80'));
+    r.check('"bench 3x8 at 80"', !!ex(one, 'bench_press') && ex(one, 'bench_press').sets.length === 3 && ex(one, 'bench_press').sets.every(x => x.reps === 8 && x.weight === 80), JSON.stringify(one));
+    const two = wo(local(s, 'bench 3x8 at 80, squats 5x5 at 100'));
+    r.check('two exercises in one sentence', two && two.exercises.length === 2 && ex(two, 'squat').sets.length === 5 && ex(two, 'squat').sets[0].weight === 100);
+    const bw = wo(local(s, '3 sets of 10 pull-ups'));
+    r.check('"3 sets of 10 pull-ups", bodyweight', !!ex(bw, 'pullup') && ex(bw, 'pullup').sets.length === 3 && ex(bw, 'pullup').sets[0].weight === 0, JSON.stringify(bw));
+    r.check('"front squats" is a front squat, not a squat', !!ex(wo(local(s, 'front squats 3x5 at 90')), 'front_squat') && !ex(wo(local(s, 'front squats 3x5 at 90')), 'squat'));
+    r.check('"incline bench" is the incline press, not the bench', !!ex(wo(local(s, 'incline bench 3x8 at 60')), 'incline_bench') && !ex(wo(local(s, 'incline bench 3x8 at 60')), 'bench_press'));
+    r.check('"incline db", "incline dumbbell press" and "dumbbell rows" are the DB lifts',
+      !!ex(wo(local(s, 'incline db 3x10 at 30')), 'incline_db') && !!ex(wo(local(s, 'incline dumbbell press 3x10 at 30')), 'incline_db') && !!ex(wo(local(s, 'dumbbell rows 3x10 at 25')), 'db_row'));
+    r.check('pounds said, kilos stored for a metric user', ex(wo(local(s, 'deadlift 1x5 at 315 lbs')), 'deadlift')?.sets[0].weight === 142.9);
+    r.check('"squats 5x5 100kg", the unit after the number', ex(wo(local(s, 'squats 5x5 100kg')), 'squat')?.sets[0].weight === 100);
+    r.check('"two eggs and toast" is not a workout', !wo(local(s, 'two eggs and toast')));
+    r.check('a number without sets and reps is not one either', !wo(local(s, 'bench pressed 80 today')));
+    const mixed = local(s, 'two eggs and toast, bench 3x8 at 80, slept about 6 hours');
+    r.check('and it sits alongside the rest of the day', !!wo(mixed) && of(mixed, 'sleep').length === 1 && of(mixed, 'meal').length === 1);
+    const aliases = String(run(s, `JSON.stringify(Object.values(_LA_EX_ALIAS).filter(id => !EXERCISES[id]))`));
+    r.check('every nickname points at a real exercise', aliases === '[]', aliases);
+  }
+
+  r.section('what the AI sends back for a workout is checked');
+  {
+    const s = sb();
+    const out = wo(clean(s, { entries: [
+      { type: 'workout', exercises: [
+        { id: 'bench_press', sets: 3, reps: 8, weight: 80, unit: 'kg' },
+        { id: 'made_up_lift', sets: 3, reps: 8, weight: 80 },
+        { id: 'squat', sets: [{ reps: 5, weight: 225 }, { reps: 500, weight: 100 }, { reps: 5, weight: 5000 }], unit: 'lb' },
+        { id: 'bench_press', sets: 1, reps: 6, weight: 85, unit: 'kg' },
+        { id: 'ohp', sets: 99, reps: 8, weight: 40 },
+      ] },
+      { type: 'workout', exercises: [{ id: 'pullup', sets: 3, reps: 10, weight: 0 }] },
+      { type: 'workout', exercises: [] },
+    ] }));
+    r.check('an exercise the app does not know is dropped', !ex(out, 'made_up_lift'));
+    r.check('"sets": 3 is three sets', ex(out, 'bench_press') && ex(out, 'bench_press').sets.length === 4);
+    r.check('the same exercise twice is one exercise, sets in order', ex(out, 'bench_press') && ex(out, 'bench_press').sets[3].weight === 85 && out.exercises.filter(x => x.id === 'bench_press').length === 1);
+    r.check('225 lb is stored as 102.1 kg; 500 reps and 5,000 lb are dropped', ex(out, 'squat') && ex(out, 'squat').sets.length === 1 && ex(out, 'squat').sets[0].weight === 102.1, JSON.stringify(ex(out, 'squat')));
+    r.check('99 sets is not a set count', !ex(out, 'ohp'));
+    r.check('two workout entries are one session', of(clean(s, { entries: [{ type: 'workout', exercises: [{ id: 'squat', sets: 1, reps: 5, weight: 100 }] }, { type: 'workout', exercises: [{ id: 'pullup', sets: 1, reps: 5, weight: 0 }] }] }), 'workout').length === 1 && !!ex(out, 'pullup'));
+    const imp = wo(clean(sb({ imperial: true }), [{ type: 'workout', exercises: [{ id: 'bench_press', sets: 1, reps: 5, weight: 100, unit: 'kg' }, { id: 'squat', sets: 1, reps: 5, weight: 600 }] }]));
+    r.check('for someone on pounds, kilos said become pounds', ex(imp, 'bench_press')?.sets[0].weight === 220.5);
+    r.check('and a weight with no unit is already theirs, up to their own scale', ex(imp, 'squat')?.sets[0].weight === 600);
+  }
+
+  r.section('the AI is told the exercises by id');
+  {
+    const s = sb();
+    const p = String(run(s, '_laPrompt()'));
+    r.check('the workout entry and its shape', /"type":"workout"/.test(p) && /When the sets differ, list them/.test(p));
+    r.check('with every exercise\'s id and name', /\[bench_press\] Bench Press/.test(p) && /\[front_squat\] Front Squat/.test(p));
+    r.check('and the person\'s own unit for when none is said', /"kg" if they did not say/.test(p) && /"lb" if they did not say/.test(String(run(sb({ imperial: true }), '_laPrompt()'))));
+  }
+
+  r.section('the list says what logging it will do');
+  {
+    const s = sb();
+    const d = (e) => JSON.parse(run(s, `JSON.stringify(_laDescribe(${JSON.stringify(e)}))`));
+    const bench = { id: 'bench_press', sets: [{ reps: 8, weight: 80 }, { reps: 8, weight: 80 }, { reps: 8, weight: 80 }] };
+    const one = d({ type: 'workout', exercises: [bench] });
+    r.check('one exercise: "Bench Press 3×8 at 80 kg"', one.kind === 'Workout' && one.main === 'Bench Press 3×8 at 80 kg', one.main);
+    r.check('a first time is a new PR, and today\'s planned Push A', /New PR: Bench Press/.test(one.sub) && /Counts as Push A/.test(one.sub), one.sub);
+    const two = d({ type: 'workout', exercises: [bench, { id: 'squat', sets: [{ reps: 5, weight: 100 }, { reps: 3, weight: 110 }] }] });
+    r.check('more: a count, then each one, sets that differ set by set', two.main === '2 exercises, 5 sets' && /Barbell Squat 100×5, 110×3 kg/.test(two.sub), JSON.stringify(two));
+    run(s, `prs.bench_press = { weight: 100, reps: 8 };`);
+    r.check('below the record: no PR claimed', !/New PR/.test(d({ type: 'workout', exercises: [bench] }).sub));
+    run(s, `prs.bench_press = { weight: 100, reps: 5 };`);
+    r.check('but 80×8 beats 100×5 on weight times reps, as on the workout screen', /New PR: Bench Press/.test(d({ type: 'workout', exercises: [bench] }).sub));
+    r.check('curls alone are not today\'s Push A', !/Counts as/.test(d({ type: 'workout', exercises: [{ id: 'barbell_curl', sets: [{ reps: 10, weight: 30 }] }] }).sub));
+    run(s, `workoutLog[today()] = { programId: 'ppl', dayIndex: 0, touched: true, exercises: [{ exerciseId: 'bench_press', sets: [{ weight: 80, reps: 8, completed: true }] }] };`);
+    r.check('with a session going: "Added to today\'s session"', /Added to today's session/.test(d({ type: 'workout', exercises: [bench] }).sub));
+  }
+
+  r.section('a new session is finished as Finish finishes one, and Undo takes all of it back');
+  {
+    const s = sb();
+    run(s, `log.h05.completedToday = false; LS.set('hvi_habit_links', { h05: 'workout' });
+      workoutMeta = { activeProgram: 'ppl', currentDayIndex: 0, lastWorkoutDate: '2026-01-01' }; LS.set('hvi_workout_meta', workoutMeta);
+      _undo = _laApply([{ type: 'workout', exercises: [
+        { id: 'bench_press', sets: [{ reps: 8, weight: 80 }, { reps: 8, weight: 80 }, { reps: 8, weight: 80 }] },
+        { id: 'incline_db', sets: [{ reps: 10, weight: 30 }, { reps: 10, weight: 30 }] }] }]);`);
+    const w = JSON.parse(run(s, `JSON.stringify(LS.get('hvi_workout_log', {})[today()])`));
+    r.check('the sets are in today\'s log, finished', w && w.exercises.length === 2 && w.exercises.every(x => x.sets.every(st => st.completed)) && w.exercises[0].sets.length === 3);
+    r.check('as today\'s Push A', w && w.programId === 'ppl' && w.dayIndex === 0 && w.dayName === 'Push A');
+    r.check('the rest of the app sees a session today', run(s, `trainedOnDay(today())`) === true && run(s, `classifyTodaySession().source`) === 'logged');
+    r.check('the records are set', run(s, `JSON.stringify([prs.bench_press.weight, prs.bench_press.reps, prs.incline_db.weight])`) === '[80,8,30]');
+    r.check('the program moves to its next day', run(s, `workoutMeta.currentDayIndex`) === 1 && run(s, `workoutMeta.lastWorkoutDate === today()`) === true);
+    r.check('XP for the session and both records', run(s, `gamification.xp`) >= 250, `(${run(s, 'gamification.xp')})`);
+    r.check('this week counts it', run(s, `gamification.weeklyStats.workoutDays.includes(today())`) === true);
+    r.check('the habit linked to working out is ticked', run(s, `log.h05.completedToday`) === true);
+    run(s, '_undo()');
+    r.check('Undo: the session is gone', !run(s, `LS.get('hvi_workout_log', {})[today()]`) && run(s, `trainedOnDay(today())`) === false);
+    r.check('the records are gone', run(s, `JSON.stringify(prs)`) === '{}' && run(s, `JSON.stringify(LS.get('hvi_prs', {}))`) === '{}');
+    r.check('the program is back on Push A', run(s, `workoutMeta.currentDayIndex`) === 0 && run(s, `workoutMeta.lastWorkoutDate`) === '2026-01-01');
+    r.check('the XP is back to where it was', run(s, `gamification.xp`) === 0, `(${run(s, 'gamification.xp')})`);
+    r.check('the week no longer counts it', run(s, `gamification.weeklyStats.workoutDays.includes(today())`) === false);
+    r.check('and the linked habit is unticked', run(s, `log.h05.completedToday`) === false);
+  }
+
+  r.section('a session already going today gets the sets, and is left to its own Finish');
+  {
+    const s = sb();
+    run(s, `workoutMeta = { activeProgram: 'ppl', currentDayIndex: 0 };
+      workoutLog[today()] = { programId: 'ppl', dayIndex: 0, touched: true, exercises: [{ exerciseId: 'bench_press', sets: [{ weight: 80, reps: 8, completed: true }] }] };
+      LS.set('hvi_workout_log', workoutLog);
+      _undo = _laApply([{ type: 'workout', exercises: [{ id: 'bench_press', sets: [{ reps: 8, weight: 80 }, { reps: 8, weight: 80 }] }, { id: 'ohp', sets: [{ reps: 8, weight: 40 }] }] }]);`);
+    const w = JSON.parse(run(s, `JSON.stringify(workoutLog[today()])`));
+    r.check('the bench sets join the ones there', w.exercises.find(x => x.exerciseId === 'bench_press').sets.length === 3);
+    r.check('a new exercise is added', !!w.exercises.find(x => x.exerciseId === 'ohp'));
+    r.check('it is not finished for them: same day, no session XP', run(s, `workoutMeta.currentDayIndex`) === 0 && run(s, `gamification.xp`) === 200, `(${run(s, 'gamification.xp')})`);
+    run(s, '_undo()');
+    r.check('Undo leaves it as it was', JSON.parse(run(s, `JSON.stringify(workoutLog[today()])`)).exercises.length === 1 && JSON.parse(run(s, `JSON.stringify(workoutLog[today()])`)).exercises[0].sets.length === 1);
+  }
+
+  r.section('a day Whoop logged on its own keeps Whoop\'s reading under the sets');
+  {
+    const s = sb();
+    run(s, `workoutLog[today()] = { dayName: 'Soccer', duration: 90, exercises: [], source: 'whoop', whoopId: 'w1', strain: 15.2, avgHr: 150, calories: 900 };
+      LS.set('hvi_workout_log', workoutLog);
+      _undo = _laApply([{ type: 'workout', exercises: [{ id: 'squat', sets: [{ reps: 5, weight: 100 }] }] }]);`);
+    const w = JSON.parse(run(s, `JSON.stringify(workoutLog[today()])`));
+    r.check('the sets are the session now', !w.source && w.exercises[0].exerciseId === 'squat');
+    r.check('with Whoop\'s reading under it, as a sync would put it', w.whoop && w.whoop.id === 'w1' && w.whoop.sport === 'Soccer' && w.whoop.strain === 15.2 && w.whoop.minutes === 90, JSON.stringify(w.whoop));
+    run(s, '_undo()');
+    r.check('Undo gives Whoop\'s day back', JSON.parse(run(s, `JSON.stringify(workoutLog[today()])`)).source === 'whoop');
+  }
+
+  r.section('pounds stay pounds for someone on pounds');
+  {
+    const s = sb({ imperial: true });
+    run(s, `_laApply(_laSanitize([{ type: 'workout', exercises: [{ id: 'bench_press', sets: 3, reps: 5, weight: 225 }] }]))`);
+    r.check('225 is stored as 225, their unit', run(s, `workoutLog[today()].exercises[0].sets[0].weight`) === 225 && run(s, `prs.bench_press.weight`) === 225);
+  }
+
+  r.section('the toast names the new records');
+  {
+    const s = sb();
+    run(s, `_msg = ''; showActionToast = function (m) { _msg = m; }; closeLogAnything = function () {};
+      _laEntries = [{ type: 'workout', on: true, exercises: [{ id: 'bench_press', sets: [{ reps: 8, weight: 80 }] }, { id: 'squat', sets: [{ reps: 5, weight: 100 }] }] }, { type: 'water', ml: 500, on: true }];
+      applyLogAnything();`);
+    r.check('"Logged 2 things, 2 new PRs"', run(s, '_msg') === 'Logged 2 things, 2 new PRs', run(s, '_msg'));
+  }
+
   r.section('no mic button inside the native apps');
   {
     const s = sb();
