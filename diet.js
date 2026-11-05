@@ -728,6 +728,7 @@ function deleteMeal(mi, id) {
   fresh[t].meals = meals;
   mealLog = fresh;
   LS.set('hvi_meal_log', mealLog);
+  _mealXPBack(meal);
   go('diet');
 }
 
@@ -1618,15 +1619,19 @@ function usualFoods() {
 // One way into the log for everything that records a meal. Re-logging and
 // recipes used to write the meal and stop there: no XP, no "meal logged"
 // signal, so a habit linked to protein or calories never heard about it.
+// What a logged meal earns. The meal keeps it (meal.xp), so taking the meal
+// out again, by Undo or Delete, takes exactly that back: logging and undoing
+// used to leave 15 XP behind each time, which could be repeated without end.
+const MEAL_XP = 15;
 function _commitMeal(name, items, via) {
   const t = today();
   if (!mealLog[t]) mealLog[t] = { meals: [] };
   const id = genId('m');
-  mealLog[t].meals.push({ id, name, items: items.map(_copyItem) });
+  mealLog[t].meals.push({ id, name, items: items.map(_copyItem), xp: MEAL_XP });
   LS.set('hvi_meal_log', mealLog);
   if (typeof track === 'function') track('meal_logged', { meal_type: name, items: items.length, via });
   if (window.Arete) window.Arete.emit('meal:logged', { meal: name });
-  if (typeof awardXP === 'function') awardXP(15, 'body');
+  if (typeof awardXP === 'function') awardXP(MEAL_XP, 'body');
   const dm = getDayMacros();
   if (dietMeta.dailyGoals.protein > 0 && dm.p >= dietMeta.dailyGoals.protein * 0.9 && typeof trackWeeklyProtein === 'function') trackWeeklyProtein();
   if (typeof checkDailyQuests === 'function') checkDailyQuests();
@@ -1641,16 +1646,23 @@ function _afterQuickLog(id, type, items) {
   }
 }
 
+// A meal taken out gives back what it earned. Meals logged before they kept
+// their XP give back nothing, since what they earned is not known.
+function _mealXPBack(meal) {
+  if (meal && meal.xp > 0 && typeof awardXP === 'function') awardXP(-meal.xp, 'body');
+}
+
 function undoMeal(id) {
   const t = today();
   const fresh = LS.get('hvi_meal_log', {});
   const meals = (fresh[t] || {}).meals || [];
   const idx = meals.findIndex(m => m && m.id === id);
   if (idx < 0) return;
-  meals.splice(idx, 1);
+  const [gone] = meals.splice(idx, 1);
   fresh[t].meals = meals;
   mealLog = fresh;
   LS.set('hvi_meal_log', mealLog);
+  _mealXPBack(gone);
   if (typeof track === 'function') track('meal_undo', {});
   if (curView === 'diet') _redraw(renderDiet);
 }

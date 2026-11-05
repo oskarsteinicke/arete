@@ -58,6 +58,20 @@ module.exports = function () {
     r.check('level rose to 2', run(s, 'getLevel(gamification.xp)') === 2);
   }
 
+  // Taking XP back (an unticked habit, an undone meal) goes through awardXP
+  // with a negative amount.
+  r.section('XP taken back');
+  {
+    const s = sb({});
+    run(s, "_shown = []; showXPToast = function (t) { _shown.push(t); }; awardXP(20,'body'); awardXP(-15,'body');");
+    const g = JSON.parse(s.localStorage._d['hvi_gamification']);
+    r.check('comes off the total and the pillar', g.xp === 5 && g.pillarXP.body === 5, `(${g.xp}, ${g.pillarXP.body})`);
+    r.check('the toast says "-15 XP", not "+-15 XP"', run(s, '_shown[1]') === '-15 XP' && run(s, '_shown[0]') === '+20 XP');
+    run(s, "awardXP(-50,'body');");
+    const h = JSON.parse(s.localStorage._d['hvi_gamification']);
+    r.check('and never goes below zero', h.xp === 0 && h.pillarXP.body === 0, `(${h.xp}, ${h.pillarXP.body})`);
+  }
+
   r.section('achievements unlock once');
   {
     const s = sb({

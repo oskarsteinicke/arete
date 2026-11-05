@@ -120,6 +120,7 @@ module.exports = async function () {
     r.check('the mood', run(s, `(LS.get('hvi_mood_log', {})['${T}'] || {}).mood`) === 4);
     run(s, '_undo()');
     r.check('Undo: the meal is gone', JSON.parse(run(s, `JSON.stringify((LS.get('hvi_meal_log', {})['${T}'] || {}).meals || [])`)).length === 0);
+    r.check('with the XP it and the habit earned', run(s, 'gamification.xp') === 0, `(${run(s, 'gamification.xp')})`);
     r.check('the water is gone', !run(s, `(LS.get('hvi_water_log', {}) || {})['${T}']`));
     r.check('the sleep is back to what it was', run(s, `LS.get('hvi_sleep_log', {})['${T}'].hours`) === 7);
     r.check('the habit is unticked', run(s, `log.h01.completedToday`) === false);

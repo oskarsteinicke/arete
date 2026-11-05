@@ -232,5 +232,36 @@ module.exports = function () {
     r.check('and Add Meal has no 9px labels left', !/font-size:9px/.test(run(s, `document.getElementById('view').innerHTML`)));
   }
 
+  // A meal earns 15 XP. Undo and Delete used to take the meal out and leave
+  // the XP, so logging and undoing could be repeated for XP without end.
+  r.section('taking a meal out takes back what it earned');
+  {
+    const s = sb();
+    const id = run(s, `_commitMeal('Breakfast', ${JSON.stringify(OATS)}, 'test')`);
+    r.check('a logged meal keeps what it earned', todays(s)[0].xp === 15 && run(s, '_xp') === 15);
+    run(s, `undoMeal(${JSON.stringify(id)})`);
+    r.check('Undo takes the 15 back', todays(s).length === 0 && run(s, '_xp') === 0);
+    run(s, `for (let i = 0; i < 5; i++) undoMeal(_commitMeal('Snack', ${JSON.stringify(CHICKEN)}, 'test'));`);
+    r.check('so logging and undoing five times earns nothing', run(s, '_xp') === 0, `(${run(s, '_xp')})`);
+    run(s, `undoMeal('not-a-meal')`);
+    r.check('undoing a meal that is not there takes nothing', run(s, '_xp') === 0);
+
+    const d = sb();
+    const did = run(d, `_commitMeal('Lunch', ${JSON.stringify(CHICKEN)}, 'test')`);
+    run(d, `confirm = function () { return true; }; deleteMeal(0, ${JSON.stringify(did)})`);
+    r.check('Delete takes it back too', todays(d).length === 0 && run(d, '_xp') === 0);
+    run(d, `_commitMeal('Dinner', ${JSON.stringify(CHICKEN)}, 'test'); confirm = function () { return false; }; deleteMeal(0, (LS.get('hvi_meal_log', {})['${T}'].meals[0] || {}).id)`);
+    r.check('a Delete called off keeps the meal and the XP', todays(d).length === 1 && run(d, '_xp') === 15);
+
+    const f = sb();
+    const fid = run(f, `_commitMeal('Snack', [${JSON.stringify(OATS[2])}], 'test')`);
+    run(f, `confirm = function () { return true; }; removeFood('l:' + ${JSON.stringify(fid)} + ':0')`);
+    r.check('taking out the last food of a meal is the meal going, XP and all', todays(f).length === 0 && run(f, '_xp') === 0);
+
+    const old = sb({ [T]: { meals: [meal('Breakfast', OATS, 'm_old')] } });
+    run(old, `confirm = function () { return true; }; deleteMeal(0, 'm_old')`);
+    r.check('a meal logged before meals kept their XP takes nothing back', todays(old).length === 0 && run(old, '_xp') === 0);
+  }
+
   return r.finish();
 };

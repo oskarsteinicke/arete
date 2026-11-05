@@ -221,17 +221,19 @@ function showAchievementToast(ach) {
   launchConfetti(0.3);
 }
 
+// A negative amount takes XP back (an unticked habit, an undone meal), never
+// below zero, and its toast reads "-15 XP", not "+-15 XP".
 function awardXP(amount, pillarId) {
   const prevLvl = getLevel(gamification.xp || 0);
-  gamification.xp = (gamification.xp || 0) + amount;
+  gamification.xp = Math.max(0, (gamification.xp || 0) + amount);
   if (pillarId) {
     if (!gamification.pillarXP) gamification.pillarXP = {};
-    gamification.pillarXP[pillarId] = (gamification.pillarXP[pillarId] || 0) + amount;
+    gamification.pillarXP[pillarId] = Math.max(0, (gamification.pillarXP[pillarId] || 0) + amount);
   }
   LS.set('hvi_gamification', gamification);
   const newLvl = getLevel(gamification.xp || 0);
   if (newLvl > prevLvl && amount > 0) { playSound('levelup'); haptic([30, 20, 30, 20, 60]); queueLevelUp(prevLvl, newLvl); }
-  showXPToast('+' + amount + ' XP');
+  showXPToast((amount < 0 ? '' : '+') + amount + ' XP');
   refreshHeroXP();
   checkAchievements();
 }
