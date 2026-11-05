@@ -766,6 +766,24 @@ function _coachInsightContext() {
   return parts.join('\n');
 }
 
+// A finished answer ends a sentence. Anything else was cut off on the way.
+function _insightComplete(text) {
+  return /[.!?]["'”)\]]?\s*$/.test(String(text || ''));
+}
+
+// Gemini 2.5 thinks before it answers, and the thinking is paid out of the
+// same token allowance. At 120 tokens it used about 113 to think and the focus
+// came back as "Your readiness is", which was then kept for the whole day.
+function _insightText(data) {
+  const c = data?.candidates?.[0];
+  let text = (c?.content?.parts?.[0]?.text || '').trim();
+  if (c?.finishReason === 'MAX_TOKENS' || !_insightComplete(text)) {
+    const m = text.match(/^[\s\S]*[.!?]["'”)\]]?(?=\s|$)/);
+    text = m ? m[0].trim() : '';
+  }
+  return text;
+}
+
 async function fetchCoachInsight(force) {
   // This one runs by itself when home is drawn, so it never asks: no
   // permission, no request.
@@ -773,7 +791,7 @@ async function fetchCoachInsight(force) {
   const t = today();
   let cached = null;
   try { cached = JSON.parse(localStorage.getItem('hvi_coach_insight') || 'null'); } catch {}
-  if (!force && cached && cached.date === t && cached.text) return cached.text;
+  if (!force && cached && cached.date === t && _insightComplete(cached.text)) return cached.text;
   const prompt = `You are Arete Coach, a direct, warm performance coach blending Stoic philosophy and sports science. Based ONLY on this user's data from today, give ONE specific focus or tip for the rest of their day.
 
 DATA:
@@ -783,11 +801,12 @@ Rules: 2-3 sentences, maximum 55 words. Speak directly ("you"). Reference at lea
   const res = await fetch(_INSIGHT_PROXY, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 120 } }),
+    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.7, maxOutputTokens: 300, thinkingConfig: { thinkingBudget: 0 } } }),
   });
   if (!res.ok) throw new Error('insight fetch failed: ' + res.status);
   const data = await res.json();
-  const text = (data?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+  const text = _insightText(data);
   if (!text) throw new Error('empty insight');
   try { localStorage.setItem('hvi_coach_insight', JSON.stringify({ date: t, text })); } catch {}
   return text;
@@ -814,7 +833,7 @@ function coachInsightCardHTML() {
     }
     let cached = null;
     try { cached = JSON.parse(localStorage.getItem('hvi_coach_insight') || 'null'); } catch {}
-    const fresh = cached && cached.date === today() && cached.text;
+    const fresh = cached && cached.date === today() && _insightComplete(cached.text);
     if (!fresh) setTimeout(() => _fillCoachInsight(false), 400);
     return `<div class="ci-card ani">
       <div class="ci-head"><span class="ci-label">Coach's focus</span>

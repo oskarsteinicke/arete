@@ -30,6 +30,11 @@ const DEFAULT_HABITS = [
   { id: 'h12', name: 'Track finances / no impulse spending', category: 'financial' },
 ];
 
+// The starter habits the app can already see happen tick themselves: a
+// finished workout and a logged night of 7 hours or more. Set once, on a fresh
+// install; the habit editor shows and changes them.
+const DEFAULT_HABIT_LINKS = { h05: 'workout', h08: 'sleep' };
+
 const QUOTES = [
   // Marcus Aurelius
   { text: 'You have power over your mind, not outside events. Realise this, and you will find strength.', author: 'Marcus Aurelius' },

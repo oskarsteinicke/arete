@@ -326,6 +326,8 @@ async function deleteAccount() {
 let _syncDebounce = null;
 
 function setSyncStatus(state) {
+  // Only an account has anything to sync. Guests were shown a green "Synced".
+  if (!getAccessToken()) { document.getElementById('sync-dot')?.remove(); return; }
   let el = document.getElementById('sync-dot');
   if (!el) { el = document.createElement('div'); el.id = 'sync-dot'; el.title = 'Cloud sync'; document.body.appendChild(el); }
   if (!navigator.onLine && state === 'offline') state = 'away';
@@ -1837,7 +1839,12 @@ async function init() {
   }
   const stored = LS.get('hvi_habits', null);
   habits = stored || DEFAULT_HABITS;
-  if (!stored) LS.set('hvi_habits', habits);
+  if (!stored) {
+    LS.set('hvi_habits', habits);
+    if (localStorage.getItem('hvi_habit_links') === null && typeof DEFAULT_HABIT_LINKS === 'object') {
+      LS.set('hvi_habit_links', Object.assign({}, DEFAULT_HABIT_LINKS));
+    }
+  }
 
   log = LS.get('hvi_log', {});
   habits.forEach(h => { if (!log[h.id]) log[h.id] = { streak: 0, lastCompletedDate: '', completedToday: false }; });
@@ -3821,13 +3828,15 @@ function showAIConsent() {
     if (el && el.remove) el.remove();
     el = document.createElement('div');
     el.id = 'ai-consent';
+    // Above every sheet: Log anything asks from inside its own sheet (9998),
+    // and the question used to open underneath it where it could not be answered.
     el.innerHTML = `
-      <div class="pop-backdrop" style="position:fixed;inset:0;background:rgba(var(--c-ink-rgb), 0.78);z-index:9000;display:flex;align-items:center;justify-content:center;padding:24px" onclick="answerAIConsent(false)">
+      <div class="pop-backdrop" style="position:fixed;inset:0;background:rgba(var(--c-ink-rgb), 0.78);z-index:10010;display:flex;align-items:center;justify-content:center;padding:24px" onclick="answerAIConsent(false)">
         <div class="pop-card" role="dialog" aria-modal="true" aria-labelledby="ai-consent-title" style="background:var(--bg);border:1px solid var(--border2);border-radius:24px;padding:26px 22px 20px;max-width:380px;width:100%;max-height:calc(100% - 24px);overflow-y:auto" onclick="event.stopPropagation()">
           <div style="font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Your data and AI</div>
           <div id="ai-consent-title" style="font-family:var(--serif);font-size:23px;color:var(--text);line-height:1.2;margin-bottom:10px">Allow the AI features?</div>
           <div style="font-size:13px;color:var(--text-dim);line-height:1.55">
-            The coach, the daily focus on your home screen, the meal scanner and the program builder are run by AI models from <b style="color:var(--text)">Google (Gemini)</b> and <b style="color:var(--text)">Groq</b>. To answer, Arete sends them:
+            The coach, Log anything, the daily focus on your home screen, the meal scanner and the program builder are run by AI models from <b style="color:var(--text)">Google (Gemini)</b> and <b style="color:var(--text)">Groq</b>. To answer, Arete sends them:
             <ul style="margin:10px 0 10px 18px;padding:0;display:grid;gap:5px">
               <li>the message, meal description or training goal you type</li>
               <li>the meal photo you choose</li>

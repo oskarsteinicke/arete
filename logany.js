@@ -157,8 +157,19 @@ function _laPlanned(e) {
 
 // Everything that comes back is checked: types, ids, ranges. Anything odd is
 // dropped rather than guessed at.
+// The entries, however they were wrapped. Groq's model sometimes answers
+// [{"entries":[<meal>]}, <water>, <sleep>]: a list whose first item holds the
+// meal in its own "entries". Read as a plain list, that item has no type and
+// the meal disappeared without a word.
+function _laFlat(raw, depth = 0) {
+  if (depth > 6 || !raw || typeof raw !== 'object') return [];
+  if (Array.isArray(raw)) return raw.flatMap(x => _laFlat(x, depth + 1));
+  if (!raw.type && Array.isArray(raw.entries)) return _laFlat(raw.entries, depth + 1);
+  return [raw];
+}
+
 function _laSanitize(raw) {
-  const list = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.entries) ? raw.entries : []);
+  const list = _laFlat(raw);
   const ids = new Set((habits || []).map(h => h.id));
   const out = [], seen = new Set();
   for (const e of list.slice(0, 16)) {

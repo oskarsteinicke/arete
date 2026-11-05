@@ -1573,7 +1573,7 @@ input.d-input[type="date"]::-webkit-date-and-time-value { text-align: left; min-
 }
 .quick-log-item {
   display: flex; align-items: center; gap: 10px;
-  background: var(--surface2); border: 1px solid var(--border);
+  background: var(--raised); border: 1px solid var(--border);
   border-radius: 14px; padding: 10px 16px; cursor: pointer;
   font-size: 13px; color: var(--text); font-weight: 600;
   white-space: nowrap; transition: background 0.15s;

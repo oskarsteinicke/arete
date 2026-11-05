@@ -82,6 +82,23 @@ module.exports = async function () {
     r.check('80 kg is stored as 176.4 lbs for an imperial user', imp[0]?.value === 176.4);
   }
 
+  // A real answer from Groq, on "two eggs and toast, a glass of water, slept 7
+  // hours": the meal came wrapped in its own "entries" inside a list, and the
+  // list was read item by item, so breakfast vanished and two things logged.
+  r.section('a meal wrapped one level too deep is still found');
+  {
+    const s = sb();
+    const eggs = { type: 'meal', meal: 'Breakfast', items: [{ name: 'Eggs (2 large)', calories: 156, protein: 13, carbs: 1, fat: 11 }] };
+    const out = clean(s, [{ entries: [eggs] }, { type: 'water', ml: 250 }, { type: 'sleep', hours: 7 }]);
+    r.check('breakfast, water and sleep all come through', out.map(e => e.type).join() === 'meal,water,sleep', out.map(e => e.type).join());
+    const deep = clean(s, { entries: [{ entries: [eggs] }, [{ type: 'water', ml: 500 }]] });
+    r.check('nested lists and wrappers are opened too', deep.map(e => e.type).join() === 'meal,water', deep.map(e => e.type).join());
+    run(s, `aiConsent = function () { return 'yes'; };
+      _aiFetch = function () { return Promise.resolve('[\\n{"entries":[{"type":"meal","meal":"Breakfast","items":[{"name":"Eggs (2 large)","calories":156,"protein":13,"carbs":1,"fat":11},{"name":"Toast (1 slice)","calories":75,"protein":3,"carbs":13,"fat":1}]}]},{"type":"water","ml":250},{"type":"sleep","hours":7}\\n]'); };`);
+    const read = JSON.parse(await run(s, `_laRead('two eggs and toast, a glass of water, slept 7 hours').then(x => JSON.stringify(x))`));
+    r.check('read end to end, the eggs and toast are there', of(read, 'meal')[0]?.items.length === 2, JSON.stringify(read).slice(0, 200));
+  }
+
   r.section('the AI is asked for exactly this');
   {
     const s = sb();

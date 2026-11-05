@@ -1921,7 +1921,6 @@ function injectOnboardingStyles() {
     .ob-goal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:28px}
     .ob-goal-card{background:var(--surface);border:1.5px solid var(--border2);border-radius:14px;padding:18px 14px;cursor:pointer;transition:all .2s;text-align:center}
     .ob-goal-card.active{border-color:var(--accent);background:rgba(var(--accent-rgb), 0.1)}
-    .ob-goal-card.full{grid-column:1/-1}
     .ob-goal-emoji{font-size:26px;margin-bottom:8px}
     .ob-goal-name{font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px}
     .ob-goal-desc{font-size:11px;color:var(--text-dim)}
@@ -1932,6 +1931,7 @@ function injectOnboardingStyles() {
     .ob-macro-card{flex:1;background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:14px 10px;text-align:center}
     .ob-macro-label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
     .ob-macro-input{width:100%;background:transparent;border:none;color:var(--accent-b);font-family:var(--serif);font-size:22px;font-weight:700;text-align:center;outline:none}
+    .ob-hint{font-size:12px;color:var(--text-muted);line-height:1.5;margin:-8px 0 20px}
     .ob-btn{display:block;width:100%;padding:18px;border:none;border-radius:14px;background:var(--orange);color:var(--on-orange);font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:auto;transition:transform .15s}
     .ob-btn:active{transform:scale(0.98)}
     .ob-welcome{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 32px 60px}
@@ -1996,14 +1996,16 @@ function renderOnboarding(step) {
       </div>`;
 
   } else if (step === 3) {
+    // Four even cards. The complete path used to span the bottom row on its
+    // own, which left a hole beside the third card.
     const goals = [
+      {k:'all', emoji:'\u{1F3DB}', name:'Pursue arete', desc:'The complete path to excellence'},
       {k:'habits', emoji:'\u{1F525}', name:'Forge discipline', desc:'Daily virtues & practice'},
       {k:'fitness', emoji:'\u{1F4AA}', name:'Strengthen the body', desc:'Training & performance'},
       {k:'nutrition', emoji:'\u{1F957}', name:'Master your diet', desc:'Macros & nourishment'},
-      {k:'all', emoji:'\u{1F3DB}', name:'Pursue arete', desc:'The complete path to excellence', full:true},
     ];
     const cards = goals.map(g => `
-      <div class="ob-goal-card${_obPath===g.k?' active':''} ${g.full?'full':''}" onclick="_obPath='${g.k}';renderOnboarding(3)">
+      <div class="ob-goal-card${_obPath===g.k?' active':''}" onclick="_obPath='${g.k}';renderOnboarding(3)">
         <div class="ob-goal-emoji">${g.emoji}</div>
         <div class="ob-goal-name">${g.name}</div>
         <div class="ob-goal-desc">${g.desc}</div>
@@ -2044,9 +2046,10 @@ function renderOnboarding(step) {
       <div class="ob-sub">Without measure, even the finest things become excess. Set your daily targets.</div>
       <div class="ob-nut-btns">${nutBtns}</div>
       <div class="ob-macro-row">
-        <div class="ob-macro-card"><div class="ob-macro-label">Calories</div><input class="ob-macro-input" type="number" id="ob-cal" value="${_obCalories}" onchange="_obCalories=+this.value"></div>
-        <div class="ob-macro-card"><div class="ob-macro-label">Protein (g)</div><input class="ob-macro-input" type="number" id="ob-pro" value="${_obProtein}" onchange="_obProtein=+this.value"></div>
-      </div>`;
+        <div class="ob-macro-card"><div class="ob-macro-label">Calories</div><input class="ob-macro-input" type="number" inputmode="numeric" id="ob-cal" value="${_obCalories}" onchange="_obCalories=+this.value" aria-label="Daily calories"></div>
+        <div class="ob-macro-card"><div class="ob-macro-label">Protein (g)</div><input class="ob-macro-input" type="number" inputmode="numeric" id="ob-pro" value="${_obProtein}" onchange="_obProtein=+this.value" aria-label="Daily protein in grams"></div>
+      </div>
+      <div class="ob-hint">Tap a number to change it. Later, Diet can work yours out from your height and weight.</div>`;
   }
 
   const isLast = !_plan.some(i => i > step);
@@ -2156,16 +2159,19 @@ function obSkip() {
 // ── FEATURE TOUR (shown once after onboarding) ─────────────────────────
 function showFeatureTour() {
   if (LS.get('hvi_tour_done', false)) return;
+  // Each step opens the screen it talks about. The first leads with the +
+  // button, the quickest way to put anything in.
   const steps = [
-    { icon: '✅', title: 'Track your habits', desc: 'Tap the Habits tab to add daily habits. Check them off each day to build streaks.', tab: 'habits' },
-    { icon: '🏋️', title: 'Log your workouts', desc: 'Hit the Workout tab to start your training program. The app tracks your weights and flags PRs.', tab: 'workout' },
-    { icon: '🥗', title: 'Track what you eat', desc: 'Go to Diet to log meals. Describe food in plain English or snap a photo. The AI calculates macros.', tab: 'diet' },
-    { icon: '🤖', title: 'Ask the AI Coach', desc: 'Tap the chat bubble in the bottom right corner anytime. It knows your data and gives personalized advice.', tab: null },
+    { icon: '⚡', title: 'Log anything', desc: 'Tap + and say what you ate, drank, slept or lifted. Arete puts each thing in the right place.', tab: 'home' },
+    { icon: '✅', title: 'Your habits', desc: 'A starter set is ready. Tick them off each day to build streaks, and swap any of them under Edit.', tab: 'habits' },
+    { icon: '🏋️', title: 'Your training', desc: "Today's session is ready here. Arete tracks your weights and flags new records.", tab: 'workout' },
+    { icon: '💬', title: 'Ask the coach', desc: 'Tap the chat bubble in the corner anytime. The coach knows your habits, training, food and sleep.', tab: 'home' },
   ];
-  let step = 0;
 
+  // Reads the step from window: it used to read a local that never moved, so
+  // every card said "1 of 4" while Next changed the screen behind it.
   function render() {
-    const s = steps[step];
+    const step = window._tourStep, s = steps[step];
     let overlay = document.getElementById('tour-overlay');
     if (!overlay) {
       overlay = document.createElement('div');
@@ -2181,12 +2187,12 @@ function showFeatureTour() {
         <div class="tour-desc">${s.desc}</div>
         <div class="tour-btns">
           <button class="tour-skip" onclick="dismissTour()">Skip tour</button>
-          <button class="tour-next" onclick="nextTourStep()">${step === steps.length - 1 ? 'Got it!' : 'Next →'}</button>
+          <button class="tour-next" onclick="nextTourStep()">${step === steps.length - 1 ? 'Done' : 'Next →'}</button>
         </div>
       </div>`;
   }
 
-  window._tourStep = step;
+  window._tourStep = 0;
   window._tourSteps = steps;
   window._tourRender = render;
   render();
