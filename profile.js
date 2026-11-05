@@ -2021,7 +2021,7 @@ function renderOnboarding(step) {
       { id: 'ppl', name: 'Push / Pull / Legs', desc: '6-day rotation. High volume.', emoji: '🏋️' },
       { id: 'ul', name: 'Upper / Lower', desc: '4-day split. Strength focus.', emoji: '💪' },
       { id: 'fb', name: 'Full Body', desc: '3-day rotation. Efficient.', emoji: '⚡' },
-      { id: 'athlete', name: 'Soccer Athlete', desc: 'Built for sport performance.', emoji: '⚽' },
+      { id: 'athlete', name: 'Athlete', desc: 'Built for sport performance.', emoji: '🏃' },
     ];
     const progCards = programs.map(p => `
       <div class="ob-goal-card${_obProgram===p.id?' active':''}" onclick="_obProgram='${p.id}';renderOnboarding(4)">

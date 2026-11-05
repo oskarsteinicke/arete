@@ -29,10 +29,13 @@
     // A sign-in started in the iPhone or Android app comes back here, in a
     // browser sheet. That page finishes it and sends the person back to the app.
     var _nativeSignIn = /[?&]state=n_/.test(location.search);
+    // A password reset link lands here with the sign-in in the address (#access_token
+    // or #error). Sending it on to the landing page would throw that away.
+    var _authLink = /[#&](access_token|error_code|error)=/.test(location.hash);
     if (_nativeSignIn) location.replace('/oauth-return.html' + location.search);
     // New visitors see landing page; existing users go straight to app.
     // Skipped in the native (Capacitor) app, which boots straight into the app.
-    else if (!window.Capacitor && !localStorage.getItem('hvi_habits') && !localStorage.getItem('hvi_onboarded') && !localStorage.getItem('hvi_from_landing') && !navigator.standalone && !window.matchMedia('(display-mode: standalone)').matches) {
+    else if (!_authLink && !window.Capacitor &&!localStorage.getItem('hvi_habits') && !localStorage.getItem('hvi_onboarded') && !localStorage.getItem('hvi_from_landing') && !navigator.standalone && !window.matchMedia('(display-mode: standalone)').matches) {
       window.location.replace('/landing.html');
     }
   </script>
@@ -50,8 +53,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="tokens.css?v=236">
-  <link rel="stylesheet" href="style.css?v=236">
+  <link rel="stylesheet" href="tokens.css?v=237">
+  <link rel="stylesheet" href="style.css?v=237">
 </head>
 <body>
 <!-- The loading screen: the Arete mark on brand black, as the iPhone app's
@@ -155,28 +158,28 @@
     </button>
   </nav>
 </div>
-<script src="data.js?v=236"></script>
-<script src="app.js?v=236"></script>
-<script src="connect.js?v=236"></script>
-<script src="patterns.js?v=236"></script>
-<script src="today.js?v=236"></script>
-<script src="premium.js?v=236"></script>
-<script src="workout.js?v=236"></script>
-<script src="diet.js?v=236"></script>
-<script src="logany.js?v=236"></script>
+<script src="data.js?v=237"></script>
+<script src="app.js?v=237"></script>
+<script src="connect.js?v=237"></script>
+<script src="patterns.js?v=237"></script>
+<script src="today.js?v=237"></script>
+<script src="premium.js?v=237"></script>
+<script src="workout.js?v=237"></script>
+<script src="diet.js?v=237"></script>
+<script src="logany.js?v=237"></script>
 <script>
 // Stub coach functions until lazy-loaded
 if(typeof openCoach==='undefined'){window.openCoach=function(){};window.closeCoach=function(){};window.sendCoachMsg=function(){};window.clearCoachHistory=function(){}}
 // Lazy-load coach + social after first paint for faster startup
 (window.requestIdleCallback||function(cb){setTimeout(cb,800)})(function(){
-  var s1=document.createElement('script');s1.src='coach.js?v=236';document.body.appendChild(s1);
-  var s2=document.createElement('script');s2.src='social.js?v=236';document.body.appendChild(s2);
-  var s3=document.createElement('script');s3.src='bodymap.js?v=236';document.body.appendChild(s3);
+  var s1=document.createElement('script');s1.src='coach.js?v=237';document.body.appendChild(s1);
+  var s2=document.createElement('script');s2.src='social.js?v=237';document.body.appendChild(s2);
+  var s3=document.createElement('script');s3.src='bodymap.js?v=237';document.body.appendChild(s3);
 });
 </script>
-<script src="integrations.js?v=236"></script>
-<script src="profile.js?v=236"></script>
-<script src="review.js?v=236"></script>
+<script src="integrations.js?v=237"></script>
+<script src="profile.js?v=237"></script>
+<script src="review.js?v=237"></script>
 <script>
   // No service worker inside the native (Capacitor) app — assets are bundled locally
   if ('serviceWorker' in navigator && !window.Capacitor) {
@@ -187,8 +190,13 @@ if(typeof openCoach==='undefined'){window.openCoach=function(){};window.closeCoa
     navigator.serviceWorker.register('/service-worker.js').then(reg => {
       reg.update();
     });
+    // Reload only when a new version replaces an old one. On a first visit
+    // the page came straight from the network and is already current, and the
+    // reload threw away what had been started: onboarding went back to its
+    // welcome screen, and a reset link lost its new-password screen.
+    var _hadWorker = !!navigator.serviceWorker.controller;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      window.location.reload();
+      if (_hadWorker) window.location.reload();
     });
   }
 </script>

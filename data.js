@@ -279,8 +279,8 @@ const WORKOUT_PROGRAMS = [
     ]
   },
   {
-    id: 'athlete', name: 'Soccer Athlete',
-    desc: '4-day split designed around soccer performance. Power, speed, and injury prevention.',
+    id: 'athlete', name: 'Athlete',
+    desc: '4-day split built for sport performance. Power, speed, and injury prevention.',
     days: [
       { name: 'Lower Power', focus: 'Explosive leg strength',
         ex: ['squat','trap_dl','box_jump','bulgarian','nordic_curl','copenhagen'] },

@@ -134,15 +134,98 @@ const DEVICE_KEYS = ['hvi_integrations', 'hvi_whoop_body'];
 const MERGE_KEYS = ['hvi_workout_log','hvi_meal_log','hvi_journal3','hvi_weight_log','hvi_water_log','hvi_sleep_log','hvi_habit_history','hvi_rest_by_exercise','hvi_burn_log','hvi_week_review'];
 
 // ── AUTH HELPERS ──────────────────────────────────────────────────────────
+// Where the link in a reset email lands. Supabase uses the project's Site URL
+// instead when this is not on its list of allowed redirects.
+const _RESET_REDIRECT = 'https://get-arete.com/';
+
+// Supabase's error body, in one shape.
+async function _authErr(r) {
+  const d = await r.json().catch(() => ({}));
+  return { ok: false, status: r.status, code: d.error_code || d.code || '', error: d.msg || d.error_description || d.message || '' };
+}
+
 async function authResetPassword(email) {
   try {
-    const r = await fetch(`${SUPABASE_URL}/auth/v1/recover`, {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/recover?redirect_to=${encodeURIComponent(_RESET_REDIRECT)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY },
       body: JSON.stringify({ email })
     });
-    return r.ok ? { ok: true } : { ok: false };
-  } catch { return { ok: false }; }
+    return r.ok ? { ok: true } : await _authErr(r);
+  } catch { return { ok: false, error: 'network' }; }
+}
+
+// The code in the reset email, traded for a signed-in session, so the new
+// password can be set without leaving the app.
+async function authVerifyRecovery(email, token) {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY },
+      body: JSON.stringify({ type: 'recovery', email, token })
+    });
+    if (!r.ok) return await _authErr(r);
+    const d = await r.json().catch(() => ({}));
+    if (!d.access_token) return { ok: false, error: 'no session' };
+    localStorage.setItem('hvi_session', JSON.stringify(d));
+    return { ok: true };
+  } catch { return { ok: false, error: 'network' }; }
+}
+
+async function authSetPassword(password) {
+  const token = getAccessToken();
+  if (!token) return { ok: false, code: 'no_session' };
+  try {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ password })
+    });
+    return r.ok ? { ok: true } : await _authErr(r);
+  } catch { return { ok: false, error: 'network' }; }
+}
+
+// A link from a Supabase email, opened in the browser. It comes back as
+// #access_token=…&refresh_token=…&type=recovery, or #error_code=… when it has
+// expired or was used already. Nothing read it before, so the reset link
+// signed nobody in and offered no way to set a password.
+// This tab's own storage, gone when it closes. A reset in progress is kept
+// here so a reload (a new version arriving, say) cannot lose it.
+const _tabStore = {
+  get(k) { try { return sessionStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { sessionStorage.setItem(k, v); } catch {} },
+  del(k) { try { sessionStorage.removeItem(k); } catch {} },
+};
+function _resetDone() { _tabStore.del('hvi_reset_pending'); }
+
+async function takeAuthLink() {
+  let h = '';
+  try { h = String(location.hash || '').replace(/^#/, ''); } catch {}
+  if (/(^|&)(access_token|error_code|error)=/.test(h)) {
+    _tabStore.set('hvi_auth_link', h);
+    // The tokens must not stay in the address bar or the history.
+    try { history.replaceState(null, '', location.pathname + location.search); } catch {}
+  } else {
+    h = _tabStore.get('hvi_auth_link') || '';
+  }
+  if (!h) return _tabStore.get('hvi_reset_pending') && getAccessToken() ? { type: 'recovery' } : null;
+  const p = new URLSearchParams(h);
+  if (p.get('error_code') || p.get('error')) { _tabStore.del('hvi_auth_link'); return { error: p.get('error_code') || p.get('error') }; }
+  const access = p.get('access_token');
+  const session = {
+    access_token: access, refresh_token: p.get('refresh_token') || '', token_type: p.get('token_type') || 'bearer',
+    expires_in: +p.get('expires_in') || 3600, expires_at: +p.get('expires_at') || 0,
+  };
+  try {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${access}` } });
+    if (r.ok) session.user = await r.json();
+  } catch {}
+  _tabStore.del('hvi_auth_link');
+  if (!session.user || !session.user.id) return { error: 'link_unreadable' };
+  localStorage.setItem('hvi_session', JSON.stringify(session));
+  const type = p.get('type') || '';
+  if (type === 'recovery') _tabStore.set('hvi_reset_pending', '1');
+  return { type };
 }
 
 function getSession() {
@@ -759,6 +842,9 @@ let _authMode = 'signin'; // 'signin' | 'signup'
 // signup over to sign-in. Cleared once shown.
 let _authNotice = null;
 let _authPrefillEmail = '';
+// The reset in progress: who it is for, and whether the code was accepted
+// already (a code works once, so a second try must not send it again).
+let _resetEmail = '', _resetVerified = false;
 
 function injectAuthStyles() {
   if (document.getElementById('auth-styles')) return;
@@ -784,17 +870,49 @@ function injectAuthStyles() {
   document.head.appendChild(s);
 }
 
+const _AUTH_LOGO = `
+    <div class="auth-logo">
+      <img src="icon-192.png" alt="Arete" style="width:72px;height:72px;border-radius:16px">
+      <div style="font-size:13px;letter-spacing:.25em;color:var(--accent-b);margin-top:8px;font-weight:600">ARETE</div>
+    </div>`;
+
+// 'reset': the code from the email and a new password, all inside the app.
+// 'newpass': signed in by the link in that email, so only the new password.
+function _resetHTML() {
+  const withCode = _authMode === 'reset';
+  const n = _authNotice;
+  return `${_AUTH_LOGO}
+    <div class="auth-title">${withCode ? 'Reset your password' : 'Choose a new password'}<span class="dot">.</span></div>
+    <div class="auth-sub">${withCode
+      ? `We sent an email to ${esc(_resetEmail)}. Enter the code from it and a new password, or tap the link in it.`
+      : 'You are signed in. Pick the password you will use from now on.'}</div>
+    <div style="width:100%;max-width:360px">
+      ${withCode && !_resetVerified ? `<input class="auth-input" type="text" id="auth-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="Code from the email">` : ''}
+      <input class="auth-input" type="password" id="auth-password" placeholder="New password" autocomplete="new-password">
+      <input class="auth-input" type="password" id="auth-confirm" placeholder="Confirm new password" autocomplete="new-password" onkeydown="if(event.key==='Enter')submitNewPassword()">
+      <div class="auth-error" id="auth-error"${n && n.ok ? ' style="color:var(--success)"' : ''}>${n ? esc(n.text) : ''}</div>
+      <button class="auth-btn" id="auth-btn" onclick="submitNewPassword()">SAVE NEW PASSWORD</button>
+      ${withCode
+        ? `<div class="auth-switch">No email? Check spam, or <span onclick="resendReset()">send it again</span></div>
+      <div class="auth-switch" style="margin-top:10px"><span onclick="_authMode='signin';_authPrefillEmail=_resetEmail;renderAuth()" style="color:var(--text-dim);font-weight:400">Back to sign in</span></div>`
+        : `<div class="auth-switch"><span onclick="_resetDone();closeAuth()" style="color:var(--text-dim);font-weight:400">Not now</span></div>`}
+    </div>`;
+}
+
 function renderAuth() {
   injectAuthStyles();
   let overlay = document.getElementById('auth-overlay');
   if (!overlay) { overlay = document.createElement('div'); overlay.id = 'auth-overlay'; document.body.appendChild(overlay); }
 
+  if (_authMode === 'reset' || _authMode === 'newpass') {
+    overlay.innerHTML = _resetHTML();
+    _authNotice = null;
+    riseText(overlay.querySelector('.auth-title'), 100);
+    return;
+  }
+
   const isSignIn = _authMode === 'signin';
-  overlay.innerHTML = `
-    <div class="auth-logo">
-      <img src="icon-192.png" alt="Arete" style="width:72px;height:72px;border-radius:16px">
-      <div style="font-size:13px;letter-spacing:.25em;color:var(--accent-b);margin-top:8px;font-weight:600">ARETE</div>
-    </div>
+  overlay.innerHTML = `${_AUTH_LOGO}
     <div class="auth-title">${isSignIn ? 'Welcome back' : 'Begin the path to excellence'}<span class="dot">.</span></div>
     <div class="auth-sub">${isSignIn ? 'Sign in to continue your pursuit of arete.' : 'Create your account and pursue daily excellence.'}</div>
     <div style="width:100%;max-width:360px">
@@ -892,8 +1010,61 @@ async function handleForgotPassword() {
   if (!email) { errEl.style.color = 'var(--danger)'; errEl.textContent = 'Enter your email above first.'; return; }
   errEl.style.color = 'var(--text-dim)'; errEl.textContent = 'Sending…';
   const res = await authResetPassword(email);
-  if (res.ok) { errEl.style.color = 'var(--success)'; errEl.textContent = 'Check your inbox for a reset link.'; }
-  else { errEl.style.color = 'var(--danger)'; errEl.textContent = 'Could not send reset email. Try again.'; }
+  if (!res.ok) { errEl.style.color = 'var(--danger)'; errEl.textContent = _resetSendError(res); return; }
+  _resetEmail = email; _resetVerified = false; _authMode = 'reset';
+  track('password_reset_requested');
+  renderAuth();
+}
+
+function _resetSendError(res) {
+  if (res.status === 429 || /rate limit|seconds/i.test(res.error || '')) return 'A reset email was sent a moment ago. Wait a minute, then try again.';
+  if (res.error === 'network') return 'No connection. Try again when you are online.';
+  return 'Could not send the reset email. Try again.';
+}
+
+async function resendReset() {
+  const errEl = document.getElementById('auth-error');
+  errEl.style.color = 'var(--text-dim)'; errEl.textContent = 'Sending…';
+  const res = await authResetPassword(_resetEmail);
+  errEl.style.color = res.ok ? 'var(--success)' : 'var(--danger)';
+  errEl.textContent = res.ok ? 'Sent. The newest email has the code that works.' : _resetSendError(res);
+}
+
+async function submitNewPassword() {
+  const withCode = _authMode === 'reset';
+  const code = String(document.getElementById('auth-code')?.value || '').replace(/\s+/g, '');
+  const pw = document.getElementById('auth-password')?.value || '';
+  const confirm = document.getElementById('auth-confirm')?.value || '';
+  const errEl = document.getElementById('auth-error'), btn = document.getElementById('auth-btn');
+  const fail = t => { errEl.style.color = 'var(--danger)'; errEl.textContent = t; btn.disabled = false; btn.textContent = 'SAVE NEW PASSWORD'; };
+  if (withCode && !_resetVerified && !/^\d{6,10}$/.test(code)) return fail('Enter the code from the email. It is 6 digits.');
+  if (pw.length < 6) return fail('Password must be at least 6 characters.');
+  if (pw !== confirm) return fail('Passwords do not match.');
+  btn.disabled = true; btn.textContent = 'SAVING...'; errEl.textContent = '';
+
+  if (withCode && !_resetVerified) {
+    const v = await authVerifyRecovery(_resetEmail, code);
+    if (!v.ok) {
+      trackFail('reset_code', v.code || v.error);
+      return fail(v.error === 'network' ? 'No connection. Try again when you are online.' : 'That code is wrong or has expired. Check it, or send a new one.');
+    }
+    _resetVerified = true;
+  }
+  const s = await authSetPassword(pw);
+  // Signed in either way by now; the same password again just changes nothing.
+  if (!s.ok && s.code !== 'same_password') {
+    trackFail('reset_password', s.code || s.error);
+    if (s.error === 'network') return fail('No connection. Try again when you are online.');
+    return fail(s.code === 'weak_password' && s.error ? s.error : (s.error || 'Could not save the password. Try again.'));
+  }
+  track('password_reset', { via: withCode ? 'code' : 'link' });
+  _resetDone();
+  document.getElementById('auth-overlay')?.remove();
+  showToast(s.ok ? 'Password changed. You are signed in.' : 'That was already your password. You are signed in.');
+  _resetVerified = false;
+  // The code route started from the sign-in screen, so the app boots signed in
+  // now. The link route is already inside a boot.
+  if (withCode) init();
 }
 
 // ── STORAGE ───────────────────────────────────────────────────────────────
@@ -1822,6 +1993,15 @@ const NAV_PARENT = {
 // ── INIT ──────────────────────────────────────────────────────────────────
 async function init() {
   injectAuthStyles();
+  // Opened from a reset link: sign in with it and ask for the new password
+  // straight away, on top of whatever loads underneath.
+  const link = await takeAuthLink();
+  if (link && link.type === 'recovery') { _authMode = 'newpass'; renderAuth(); }
+  else if (link && link.error) {
+    _authMode = 'signin';
+    _authNotice = { text: 'That link has expired or was used already. Enter your email and tap "Forgot password?" for a new one.', ok: false };
+    renderAuth();
+  }
   // Guest mode: the app is fully local-first, so anyone can use it immediately.
   // Cloud sync only runs once they've created an account.
   if (getAccessToken()) {

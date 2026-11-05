@@ -1545,7 +1545,7 @@ function renderWorkoutAI() {
     <div class="aip-form ani">
       <label class="aip-label" for="aip-goal">What are you training for?</label>
       <textarea class="j-ta aip-goal-input" id="aip-goal" rows="4" maxlength="400" ${st.busy ? 'disabled' : ''}
-        placeholder="Stronger and faster for soccer, without adding much size. My left knee does not like deep squats.">${esc(st.goal)}</textarea>
+        placeholder="Stronger and faster for my sport, without adding much size. My left knee does not like deep squats.">${esc(st.goal)}</textarea>
       ${chips('days')}${chips('minutes')}${chips('equipment')}${chips('level')}
       ${st.error ? `<div class="aip-error" role="alert">${esc(st.error)}</div>` : ''}
       <button class="aip-go" onclick="generateAIProgram()" ${st.busy ? 'disabled' : ''}>${st.busy ? 'Building your program…' : 'Build my program'}</button>

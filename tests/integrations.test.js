@@ -385,7 +385,7 @@ module.exports = async function () {
     run(web, `_handleOAuthCallback()`);
     r.check('the website leaves the app\'s sign-ins to oauth-return.html', run(web, '_touched') === false, '(it treated it as its own, and would say it could not be finished)');
     const idx = require('fs').readFileSync(require('path').join(require('./harness').APP, 'index.html'), 'utf8');
-    r.check('which index.html sends them to before the landing page could', /_nativeSignIn\) location\.replace\('\/oauth-return\.html' \+ location\.search\);\s*\/\/[^\n]*\n[^\n]*\n\s*else if \(!window\.Capacitor/.test(idx));
+    r.check('which index.html sends them to before the landing page could', /_nativeSignIn\) location\.replace\('\/oauth-return\.html' \+ location\.search\);\s*\/\/[^\n]*\n[^\n]*\n\s*else if \((?:!_authLink && )?!window\.Capacitor/.test(idx));
   }
 
   // Patterns and a usual day's burn need weeks of history; ten days would make
