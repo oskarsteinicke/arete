@@ -31,9 +31,9 @@ const DEFAULT_HABITS = [
 ];
 
 // The starter habits the app can already see happen tick themselves: a
-// finished workout and a logged night of 7 hours or more. Set once, on a fresh
-// install; the habit editor shows and changes them.
-const DEFAULT_HABIT_LINKS = { h05: 'workout', h08: 'sleep' };
+// finished workout, the water goal reached, and a logged night of 7 hours or
+// more. Set once, on a fresh install; the habit editor shows and changes them.
+const DEFAULT_HABIT_LINKS = { h05: 'workout', h07: 'water', h08: 'sleep' };
 
 const QUOTES = [
   // Marcus Aurelius

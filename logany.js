@@ -459,6 +459,20 @@ function _laAddWater(ml) {
   const next = Math.max(0, (w[t] || 0) + ml);
   if (next === 0) delete w[t]; else w[t] = next;
   LS.set('hvi_water_log', w);
+  if (ml > 0 && window.Arete) window.Arete.emit('water:logged', { ml: next });
+}
+
+// The habits an entry ticked by itself through a link (a night of 7 hours, the
+// glass that reached the water goal), so Undo can untick them too. Undo used
+// to leave them ticked, with their XP.
+function _laLinkedTicks(fn) {
+  const done = () => (habits || []).filter(h => log[h.id] && log[h.id].completedToday).map(h => h.id);
+  const before = new Set(done());
+  fn();
+  return done().filter(id => !before.has(id));
+}
+function _laUntick(ids) {
+  ids.forEach(id => { if (log[id] && log[id].completedToday && typeof tapHabit === 'function') tapHabit(id, ''); });
 }
 
 // A workout entry into today's log. With a session already started today the
@@ -557,8 +571,8 @@ function _laApply(entries) {
         const id = _commitMeal(e.meal || mealTypeNow(), e.items, 'anything');
         undo.push(() => { if (typeof undoMeal === 'function') undoMeal(id); });
       } else if (e.type === 'water') {
-        _laAddWater(e.ml);
-        undo.push(() => _laAddWater(-e.ml));
+        const ticked = _laLinkedTicks(() => _laAddWater(e.ml));
+        undo.push(() => { _laAddWater(-e.ml); _laUntick(ticked); });
       } else if (e.type === 'sleep') {
         if (typeof whoopHasNight === 'function' && whoopHasNight(t)) continue;
         const prev = sleepLog[t] ? JSON.parse(JSON.stringify(sleepLog[t])) : null;
@@ -567,8 +581,8 @@ function _laApply(entries) {
         else { delete cur.bedtime; delete cur.wake; cur.hours = e.hours; }
         sleepLog[t] = cur;
         LS.set('hvi_sleep_log', sleepLog);
-        if (window.Arete) window.Arete.emit('sleep:logged', { hours: cur.hours });
-        undo.push(() => { if (prev) sleepLog[t] = prev; else delete sleepLog[t]; LS.set('hvi_sleep_log', sleepLog); });
+        const ticked = _laLinkedTicks(() => { if (window.Arete) window.Arete.emit('sleep:logged', { hours: cur.hours }); });
+        undo.push(() => { if (prev) sleepLog[t] = prev; else delete sleepLog[t]; LS.set('hvi_sleep_log', sleepLog); _laUntick(ticked); });
       } else if (e.type === 'habit') {
         if (!log[e.id]) log[e.id] = { streak: 0, completedToday: false };
         if (!log[e.id].completedToday && typeof tapHabit === 'function') {

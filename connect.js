@@ -469,7 +469,8 @@ function macroAdjustBadgeHTML() {
 }
 
 // ── PHASE 3: CROSS-MODULE HABIT COMPLETION ───────────────────────────────────
-// Habits can be linked to a trigger ('workout' | 'protein' | 'calories') in the
+// Habits can be linked to a trigger ('workout' | 'protein' | 'calories' |
+// 'sleep' | 'journal' | 'water') in the
 // habit editor. When that action happens the linked habit auto-completes through
 // the event bus, so the user never logs the same thing twice.
 const TRIGGER_LABELS = { workout: '🏋️ Workout', protein: '🥩 Protein target', calories: '🔥 Calorie target' };
@@ -644,6 +645,15 @@ function checkJournalTriggers() {
   } catch (e) { console.warn('[Arete] journal triggers error:', e); }
 }
 
+// Water was counted against a daily goal, but a "Drink 2L+ water" habit still
+// had to be ticked by hand after the glass that reached it.
+function checkWaterTriggers() {
+  try {
+    if (typeof getWaterMl !== 'function' || typeof waterGoalMl !== 'function') return;
+    if (getWaterMl() >= waterGoalMl()) _autoCompleteLinkedHabits('water');
+  } catch (e) { console.warn('[Arete] water triggers error:', e); }
+}
+
 // Everything that can complete a linked habit now goes through the bus, so a
 // new integration only has to listen rather than find every write site.
 // Kept so the finished-workout card can name what the session ticked off.
@@ -651,6 +661,7 @@ let _workoutAutoDone = [];
 window.Arete.on('workout:completed', () => { _workoutAutoDone = _autoCompleteLinkedHabits('workout'); });
 window.Arete.on('sleep:logged', checkSleepTriggers);
 window.Arete.on('journal:saved', checkJournalTriggers);
+window.Arete.on('water:logged', checkWaterTriggers);
 window.Arete.on('meal:logged', () => { if (typeof checkNutritionTriggers === 'function') checkNutritionTriggers(); });
 
 // ── PHASE 4: PROACTIVE COACH (rule-based local nudges) ───────────────────────

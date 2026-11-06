@@ -127,6 +127,43 @@ module.exports = function () {
     r.check('a blank entry does not count', run(empty, 'log.h1.completedToday') === false);
   }
 
+  r.section('reaching the water goal ticks a linked habit');
+  {
+    const mk = before => {
+      const s = sb({
+        hvi_habits: JSON.stringify([{ id: 'h1', name: 'Drink 2L+ water' }]),
+        hvi_log: JSON.stringify({ h1: { streak: 0, lastCompletedDate: '', completedToday: false } }),
+        hvi_habit_links: JSON.stringify({ h1: 'water' }),
+        hvi_water_log: JSON.stringify(before ? { [T]: before } : {}),
+      });
+      run(s, `settings.waterGoalMl = 1000; renderDiet = function(){};`);
+      return s;
+    };
+    const s = mk(750);
+    run(s, 'addWater(1)');
+    r.check('the glass that reaches the goal ticks it', run(s, 'log.h1.completedToday') === true);
+    r.check('and the user is told', run(s, '_tracked.some(function(t){return t[0]==="toast" && /Drink 2L/.test(t[1])})') === true);
+
+    const short = mk(0);
+    run(short, 'addWater(1)');
+    r.check('a glass short of the goal does not', run(short, 'log.h1.completedToday') === false);
+
+    const down = mk(1250);
+    run(down, 'addWater(-1)');
+    r.check('taking a glass off never ticks it', run(down, 'log.h1.completedToday') === false);
+
+    const other = sb({
+      hvi_habits: JSON.stringify([{ id: 'h1', name: 'Sleep 7h' }]),
+      hvi_log: JSON.stringify({ h1: { streak: 0, lastCompletedDate: '', completedToday: false } }),
+      hvi_habit_links: JSON.stringify({ h1: 'sleep' }),
+      hvi_water_log: JSON.stringify({ [T]: 2750 }),
+    });
+    run(other, `renderDiet = function(){}; addWater(1)`);
+    r.check('a habit linked to something else is left alone', run(other, 'log.h1.completedToday') === false);
+    const editor = require('fs').readFileSync(require('path').join(require('./harness').APP, 'app.js'), 'utf8');
+    r.check('the habit editor offers it', /opt\('water', [^)]*\) \+ ' Water goal hit'\)/.test(editor));
+  }
+
   r.section('a habit only auto-completes for its own trigger');
   {
     const s = sb({

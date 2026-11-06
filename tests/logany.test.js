@@ -145,6 +145,28 @@ module.exports = async function () {
     r.check('the mood is gone', !run(s, `(LS.get('hvi_mood_log', {})['${T}'] || null)`));
   }
 
+  // Sleep and water can tick a linked habit by themselves. Undo took the
+  // night or the water back and left the habit ticked, XP and all.
+  r.section('Undo also unticks what a link ticked');
+  {
+    const s = sb();
+    run(s, `habits.push({ id: 'h08', name: 'Sleep 7–9 hours', category: 'health' });
+      log.h08 = { streak: 0, completedToday: false }; log.h07.completedToday = false;
+      settings.waterGoalMl = 1000; LS.set('hvi_habit_links', { h07: 'water', h08: 'sleep' });
+      delete sleepLog[today()]; LS.set('hvi_sleep_log', sleepLog); LS.set('hvi_water_log', {}); gamification.xp = 0;
+      _undo = _laApply([{ type: 'water', ml: 1000 }, { type: 'sleep', hours: 7.5 }]);`);
+    r.check('reaching the water goal ticks the water habit', run(s, 'log.h07.completedToday') === true);
+    r.check('a night of 7.5 hours ticks the sleep habit', run(s, 'log.h08.completedToday') === true);
+    run(s, '_undo()');
+    r.check('Undo unticks both', run(s, 'log.h07.completedToday') === false && run(s, 'log.h08.completedToday') === false);
+    r.check('and takes their XP back', run(s, 'gamification.xp') === 0, `(${run(s, 'gamification.xp')})`);
+
+    const already = sb();
+    run(already, `settings.waterGoalMl = 1000; LS.set('hvi_habit_links', { h07: 'water' }); LS.set('hvi_water_log', {});
+      log.h07.completedToday = false; tapHabit('h07', ''); _undo = _laApply([{ type: 'water', ml: 1000 }]); _undo();`);
+    r.check('a habit ticked by hand beforehand stays ticked', run(already, 'log.h07.completedToday') === true);
+  }
+
   r.section('a habit already done today is shown as done, not ticked again');
   {
     const s = sb();

@@ -562,6 +562,7 @@ function addWater(units) {
   if (next === 0) delete log[t]; else log[t] = next;
   LS.set('hvi_water_log', log);
   if (typeof track === 'function' && units > 0) track('water_logged', {});
+  if (units > 0 && typeof window !== 'undefined' && window.Arete) window.Arete.emit('water:logged', { ml: next });
   if (curView === 'diet') renderDiet();
 }
 

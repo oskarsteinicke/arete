@@ -163,6 +163,7 @@ module.exports = async function () {
     const name = id => (names.find(h => h.id === id) || {}).name || '';
     r.check('the sleep habit ticks from a logged night', links.h08 === 'sleep' && /^Sleep 7/.test(name('h08')), JSON.stringify(links));
     r.check('the workout habit ticks from a finished session', links.h05 === 'workout' && /workout/i.test(name('h05')), JSON.stringify(links));
+    r.check('the water habit ticks from reaching the water goal', links.h07 === 'water' && /water/i.test(name('h07')), JSON.stringify(links));
 
     run(s, `playSound=function(){}; haptic=function(){}; awardXP=function(){}; checkDailyQuests=function(){}; checkAchievements=function(){};
             renderHabits=function(){}; updateHabitUI=function(){}; _connectToast=function(){};
