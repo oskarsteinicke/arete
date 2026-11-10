@@ -67,21 +67,28 @@ const QUEST_POOL = [
   { id: 'q_calories',    icon: '🔥', label: 'Stay within calorie goal',            xp: 40, check: () => { const dm = getDayMacros(); const g = dietMeta.dailyGoals.calories; return g > 0 && dm.cal > 0 && dm.cal <= g * 1.05; } },
   { id: 'q_3_meals',     icon: '🍽', label: 'Log 3 or more meals today',           xp: 40, check: () => (mealLog[today()]?.meals || []).length >= 3 },
   { id: 'q_journal',     icon: '📖', label: 'Write in your journal today',         xp: 40, check: () => { const je = journal[today()] || {}; return Object.values(je).some(Boolean); } },
-  { id: 'q_all_pillars', icon: '🏛', label: 'Complete a habit in every pillar',    xp: 75, check: () => PILLARS.every(p => pillarHabits(p.id).some(h => log[h.id]?.completedToday)) },
+  { id: 'q_all_pillars', icon: '🏛', label: 'Complete a habit in every pillar',    xp: 75, check: () => PILLARS.every(p => pillarHabits(p.id).some(h => log[h.id]?.completedToday)),
+    // Only on offer when it can be done: a short starter set leaves pillars empty.
+    when: () => PILLARS.every(p => pillarHabits(p.id).length > 0) },
   { id: 'q_3_sets',      icon: '💥', label: 'Log 3+ sets on any exercise',         xp: 35, check: () => (workoutLog[today()]?.exercises || []).some(e => e.sets?.filter(s => s.completed).length >= 3) },
   { id: 'q_new_pr',      icon: '🏆', label: 'Set a personal record today',         xp: 80, check: () => Object.values(prs).some(p => p.date === today()) },
   { id: 'q_finish',      icon: '🏁', label: 'Finish a workout session',            xp: 45, check: () => workoutMeta.lastWorkoutDate === today() },
 ];
 
-function getDailyQuests() {
-  const t = today();
+// `day` is for looking at another day's draw; the app always asks for today's.
+function getDailyQuests(day) {
+  const t = day || today();
   let seed = t.split('').reduce((s, c) => (s * 31 + c.charCodeAt(0)) & 0x7FFFFFFF, 0);
   const pool = [...QUEST_POOL];
   const picked = [];
   while (picked.length < 3 && pool.length > 0) {
     seed = (seed * 1664525 + 1013904223) & 0x7FFFFFFF;
     const idx = seed % pool.length;
-    picked.push(pool.splice(idx, 1)[0]);
+    const q = pool.splice(idx, 1)[0];
+    // A quest this person's setup cannot finish is passed over and the draw
+    // carries on, so everyone else still gets the same three as before.
+    if (typeof q.when === 'function' && !q.when()) continue;
+    picked.push(q);
   }
   return picked;
 }
@@ -2014,7 +2021,8 @@ function renderOnboarding(step) {
       <div class="ob-eyebrow">${stepLbl}</div>
       <div class="ob-title">Choose your path.</div>
       <div class="ob-sub">First say to yourself what you would be; and then do what you have to do.</div>
-      <div class="ob-goal-grid">${cards}</div>`;
+      <div class="ob-goal-grid">${cards}</div>
+      <div class="ob-hint">Your path picks your first five habits. You can add more at any time.</div>`;
 
   } else if (step === 4) {
     const programs = [
@@ -2117,6 +2125,10 @@ function obFinish() {
   dietMeta.goalType = nutritionGoalType;
   LS.set('hvi_diet_meta', dietMeta);
 
+  // The path picks the starter habits. Before this the answer chose which
+  // setup screens appeared and nothing after them: everyone got the same list.
+  if (typeof applyStarterPath === 'function') applyStarterPath(_obPath);
+
   // Mark onboarded
   LS.set('hvi_onboarded', true);
   // Report the answers so it's visible what new users actually come for
@@ -2163,7 +2175,7 @@ function showFeatureTour() {
   // button, the quickest way to put anything in.
   const steps = [
     { icon: '⚡', title: 'Log anything', desc: 'Tap + and say what you ate, drank, slept or lifted. Arete puts each thing in the right place.', tab: 'home' },
-    { icon: '✅', title: 'Your habits', desc: 'A starter set is ready. Tick them off each day to build streaks, and swap any of them under Edit.', tab: 'habits' },
+    { icon: '✅', title: 'Your habits', desc: 'Your starter habits are ready, picked for your path. Tick them off each day, and tap + to add more.', tab: 'habits' },
     { icon: '🏋️', title: 'Your training', desc: "Today's session is ready here. Arete tracks your weights and flags new records.", tab: 'workout' },
     { icon: '💬', title: 'Ask the coach', desc: 'Tap the chat bubble in the corner anytime. The coach knows your habits, training, food and sleep.', tab: 'home' },
   ];

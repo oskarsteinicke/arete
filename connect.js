@@ -741,6 +741,20 @@ function checkWaterTriggers() {
   } catch (e) { console.warn('[Arete] water triggers error:', e); }
 }
 
+// Run the check behind one trigger now. For a link that arrives part-way
+// through a day that may already have met it: a ready-made "Drink 2L+ water"
+// added after the water goal was reached should not sit there unticked.
+function recheckLink(trigger) {
+  try {
+    if (trigger === 'protein' || trigger === 'calories') checkNutritionTriggers();
+    else if (trigger === 'sleep') checkSleepTriggers();
+    else if (trigger === 'journal') checkJournalTriggers();
+    else if (trigger === 'water') checkWaterTriggers();
+    else if (trigger === 'workout' && typeof workoutMeta !== 'undefined' && workoutMeta
+      && workoutMeta.lastWorkoutDate === today()) _autoCompleteLinkedHabits('workout');
+  } catch (e) { console.warn('[Arete] recheckLink error:', e); }
+}
+
 // Everything that can complete a linked habit now goes through the bus, so a
 // new integration only has to listen rather than find every write site.
 // Kept so the finished-workout card can name what the session ticked off.

@@ -15,7 +15,11 @@ const PILLARS = [
     icon: '<svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>' },
 ];
 
-const DEFAULT_HABITS = [
+// Every ready-made habit. A new account starts with a short set of these,
+// picked by the path chosen in onboarding (STARTER_SETS below). The rest sit
+// under "+" on the habits screen, one tap to add. The ids are permanent: the
+// default routines and the links below refer to them.
+const HABIT_LIBRARY = [
   { id: 'h01', name: 'Meditate / breathwork (10+ min)', category: 'mindset' },
   { id: 'h02', name: 'Review daily goals & intentions', category: 'mindset' },
   { id: 'h03', name: 'No social media before noon', category: 'discipline' },
@@ -28,12 +32,26 @@ const DEFAULT_HABITS = [
   { id: 'h10', name: 'Deep work on primary skill / craft', category: 'learning' },
   { id: 'h11', name: 'Network or add value to someone', category: 'social' },
   { id: 'h12', name: 'Track finances / no impulse spending', category: 'financial' },
+  { id: 'h13', name: 'Hit your protein goal', category: 'health' },
+  { id: 'h14', name: 'Stay on your calorie target', category: 'health' },
 ];
 
-// The starter habits the app can already see happen tick themselves: a
-// finished workout, the water goal reached, and a logged night of 7 hours or
-// more. Set once, on a fresh install; the habit editor shows and changes them.
-const DEFAULT_HABIT_LINKS = { h05: 'workout', h07: 'water', h08: 'sleep' };
+// The ready-made habits the app can already see happen tick themselves: a
+// finished workout, the water goal reached, a logged night of 7 hours or more,
+// the protein goal reached, calories on target. The link is set when the habit
+// is added; the habit editor shows and changes it.
+const HABIT_LIBRARY_LINKS = { h05: 'workout', h07: 'water', h08: 'sleep', h13: 'protein', h14: 'calories' };
+
+// What each onboarding path starts with. Everyone used to get all twelve,
+// whatever they said they came for: the question changed which setup screens
+// appeared and nothing else. Five each, so a first day can be finished, and
+// never more than the free plan holds.
+const STARTER_SETS = {
+  all:       ['h01', 'h05', 'h09', 'h11', 'h12'],   // one from each pillar
+  habits:    ['h03', 'h04', 'h01', 'h09', 'h08'],
+  fitness:   ['h05', 'h08', 'h07', 'h06', 'h01'],
+  nutrition: ['h13', 'h14', 'h07', 'h06', 'h08'],
+};
 
 const QUOTES = [
   // Marcus Aurelius

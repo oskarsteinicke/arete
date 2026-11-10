@@ -13,7 +13,7 @@ const ALL = ['data.js', 'app.js', 'connect.js', 'premium.js', 'workout.js', 'die
 const FRESH = `
   settings={}; curView='home'; track=function(){}; history={pushState:function(){}};
   setTimeout=function(){};
-  habits=DEFAULT_HABITS.slice(); log={};
+  habits=HABIT_LIBRARY.slice(0, 12); log={};
   habits.forEach(h => log[h.id] = {streak:12,lastCompletedDate:'',completedToday:false});
   journal={}; meta={lastOpenedDate:'',quoteIndex:0,totalPerfectDays:0};
   workoutLog={}; workoutMeta={activeProgram:'ppl',currentDayIndex:0,lastWorkoutDate:''};

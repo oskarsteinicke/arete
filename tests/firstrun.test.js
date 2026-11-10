@@ -19,7 +19,7 @@ const VIEWS = ['home', 'pillar', 'habits', 'habitCreate', 'stats', 'progressPhot
 const FRESH = `
   settings={}; curView='home'; track=function(){}; history={pushState:function(){}};
   closeQuickLog=function(){}; qTimer=null; setTimeout=function(){};
-  habits=DEFAULT_HABITS.slice(); log={};
+  habits=HABIT_LIBRARY.slice(0, 12); log={};
   habits.forEach(h => log[h.id] = {streak:0,lastCompletedDate:'',completedToday:false});
   journal={}; meta={lastOpenedDate:'',quoteIndex:0,totalPerfectDays:0};
   workoutLog={}; workoutMeta={activeProgram:'ppl',currentDayIndex:0,lastWorkoutDate:''};

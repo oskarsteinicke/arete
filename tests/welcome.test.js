@@ -158,11 +158,15 @@ module.exports = async function () {
     };
     const s = mk({});
     await run(s, 'init()');
-    const links = JSON.parse(s.localStorage._d.hvi_habit_links || 'null') || {};
-    const names = JSON.parse(run(s, 'JSON.stringify(DEFAULT_HABITS)'));
+    const stored = () => JSON.parse(s.localStorage._d.hvi_habit_links || 'null') || {};
+    const names = JSON.parse(run(s, 'JSON.stringify(HABIT_LIBRARY)'));
     const name = id => (names.find(h => h.id === id) || {}).name || '';
+    r.check('the workout habit ticks from a finished session', stored().h05 === 'workout' && /workout/i.test(name('h05')), JSON.stringify(stored()));
+    // The starter set depends on the path (tests/starter.test.js). The fitness
+    // one holds all three habits the app could see happen from the start.
+    run(s, `_obPath='fitness'; obFinish()`);
+    const links = stored();
     r.check('the sleep habit ticks from a logged night', links.h08 === 'sleep' && /^Sleep 7/.test(name('h08')), JSON.stringify(links));
-    r.check('the workout habit ticks from a finished session', links.h05 === 'workout' && /workout/i.test(name('h05')), JSON.stringify(links));
     r.check('the water habit ticks from reaching the water goal', links.h07 === 'water' && /water/i.test(name('h07')), JSON.stringify(links));
 
     run(s, `playSound=function(){}; haptic=function(){}; awardXP=function(){}; checkDailyQuests=function(){}; checkAchievements=function(){};

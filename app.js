@@ -2018,11 +2018,14 @@ async function init() {
     try { if (!localStorage.getItem('hvi_guest')) localStorage.setItem('hvi_guest', '1'); } catch {}
   }
   const stored = LS.get('hvi_habits', null);
-  habits = stored || DEFAULT_HABITS;
+  // A new device starts on the short all-round set. Onboarding swaps it for
+  // the chosen path's set (applyStarterPath); someone who skips onboarding
+  // keeps it. Anything already stored is the person's own and is left alone.
+  habits = stored || starterHabits('all');
   if (!stored) {
     LS.set('hvi_habits', habits);
-    if (localStorage.getItem('hvi_habit_links') === null && typeof DEFAULT_HABIT_LINKS === 'object') {
-      LS.set('hvi_habit_links', Object.assign({}, DEFAULT_HABIT_LINKS));
+    if (localStorage.getItem('hvi_habit_links') === null) {
+      LS.set('hvi_habit_links', starterLinks(habits));
     }
   }
 
@@ -2825,6 +2828,120 @@ window.addEventListener('popstate', e => {
   if (e.state && e.state.view) go(e.state.view, e.state.params || {}, false);
 });
 
+// ── STARTER AND READY-MADE HABITS ─────────────────────────────────────────
+// Copies, so editing a habit never edits the library.
+function starterHabits(path) {
+  const ids = STARTER_SETS[path] || STARTER_SETS.all;
+  return ids.map(id => HABIT_LIBRARY.find(h => h.id === id)).filter(Boolean).map(h => ({ ...h }));
+}
+// The links that belong to a list of habits: only for the ones in it.
+function starterLinks(list) {
+  const links = {};
+  list.forEach(h => { if (HABIT_LIBRARY_LINKS[h.id]) links[h.id] = HABIT_LIBRARY_LINKS[h.id]; });
+  return links;
+}
+
+// True while the habits are still exactly what a new device was seeded with:
+// same five, same order, unedited, never ticked.
+function _isUntouchedSeed() {
+  const seed = STARTER_SETS.all;
+  if (!Array.isArray(habits) || habits.length !== seed.length) return false;
+  return habits.every((h, i) => {
+    const lib = HABIT_LIBRARY.find(x => x.id === seed[i]);
+    const e = log[h.id] || {};
+    return !!lib && h.id === lib.id && h.name === lib.name && h.category === lib.category
+      && !h.schedule && !e.streak && !e.lastCompletedDate && !e.completedToday;
+  });
+}
+
+// The path chosen in onboarding picks the starter habits. It only ever swaps
+// the untouched seed. A list that has been edited or ticked, restored from the
+// cloud, or carried over from a version that started everyone on twelve is
+// the person's own, and is never trimmed.
+function applyStarterPath(path) {
+  if (!STARTER_SETS[path] || path === 'all' || !_isUntouchedSeed()) return false;
+  const old = habits;
+  habits = starterHabits(path);
+  const links = LS.get('hvi_habit_links', {}) || {};
+  old.forEach(h => { delete links[h.id]; if (!habits.some(x => x.id === h.id)) delete log[h.id]; });
+  habits.forEach(h => { if (!log[h.id]) log[h.id] = { streak: 0, lastCompletedDate: '', completedToday: false }; });
+  Object.assign(links, starterLinks(habits));
+  LS.set('hvi_habits', habits);
+  LS.set('hvi_log', log);
+  LS.set('hvi_habit_links', links);
+  return true;
+}
+
+// Ready-made habits not in the list yet, by id or by name (someone may have
+// built their own "Cold shower"). Pass a pillar id for that pillar's only.
+function readyHabits(pid) {
+  const ids = new Set(habits.map(h => h.id));
+  const names = new Set(habits.map(h => String(h.name || '').trim().toLowerCase()));
+  const cats = pid ? ((PILLARS.find(p => p.id === pid) || {}).cats || []) : null;
+  return HABIT_LIBRARY.filter(h => !ids.has(h.id) && !names.has(h.name.toLowerCase())
+    && (!cats || cats.includes(h.category)));
+}
+
+// What a ready-made habit's link will do, said before it is added.
+const READY_LINK_NOTES = {
+  workout:  'Ticks itself when you finish a workout',
+  water:    'Ticks itself when you reach your water goal',
+  sleep:    'Ticks itself when you log 7 hours or more',
+  protein:  'Ticks itself when you reach your protein goal',
+  calories: 'Ticks itself when your calories land on target',
+};
+
+function readyRowHTML(h) {
+  const note = READY_LINK_NOTES[HABIT_LIBRARY_LINKS[h.id]];
+  return `<div class="hi hi-ready" id="hr-${h.id}" onclick="addReadyHabit('${h.id}')" role="button" tabindex="0" aria-label="Add ${esc(h.name)}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();addReadyHabit('${h.id}')}">
+    <div class="hi-info"><div class="hi-name">${esc(h.name)}</div>${note ? `<div class="hi-streak">${note}</div>` : ''}</div>
+    <div class="hi-add" aria-hidden="true">+</div></div>`;
+}
+
+// The ready-made habits still on offer, grouped the way All Habits is.
+function readyListHTML() {
+  return PILLARS.map(p => {
+    const list = readyHabits(p.id);
+    if (!list.length) return '';
+    return `<div class="sec-lbl" style="padding-top:20px">${p.name}</div>${list.map(readyRowHTML).join('')}`;
+  }).join('');
+}
+
+// One tap adds a ready-made habit, link and all.
+let _pillarOffer = null;
+function addReadyHabit(id) {
+  const lib = readyHabits().find(h => h.id === id);
+  if (!lib) return false;
+  if (typeof isPremium === 'function' && !isPremium() && habits.length >= FREE_HABIT_LIMIT) {
+    showUpgradeModal('habits');
+    return false;
+  }
+  habits.push({ ...lib });
+  log[id] = { streak: 0, lastCompletedDate: '', completedToday: false };
+  const links = LS.get('hvi_habit_links', {}) || {};
+  const link = HABIT_LIBRARY_LINKS[id];
+  if (link) links[id] = link; else delete links[id];
+  LS.set('hvi_habits', habits);
+  LS.set('hvi_log', log);
+  LS.set('hvi_habit_links', links);
+  if (typeof track === 'function') track('habit_ready_added', { habit_id: id });
+  showToast('Added: ' + lib.name);
+  // If today already meets what the habit is linked to, it should not sit
+  // there unticked.
+  if (link && typeof recheckLink === 'function') recheckLink(link);
+  // Stay where the tap happened, so a second and third can follow.
+  if (curView === 'pillar') {
+    _pillarOffer = curPillar;
+    go('pillar', { pillar: curPillar }, false);
+  } else {
+    const el = document.getElementById('hc-ready');
+    if (el) el.innerHTML = readyListHTML();
+    const wrap = document.getElementById('hc-ready-wrap');
+    if (wrap && !readyHabits().length) wrap.style.display = 'none';
+  }
+  return true;
+}
+
 // ── HABIT HELPERS ─────────────────────────────────────────────────────────
 function pillarHabits(pid) { const p = PILLARS.find(x => x.id === pid); return habits.filter(h => p.cats.includes(h.category)); }
 function isHabitDueToday(h) {
@@ -3208,9 +3325,12 @@ function renderHome() {
   })();
 
   // Pillar strip
+  // A pillar with no habits in it sits back: a short starter set leaves some
+  // empty, and an empty ring that looks like the others reads as a day not
+  // started. Tapping it opens the pillar, which offers habits to start it.
   const pillarStrip = PILLARS.map(p => {
     const pr = pillarPct(p.id);
-    const active = pr.done > 0 ? ' hm-pc-active' : '';
+    const active = !pillarHabits(p.id).length ? ' hm-pc-empty' : (pr.done > 0 ? ' hm-pc-active' : '');
     return `<div class="hm-pc${active}" id="hm-pc-${p.id}" onclick="go('pillar',{pillar:'${p.id}'})">
       <div class="hm-pc-ring">${ring(23, pr.pct, 2.5)}<div class="hm-pc-icon">${p.icon}</div></div>
       <div class="hm-pc-name">${p.name}</div>
@@ -3386,12 +3506,24 @@ function renderPillar() {
   if (!p) { go('home', {}, false); return; }
   const ph = pillarHabits(curPillar);
   const {done,total,pct} = pillarPct(curPillar);
+  // An empty pillar offers its ready-made habits, each one tap to add. The
+  // offer stays up while they are being added (addReadyHabit sets the flag for
+  // its own redraw), and is gone on the next visit once the pillar has habits.
+  const offering = !ph.length || _pillarOffer === curPillar;
+  _pillarOffer = null;
+  const ready = offering ? readyHabits(curPillar) : [];
+  const firstCat = p.cats[0];
+  const offer = !offering ? '' : `
+    ${ph.length ? '' : `<div class="pd-empty">No habits in ${p.name} yet.${ready.length ? ' Add one to start it.' : ''}</div>`}
+    ${ready.length ? `<div class="sec-lbl" style="padding-top:20px">Ready-made</div>${ready.map(readyRowHTML).join('')}` : ''}
+    <button class="w-action-btn" style="margin-top:20px" onclick="curHabitCat='${firstCat}';tryAddHabit()">Build your own</button>`;
   document.getElementById('view').innerHTML = `
     <button class="back" onclick="go('home')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
     <div class="pd-head ani"><div class="pd-ring">${ring(32,pct,3.5)}<div class="pd-pct">${Math.round(pct*100)}%</div></div>
       <div class="pd-info"><div class="pd-name">${p.name}</div><div class="pd-sep"></div><div class="pd-desc">${p.desc}</div></div></div>
     <div class="sec-lbl pd-lbl">Habits \u00B7 ${done}/${total}</div>
-    <div class="ani">${ph.map(h => habitRowHTML(h,'p')).join('')}</div>`;
+    <div class="ani">${ph.map(h => habitRowHTML(h,'p')).join('')}</div>
+    <div class="ani">${offer}</div>`;
   requestAnimationFrame(initSwipeGestures);
 }
 
@@ -3485,10 +3617,22 @@ function getRoutineLogToday() {
   return routineLog[dk];
 }
 
+// A routine step can stand for a habit: ticking "Cold shower" in the morning
+// routine ticks the Cold shower habit. The default routines point at
+// ready-made habits a short starter set may not include, and a habit can be
+// deleted from under a step. Tapping such a step used to throw, because it
+// went looking for a habit that was not there. It is a plain step of its own
+// now, and picks the habit up again if that habit is added later.
+function _routineHabit(item) {
+  const id = item && item.habitId;
+  return (id && log[id] && habits.some(h => h.id === id)) ? id : null;
+}
+
 function isRoutineItemDone(period, idx) {
   const item = routines[period]?.[idx];
   if (!item) return false;
-  if (item.habitId && log[item.habitId]) return !!log[item.habitId].completedToday;
+  const hid = _routineHabit(item);
+  if (hid) return !!log[hid].completedToday;
   const today = getRoutineLogToday();
   return !!today[period + '_' + _routineId(item, period, idx)];
 }
@@ -3496,8 +3640,9 @@ function isRoutineItemDone(period, idx) {
 function toggleRoutineItem(period, idx) {
   const item = routines[period]?.[idx];
   if (!item) return;
-  if (item.habitId) {
-    tapHabit(item.habitId, 'r');
+  const hid = _routineHabit(item);
+  if (hid) {
+    tapHabit(hid, 'r');
     renderHabits();
     return;
   }
@@ -3515,12 +3660,13 @@ function renderRoutines(toggle) {
     if (!items.length && !_routineEditMode) return `<div class="sec-lbl" style="padding-top:20px">${icon} ${label}</div><div class="routine-empty">No ${label.toLowerCase()} items yet. Tap Edit to add some.</div>`;
     const rows = items.map((item, i) => {
       const done = isRoutineItemDone(period, i);
-      const linked = item.habitId ? ' · habit' : '';
+      const hasHabit = !!_routineHabit(item);
+      const linked = hasHabit ? ' · habit' : '';
       if (_routineEditMode) {
         return `<div class="hi" style="opacity:0.85">
           <div class="hi-info"><div class="hi-name">${esc(item.name)}<span style="font-size:10px;color:var(--text-dim);opacity:0.5">${linked}</span></div></div>
           <div style="display:flex;gap:6px;flex-shrink:0;align-items:center">
-            ${item.habitId ? `<span style="font-size:9px;color:var(--text-muted)">linked</span>` : ''}
+            ${hasHabit ? `<span style="font-size:9px;color:var(--text-muted)">linked</span>` : ''}
             ${i > 0 ? `<button class="habit-move-btn" onclick="event.stopPropagation();moveRoutineItem('${period}',${i},-1)">▲</button>` : ''}
             ${i < items.length - 1 ? `<button class="habit-move-btn" onclick="event.stopPropagation();moveRoutineItem('${period}',${i},1)">▼</button>` : ''}
             <button class="habit-del-btn" onclick="event.stopPropagation();deleteRoutineItem('${period}',${i})">&times;</button>
@@ -3714,13 +3860,20 @@ function saveEditHabit(id) {
 
 function renderHabitCreate() {
   const cats = ['mindset','discipline','fitness','health','learning','social','financial'];
-  const catBtns = cats.map(c => `<button class="d-type-btn${c===curHabitCat?' active':''}" onclick="curHabitCat='${c}';go('habitCreate')">${c}</button>`).join('');
+  // Picking a category used to redraw the whole screen, which emptied a name
+  // already typed. It only moves the highlight now.
+  const catBtns = cats.map(c => `<button class="d-type-btn${c===curHabitCat?' active':''}" onclick="curHabitCat='${c}';this.parentElement.querySelectorAll('.d-type-btn').forEach(b=>b.classList.toggle('active',b===this))">${c}</button>`).join('');
 
   const dayNames = ['S','M','T','W','T','F','S'];
   const dayBtns = dayNames.map((d,i) => `<button class="sched-day-btn active" data-day="${i}" onclick="this.classList.toggle('active')">${d}</button>`).join('');
+  // The ready-made habits come first: the starter set is short on purpose,
+  // and the rest are one tap each from here.
+  const ready = readyHabits().length > 0;
   document.getElementById('view').innerHTML = `
     <button class="back" onclick="go('habits')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
-    <div class="page-head ani"><div class="page-title">New Habit</div><div class="page-sub">Build your own daily practice.</div></div>
+    <div class="page-head ani"><div class="page-title">New Habit</div><div class="page-sub">${ready ? `Tap a ready-made habit to add it, or <button class="hc-jump" onclick="jumpToOwnHabit()">build your own</button>.` : 'Build your own daily practice.'}</div></div>
+    ${ready ? `<div id="hc-ready-wrap" class="ani"><div id="hc-ready">${readyListHTML()}</div>
+      <div class="hc-own"><h2 class="hm-sec-title">Build your own</h2></div></div>` : ''}
     <div style="padding:0 24px" class="ani">
       <div class="d-goals-row"><div class="d-goals-label">Name</div><input class="d-input" type="text" id="hc-name" placeholder="e.g. Cold plunge 5 min" style="flex:1"></div>
       <div class="sec-lbl" style="padding:16px 0 8px">Category</div>
@@ -3740,6 +3893,14 @@ function renderHabitCreate() {
         <button class="w-action-btn" style="flex:1;margin:16px 0 24px" onclick="go('habits')">CANCEL</button>
       </div>
     </div>`;
+}
+
+// The form sits under the ready-made list, which can run past the screen.
+function jumpToOwnHabit() {
+  const el = document.querySelector('.hc-own');
+  if (!el || !el.scrollIntoView) return;
+  const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  el.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'start' });
 }
 
 function _setSchedMode(btn, mode) {
