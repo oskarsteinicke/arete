@@ -2573,6 +2573,47 @@ function _wasDueOn(h, key) {
   return false;
 }
 
+// How many times a habit has been missed since its last completion, by its
+// own schedule. Zero means the run is unbroken and the next tick carries it on.
+//   daily     every day in between
+//   specific  only the days it was due on; a rest day is not a miss
+//   weekly    a full week that fell short of the target, or had nothing in it
+// Both the launch check (validateStreaks) and the tick itself (tapHabit) ask
+// this. The tick used to ask only "was it done yesterday?", so a habit due on
+// Monday, Wednesday and Friday fell back to 1 every time it was ticked.
+function _streakMisses(h, e, t, hist) {
+  if (!e || !e.lastCompletedDate || e.lastCompletedDate >= t) return 0;
+  h = h || {};
+
+  // A weekly habit counts weeks, not days: missing a Tuesday is not a miss,
+  // but failing to hit the target across a whole week is. Only fully elapsed
+  // weeks are judged: the current one is still in progress.
+  if (h.schedule === 'weekly') {
+    const perWeek = h.perWeek || 7;
+    const curStart = new Date(t + 'T12:00'); curStart.setDate(curStart.getDate() - curStart.getDay());
+    const prevStart = new Date(curStart); prevStart.setDate(prevStart.getDate() - 7);
+    const curKey = dateKey(curStart), prevKey = dateKey(prevStart);
+    // Done already this week, so nothing since has been missed. A short week
+    // before it ended the run that came before this one; judging it again
+    // would zero the new run every morning until the week was out.
+    if (e.lastCompletedDate >= curKey) return 0;
+    const days = (hist || {})[h.id] || [];
+    // Don't judge a week the habit wasn't being tracked for yet
+    if (!days.some(x => x < curKey)) return 0;
+    return days.filter(x => x >= prevKey && x < curKey).length < perWeek ? 1 : 0;
+  }
+
+  const d = new Date(e.lastCompletedDate + 'T12:00');
+  let missed = 0;
+  for (let i = 0; i < 400; i++) {
+    d.setDate(d.getDate() + 1);
+    const key = dateKey(d);
+    if (key >= t) break;               // today has not been missed yet
+    if (_wasDueOn(h, key)) missed++;
+  }
+  return missed;
+}
+
 // Break any streak whose last completion is too old. Idempotent, so it can run
 // again after a cloud pull — which matters, because the merge can bring a stale
 // streak back from another device.
@@ -2591,31 +2632,10 @@ function validateStreaks() {
     if (!e || !(e.streak > 0) || !e.lastCompletedDate) return;
     if (e.lastCompletedDate >= t) return;
 
-    // A weekly habit counts weeks, not days: missing a Tuesday is not a miss,
-    // but failing to hit the target across a whole week is. Only fully elapsed
-    // weeks are judged — the current one is still in progress.
-    if (h.schedule === 'weekly') {
-      const perWeek = h.perWeek || 7;
-      const curStart = new Date(); curStart.setDate(curStart.getDate() - curStart.getDay());
-      const prevStart = new Date(curStart); prevStart.setDate(prevStart.getDate() - 7);
-      const curKey = dateKey(curStart), prevKey = dateKey(prevStart);
-      const days = hist[h.id] || [];
-      // Don't judge a week the habit wasn't being tracked for yet
-      if (!days.some(x => x < curKey)) return;
-      const lastWeek = days.filter(x => x >= prevKey && x < curKey).length;
-      if (lastWeek < perWeek) { e.streak = 0; changed = true; }
-      return;
-    }
-
-    const d = new Date(e.lastCompletedDate + 'T12:00');
-    let missed = 0;
-    for (let i = 0; i < 400; i++) {
-      d.setDate(d.getDate() + 1);
-      const key = dateKey(d);
-      if (key >= t) break;               // today has not been missed yet
-      if (_wasDueOn(h, key)) missed++;
-    }
+    const missed = _streakMisses(h, e, t, hist);
     if (!missed) return;
+    // A week that fell short is not something a shield covers.
+    if (h.schedule === 'weekly') { e.streak = 0; changed = true; return; }
 
     // One missed day out of an otherwise kept fortnight is not a reason to
     // wipe the number and greet someone with "Start your streak". A shield is
@@ -3035,7 +3055,8 @@ function _tickXP(s) {
 }
 
 function tapHabit(id, suffix) {
-  const e = log[id], t = today(), y = yesterday();
+  const e = log[id], t = today();
+  const habit = habits.find(h => h.id === id);
   const wasFirst = !habits.some(h => h.id !== id && log[h.id]?.completedToday);
   // A tap by hand makes the tick the person's own: a link that made it earlier
   // today no longer gets to take it back.
@@ -3047,7 +3068,12 @@ function tapHabit(id, suffix) {
     // yesterday, ticking, unticking and ticking again reset a long streak to 1.
     if (e.lastCompletedDate !== t) {
       e.undo = { streak: e.streak || 0, date: e.lastCompletedDate || '' };
-      e.streak = e.lastCompletedDate === y ? e.streak + 1 : 1;
+      // The run carries on if nothing was missed since the last completion,
+      // by the habit's own schedule. For a daily habit that is the same as
+      // "it was done yesterday".
+      const alive = e.streak > 0 && !!e.lastCompletedDate && e.lastCompletedDate < t
+        && _streakMisses(habit, e, t, LS.get('hvi_habit_history', {}) || {}) === 0;
+      e.streak = alive ? e.streak + 1 : 1;
     }
     e.lastCompletedDate = t; e.completedToday = true;
   } else {
@@ -3068,7 +3094,6 @@ function tapHabit(id, suffix) {
   setHabitHistory(id, t, e.completedToday);
   // Offer a share or an invite only when the tap actually completed something.
   if (e.completedToday) setTimeout(checkMilestones, 700);
-  const habit = habits.find(h => h.id === id);
   const pillarId = habit ? PILLARS.find(p => p.cats.includes(habit.category))?.id : null;
   if (e.completedToday) {
     playSound('check');
