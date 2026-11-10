@@ -594,15 +594,69 @@ function _connectToast(msg) {
   if (typeof showToast === 'function') showToast(msg);
 }
 
+// ── A LINK'S TICK CAN BE TAKEN BACK ──────────────────────────────────────
+// For food, a condition that was met can stop being met later the same day: a
+// meal is deleted, or one more meal carries the calories past the range. So
+// the links remember which of today's ticks were theirs, and only those are
+// ever withdrawn. A habit touched by hand is the person's for the rest of the
+// day (tapHabit calls _forgetAutoTick).
+//
+// Kept on this device only, not in SYNC_KEYS: it records what this device
+// did, and another device could do nothing with it.
+function _autoTicks() {
+  const a = LS.get('hvi_auto_ticks', null);
+  return (a && a.date === today() && a.ids) ? a : { date: today(), ids: {} };
+}
+
+function _forgetAutoTick(id) {
+  try {
+    const a = _autoTicks();
+    if (!(id in a.ids)) return;
+    delete a.ids[id];
+    LS.set('hvi_auto_ticks', a);
+  } catch {}
+}
+
+// Untick what this trigger ticked today. `why` opens the toast, so the person
+// is told what changed rather than finding a tick gone.
+function _withdrawLinkedHabits(trigger, why) {
+  const a = _autoTicks();
+  const mine = Object.keys(a.ids).filter(hid => a.ids[hid] === trigger);
+  if (!mine.length) return [];
+  const links = LS.get('hvi_habit_links', {}) || {};
+  const back = [];
+  mine.forEach(hid => {
+    delete a.ids[hid];
+    // Unlinked since, or already unticked: nothing of the link's left to undo.
+    if (links[hid] !== trigger || !log[hid] || !log[hid].completedToday) return;
+    if (typeof tapHabit !== 'function') return;
+    tapHabit(hid, '__auto');
+    const h = (Array.isArray(habits) ? habits.find(x => x.id === hid) : null);
+    if (h) back.push(h.name);
+  });
+  LS.set('hvi_auto_ticks', a);
+  if (back.length) {
+    _connectToast(why + ' Unticked: ' + back.join(', '));
+    if (typeof go === 'function' && (curView === 'home' || curView === 'habits')) {
+      try { go(curView, {}, false); } catch {}
+    }
+  }
+  return back;
+}
+
 function _autoCompleteLinkedHabits(trigger) {
   const links = LS.get('hvi_habit_links', {}) || {};
   const done = [];
+  let auto = null;
   Object.keys(links).forEach(hid => {
     if (links[hid] === trigger && autoCompleteHabit(hid)) {
+      auto = auto || _autoTicks();
+      auto.ids[hid] = trigger;
       const h = (Array.isArray(habits) ? habits.find(x => x.id === hid) : null);
       if (h) done.push(h.name);
     }
   });
+  if (auto) LS.set('hvi_auto_ticks', auto);
   if (done.length) {
     // After a workout the session card on the workout screen names them, and a
     // toast on top of it would say the same thing twice.
@@ -615,16 +669,49 @@ function _autoCompleteLinkedHabits(trigger) {
   return done;
 }
 
-// Called after the diet view renders (covers every meal-add path) and is
-// idempotent — a habit only completes the first time its target is crossed.
+// What "calories on target" means depends on what the person is doing. The
+// link used to tick the moment calories reached the goal, whatever the goal
+// was for. On a cut that rewarded using up the budget, and the tick stayed
+// however far past it the day went.
+//
+// Bulking, the goal is a floor: reaching it is the point. Cutting or
+// maintaining, it is a place to land: the day counts while it sits within
+// range of the goal, and stops counting once it goes past. The top of the
+// range matches the "Stay within calorie goal" quest.
+const CAL_LINK_RANGE = { min: 0.90, max: 1.05 };
+
+// 'under' | 'met' | 'over' for today's calories against today's target.
+function calorieLinkState(cal, target) {
+  const bulk = typeof dietMeta !== 'undefined' && dietMeta && dietMeta.goalType === 'bulk';
+  if (bulk) return cal >= target ? 'met' : 'under';
+  if (cal > target * CAL_LINK_RANGE.max) return 'over';
+  return cal >= target * CAL_LINK_RANGE.min ? 'met' : 'under';
+}
+
+// The same rule in words, for the habit editor.
+function calorieLinkRule() {
+  const bulk = typeof dietMeta !== 'undefined' && dietMeta && dietMeta.goalType === 'bulk';
+  const pct = v => Math.round(v * 100) + '%';
+  return bulk ? 'reaching your calorie goal'
+    : `landing between ${pct(CAL_LINK_RANGE.min)} and ${pct(CAL_LINK_RANGE.max)} of your calorie goal`;
+}
+
+// Called after the diet view renders (covers every meal-add and meal-remove
+// path) and safe to repeat: a habit is ticked once when its target is met, and
+// a tick the link made is taken back if the day stops meeting it.
 function checkNutritionTriggers() {
   try {
     const goals = getTodaysMacroTargets();
     if (!goals || !goals.calories) return;
     const m = (typeof getDayMacros === 'function') ? getDayMacros() : null;
     if (!m) return;
-    if (goals.protein && m.p >= goals.protein) _autoCompleteLinkedHabits('protein');
-    if (goals.calories && m.cal >= goals.calories) _autoCompleteLinkedHabits('calories');
+    if (goals.protein) {
+      if (m.p >= goals.protein) _autoCompleteLinkedHabits('protein');
+      else _withdrawLinkedHabits('protein', 'Protein is back under your goal.');
+    }
+    const cal = calorieLinkState(m.cal, goals.calories);
+    if (cal === 'met') _autoCompleteLinkedHabits('calories');
+    else _withdrawLinkedHabits('calories', cal === 'over' ? "Calories went past today's range." : 'Calories are back under target.');
   } catch (e) { console.warn('[Arete] nutrition triggers error:', e); }
 }
 

@@ -43,6 +43,58 @@ module.exports = function () {
     r.check('un-ticking removes it again', !(hist2.h1 || []).includes(dk(0)), `(${JSON.stringify(hist2)})`);
   }
 
+  // Ticking, unticking and ticking again on one day reset a long streak to 1:
+  // the second tick saw a last completion of today, not yesterday, and
+  // recounted. And an unticked habit kept the day, so its streak carried on.
+  r.section('taking a tick back puts the streak where it was');
+  {
+    const mk = entry => {
+      const s = sb({
+        hvi_habits: JSON.stringify(H),
+        hvi_log: JSON.stringify({ h1: entry }),
+        hvi_meta: JSON.stringify({ lastOpenedDate: dk(0) }),
+      });
+      run(s, `awardXP=function(n){ _tracked.push(['xp', n]); }; showMilestone=function(){}; checkMilestones=function(){};`);
+      return s;
+    };
+    const xp = s => JSON.parse(run(s, 'JSON.stringify(_tracked.filter(function(t){return t[0]==="xp"}).map(function(t){return t[1]}))'));
+
+    const s = mk({ streak: 4, lastCompletedDate: dk(1), completedToday: false });
+    run(s, "tapHabit('h1','')");
+    r.check('a tick moves the streak on', run(s, 'log.h1.streak') === 5);
+    run(s, "tapHabit('h1','')");
+    r.check('unticking puts it back', run(s, 'log.h1.streak') === 4, `(${run(s, 'log.h1.streak')})`);
+    r.check('and the last completion with it', run(s, 'log.h1.lastCompletedDate') === dk(1),
+      `(${run(s, 'log.h1.lastCompletedDate')})`);
+    run(s, "tapHabit('h1','')");
+    r.check('ticking again reaches the same streak, not 1', run(s, 'log.h1.streak') === 5, `(${run(s, 'log.h1.streak')})`);
+    run(s, "tapHabit('h1','')");
+    run(s, 'validateStreaks()');
+    r.check('an unticked habit is still due today, not broken', run(s, 'log.h1.streak') === 4);
+
+    // What unticking under the old code left behind: today as the last
+    // completion, not completed, and nothing to restore from.
+    const old = mk({ streak: 5, lastCompletedDate: dk(0), completedToday: false });
+    run(old, "tapHabit('h1','')");
+    r.check('a tick left half undone by an older version keeps its streak', run(old, 'log.h1.streak') === 5,
+      `(${run(old, 'log.h1.streak')})`);
+
+    const first = mk({ streak: 0, lastCompletedDate: '', completedToday: false });
+    run(first, "tapHabit('h1','')"); run(first, "tapHabit('h1','')");
+    r.check('a first tick taken back leaves no streak', run(first, 'log.h1.streak') === 0 && run(first, 'log.h1.lastCompletedDate') === '');
+
+    // 6 -> 7 is a milestone day: 15 for the tick and 50 for the week.
+    const week = mk({ streak: 6, lastCompletedDate: dk(1), completedToday: false });
+    run(week, "tapHabit('h1','')");
+    const gave = xp(week).reduce((a, b) => a + b, 0);
+    run(week, "tapHabit('h1','')");
+    const net = xp(week).reduce((a, b) => a + b, 0);
+    r.check('the milestone tick gives its bonus and award', gave === 65, `(${gave})`);
+    r.check('unticking takes back exactly what the tick gave', net === 0, `(${JSON.stringify(xp(week))})`);
+    run(week, "tapHabit('h1','')"); run(week, "tapHabit('h1','')");
+    r.check('so ticking back and forth earns nothing', xp(week).reduce((a, b) => a + b, 0) === 0);
+  }
+
   r.section('history survives the daily rollover');
   {
     const s = sb({

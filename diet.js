@@ -1665,6 +1665,9 @@ function undoMeal(id) {
   LS.set('hvi_meal_log', mealLog);
   _mealXPBack(gone);
   if (typeof track === 'function') track('meal_undo', {});
+  // Undone from the toast on another screen, nothing redraws the diet view, so
+  // a habit the meal had ticked would have stayed ticked.
+  if (typeof checkNutritionTriggers === 'function') checkNutritionTriggers();
   if (curView === 'diet') _redraw(renderDiet);
 }
 

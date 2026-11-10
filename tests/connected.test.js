@@ -164,6 +164,134 @@ module.exports = function () {
     r.check('the habit editor offers it', /opt\('water', [^)]*\) \+ ' Water goal hit'\)/.test(editor));
   }
 
+  // The calorie link ticked the moment calories reached the goal, whatever the
+  // goal was for. On a cut that rewarded using up the budget, and the tick
+  // stayed however far past it the day went.
+  const food = (goalType, link, entry) => {
+    const s = sb({
+      hvi_habits: JSON.stringify([{ id: 'h1', name: 'Eat to plan' }]),
+      hvi_log: JSON.stringify({ h1: entry || { streak: 4, lastCompletedDate: dk(1), completedToday: false } }),
+      hvi_habit_links: JSON.stringify({ h1: link || 'calories' }),
+    });
+    run(s, `dietMeta.goalType='${goalType}'; renderDiet=function(){};`);
+    return s;
+  };
+  // Today's meals as shares of today's calorie target (training days move it,
+  // so it is read from the app rather than assumed), then the event a logged
+  // meal sends.
+  const eat = (s, shares, protein) => {
+    const target = run(s, 'getTodaysMacroTargets().calories');
+    const meals = shares.map((f, i) => ({ id: 'm' + i, name: 'Meal', xp: 0,
+      items: [{ name: 'Food', calories: Math.round(target * f), protein: protein || 0 }] }));
+    run(s, `LS.set('hvi_meal_log', { [today()]: { meals: ${JSON.stringify(meals)} } });
+            window.Arete.emit('meal:logged', {});`);
+  };
+  const toasts = s => JSON.parse(run(s, 'JSON.stringify(_tracked.filter(function(t){return t[0]==="toast"}).map(function(t){return t[1]}))'));
+
+  r.section('calories on target means landing near the goal, not reaching it');
+  for (const goalType of ['cut', 'maintain']) {
+    const s = food(goalType);
+    eat(s, [0.5]);
+    r.check(`${goalType}: half the goal is not there yet`, run(s, 'log.h1.completedToday') === false);
+    eat(s, [0.5, 0.45]);
+    r.check(`${goalType}: within range of the goal ticks it`, run(s, 'log.h1.completedToday') === true);
+    r.check(`${goalType}: and says so`, toasts(s).some(m => /Auto-completed: Eat to plan/.test(m)), `(${JSON.stringify(toasts(s))})`);
+    r.check(`${goalType}: the streak moves on`, run(s, 'log.h1.streak') === 5);
+
+    eat(s, [0.5, 0.45, 0.25]);
+    r.check(`${goalType}: going past the range takes the tick back`, run(s, 'log.h1.completedToday') === false,
+      '(still ticked 20% over the goal)');
+    r.check(`${goalType}: and says why`, toasts(s).some(m => /Calories went past.*Unticked: Eat to plan/.test(m)),
+      `(${JSON.stringify(toasts(s))})`);
+    r.check(`${goalType}: the streak is back where it was`,
+      run(s, 'log.h1.streak') === 4 && run(s, 'log.h1.lastCompletedDate') === dk(1),
+      `(${run(s, 'log.h1.streak')}, ${run(s, 'log.h1.lastCompletedDate')})`);
+
+    const big = food(goalType);
+    eat(big, [1.2]);
+    r.check(`${goalType}: a day that lands past the range never ticks`, run(big, 'log.h1.completedToday') === false,
+      '(ticked for eating 20% over)');
+
+    const edge = food(goalType);
+    eat(edge, [1.04]);
+    r.check(`${goalType}: a little over still counts`, run(edge, 'log.h1.completedToday') === true);
+    const low = food(goalType);
+    eat(low, [0.85]);
+    r.check(`${goalType}: well short does not`, run(low, 'log.h1.completedToday') === false);
+  }
+
+  r.section('on a bulk the goal is a floor');
+  {
+    const s = food('bulk');
+    eat(s, [0.95]);
+    r.check('short of the goal is not there yet', run(s, 'log.h1.completedToday') === false);
+    eat(s, [0.95, 0.1]);
+    r.check('reaching it ticks', run(s, 'log.h1.completedToday') === true);
+    eat(s, [0.95, 0.1, 0.3]);
+    r.check('and eating past it keeps the tick', run(s, 'log.h1.completedToday') === true);
+    r.check('the editor describes each rule',
+      /reaching your calorie goal/.test(run(s, 'calorieLinkRule()')) &&
+      /between 90% and 105%/.test(run(food('cut'), 'calorieLinkRule()')),
+      `(${run(s, 'calorieLinkRule()')})`);
+    const editor = require('fs').readFileSync(require('path').join(require('./harness').APP, 'app.js'), 'utf8');
+    r.check('and names the link for what it does', /' Calories on target'/.test(editor) && !/' Calories hit'/.test(editor));
+  }
+
+  r.section('a link only takes back the ticks it made');
+  {
+    const hand = food('cut');
+    run(hand, "tapHabit('h1','')");
+    eat(hand, [0.95]);
+    eat(hand, [0.95, 0.3]);
+    r.check('a habit ticked by hand stays ticked', run(hand, 'log.h1.completedToday') === true);
+    r.check('with nothing said about it', !toasts(hand).some(m => /Unticked/.test(m)), `(${JSON.stringify(toasts(hand))})`);
+
+    // Ticked by the link, then unticked and ticked again by hand: theirs now.
+    const claimed = food('cut');
+    eat(claimed, [0.95]);
+    run(claimed, "tapHabit('h1',''); tapHabit('h1','');");
+    eat(claimed, [0.95, 0.3]);
+    r.check('a tick the person remade by hand is theirs', run(claimed, 'log.h1.completedToday') === true);
+
+    const unlinked = food('cut');
+    eat(unlinked, [0.95]);
+    run(unlinked, "LS.set('hvi_habit_links', {})");
+    eat(unlinked, [0.95, 0.3]);
+    r.check('a habit unlinked since is left alone', run(unlinked, 'log.h1.completedToday') === true);
+
+    const stale = food('cut', 'calories', { streak: 5, lastCompletedDate: T, completedToday: true });
+    run(stale, `LS.set('hvi_auto_ticks', { date: '${dk(1)}', ids: { h1: 'calories' } })`);
+    eat(stale, [1.3]);
+    r.check("yesterday's record takes nothing back today", run(stale, 'log.h1.completedToday') === true);
+  }
+
+  r.section('taking a meal back takes back what it ticked');
+  {
+    const s = food('cut');
+    eat(s, [0.5, 0.45]);
+    r.check('the second meal ticked it', run(s, 'log.h1.completedToday') === true);
+    run(s, "curView='home'; undoMeal('m1')");
+    r.check('undoing that meal from another screen unticks it', run(s, 'log.h1.completedToday') === false,
+      '(still ticked with the meal gone)');
+    r.check('and says why', toasts(s).some(m => /back under target.*Unticked/.test(m)), `(${JSON.stringify(toasts(s))})`);
+    r.check('the screen showing the habit is redrawn', run(s, '_nav.indexOf("home") >= 0') === true);
+    eat(s, [0.5, 0.45]);
+    r.check('logging it again ticks it again', run(s, 'log.h1.completedToday') === true);
+    r.check('at the same streak, not from 1', run(s, 'log.h1.streak') === 5, `(${run(s, 'log.h1.streak')})`);
+
+    const p = food('maintain', 'protein');
+    const goal = run(p, 'getTodaysMacroTargets().protein');
+    eat(p, [0.3, 0.3], Math.ceil(goal / 2));
+    r.check('protein reaching its goal ticks', run(p, 'log.h1.completedToday') === true);
+    run(p, "undoMeal('m0')");
+    r.check('and dropping back under takes it back', run(p, 'log.h1.completedToday') === false);
+    r.check('protein has no upper limit', (() => {
+      const over = food('cut', 'protein');
+      eat(over, [0.2], goal * 2);
+      return run(over, 'log.h1.completedToday') === true;
+    })());
+  }
+
   r.section('a habit only auto-completes for its own trigger');
   {
     const s = sb({

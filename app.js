@@ -2908,11 +2908,40 @@ function shieldSaveBadge(id) {
   return `<span class="hi-shield${fresh ? ' hi-shield--new' : ''}" title="A streak shield covered yesterday">${icon('shield', 13)}Covered</span>`;
 }
 
+// What a tick is worth at a given streak: the base with its streak bonus, and
+// the milestone award on the days that reach one. One place, so taking a tick
+// back removes exactly what it gave.
+function _tickXP(s) {
+  const bonus = s >= 30 ? 10 : s >= 14 ? 7 : s >= 7 ? 5 : 0;
+  const milestone = [7, 14, 30, 60, 100, 365].includes(s) ? (s >= 100 ? 200 : s >= 30 ? 100 : 50) : 0;
+  return { base: 10 + bonus, milestone };
+}
+
 function tapHabit(id, suffix) {
   const e = log[id], t = today(), y = yesterday();
   const wasFirst = !habits.some(h => h.id !== id && log[h.id]?.completedToday);
-  if (!e.completedToday) { e.streak = e.lastCompletedDate === y ? e.streak + 1 : 1; e.lastCompletedDate = t; e.completedToday = true; }
-  else { e.completedToday = false; }
+  // A tap by hand makes the tick the person's own: a link that made it earlier
+  // today no longer gets to take it back.
+  if (suffix !== '__auto' && typeof _forgetAutoTick === 'function') _forgetAutoTick(id);
+  let tookBack = null;
+  if (!e.completedToday) {
+    // The streak is counted once a day. A second tick on the same day used to
+    // recount it, and since the last completion was by then today rather than
+    // yesterday, ticking, unticking and ticking again reset a long streak to 1.
+    if (e.lastCompletedDate !== t) {
+      e.undo = { streak: e.streak || 0, date: e.lastCompletedDate || '' };
+      e.streak = e.lastCompletedDate === y ? e.streak + 1 : 1;
+    }
+    e.lastCompletedDate = t; e.completedToday = true;
+  } else {
+    tookBack = _tickXP(e.streak || 0);
+    e.completedToday = false;
+    // Taking a tick back puts the streak and the last completion where they
+    // stood before it. Left on today, an unticked habit kept the day's credit:
+    // the streak carried on tomorrow as if the day had been done.
+    if (e.undo && e.lastCompletedDate === t) { e.streak = e.undo.streak; e.lastCompletedDate = e.undo.date; }
+    delete e.undo;
+  }
   LS.set('hvi_log', log);
   // Record the completion here, where it definitely happened. checkReset()
   // used to be the only writer, but the sanitise pass added above it clears
@@ -2928,8 +2957,8 @@ function tapHabit(id, suffix) {
     playSound('check');
     track('habit_complete', { habit_name: habit?.name, streak: e.streak || 0 });
     const s = e.streak || 0;
-    const bonus = s >= 30 ? 10 : s >= 14 ? 7 : s >= 7 ? 5 : 0;
-    awardXP(10 + bonus, pillarId || undefined);
+    const xp = _tickXP(s);
+    awardXP(xp.base, pillarId || undefined);
     if (wasFirst) {
       launchConfetti(0.5);
       // First EVER habit completion — welcome celebration + ask for notifications
@@ -2948,7 +2977,7 @@ function tapHabit(id, suffix) {
       }
     }
     // Streak milestone celebrations
-    if ([7, 14, 30, 60, 100, 365].includes(s)) {
+    if (xp.milestone) {
       showMilestone({
         icon: s >= 100 ? '👑' : s >= 30 ? '⚡' : '🔥',
         title: `${s}-Day Streak!`,
@@ -2959,16 +2988,17 @@ function tapHabit(id, suffix) {
           : s >= 30 ? 'One month of consistency. Most people never get here.'
           : s >= 14 ? 'Two weeks in. The habit is taking root.'
           : 'One full week. The hardest part is behind you.',
-        xp: s >= 100 ? 200 : s >= 30 ? 100 : 50,
+        xp: xp.milestone,
       });
-      awardXP(s >= 100 ? 200 : s >= 30 ? 100 : 50, pillarId || undefined);
+      awardXP(xp.milestone, pillarId || undefined);
     } else {
       haptic(10);
     }
     checkDailyQuests();
   } else {
-    // Deduct XP when unchecking — prevents farming
-    awardXP(-10, pillarId || undefined);
+    // Unchecking takes back what the tick gave, streak bonus and milestone
+    // award included. A flat 10 left the difference behind on every round trip.
+    awardXP(-(tookBack.base + tookBack.milestone), pillarId || undefined);
   }
   const row = document.getElementById(`hi${suffix}-${id}`), chk = document.getElementById(`hc${suffix}-${id}`), stk = document.getElementById(`hs${suffix}-${id}`);
   if (!row) return;
@@ -3623,9 +3653,9 @@ function openEditHabit(id) {
         const opt = (val, label) => `<button class="d-type-btn link-btn${curLink===val?' active':''}" data-link="${val}" onclick="_setEditLink(this)">${label}</button>`;
         return `<div class="sec-lbl" style="padding:12px 0 8px">Auto-complete when</div>
       <div class="d-type-row" style="flex-wrap:wrap;gap:6px">
-        ${opt('', 'None')}${opt('workout', icon('activity', 14) + ' Workout done')}${opt('protein', icon('meat', 14) + ' Protein hit')}${opt('calories', icon('flame', 14) + ' Calories hit')}${opt('sleep', icon('moon', 14) + ' Slept 7h+')}${opt('water', icon('droplet', 14) + ' Water goal hit')}${opt('journal', icon('book', 14) + ' Journalled')}
+        ${opt('', 'None')}${opt('workout', icon('activity', 14) + ' Workout done')}${opt('protein', icon('meat', 14) + ' Protein hit')}${opt('calories', icon('flame', 14) + ' Calories on target')}${opt('sleep', icon('moon', 14) + ' Slept 7h+')}${opt('water', icon('droplet', 14) + ' Water goal hit')}${opt('journal', icon('book', 14) + ' Journalled')}
       </div>
-      <div style="font-size:11px;color:var(--text-muted);padding:6px 0 0">This habit ticks itself when the linked action happens, so you never log it twice.</div>`;
+      <div style="font-size:11px;color:var(--text-muted);padding:6px 0 0">This habit ticks itself when the linked action happens, so you never log it twice.${typeof calorieLinkRule === 'function' ? ` Calories on target means ${calorieLinkRule()}.` : ''}</div>`;
       })()}
       <div style="display:flex;gap:10px;margin-top:20px">
         <button class="w-action-btn" style="flex:1;margin:0" onclick="closeEditHabit()">Cancel</button>
