@@ -53,12 +53,12 @@
   <a class="back" href="/">&larr; Arete</a>
 
   <h1>Privacy Policy</h1>
-  <div class="updated">Last updated: 11 October 2026</div>
+  <div class="updated">Last updated: 10 November 2026</div>
 
   <p class="lede">Arete works without an account. If you never sign up, your data never leaves your device.</p>
 
   <div class="card">
-    <p><strong>The short version.</strong> Everything you track is stored locally on your device first. Creating an account syncs it so you can use Arete on more than one device. The AI features are off until you allow them. When they are on, they send what you ask about, and for the coach a summary of your recent logs, to an AI provider. We don't sell your data, and there are no advertising trackers.</p>
+    <p><strong>The short version.</strong> Everything you track is stored locally on your device first. Creating an account syncs it so you can use Arete on more than one device. The AI features are off until you allow them. When they are on, they send what you ask about, and for the coach a summary of your recent logs, to an AI provider. We don't sell your data, and there are no advertising trackers. Usage analytics records which features are used, never what you log, and you can turn it off in Profile. In the EU, the EEA, the UK and Switzerland it stays off until you allow it.</p>
   </div>
 
   <h2>Who we are</h2>
@@ -100,14 +100,16 @@
   <h2>Payments</h2>
   <p>Premium subscriptions are processed by <strong>Stripe</strong>. Stripe collects and handles your card details directly under its own privacy policy — Arete never receives or stores your card number. We store only your subscription status so the app knows which features to unlock.</p>
 
-  <h2>Analytics and error reports</h2>
-  <p>Arete uses <strong>Google Analytics</strong> to understand which features are used and where people get stuck, and to record technical errors so they can be fixed. Error reports contain the error message, the file and line it came from, the screen you were on and the app version.</p>
-  <p>Error reports deliberately exclude your content: no habit names, meals, workouts, journal text or photos are attached.</p>
-  <p>If you have an account, Arete sends Google Analytics a <strong>pseudonymous account identifier</strong> so that repeat visits from the same person can be recognised, along with the date you signed up and the date you were last active. It does <strong>not</strong> send your email address or your name. Earlier versions of the app did send both; that was removed in September 2026, and the corresponding fields were deleted from our Analytics property.</p>
+  <h2 id="analytics">Analytics and error reports</h2>
+  <p>Arete uses two analytics services: <strong>Google Analytics</strong> and <strong>PostHog</strong>, which we use on its EU cloud. They show which features are used, where people get stuck and whether they come back, so we know what to improve. Google Analytics also receives technical error reports.</p>
+  <p><strong>What is sent.</strong> That something happened, such as opening the app, finishing onboarding, completing a habit, logging a meal, finishing a workout or sending the coach a message. Alongside it: the screen you were on, whether a habit was ticked by you, automatically or from a routine, simple counts (such as how many items a meal had), which of the built-in habits or programs it was, your device type, operating system and browser, whether you use Arete in a browser, as an installed web app or as the iPhone or Android app, and the app version. Error reports contain the error message, the file and line it came from, the screen you were on and the app version.</p>
+  <p><strong>Identifiers.</strong> Each service keeps a random identifier on your device so repeat visits can be recognised. If you have an account, both also receive a <strong>pseudonymous account identifier</strong>, so what you did before signing in and on your other devices counts as one person, along with the date you signed up. Arete does <strong>not</strong> send your email address or your name to either. PostHog also receives the onboarding path you chose and, if you arrived from a link with campaign tags, that campaign. Both services receive your IP address when your device connects to them and may use it to estimate an approximate location.</p>
+  <p><strong>What is never sent.</strong> Your name or email address, the names of habits you write, what you eat, the details of your workouts, journal text, your messages to the coach, health figures such as sleep, weight or mood, and photos. Addresses are trimmed to the screen name before they are sent, so links such as password resets and invites never reach either service. Earlier versions of the app sent your email address and name to Google Analytics; that was removed in September 2026, and the corresponding fields were deleted from our Analytics property.</p>
+  <p><strong>Your choice.</strong> You can turn usage analytics on or off at any time under Profile &rarr; Usage analytics. In the EU, the EEA, the UK and Switzerland, Arete asks first and sends nothing until you say yes; it works this out from your device's time zone. Elsewhere it is on unless you turn it off, and a browser that sends a Global Privacy Control signal is treated as off. Turning it off stops both services straight away and removes PostHog's identifier from your device. The website respects the same setting if you have turned it off in the app.</p>
   <p>Analytics data is not used for advertising, and we do not sell it or share it with data brokers.</p>
 
   <h2>How long we keep things</h2>
-  <p>Account data is kept for as long as your account exists, because its purpose is to preserve your history. Apple Health entries in temporary storage expire after 30 days. Analytics data is retained according to Google Analytics' standard retention settings. Deleting your account deletes your synced data.</p>
+  <p>Account data is kept for as long as your account exists, because its purpose is to preserve your history. Apple Health entries in temporary storage expire after 30 days. Analytics data is kept according to each service's retention settings for our account (Google Analytics and PostHog). Deleting your account deletes your synced data. To have the analytics data linked to your account identifier deleted as well, email us.</p>
 
   <h2>Your rights</h2>
   <p><strong>You can delete your account from inside the app</strong>, under Profile &rarr; Delete Account. This immediately and permanently removes your account, everything synced to it and your leaderboard entries, and cancels any active subscription. It cannot be undone.</p>
@@ -118,7 +120,7 @@
   <p>Arete is not directed at children under 13, and we do not knowingly collect their data. If you believe a child has created an account, contact us and we will remove it.</p>
 
   <h2>International transfers</h2>
-  <p>Our providers — Supabase, Cloudflare, Google and Stripe — operate infrastructure in multiple countries, so your data may be processed outside the country where you live, including in the United States. Each provider offers standard contractual protections for those transfers.</p>
+  <p>Our providers (Supabase, Cloudflare, Google, PostHog and Stripe) operate infrastructure in multiple countries, so your data may be processed outside the country where you live, including in the United States. Each provider offers standard contractual protections for those transfers.</p>
 
   <h2>Changes</h2>
   <p>If this policy changes in a way that affects how your data is handled, we will update the date at the top of this page and, for significant changes, notify you in the app.</p>

@@ -1611,6 +1611,14 @@ function renderStats() {
       </div>
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px">When on, your messages, meal photos and a summary of your logs are sent to Google Gemini and Groq to produce answers. Off sends nothing.</div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div style="font-size:14px;color:var(--text)">Usage analytics</div>
+        <div class="unit-toggle">
+          <button class="unit-btn${analyticsAllowed()?' unit-btn-active':''}" onclick="setAnalyticsChoice(true);renderStats()">On</button>
+          <button class="unit-btn${!analyticsAllowed()?' unit-btn-active':''}" onclick="setAnalyticsChoice(false);renderStats()">Off</button>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px">When on, Arete records which features you use and when, through Google Analytics and PostHog, to see what helps. Never what you log, write or ask the coach. Off sends nothing. <span style="text-decoration:underline;cursor:pointer" onclick="window.open('https://get-arete.com/privacy.html#analytics','_blank')">Details</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
         <div style="font-size:14px;color:var(--text)">Milestone prompts</div>
         <div class="unit-toggle">
           <button class="unit-btn${settings.milestonePrompts!==false?' unit-btn-active':''}" onclick="settings.milestonePrompts=true;LS.set('hvi_settings',settings);renderStats()">On</button>
@@ -1950,7 +1958,17 @@ function injectOnboardingStyles() {
   document.head.appendChild(s);
 }
 
+// The screen showing, so a skip can say where it happened.
+let _obStepShown = 0;
 function renderOnboarding(step) {
+  _obStepShown = step;
+  // Counted once per device: a reload part-way through shows the welcome
+  // screen again, and that is not a second start.
+  if (step === 0) {
+    let seen = true;
+    try { seen = !!localStorage.getItem('hvi_ob_started'); if (!seen) localStorage.setItem('hvi_ob_started', '1'); } catch {}
+    if (!seen && typeof track === 'function') track('onboarding_started');
+  }
   let overlay = document.getElementById('ob-overlay');
   if (!overlay) {
     overlay = document.createElement('div');
@@ -2161,6 +2179,7 @@ function _hasPendingJoin() {
 }
 
 function obSkip() {
+  if (typeof track === 'function') track('onboarding_skipped', { step: _obStepShown });
   LS.set('hvi_onboarded', true);
   const overlay = document.getElementById('ob-overlay');
   if (overlay) overlay.remove();

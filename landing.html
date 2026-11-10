@@ -26,13 +26,21 @@
   <meta name="twitter:image" content="https://get-arete.com/assets/arete_og_image.jpg">
   <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
   <link rel="apple-touch-icon" href="/icon-192.png">
-  <!-- Google Analytics -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-4NQYVJR5S2"></script>
+  <!-- Google Analytics. Someone who turned usage analytics off in the app
+       (hvi_analytics, same site) is not tracked here either. -->
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-4NQYVJR5S2');
+    if ((function () { try { return localStorage.getItem('hvi_analytics') !== 'denied'; } catch (e) { return true; } })()) {
+      var _ga = document.createElement('script');
+      _ga.async = true;
+      _ga.src = 'https://www.googletagmanager.com/gtag/js?id=G-4NQYVJR5S2';
+      document.head.appendChild(_ga);
+      gtag('js', new Date());
+      gtag('config', 'G-4NQYVJR5S2');
+    } else {
+      window['ga-disable-G-4NQYVJR5S2'] = true;
+    }
   </script>
   <!-- Inter with its optical-size axis: the Display cut takes over at large sizes -->
   <link rel="preconnect" href="https://fonts.googleapis.com">

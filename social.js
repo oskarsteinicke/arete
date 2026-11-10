@@ -929,7 +929,8 @@ function acceptChallenge(payload) {
     };
     challenges.push(challenge);
     _saveChallenges(challenges);
-    track('challenge_accepted', { template: data.t, from: data.n });
+    // Never the challenger's name, nor a group's name or code: analytics gets no names.
+    track('challenge_accepted', { template: data.t });
     if (typeof _showToast === 'function') _showToast(`Challenge accepted! ${tmpl.icon} ${tmpl.name}`);
     go('challenges');
   } catch (e) {
@@ -1357,7 +1358,7 @@ async function _submitCreateGroup() {
   }
 
   _closeLbModal();
-  track('leaderboard_group_created', { name });
+  track('leaderboard_group_created', {});
 
   // Show the code to share
   _lbView = 'group';
@@ -1402,7 +1403,7 @@ async function _submitJoinGroup() {
   }
 
   _closeLbModal();
-  track('leaderboard_group_joined', { code });
+  track('leaderboard_group_joined', {});
   if (typeof _showToast === 'function') _showToast('Joined group!');
 
   _lbView = 'group';
@@ -1520,7 +1521,7 @@ function _shareGroupCode(code, name) {
   } else {
     navigator.clipboard.writeText(text).then(done).catch(() => {});
   }
-  track('leaderboard_share', { code });
+  track('leaderboard_share', {});
 }
 
 function _lbRefresh(groupId) {

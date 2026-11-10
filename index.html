@@ -42,19 +42,23 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
   <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
-  <!-- Google Analytics -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-4NQYVJR5S2"></script>
+  <!-- Analytics. Neither tool loads from here: app.js loads Google Analytics
+       and starts PostHog only once analytics is allowed (analyticsStart), so a
+       visitor who has not agreed, or has turned it off, fetches and stores
+       nothing. These only set up queues. The PostHog loader is the official
+       snippet, unchanged. -->
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-4NQYVJR5S2');
+  </script>
+  <script>
+    !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],Object.defineProperty(u,"toString",{configurable:!0,enumerable:!0,writable:!0,value:function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e}}),Object.defineProperty(u.people,"toString",{configurable:!0,enumerable:!0,writable:!0,value:function(){return u.toString(1)+".people (stub)"}}),o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagResult isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="tokens.css?v=241">
-  <link rel="stylesheet" href="style.css?v=241">
+  <link rel="stylesheet" href="tokens.css?v=242">
+  <link rel="stylesheet" href="style.css?v=242">
 </head>
 <body>
 <!-- The loading screen: the Arete mark on brand black, as the iPhone app's
@@ -158,28 +162,28 @@
     </button>
   </nav>
 </div>
-<script src="data.js?v=241"></script>
-<script src="app.js?v=241"></script>
-<script src="connect.js?v=241"></script>
-<script src="patterns.js?v=241"></script>
-<script src="today.js?v=241"></script>
-<script src="premium.js?v=241"></script>
-<script src="workout.js?v=241"></script>
-<script src="diet.js?v=241"></script>
-<script src="logany.js?v=241"></script>
+<script src="data.js?v=242"></script>
+<script src="app.js?v=242"></script>
+<script src="connect.js?v=242"></script>
+<script src="patterns.js?v=242"></script>
+<script src="today.js?v=242"></script>
+<script src="premium.js?v=242"></script>
+<script src="workout.js?v=242"></script>
+<script src="diet.js?v=242"></script>
+<script src="logany.js?v=242"></script>
 <script>
 // Stub coach functions until lazy-loaded
 if(typeof openCoach==='undefined'){window.openCoach=function(){};window.closeCoach=function(){};window.sendCoachMsg=function(){};window.clearCoachHistory=function(){}}
 // Lazy-load coach + social after first paint for faster startup
 (window.requestIdleCallback||function(cb){setTimeout(cb,800)})(function(){
-  var s1=document.createElement('script');s1.src='coach.js?v=241';document.body.appendChild(s1);
-  var s2=document.createElement('script');s2.src='social.js?v=241';document.body.appendChild(s2);
-  var s3=document.createElement('script');s3.src='bodymap.js?v=241';document.body.appendChild(s3);
+  var s1=document.createElement('script');s1.src='coach.js?v=242';document.body.appendChild(s1);
+  var s2=document.createElement('script');s2.src='social.js?v=242';document.body.appendChild(s2);
+  var s3=document.createElement('script');s3.src='bodymap.js?v=242';document.body.appendChild(s3);
 });
 </script>
-<script src="integrations.js?v=241"></script>
-<script src="profile.js?v=241"></script>
-<script src="review.js?v=241"></script>
+<script src="integrations.js?v=242"></script>
+<script src="profile.js?v=242"></script>
+<script src="review.js?v=242"></script>
 <script>
   // No service worker inside the native (Capacitor) app — assets are bundled locally
   if ('serviceWorker' in navigator && !window.Capacitor) {

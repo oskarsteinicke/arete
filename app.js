@@ -2,37 +2,540 @@
 // Arete — Application Logic
 // ══════════════════════════════════════════════════════════════════════════
 
-// ── ANALYTICS HELPER ──────────────────────────────────────────────────────
+// ── ANALYTICS ─────────────────────────────────────────────────────────────
+// Every event in the app goes through track(). It feeds two services: Google
+// Analytics, as before, and PostHog (EU cloud) for active users, retention and
+// which features bring people back.
+//
+// Both sit behind one switch, analyticsAllowed(). Where the law asks for
+// consent first (the EU, EEA, UK and Switzerland, judged from the device's
+// time zone), neither loads nor sends anything until the person says yes.
+// Elsewhere it is on until they turn it off in Profile. Off is off for both.
+const GA_ID = 'G-4NQYVJR5S2';
+// The project token is public by design: it can only send events, like the
+// Supabase publishable key below. Anything that is not a phc_ token keeps
+// PostHog off and Google Analytics carries on alone.
+const POSTHOG_KEY = 'phc_qZnyqt9d2DPnEDHfyUhiSbFxE7aq5ytLWjNccUJYCo9h';
+const POSTHOG_HOST = 'https://eu.i.posthog.com';
+const ANALYTICS_KEY = 'hvi_analytics';   // 'granted' | 'denied', kept on this device
+const PH_UID_KEY = 'hvi_ph_uid';         // the account PostHog was last told about
+
+function analyticsChoice() {
+  try { return localStorage.getItem(ANALYTICS_KEY) || ''; } catch { return ''; }
+}
+
+// The EU and EEA, the UK and Switzerland ask for consent before analytics
+// stores an identifier on a device. The time zone is the only signal the app
+// has without asking a server, so it decides: every Europe/ zone, and the
+// Atlantic and Arctic ones that belong to those countries. No time zone at all
+// counts as needing consent.
+const _CONSENT_TZ = /^(Europe\/|Atlantic\/(Reykjavik|Canary|Madeira|Azores|Faroe|Faeroe)$|Arctic\/Longyearbyen$|Asia\/(Nicosia|Famagusta)$|(WET|CET|MET|EET|GB|GB-Eire|Eire|Iceland|Poland|Portugal)$)/;
+let _consentRegion = null;
+function analyticsConsentRequired() {
+  if (_consentRegion === null) {
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+      _consentRegion = !tz || _CONSENT_TZ.test(tz);
+    } catch { _consentRegion = true; }
+  }
+  return _consentRegion;
+}
+
+// A browser sending Global Privacy Control has already said no.
+function _gpcOn() {
+  try { return navigator.globalPrivacyControl === true; } catch { return false; }
+}
+
+function analyticsAllowed() {
+  const c = analyticsChoice();
+  if (c === 'granted') return true;
+  if (c === 'denied') return false;
+  if (_gpcOn()) return false;
+  return !analyticsConsentRequired();
+}
+
+// Someone who has to be asked, and has not been yet.
+function analyticsNeedsAnswer() {
+  return !analyticsChoice() && !_gpcOn() && analyticsConsentRequired();
+}
+
 function track(event, params) {
-  if (typeof gtag === 'function') gtag('event', event, params || {});
+  if (!analyticsAllowed()) return;
+  try { if (typeof gtag === 'function') gtag('event', event, params || {}); } catch {}
+  try { _phCapture(event, params || {}); } catch {}
 }
 
 // Every event above fires only on success, so a broken step showed up as
 // "fewer signups" with no reason attached — which is exactly how a signup bug
 // stayed invisible for months. Failures get their own event, carrying a short
-// reason code and never any user content.
+// reason code and never any user content. Some reasons are the server's own
+// words, and a sign-up error can quote the address that was typed, so any
+// email address is taken out first.
 function trackFail(step, reason) {
   try {
     track('failure', {
       step: String(step || 'unknown').slice(0, 40),
-      reason: String(reason || 'unknown').slice(0, 80),
+      reason: String(reason || 'unknown').replace(/[^\s"'<>@]+@[^\s"'<>@]+/g, '[email]').slice(0, 80),
     });
   } catch {}
 }
-// Capture UTM params on first visit
+// Capture UTM params on first visit. They are handed to the analytics tools
+// when those start (_loadGA, _phPersonSetOnce): the address is cleaned here,
+// before either could read it.
 (function() {
   const p = new URLSearchParams(location.search);
   const src = p.get('utm_source');
   if (src) {
     const utm = { source: src, medium: p.get('utm_medium') || '', campaign: p.get('utm_campaign') || '' };
     localStorage.setItem('hvi_utm', JSON.stringify(utm));
-    if (typeof gtag === 'function') {
-      gtag('set', 'user_properties', { traffic_source: src, traffic_medium: utm.medium, traffic_campaign: utm.campaign });
-    }
     // Clean URL without reloading
     if (history.replaceState) history.replaceState(null, '', location.pathname);
   }
 })();
+function _storedUtm() {
+  try { const u = JSON.parse(localStorage.getItem('hvi_utm') || 'null'); return u && u.source ? u : null; } catch { return null; }
+}
+
+// Where Arete is running: the iPhone or Android app, the installed web app,
+// or a browser tab.
+function analyticsPlatform() {
+  try {
+    const cap = window.Capacitor;
+    if (cap) {
+      const p = typeof cap.getPlatform === 'function' ? cap.getPlatform() : '';
+      if (p === 'ios' || p === 'android') return p;
+    }
+    if ((window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone) return 'pwa';
+  } catch {}
+  return 'web';
+}
+
+// ── Google Analytics ──
+// The tag used to load from the page head for everyone. It loads here now,
+// and only when analytics is allowed.
+let _gaLoaded = false;
+function _loadGA(midSession) {
+  try {
+    window['ga-disable-' + GA_ID] = false;
+    if (_gaLoaded) return;
+    _gaLoaded = true;
+    // Started part-way through a visit, after a yes: nothing queued before the
+    // yes is sent.
+    if (midSession) window.dataLayer = [];
+    if (typeof gtag !== 'function') return;
+    gtag('js', new Date());
+    gtag('config', GA_ID);
+    const utm = _storedUtm();
+    if (utm) gtag('set', 'user_properties', { traffic_source: utm.source, traffic_medium: utm.medium, traffic_campaign: utm.campaign });
+    _gaIdentify();
+    const s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+    (document.head || document.documentElement).appendChild(s);
+  } catch {}
+}
+
+function _gaIdentify() {
+  // ── Identify user in GA4 ───────────────────────────────────────────────
+  // user_id only — the Supabase UUID, which is pseudonymous and is the
+  // identifier GA4 is designed to take.
+  //
+  // Email and name used to be sent here as user properties. Google's terms
+  // prohibit uploading data that can personally identify someone, naming email
+  // addresses specifically, and the penalty is losing the property along with
+  // its data. It was never disclosed in the privacy policy either, and Arete
+  // has users in Germany, Switzerland and France. Nothing this feeds needed a
+  // name or an address to work.
+  const _sid = getSession();
+  if (_sid?.user?.id && typeof gtag === 'function') {
+    gtag('config', GA_ID, { user_id: _sid.user.id });
+    gtag('set', 'user_properties', {
+      sign_up_date: _sid.user.created_at?.slice(0, 10) || undefined,
+      last_active: new Date().toISOString().slice(0, 10)
+    });
+  }
+}
+
+// GA's own cookies, cleared when analytics is turned off.
+function _clearGACookies() {
+  try {
+    const host = location.hostname || '';
+    const top = host.split('.').slice(-2).join('.');
+    const domains = ['', host, '.' + host, '.' + top];
+    String(document.cookie || '').split(';').map(c => c.trim().split('=')[0]).filter(n => /^_ga/.test(n)).forEach(n => {
+      domains.forEach(d => { document.cookie = n + '=; Max-Age=0; path=/' + (d ? '; domain=' + d : ''); });
+    });
+  } catch {}
+}
+
+// ── PostHog ──
+// Loaded by the official snippet in index.html, which only defines a queue.
+// Nothing is fetched or stored until init runs, and init only runs here, once
+// analytics is allowed.
+//
+// Only what the questions need is switched on: events the app sends itself.
+// No autocapture, recordings, heatmaps, surveys, dead clicks, exception
+// capture or performance timing, no feature flags (so no /flags request and
+// no remote config that could turn any of those on), and no extra scripts.
+function _phConfigured() { return /^phc_[A-Za-z0-9]{10,}$/.test(POSTHOG_KEY); }
+
+function _phConfig() {
+  return {
+    api_host: POSTHOG_HOST,
+    defaults: '2026-08-30',
+    // Guests get a profile as well as accounts: most people use Arete without
+    // one, and their platform and path matter as much.
+    person_profiles: 'always',
+    // localStorage only: a cookie under the iPhone app's capacitor:// address
+    // is not dependable, and nothing here needs one.
+    persistence: 'localStorage',
+    autocapture: false,
+    capture_pageview: false,          // sent by go(), only when the screen changes
+    capture_pageleave: false,
+    capture_heatmaps: false,
+    capture_dead_clicks: false,
+    capture_exceptions: false,
+    capture_performance: false,
+    rageclick: false,
+    disable_session_recording: true,
+    disable_surveys: true,
+    disable_product_tours: true,
+    disable_conversations: true,
+    disable_web_experiments: true,
+    disable_external_dependency_loading: true,
+    disable_scroll_properties: true,
+    advanced_disable_flags: true,
+    mask_all_text: true,
+    mask_all_element_attributes: true,
+    mask_personal_data_properties: true,
+    // Opting out also stops PostHog storing anything on the device.
+    opt_out_persistence_by_default: true,
+    before_send: _phBeforeSend,
+    loaded: _phLoaded,
+  };
+}
+
+let _phStarted = false, _phLoadFailed = false;
+const _phAssetUrl = () => POSTHOG_HOST.replace('.i.posthog.com', '-assets.i.posthog.com') + '/static/array.js';
+
+function _startPostHog() {
+  if (_phStarted || !_phConfigured()) return false;
+  const stub = window.posthog;
+  // The snippet can be missing (an older cached page) or blocked; the app
+  // carries on either way.
+  if (!stub || typeof stub.init !== 'function') return false;
+  try {
+    stub.init(POSTHOG_KEY, _phConfig());
+    _phStarted = true;
+  } catch { return false; }
+  // A launch without a connection cannot fetch the library. The snippet keeps
+  // events in its queue meanwhile, and the library is fetched again once the
+  // connection is back.
+  try {
+    const el = document.querySelector && document.querySelector('script[src="' + _phAssetUrl() + '"]');
+    if (el && el.addEventListener) el.addEventListener('error', () => { _phLoadFailed = true; });
+    window.addEventListener('online', _phRetryLoad);
+  } catch {}
+  return true;
+}
+
+function _phRetryLoad() {
+  try {
+    if (!_phStarted || !_phLoadFailed || !analyticsAllowed()) return;
+    const ph = window.posthog;
+    if (!ph || ph.__loaded) return;
+    _phLoadFailed = false;
+    const s = document.createElement('script');
+    s.async = true;
+    s.crossOrigin = 'anonymous';
+    s.src = _phAssetUrl();
+    s.addEventListener('error', () => { _phLoadFailed = true; });
+    (document.head || document.documentElement).appendChild(s);
+  } catch {}
+}
+
+// The library itself, once it has loaded; null before that or when off.
+function _phReady() {
+  const ph = window.posthog;
+  return (_phStarted && ph && ph.__loaded) ? ph : null;
+}
+
+function _phLoaded(ph) {
+  try {
+    if (!analyticsAllowed()) { ph.opt_out_capturing(); return; }
+    // Turned off once and back on since: PostHog keeps its own record of the no.
+    if (typeof ph.has_opted_out_capturing === 'function' && ph.has_opted_out_capturing()) ph.opt_in_capturing();
+    _phReconcile(ph);
+  } catch {}
+}
+
+function _authStatus() { return getCurrentUserId() ? 'authenticated' : 'guest'; }
+
+// Sent with every event, so any chart can be split by them.
+function _phContext() {
+  return { platform: analyticsPlatform(), app_version: APP_VERSION, auth_status: _authStatus() };
+}
+
+// Properties of the person, kept current.
+function _phPersonSet() {
+  const set = _phContext();
+  try {
+    const path = (JSON.parse(localStorage.getItem('hvi_meta') || '{}') || {}).path;
+    if (path) set.onboarding_path = String(path).slice(0, 20);
+  } catch {}
+  return set;
+}
+
+// Properties of the person that never change once set.
+function _phPersonSetOnce() {
+  const once = {};
+  const created = getSession()?.user?.created_at;
+  if (created) once.signup_date = String(created).slice(0, 10);
+  const utm = _storedUtm();
+  if (utm) {
+    once.initial_traffic_source = String(utm.source).slice(0, 64);
+    if (utm.medium) once.initial_traffic_medium = String(utm.medium).slice(0, 64);
+    if (utm.campaign) once.initial_traffic_campaign = String(utm.campaign).slice(0, 64);
+  }
+  return once;
+}
+
+// Tell PostHog who this is, and only when that has changed.
+//   A guest keeps the anonymous ID PostHog gave this device.
+//   Signing in identifies them by their Supabase account ID (never an email
+//   or a name), which joins what they did as a guest to their account.
+//   Signing out resets, so the next person on the device starts fresh.
+// The account last identified is remembered (PH_UID_KEY) so a sign-out that
+// happened while PostHog was not loaded, or by any other route (an expired
+// session, a deleted account), is caught on the next launch.
+function _phReconcile(ph) {
+  ph = ph || _phReady();
+  if (!ph) return;
+  try {
+    const uid = getCurrentUserId() || '';
+    let known = '';
+    try { known = localStorage.getItem(PH_UID_KEY) || ''; } catch {}
+    if (known && known !== uid) {
+      ph.reset();
+      try { localStorage.removeItem(PH_UID_KEY); } catch {}
+    }
+    if (uid) {
+      if (ph.get_distinct_id() !== uid) ph.identify(uid, _phPersonSet(), _phPersonSetOnce());
+      try { localStorage.setItem(PH_UID_KEY, uid); } catch {}
+    }
+  } catch {}
+}
+
+// After a successful sign-in.
+function analyticsIdentify() { _phReconcile(); }
+
+// On sign-out. The logout event is already queued under the old identity.
+function analyticsLogout() {
+  const ph = _phReady();
+  if (!ph) return;   // not loaded: the next launch resets (_phReconcile)
+  try {
+    ph.reset();
+    localStorage.removeItem(PH_UID_KEY);
+  } catch {}
+}
+
+// Which events PostHog gets, and which properties each may carry. Anything
+// not listed stays with Google Analytics only, and a property not listed is
+// dropped: no habit names, meal contents, workout details, coach messages,
+// health figures, email addresses or names.
+// `now` sends at once, for events followed straight away by a reload.
+const PH_EVENTS = {
+  app_opened: ['resume'],
+  page_view: { as: '$pageview', props: ['screen'] },
+  sign_up: ['method'],
+  login: ['method'],
+  logout: { props: [], now: true },
+  password_reset_requested: [],
+  password_reset: ['via'],
+  account_deleted: { props: [], now: true },
+  onboarding_started: [],
+  onboarding_complete: ['path', 'program'],
+  onboarding_skipped: ['step'],
+  habit_created: ['pillar', 'schedule'],
+  habit_ready_added: ['habit_id', 'pillar'],
+  habit_complete: ['source', 'kind', 'habit_id', 'pillar', 'streak'],
+  workout_complete: ['program'],
+  meal_logged: ['via', 'items'],
+  food_photo_scan: ['items_detected'],
+  water_logged: [],
+  sleep_logged: ['via'],
+  mood_logged: [],
+  journal_save: [],
+  log_anything_open: [],
+  log_anything_logged: ['count', 'types'],
+  coach_message: [],
+  coach_action: ['applied', 'n'],
+  ai_consent: ['allowed'],
+  ai_program_request: [],
+  ai_program_built: [],
+  ai_program_used: [],
+  goal_added: [],
+  week_review_open: [],
+  patterns_open: [],
+  readiness_breakdown_open: [],
+  level_up: ['level'],
+  achievement_unlock: ['achievement_id'],
+  challenge_created: ['template'],
+  challenge_accepted: ['template'],
+  leaderboard_group_created: [],
+  leaderboard_group_joined: [],
+  share_invite: ['method'],
+  share_recap: ['method'],
+  character_card_shared: [],
+  app_installed: [],
+  install_choice: ['outcome'],
+  paywall_shown: ['feature'],
+  checkout_start: ['billing'],
+  upgrade_complete: [],
+  feedback_click: [],
+  failure: ['step', 'reason'],
+};
+
+function _phValue(key, v) {
+  if (key === 'program') {
+    // A custom or AI-built program has its own id; only the built-in ones are
+    // worth telling apart.
+    const known = typeof WORKOUT_PROGRAMS !== 'undefined' && Array.isArray(WORKOUT_PROGRAMS)
+      && WORKOUT_PROGRAMS.some(p => p && p.id === v);
+    return v == null ? undefined : (known ? v : 'custom');
+  }
+  if (typeof v === 'number') return isFinite(v) ? v : undefined;
+  if (typeof v === 'boolean') return v;
+  if (typeof v === 'string') return v.slice(0, 64);
+  return undefined;
+}
+
+function _phCapture(event, params) {
+  if (!_phStarted) return;
+  const spec = PH_EVENTS[event];
+  if (!spec) return;
+  const ph = window.posthog;
+  if (!ph || typeof ph.capture !== 'function') return;
+  const keys = Array.isArray(spec) ? spec : spec.props;
+  const props = _phContext();
+  keys.forEach(k => { const v = _phValue(k, params[k]); if (v !== undefined) props[k] = v; });
+  const opts = {};
+  // The person's properties ride on the launch event rather than a separate
+  // call, so keeping them current costs no extra event.
+  if (event === 'app_opened') { opts.$set = _phPersonSet(); opts.$set_once = _phPersonSetOnce(); }
+  if (event === 'onboarding_complete' && props.path) opts.$set = { onboarding_path: props.path };
+  if (spec.now) { opts.send_instantly = true; opts.transport = 'sendBeacon'; }
+  ph.capture(spec.as || event, props, opts);
+}
+
+// Addresses go out screen-deep and no further. A password-reset link carries
+// the sign-in tokens in the address, an invite link carries the group code,
+// and an outside referrer can carry a search: none of that leaves the device.
+function _phCleanUrl(u) {
+  if (typeof u !== 'string') return u;
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(u)) return u.split(/[?#]/)[0];   // '$direct' and the like
+  try {
+    const x = new URL(u);
+    const base = x.protocol + '//' + x.host;
+    let here = '';
+    try { here = location.host || new URL(location.href).host; } catch {}
+    const own = x.host === here || x.protocol === 'capacitor:' || x.hostname === 'localhost';
+    if (!own) return base;
+    return base + x.pathname + (/^#[A-Za-z]{1,40}$/.test(x.hash) ? x.hash : '');
+  } catch { return ''; }
+}
+
+function _phBeforeSend(ev) {
+  try {
+    if (!ev) return ev;
+    // Turned off while this was waiting to go: it does not go.
+    if (!analyticsAllowed()) return null;
+    const p = ev.properties || {};
+    [p, p.$set, p.$set_once, ev.$set, ev.$set_once].forEach(o => {
+      if (!o || typeof o !== 'object') return;
+      Object.keys(o).forEach(k => { if (/url|referrer/i.test(k) && typeof o[k] === 'string') o[k] = _phCleanUrl(o[k]); });
+    });
+    return ev;
+  } catch { return ev; }
+}
+
+// ── Starting, and the switch ──
+let _analyticsStarted = false, _resumeWatched = false, _hiddenAt = 0;
+function analyticsStart(midSession) {
+  if (_analyticsStarted || !analyticsAllowed()) return false;
+  _analyticsStarted = true;
+  _loadGA(!!midSession);
+  _startPostHog();
+  _watchResume();
+  track('app_opened', {});
+  return true;
+}
+
+// The installed app can sit in the background for days, so coming back to it
+// after half an hour away counts as opening it again.
+function _watchResume() {
+  if (_resumeWatched) return;
+  _resumeWatched = true;
+  try {
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') { _hiddenAt = Date.now(); return; }
+      if (_hiddenAt && Date.now() - _hiddenAt >= 30 * 60 * 1000) track('app_opened', { resume: true });
+      _hiddenAt = 0;
+    });
+  } catch {}
+}
+
+function setAnalyticsChoice(on) {
+  try { localStorage.setItem(ANALYTICS_KEY, on ? 'granted' : 'denied'); } catch {}
+  if (on) {
+    const ph = _phReady();
+    if (ph) {
+      try { if (ph.has_opted_out_capturing()) ph.opt_in_capturing(); } catch {}
+      _phReconcile(ph);
+    }
+    if (_analyticsStarted) { window['ga-disable-' + GA_ID] = false; if (!_gaLoaded) _loadGA(true); }
+    else analyticsStart(true);
+  } else {
+    _analyticsStop();
+  }
+}
+
+function _analyticsStop() {
+  try { window['ga-disable-' + GA_ID] = true; } catch {}
+  const ph = _phReady();
+  try { if (ph) ph.opt_out_capturing(); } catch {}
+  // Nothing of PostHog's is kept on the device once it is off: its identifier
+  // goes, and with it the record of which account it was told about.
+  try {
+    const drop = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.indexOf('ph_') === 0 && k.indexOf('_posthog') > -1) drop.push(k);
+    }
+    drop.concat([PH_UID_KEY]).forEach(k => localStorage.removeItem(k));
+  } catch {}
+  _clearGACookies();
+}
+
+// Home asks once, where it has to. Both answers are one tap and look alike.
+function analyticsConsentCardHTML() {
+  if (!analyticsNeedsAnswer()) return '';
+  return `<div class="ci-card an-card ani" role="region" aria-label="Usage statistics">
+    <div class="ci-head"><span class="ci-label">Usage stats</span></div>
+    <div class="ci-text ci-teaser">Help improve Arete by sharing which features you use. Never what you log, write or ask the coach.
+      <button class="an-link" onclick="window.open('https://get-arete.com/privacy.html#analytics','_blank')">How it works</button></div>
+    <div class="an-actions">
+      <button class="an-btn" onclick="answerAnalytics(false)">No thanks</button>
+      <button class="an-btn" onclick="answerAnalytics(true)">Allow</button>
+    </div>
+  </div>`;
+}
+
+function answerAnalytics(yes) {
+  setAnalyticsChoice(!!yes);
+  try { document.querySelectorAll('.an-card').forEach(el => el.remove()); } catch {}
+  if (typeof showToast === 'function') showToast(yes ? 'Usage stats on. Change it any time in Profile.' : 'Usage stats off. Change it any time in Profile.');
+}
 
 // ── STATE ─────────────────────────────────────────────────────────────────
 let habits, log, journal, meta;
@@ -345,6 +848,8 @@ async function claimFounderAccess() {
 }
 
 async function authSignOut() {
+  // Sent while the account is still the one signed in.
+  track('logout');
   const token = getAccessToken();
   // Push data to cloud BEFORE signing out so nothing is lost
   if (token) {
@@ -358,6 +863,8 @@ async function authSignOut() {
   }
   localStorage.removeItem('hvi_session');
   SYNC_KEYS.concat(DEVICE_KEYS).forEach(k => localStorage.removeItem(k));
+  // The next person on this device gets a fresh analytics identity.
+  analyticsLogout();
   location.reload();
 }
 
@@ -952,6 +1459,8 @@ async function submitAuth() {
 
   btn.disabled = true; btn.textContent = _authMode === 'signin' ? 'SIGNING IN...' : 'CREATING ACCOUNT...';
   errEl.textContent = '';
+  // A new account signs in straight after; that is the sign-up, not a login.
+  let justSignedUp = false;
 
   if (_authMode === 'signup') {
     const firstName = document.getElementById('auth-name')?.value?.trim();
@@ -974,6 +1483,7 @@ async function submitAuth() {
     }
     localStorage.setItem('hvi_user_name', firstName);
     track('sign_up', { method: 'email' });
+    justSignedUp = true;
     // Fire welcome webhook (server-side via Worker; non-blocking, never breaks signup)
     sendWelcomeWebhook(firstName, email);
     // Auto sign in after signup
@@ -998,8 +1508,10 @@ async function submitAuth() {
     btn.disabled = false; btn.textContent = 'SIGN IN'; return;
   }
 
-  // Signed in — remove overlay and boot app normally
-  track('login', { method: 'email' });
+  // Signed in — remove overlay and boot app normally. Analytics learns the
+  // account first, so what the guest did on this device joins it.
+  analyticsIdentify();
+  if (!justSignedUp) track('login', { method: 'email' });
   document.getElementById('auth-overlay')?.remove();
   init();
 }
@@ -2072,24 +2584,10 @@ async function init() {
   routineLog = LS.get('hvi_routine_log', {});
   _migrateRoutineKeys();
 
-  // ── Identify user in GA4 ───────────────────────────────────────────────
-  // user_id only — the Supabase UUID, which is pseudonymous and is the
-  // identifier GA4 is designed to take.
-  //
-  // Email and name used to be sent here as user properties. Google's terms
-  // prohibit uploading data that can personally identify someone, naming email
-  // addresses specifically, and the penalty is losing the property along with
-  // its data. It was never disclosed in the privacy policy either, and Arete
-  // has users in Germany, Switzerland and France. Nothing this feeds needed a
-  // name or an address to work.
-  const _sid = getSession();
-  if (_sid?.user?.id && typeof gtag === 'function') {
-    gtag('config', 'G-4NQYVJR5S2', { user_id: _sid.user.id });
-    gtag('set', 'user_properties', {
-      sign_up_date: _sid.user.created_at?.slice(0, 10) || undefined,
-      last_active: new Date().toISOString().slice(0, 10)
-    });
-  }
+  // The account, if there is one, reaches the analytics tools here: GA4 by
+  // its user_id (_gaIdentify) and PostHog by identify (_phReconcile). Both
+  // only when analytics is allowed, and never an email or a name.
+  if (analyticsAllowed()) { try { _gaIdentify(); } catch {} analyticsIdentify(); }
 
   applyTheme();
   injectAdaptiveStyles();
@@ -2770,12 +3268,15 @@ function go(view, params = {}, pushState = true) {
   curView = view;
   curPillar = params.pillar || null;
   curRecipeId = params.recipeId || null;
-  track('page_view', { page_title: view });
 
   if (pushState) {
     const qs = Object.keys(params).length ? '?' + new URLSearchParams(params).toString() : '';
     history.pushState({ view, params }, '', '#' + (view === 'home' ? '' : view));
   }
+  // A page view is a move to another screen. go() also redraws the screen
+  // already open (after a sync, an automatic tick, a logged glass of water),
+  // and every one of those used to count as a visit.
+  if (!(_viewShown && prevView === view && !pushState)) track('page_view', { page_title: view, screen: view });
 
   const navKey = NAV_PARENT[view] || view;
   document.querySelectorAll('.ni').forEach(el => el.classList.toggle('active', el.dataset.n === navKey));
@@ -2944,7 +3445,7 @@ function addReadyHabit(id) {
   LS.set('hvi_habits', habits);
   LS.set('hvi_log', log);
   LS.set('hvi_habit_links', links);
-  if (typeof track === 'function') track('habit_ready_added', { habit_id: id });
+  if (typeof track === 'function') track('habit_ready_added', { habit_id: id, pillar: (PILLARS.find(p => p.cats.includes(lib.category)) || {}).id });
   showToast('Added: ' + lib.name);
   // If today already meets what the habit is linked to, it should not sit
   // there unticked.
@@ -3097,7 +3598,16 @@ function tapHabit(id, suffix) {
   const pillarId = habit ? PILLARS.find(p => p.cats.includes(habit.category))?.id : null;
   if (e.completedToday) {
     playSound('check');
-    track('habit_complete', { habit_name: habit?.name, streak: e.streak || 0 });
+    // Never the habit's name: people write their own, and some are personal.
+    // A ready-made habit is named by its library id instead. The source says
+    // whether a person ticked it, a link did (food, water, sleep, a workout)
+    // or a routine step did.
+    const ready = typeof HABIT_LIBRARY !== 'undefined' && HABIT_LIBRARY.some(x => x.id === id);
+    const hc = { source: suffix === '__auto' ? 'auto' : suffix === 'r' ? 'routine' : 'hand',
+      kind: ready ? 'ready' : 'custom', streak: e.streak || 0 };
+    if (ready) hc.habit_id = id;
+    if (pillarId) hc.pillar = pillarId;
+    track('habit_complete', hc);
     const s = e.streak || 0;
     const xp = _tickXP(s);
     awardXP(xp.base, pillarId || undefined);
@@ -3434,6 +3944,7 @@ function renderHome() {
     </div>
 
     ${typeof todayBriefingHTML === 'function' ? todayBriefingHTML() : ''}
+    ${typeof analyticsConsentCardHTML === 'function' ? analyticsConsentCardHTML() : ''}
     ${typeof coachInsightCardHTML === 'function' ? coachInsightCardHTML() : ''}
     ${typeof patternCardHTML === 'function' ? patternCardHTML() : ''}
 
@@ -3982,6 +4493,7 @@ function saveHabit() {
   log[id] = { streak: 0, lastCompletedDate: '', completedToday: false };
   LS.set('hvi_habits', habits);
   LS.set('hvi_log', log);
+  track('habit_created', { pillar: (PILLARS.find(p => p.cats.includes(h.category)) || {}).id, schedule: h.schedule || 'daily' });
   go('habits');
 }
 
@@ -4349,7 +4861,7 @@ function reportError(kind, msg, extra) {
       localStorage.setItem('hvi_error_log', JSON.stringify(log.slice(0, 20)));
     } catch {}
 
-    if (typeof gtag === 'function') {
+    if (typeof gtag === 'function' && analyticsAllowed()) {
       // GA4 truncates event parameter values at 100 characters, so 480 was
       // never arriving intact. Put the fixed-width facts first — kind, view,
       // file, line, version — so a long message loses its own tail instead of
@@ -4495,6 +5007,8 @@ function recoveryBadgeHTML() {
 
 // ── START ─────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  // Before init, so its events (the first page view, onboarding) are counted.
+  analyticsStart();
   init();
   initSwipeNav();
   initPullToRefresh();

@@ -3,7 +3,8 @@ const { createSandbox, run, createReporter } = require('./harness');
 
 function sb(opts) {
   opts = opts || {};
-  const s = createSandbox({ files: ['data.js','app.js'], store: opts.store, capacitor: opts.capacitor });
+  // Analytics allowed, so the result does not depend on the machine's time zone.
+  const s = createSandbox({ files: ['data.js','app.js'], store: Object.assign({ hvi_analytics: 'granted' }, opts.store), capacitor: opts.capacitor });
   // Capture gtag calls
   run(s, `_ga=[]; gtag=function(){ _ga.push(Array.prototype.slice.call(arguments)); };
           settings=${JSON.stringify(opts.settings || {})}; curView='home';`);
@@ -248,7 +249,7 @@ module.exports = async function () {
     const s = createSandbox({
       files: ['data.js', 'app.js', 'connect.js', 'today.js', 'premium.js', 'workout.js',
               'diet.js', 'integrations.js', 'profile.js'],
-      store: { hvi_onboarded: 'true' },
+      store: { hvi_onboarded: 'true', hvi_analytics: 'granted' },
     });
     run(s, `
       _ga=[]; gtag=function(){ _ga.push(Array.prototype.slice.call(arguments)); };

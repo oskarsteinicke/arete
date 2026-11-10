@@ -6,7 +6,8 @@ const T = new Date().toLocaleDateString('en-CA');
 const dk = n => { const d = new Date(); d.setDate(d.getDate() - n); return d.toLocaleDateString('en-CA'); };
 
 function sb(store) {
-  const s = createSandbox({ files: FILES, store });
+  // Analytics allowed, so the result does not depend on the machine's time zone.
+  const s = createSandbox({ files: FILES, store: Object.assign({ hvi_analytics: 'granted' }, store) });
   run(s, `
     settings={}; curView='habits'; go=function(){};
     // Deliberately do NOT stub track(): the real one must reach gtag, or this
