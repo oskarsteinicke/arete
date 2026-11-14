@@ -88,8 +88,11 @@ function trackFail(step, reason) {
   if (src) {
     const utm = { source: src, medium: p.get('utm_medium') || '', campaign: p.get('utm_campaign') || '' };
     localStorage.setItem('hvi_utm', JSON.stringify(utm));
-    // Clean URL without reloading
-    if (history.replaceState) history.replaceState(null, '', location.pathname);
+    // Clean the tags off the address without reloading, and only the tags: a
+    // challenge or invite on the same link is still waiting to be read.
+    ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'].forEach(k => p.delete(k));
+    const rest = p.toString();
+    if (history.replaceState) history.replaceState(null, '', location.pathname + (rest ? '?' + rest : '') + location.hash);
   }
 })();
 function _storedUtm() {

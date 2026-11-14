@@ -6,7 +6,7 @@
   <!-- "motion" turns the animations on. Without JavaScript, or with reduced
        motion, the page is simply in its finished state. -->
   <script>document.documentElement.className = 'js' + ((window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) || !('IntersectionObserver' in window) ? '' : ' motion');</script>
-  <title>Arete</title>
+  <title>Arete | Free Habit Tracker, Workout Log &amp; Nutrition App</title>
   <meta name="description" content="Habits, nutrition, training, journaling and an AI coach in one free app.">
   <meta name="theme-color" content="#0B0B0B">
   <link rel="canonical" href="https://get-arete.com">
@@ -734,5 +734,7 @@ window.addEventListener('beforeinstallprompt', function (e) {
 window.addEventListener('appinstalled', function () { _landingInstallPrompt = null; var b = document.getElementById('install-bar'); if (b) b.remove(); });
 </script>
 
+<!-- Carries where the visitor came from onto the links into the app. -->
+<script src="/source.js"></script>
 </body>
 </html>

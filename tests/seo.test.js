@@ -56,9 +56,12 @@ module.exports = function () {
       const src = read(f);
       const title = (src.match(/<title>([^<]*)<\/title>/) || [])[1] || '';
       const desc = (src.match(/<meta name="description" content="([^"]*)"/) || [])[1] || '';
-      // The landing page's title is the brand alone, by the owner's choice.
-      const brandOnly = f === 'landing.html' && title === 'Arete';
-      r.check(`${f} has a title`, brandOnly || (title.length > 10 && title.length < 70), `(${title.length} chars)`);
+      r.check(`${f} has a title`, title.length > 10 && title.length < 70, `(${title.length} chars)`);
+      // The home page's title was the brand alone until 14 November 2026, when
+      // the owner chose to have it say what the app is, so a search has
+      // something to match. The brand still comes first.
+      if (f === 'landing.html') r.check('the home page title leads with the brand and says what it is',
+        /^Arete \| /.test(title) && /habit tracker/i.test(title) && /workout/i.test(title) && /nutrition/i.test(title), `(${title})`);
       r.check(`${f} has a description`, desc.length > 50, `(${desc.length} chars)`);
     }
   }

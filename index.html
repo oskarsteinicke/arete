@@ -22,8 +22,13 @@
     // Leaderboard invite link (?join=CODE): remember it and skip the landing page
     (function(){
       try {
-        var j = new URLSearchParams(location.search).get('join');
+        var p = new URLSearchParams(location.search);
+        var j = p.get('join');
         if (j) { localStorage.setItem('hvi_pending_join', j.toUpperCase()); localStorage.setItem('hvi_from_landing','1'); }
+        // A friend's challenge (?challenge=...) is an invitation too. It used to
+        // be sent to the landing page, which dropped the challenge: the one
+        // person the link was for never received it.
+        if (p.get('challenge')) localStorage.setItem('hvi_from_landing','1');
       } catch(e){}
     })();
     // A sign-in started in the iPhone or Android app comes back here, in a
@@ -36,7 +41,20 @@
     // New visitors see landing page; existing users go straight to app.
     // Skipped in the native (Capacitor) app, which boots straight into the app.
     else if (!_authLink && !window.Capacitor &&!localStorage.getItem('hvi_habits') && !localStorage.getItem('hvi_onboarded') && !localStorage.getItem('hvi_from_landing') && !navigator.standalone && !window.matchMedia('(display-mode: standalone)').matches) {
-      window.location.replace('/landing.html');
+      // Keep what says where they came from: the campaign tags on the link,
+      // or failing that the site that sent them (as ?ref=, since a redirect
+      // loses the browser's own record of it). The landing page hands it back
+      // on its Start links (source.js), and the app records it. Without this
+      // every new visitor looked like they came from nowhere.
+      var _src = '';
+      try {
+        if (/[?&]utm_source=/.test(location.search)) _src = location.search;
+        else {
+          var _ref = document.referrer ? new URL(document.referrer).hostname : '';
+          if (_ref && _ref !== location.hostname) _src = '?ref=' + encodeURIComponent(_ref);
+        }
+      } catch (e) {}
+      window.location.replace('/landing.html' + _src);
     }
   </script>
   <link rel="manifest" href="manifest.json">
@@ -57,8 +75,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="tokens.css?v=242">
-  <link rel="stylesheet" href="style.css?v=242">
+  <link rel="stylesheet" href="tokens.css?v=243">
+  <link rel="stylesheet" href="style.css?v=243">
 </head>
 <body>
 <!-- The loading screen: the Arete mark on brand black, as the iPhone app's
@@ -162,28 +180,28 @@
     </button>
   </nav>
 </div>
-<script src="data.js?v=242"></script>
-<script src="app.js?v=242"></script>
-<script src="connect.js?v=242"></script>
-<script src="patterns.js?v=242"></script>
-<script src="today.js?v=242"></script>
-<script src="premium.js?v=242"></script>
-<script src="workout.js?v=242"></script>
-<script src="diet.js?v=242"></script>
-<script src="logany.js?v=242"></script>
+<script src="data.js?v=243"></script>
+<script src="app.js?v=243"></script>
+<script src="connect.js?v=243"></script>
+<script src="patterns.js?v=243"></script>
+<script src="today.js?v=243"></script>
+<script src="premium.js?v=243"></script>
+<script src="workout.js?v=243"></script>
+<script src="diet.js?v=243"></script>
+<script src="logany.js?v=243"></script>
 <script>
 // Stub coach functions until lazy-loaded
 if(typeof openCoach==='undefined'){window.openCoach=function(){};window.closeCoach=function(){};window.sendCoachMsg=function(){};window.clearCoachHistory=function(){}}
 // Lazy-load coach + social after first paint for faster startup
 (window.requestIdleCallback||function(cb){setTimeout(cb,800)})(function(){
-  var s1=document.createElement('script');s1.src='coach.js?v=242';document.body.appendChild(s1);
-  var s2=document.createElement('script');s2.src='social.js?v=242';document.body.appendChild(s2);
-  var s3=document.createElement('script');s3.src='bodymap.js?v=242';document.body.appendChild(s3);
+  var s1=document.createElement('script');s1.src='coach.js?v=243';document.body.appendChild(s1);
+  var s2=document.createElement('script');s2.src='social.js?v=243';document.body.appendChild(s2);
+  var s3=document.createElement('script');s3.src='bodymap.js?v=243';document.body.appendChild(s3);
 });
 </script>
-<script src="integrations.js?v=242"></script>
-<script src="profile.js?v=242"></script>
-<script src="review.js?v=242"></script>
+<script src="integrations.js?v=243"></script>
+<script src="profile.js?v=243"></script>
+<script src="review.js?v=243"></script>
 <script>
   // No service worker inside the native (Capacitor) app — assets are bundled locally
   if ('serviceWorker' in navigator && !window.Capacitor) {

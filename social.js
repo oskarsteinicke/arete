@@ -875,14 +875,30 @@ function createChallenge(templateId) {
   renderChallenges();
 }
 
+// A challenge link carries the challenge itself, as base64 in the address.
+// Two things used to lose it, both to do with the challenger's name. A name
+// with an accent (Zoë, André, Søren) can put a "+" in the base64, which
+// arrives as a space, and the link silently did nothing. And a name outside
+// Latin-1 made btoa throw, so no link was made at all.
+function _encodeChallenge(obj) {
+  let bin = '';
+  new TextEncoder().encode(JSON.stringify(obj)).forEach(b => { bin += String.fromCharCode(b); });
+  return encodeURIComponent(btoa(bin));
+}
+function _decodeChallenge(payload) {
+  const raw = atob(String(payload).replace(/ /g, '+'));     // links already shared the old way
+  try { return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(Uint8Array.from(raw, c => c.charCodeAt(0)))); }
+  catch { return JSON.parse(raw); }                          // an older link, written as Latin-1
+}
+
 function _shareChallengeLink(challenge) {
-  const payload = btoa(JSON.stringify({
+  const payload = _encodeChallenge({
     t: challenge.templateId,
     s: challenge.startDate,
     e: challenge.endDate,
     n: challenge.createdBy,
-  }));
-  const url = `https://get-arete.com/?challenge=${payload}`;
+  });
+  const url = `https://get-arete.com/?challenge=${payload}&utm_source=share&utm_medium=challenge`;
   const text = `${challenge.createdBy} challenged you: ${challenge.icon} ${challenge.name}. ${challenge.desc}. Can you keep up?`;
 
   if (navigator.share) {
@@ -902,7 +918,7 @@ function _copyChallengeLink(url) {
 
 function acceptChallenge(payload) {
   try {
-    const data = JSON.parse(atob(payload));
+    const data = _decodeChallenge(payload);
     const tmpl = CHALLENGE_TEMPLATES.find(t => t.id === data.t);
     if (!tmpl) return;
 
@@ -1511,7 +1527,7 @@ function _isStale(updatedAt) {
 }
 
 function _shareGroupCode(code, name) {
-  const url = `https://get-arete.com/?join=${code}`;
+  const url = `https://get-arete.com/?join=${code}&utm_source=share&utm_medium=group`;
   const text = `Join my Arete group "${name}". Tap to join and let's compete:\n${url}`;
   const done = () => { if (typeof _showToast === 'function') _showToast('Invite link copied!'); };
   if (navigator.share) {
