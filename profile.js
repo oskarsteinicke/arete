@@ -153,15 +153,64 @@ function checkDailyQuests() {
     const first = newlyDone[0];
     showXPToast(`+${first.xp} XP · Quest done!`);
     checkAchievements();
-    // Refresh quest UI if on home
+    _refreshQuestUI();
+  }
+}
+
+// The quest list on home, brought up to date where it stands.
+function _refreshQuestUI() {
+  try {
     const qEl = document.getElementById('quest-section');
-    if (qEl) {
-      const _qd2 = new Set((gamification.questsCompleted || {})[today()] || []);
-      const _qs = getDailyQuests();
-      qEl.innerHTML = _qs.map(q => questRowHTML(q, _qd2.has(q.id))).join('');
-      const _qc = document.getElementById('quest-count');
-      if (_qc) _qc.textContent = `${_qs.filter(q => _qd2.has(q.id)).length} of ${_qs.length}`;
+    if (!qEl) return;
+    const done = new Set((gamification.questsCompleted || {})[today()] || []);
+    const qs = getDailyQuests();
+    qEl.innerHTML = qs.map(q => questRowHTML(q, done.has(q.id))).join('');
+    const qc = document.getElementById('quest-count');
+    if (qc) qc.textContent = `${qs.filter(q => done.has(q.id)).length} of ${qs.length}`;
+  } catch {}
+}
+
+// Undoing something takes back the quest it finished. A quest pays the moment
+// its condition is met, and that used to be final: log a meal through Log
+// anything, collect "Stay within calorie goal", tap Undo, and the meal was
+// gone but the 40 XP stayed. Ticking three habits and unticking one kept
+// "Complete 3 or more habits" the same way.
+//
+// So whatever takes something back (an undo, a delete, an untick) asks this
+// to look again at today's finished quests. One that no longer holds is
+// unfinished and its XP returned; doing the thing again finishes it again, so
+// nothing can be collected twice. Adding things never calls this, so going
+// past a goal later in the day does not cost a quest already earned.
+function takeBackLapsedQuests() {
+  try {
+    if (!gamification || !gamification.questsCompleted) return 0;
+    const t = today();
+    const list = gamification.questsCompleted[t];
+    if (!Array.isArray(list) || !list.length) return 0;
+    const byId = {};
+    QUEST_POOL.forEach(q => { byId[q.id] = q; });
+    getDailyQuests().forEach(q => { byId[q.id] = q; });
+    const keep = [], gone = [];
+    for (const id of list) {
+      const q = byId[id];
+      let holds = true;
+      // A quest this code no longer knows, or whose check fails to run, keeps
+      // what it paid: never take XP back on a guess.
+      try { holds = !q || !!q.check(); } catch { holds = true; }
+      (holds ? keep : gone).push(q || { id, xp: 0 });
     }
+    if (!gone.length) return 0;
+    gamification.questsCompleted[t] = keep.map(q => q.id);
+    gamification.questsTotal = Math.max(0, _ensureQuestTotal() - gone.length);
+    const xp = gone.reduce((n, q) => n + (q.xp || 0), 0);
+    gamification.xp = Math.max(0, (gamification.xp || 0) - xp);
+    LS.set('hvi_gamification', gamification);
+    if (typeof refreshHeroXP === 'function') refreshHeroXP();
+    _refreshQuestUI();
+    return xp;
+  } catch (e) {
+    if (typeof reportError === 'function') reportError('quest-takeback', e);
+    return 0;
   }
 }
 

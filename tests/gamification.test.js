@@ -5,8 +5,8 @@ const FILES = ['data.js','app.js','workout.js','diet.js','connect.js','profile.j
 const T = new Date().toLocaleDateString('en-CA');
 const dk = n => { const d = new Date(); d.setDate(d.getDate() - n); return d.toLocaleDateString('en-CA'); };
 
-function sb(store) {
-  const s = createSandbox({ files: FILES, store });
+function sb(store, extra) {
+  const s = createSandbox({ files: FILES.concat(extra || []), store });
   run(s, `
     settings={units:'metric'}; curView='home';
     track=function(n,p){ _tracked.push([n,p||{}]); };
@@ -310,6 +310,98 @@ module.exports = function () {
     r.check('the level and its title', /Lv\.7 Hoplite/.test(html), '(missing)');
     r.check('the next form is the next title', /Next form: Strategos at Lv\.8/.test(html), `(${(html.match(/char-stage">([^<]*)/) || [])[1]})`);
     r.check('none of the old second set remains', !/Recruit|Initiate|Champion|Philosopher\b/.test(html));
+  }
+
+  // A quest paid out the moment its condition was met, and that was final.
+  // Undoing the meal, unticking the habit or deleting the set left the quest
+  // and its XP behind. The draw is pinned so the result does not depend on
+  // which quests today's date happens to pick.
+  r.section('taking something back takes back the quest it finished');
+  {
+    const pin = ids => `getDailyQuests = function () { return QUEST_POOL.filter(function (q) { return ${JSON.stringify(ids)}.indexOf(q.id) > -1; }); };`;
+    const quest = id => JSON.parse(run(sbQ, `JSON.stringify(QUEST_POOL.filter(function (q) { return q.id === '${id}'; }).map(function (q) { return q.xp; }))`))[0];
+    const sbQ = sb({});
+    const done = s => JSON.parse(run(s, `JSON.stringify((gamification.questsCompleted || {})[today()] || [])`));
+
+    // Habits: three ticked finishes "Complete 3 or more habits".
+    const H = () => sb({
+      hvi_habits: JSON.stringify([{ id: 'h1', name: 'A' }, { id: 'h2', name: 'B' }, { id: 'h3', name: 'C' }]),
+      hvi_log: JSON.stringify({ h1: { streak: 0, completedToday: false }, h2: { streak: 0, completedToday: false }, h3: { streak: 0, completedToday: false } }),
+    });
+    const h = H();
+    run(h, pin(['q_any_3']) + ` tapHabit('h1', ''); tapHabit('h2', ''); tapHabit('h3', '');`);
+    const ticked = run(h, 'gamification.xp'), total = run(h, 'gamification.questsTotal');
+    r.check('three ticks finish the quest', done(h).includes('q_any_3') && ticked === 30 + quest('q_any_3'), `(${ticked} XP)`);
+    run(h, `tapHabit('h3', '')`);
+    r.check('unticking one takes the quest back, XP and all', !done(h).includes('q_any_3') && run(h, 'gamification.xp') === 20, `(${run(h, 'gamification.xp')} XP)`);
+    r.check('and the lifetime count with it', run(h, 'gamification.questsTotal') === total - 1);
+    run(h, `tapHabit('h3', '')`);
+    r.check('ticking it again finishes it again, for exactly the same total', done(h).includes('q_any_3') && run(h, 'gamification.xp') === ticked, `(${run(h, 'gamification.xp')} XP)`);
+    run(h, `tapHabit('h3', ''); tapHabit('h3', ''); tapHabit('h3', ''); tapHabit('h3', '');`);
+    r.check('back and forth collects nothing extra', run(h, 'gamification.xp') === ticked && run(h, 'gamification.questsTotal') === total);
+
+    // Meals: "Stay within calorie goal" and "Log 3 or more meals".
+    const M = () => { const s = sb({}); run(s, pin(['q_calories', 'q_3_meals']) + ` renderDiet = function () {}; confirm = function () { return true; };`); return s; };
+    const food = kcal => JSON.stringify([{ name: 'Food', calories: kcal, protein: 20, carbs: 30, fat: 10 }]);
+    const m = M();
+    const id1 = run(m, `_commitMeal('Breakfast', ${food(500)}, 'test')`);
+    r.check('a meal within the goal finishes the calorie quest', done(m).includes('q_calories'));
+    run(m, `undoMeal(${JSON.stringify(id1)})`);
+    r.check('undoing the meal takes it back', !done(m).includes('q_calories') && run(m, 'gamification.xp') === 0, `(${run(m, 'gamification.xp')} XP)`);
+
+    const m2 = M();
+    const a = run(m2, `_commitMeal('Breakfast', ${food(500)}, 'test')`);
+    run(m2, `_commitMeal('Lunch', ${food(600)}, 'test')`);
+    run(m2, `undoMeal(${JSON.stringify(a)})`);
+    r.check('a quest that still holds is kept', done(m2).includes('q_calories'));
+    run(m2, `_commitMeal('Dinner', ${food(500)}, 'test'); _commitMeal('Snack', ${food(200)}, 'test');`);
+    r.check('three meals finish the meals quest', done(m2).includes('q_3_meals'));
+    const before = run(m2, 'gamification.xp');
+    run(m2, `deleteMeal(-1, (LS.get('hvi_meal_log', {})[today()].meals[0] || {}).id)`);
+    r.check('deleting one of them takes that quest back', !done(m2).includes('q_3_meals') && run(m2, 'gamification.xp') === before - run(m2, 'MEAL_XP') - quest('q_3_meals'), `(${before} -> ${run(m2, 'gamification.xp')})`);
+    run(m2, `_commitMeal('Second dinner', ${food(5000)}, 'test')`);
+    r.check('going past the goal later never costs a quest already earned', done(m2).includes('q_calories'));
+
+    // Training: "Log 3+ sets on any exercise".
+    const W = (ids) => {
+      const s = sb({ hvi_workout_log: JSON.stringify({ [T]: { exercises: [{ exerciseId: 'bench_press', sets: [0, 1, 2, 3].map(() => ({ weight: 60, reps: 8, completed: false })) }] } }) });
+      run(s, pin(ids || ['q_3_sets']) + ` confirm = function () { return true; }; rerenderWorkoutActive = function () {}; startRestTimer = function () {}; prs = { bench_press: { weight: 200, reps: 10, date: '2026-01-01' } };`);
+      run(s, `toggleSet(0, 0); toggleSet(0, 1); toggleSet(0, 2);`);
+      return s;
+    };
+    const w = W();
+    r.check('three sets finish the sets quest', done(w).includes('q_3_sets'));
+    run(w, `toggleSet(0, 2)`);
+    r.check('unticking a set takes it back', !done(w).includes('q_3_sets'));
+    const w2 = W(); run(w2, `toggleSet(0, 3); removeSet(0); removeSet(0);`);
+    r.check('removing logged sets takes it back', !done(w2).includes('q_3_sets'), JSON.stringify(done(w2)));
+    const w3 = W(); run(w3, `removeExercise(0)`);
+    r.check('removing the exercise takes it back', !done(w3).includes('q_3_sets'));
+    // Removing the exercise undoes both training quests at once: each is paid back.
+    const w4 = W(['q_workout', 'q_3_sets']);
+    const xp4 = run(w4, 'gamification.xp'), n4 = run(w4, 'gamification.questsTotal');
+    r.check('a session can finish two quests', done(w4).length === 2, JSON.stringify(done(w4)));
+    run(w4, `removeExercise(0)`);
+    r.check('and taking it away takes back both, XP and count', done(w4).length === 0 && run(w4, 'gamification.xp') === xp4 - quest('q_workout') - quest('q_3_sets') && run(w4, 'gamification.questsTotal') === n4 - 2, `(${xp4} -> ${run(w4, 'gamification.xp')}, ${n4} -> ${run(w4, 'gamification.questsTotal')})`);
+
+    // Journal: an entry cleared back to nothing.
+    const j = sb({}, ['social.js']);
+    run(j, pin(['q_journal']) + ` renderLibrary = function () {}; journal = {}; _getJournalQs = function () { return [{ key: 'wins' }]; };
+      document.getElementById('j-wins').value = 'Ran 5k'; saveJournal();`);
+    r.check('writing in the journal finishes the journal quest', done(j).includes('q_journal'));
+    run(j, `document.getElementById('j-wins').value = ''; saveJournal();`);
+    r.check('clearing it again takes it back', !done(j).includes('q_journal'));
+
+    // What it must never do.
+    const g = sb({});
+    run(g, `getDailyQuests = function () { return [{ id: 'q_boom', xp: 30, check: function () { throw new Error('bad data'); } }]; };
+      gamification.xp = 100; gamification.questsTotal = 5; gamification.questsCompleted = { [today()]: ['q_boom', 'q_retired'] };`);
+    r.check('a quest it cannot check, or no longer knows, keeps what it paid', run(g, 'takeBackLapsedQuests()') === 0 && run(g, 'gamification.xp') === 100 && done(g).length === 2);
+    run(g, `getDailyQuests = function () { return [{ id: 'q_low', xp: 500, check: function () { return false; } }]; }; gamification.questsCompleted[today()] = ['q_low'];`);
+    run(g, 'takeBackLapsedQuests()');
+    r.check('XP never goes below zero', run(g, 'gamification.xp') === 0);
+    r.check('a previous day is never touched', (() => { const s2 = sb({}); run(s2, `getDailyQuests = function () { return [{ id: 'q_old', xp: 50, check: function () { return false; } }]; };
+      gamification.xp = 50; gamification.questsCompleted = { '2026-01-01': ['q_old'] }; takeBackLapsedQuests();`); return run(s2, 'gamification.xp') === 50; })());
   }
 
   return r.finish();

@@ -124,6 +124,9 @@ module.exports = async function () {
   r.section('logging it, and one Undo for all of it');
   {
     const s = sb();
+    // The day's quests are drawn by date. Pinned to one the meal finishes, so
+    // the Undo is tested against a quest on every day, not only some.
+    run(s, `getDailyQuests = function () { return QUEST_POOL.filter(function (q) { return q.id === 'q_calories'; }); };`);
     run(s, `_undo = _laApply([
       { type: 'meal', meal: 'Breakfast', items: [{ name: 'Eggs (2 large)', calories: 156, protein: 13, carbs: 1, fat: 11 }, { name: 'Toast (2 slices)', calories: 160, protein: 6, carbs: 30, fat: 2 }] },
       { type: 'water', ml: 500 }, { type: 'sleep', hours: 6.5 }, { type: 'habit', id: 'h01' },
@@ -135,9 +138,11 @@ module.exports = async function () {
     r.check('the habit is ticked through the app\'s own tap', run(s, `log.h01.completedToday`) === true && run(s, `(LS.get('hvi_habit_history', {}).h01 || []).includes('${T}')`) === true);
     r.check('the weight', run(s, `LS.get('hvi_weight_log', {})['${T}']`) === 80.4);
     r.check('the mood', run(s, `(LS.get('hvi_mood_log', {})['${T}'] || {}).mood`) === 4);
+    r.check('and the meal finished the calorie quest', run(s, `JSON.stringify(gamification.questsCompleted[today()] || [])`) === '["q_calories"]');
     run(s, '_undo()');
     r.check('Undo: the meal is gone', JSON.parse(run(s, `JSON.stringify((LS.get('hvi_meal_log', {})['${T}'] || {}).meals || [])`)).length === 0);
-    r.check('with the XP it and the habit earned', run(s, 'gamification.xp') === 0, `(${run(s, 'gamification.xp')})`);
+    r.check('with the XP it, the habit and the quest earned', run(s, 'gamification.xp') === 0, `(${run(s, 'gamification.xp')})`);
+    r.check('and the quest is unfinished again', run(s, `JSON.stringify(gamification.questsCompleted[today()] || [])`) === '[]');
     r.check('the water is gone', !run(s, `(LS.get('hvi_water_log', {}) || {})['${T}']`));
     r.check('the sleep is back to what it was', run(s, `LS.get('hvi_sleep_log', {})['${T}'].hours`) === 7);
     r.check('the habit is unticked', run(s, `log.h01.completedToday`) === false);
@@ -298,6 +303,19 @@ module.exports = async function () {
     r.check('the XP is back to where it was', run(s, `gamification.xp`) === 0, `(${run(s, 'gamification.xp')})`);
     r.check('the week no longer counts it', run(s, `gamification.weeklyStats.workoutDays.includes(today())`) === false);
     r.check('and the linked habit is unticked', run(s, `log.h05.completedToday`) === false);
+  }
+
+  r.section('Undo takes back a quest the session finished, once');
+  {
+    const s = sb();
+    run(s, `getDailyQuests = function () { return QUEST_POOL.filter(function (q) { return q.id === 'q_3_sets'; }); };
+      gamification.xp = 1000; LS.set('hvi_gamification', gamification);
+      _undo = _laApply([{ type: 'workout', exercises: [{ id: 'bench_press', sets: [{ reps: 8, weight: 60 }, { reps: 8, weight: 60 }, { reps: 8, weight: 60 }] }] }]);`);
+    r.check('the three sets finish the quest', run(s, `JSON.stringify(gamification.questsCompleted[today()])`) === '["q_3_sets"]');
+    const total = run(s, `gamification.questsTotal`);
+    run(s, '_undo()');
+    r.check('Undo: the quest is unfinished again', run(s, `JSON.stringify(gamification.questsCompleted[today()])`) === '[]' && run(s, `gamification.questsTotal`) === total - 1);
+    r.check('and the XP is exactly where it was, not taken twice', run(s, `gamification.xp`) === 1000, `(${run(s, 'gamification.xp')})`);
   }
 
   r.section('a session already going today gets the sets, and is left to its own Finish');

@@ -534,11 +534,13 @@ function _laLogWorkout(e) {
     if (vol > (before.vol || 0)) { LS.set('hvi_volume_pr', vol); session.volumePR = true; LS.set('hvi_workout_log', workoutLog); }
     xp(50);
     if (typeof trackWeeklyWorkout === 'function') trackWeeklyWorkout();
-    if (typeof checkDailyQuests === 'function') { try { checkDailyQuests(); } catch {} }
   }
   // What this added, before the linked habits (their own untick takes theirs back).
   const gained = (g.xp || 0) - before.xp, pgained = {};
   Object.keys(g.pillarXP || {}).forEach(k => { const d = (g.pillarXP[k] || 0) - (before.pxp[k] || 0); if (d) pgained[k] = d; });
+  // Quests are checked after that count, so a quest's XP is not in it: Undo's
+  // own look at the quests takes it back, once.
+  if (!ongoing && typeof checkDailyQuests === 'function') { try { checkDailyQuests(); } catch {} }
   if (!ongoing && window.Arete) {
     const was = new Set((habits || []).filter(h => log[h.id] && log[h.id].completedToday).map(h => h.id));
     window.Arete.emit('workout:completed');
@@ -606,7 +608,12 @@ function _laApply(entries) {
       }
     } catch (err) { console.warn('[Arete] log anything, ' + e.type + ':', err && err.message); }
   }
-  return () => { undo.reverse().forEach(f => { try { f(); } catch {} }); };
+  // The parts take back their own quests (a meal's undo, a habit's untick),
+  // and one look at the end catches anything left, such as a workout entry.
+  return () => {
+    undo.reverse().forEach(f => { try { f(); } catch {} });
+    if (typeof takeBackLapsedQuests === 'function') takeBackLapsedQuests();
+  };
 }
 
 function applyLogAnything() {

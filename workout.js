@@ -694,6 +694,7 @@ function toggleSet(ei, si) {
   _refreshExDone(ei);
 
   if (set.completed) checkDailyQuests();
+  else if (typeof takeBackLapsedQuests === 'function') takeBackLapsedQuests();
   if (set.completed && !set.warmup && set.weight > 0 && set.reps > 0) {
     const eid = wl.exercises[ei].exerciseId;
     const ex = lookupExercise(eid);
@@ -744,8 +745,9 @@ function removeSet(ei) {
   if (!wl) return;
   const sets = wl.exercises[ei].sets;
   if (sets.length <= 1) return; // keep at least 1 set
-  sets.pop();
+  const dropped = sets.pop();
   _wSave(wl);
+  if (dropped && dropped.completed && typeof takeBackLapsedQuests === 'function') takeBackLapsedQuests();
   // Remove the last row in place
   const row = document.getElementById(`w-set-${ei}-${sets.length}`);
   if (row) row.remove();
@@ -806,6 +808,7 @@ function removeExercise(ei) {
   if (!confirm(msg)) return;
   wl.exercises.splice(ei, 1);
   _wSave(wl);
+  if (logged && typeof takeBackLapsedQuests === 'function') takeBackLapsedQuests();
   if (typeof track === 'function') track('exercise_removed', { logged });
   rerenderWorkoutActive();
 }

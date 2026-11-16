@@ -174,6 +174,8 @@ function saveJournal() {
   if (journal[t]) Object.keys(journal[t]).forEach(k => { if (!(k in entry)) entry[k] = journal[t][k]; });
   journal[t] = entry;
   LS.set('hvi_journal3', journal);
+  // Today's entry cleared back to nothing takes back "Write in your journal".
+  if (!Object.values(entry).some(Boolean) && typeof takeBackLapsedQuests === 'function') takeBackLapsedQuests();
   if (window.Arete) window.Arete.emit('journal:saved', {});
   if (typeof track === 'function') track('journal_save', { word_count: Object.values(entry).join(' ').split(/\s+/).filter(Boolean).length });
   if (gamification.journalXPDate !== t && Object.values(journal[t] || {}).some(Boolean)) {

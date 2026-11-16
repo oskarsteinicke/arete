@@ -3596,6 +3596,8 @@ function tapHabit(id, suffix) {
   // permanently empty — which quietly broke weekly schedules and left the
   // coach and calendar with nothing to read.
   setHabitHistory(id, t, e.completedToday);
+  // An untick takes back a quest the tick finished (see takeBackLapsedQuests).
+  if (!e.completedToday && typeof takeBackLapsedQuests === 'function') takeBackLapsedQuests();
   // Offer a share or an invite only when the tap actually completed something.
   if (e.completedToday) setTimeout(checkMilestones, 700);
   const pillarId = habit ? PILLARS.find(p => p.cats.includes(habit.category))?.id : null;

@@ -730,6 +730,7 @@ function deleteMeal(mi, id) {
   mealLog = fresh;
   LS.set('hvi_meal_log', mealLog);
   _mealXPBack(meal);
+  if (typeof takeBackLapsedQuests === 'function') takeBackLapsedQuests();
   go('diet');
 }
 
@@ -1664,6 +1665,7 @@ function undoMeal(id) {
   mealLog = fresh;
   LS.set('hvi_meal_log', mealLog);
   _mealXPBack(gone);
+  if (typeof takeBackLapsedQuests === 'function') takeBackLapsedQuests();
   if (typeof track === 'function') track('meal_undo', {});
   // Undone from the toast on another screen, nothing redraws the diet view, so
   // a habit the meal had ticked would have stayed ticked.
