@@ -22,6 +22,10 @@ const TARGETS = {
   // view below the status bar and above the home indicator (iOS contentInset
   // "always"), so the app itself is captured at the height between them.
   ios:  { out: 'store-assets-ios', vw: 440, vh: 956, statusH: 62, bottomH: 34, W: 1320, H: 2868, device: 'ios' },
+  // App Store Connect's required slot since late 2026 is "iPhone with Dynamic
+  // Island (medium display)", which only takes 1206x2622 or 1179x2556. The
+  // 6.9" set above goes in the optional large-display slot.
+  ios63: { out: 'store-assets-ios-6.3', vw: 402, vh: 874, statusH: 62, bottomH: 34, W: 1206, H: 2622, device: 'ios' },
   play: { out: 'store-assets',     vw: 412, vh: 915, statusH: 30, bottomH: 20, W: 1440, H: 2880, device: 'android' },
 };
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
@@ -205,7 +209,7 @@ async function graphic(c) {
 
 server.listen(PORT, async () => {
   const which = process.argv[2];
-  if (!TARGETS[which] && which !== 'graphic') { console.error('usage: store.js ios|play|graphic'); process.exit(1); }
+  if (!TARGETS[which] && which !== 'graphic') { console.error('usage: store.js ios|ios63|play|graphic'); process.exit(1); }
   const c = await chrome();
   try {
     if (which === 'graphic') await graphic(c);

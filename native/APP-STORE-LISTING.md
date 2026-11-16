@@ -91,7 +91,9 @@ back above NO ACCOUNT NEEDED:
 |---|---|
 | Primary category | Health & Fitness |
 | Secondary category | Productivity |
-| Age rating | 4+ (no objectionable content; answer No to every questionnaire item) |
+| Age rating | 9+, as submitted 2026-11-16. Contests: Infrequent (friend challenges and private leaderboards). Health or Wellness Topics: Yes. Everything else None or No, including alcohol (beer and wine are only calorie entries in the food list) and User-Generated Content (leaderboards are invite-code groups showing display names, not broad distribution). Apple then leaves out Afghanistan and Morocco. |
+| Content rights | Yes, third-party content with the rights to use it: Whoop, Strava and Google Fit data, and Gemini and Groq replies, all under their developer terms |
+| Regulated medical device | No: general fitness and wellness, no medical claims (EU/EEA, UK and US ask) |
 | Price | Free |
 | Support URL | https://get-arete.com |
 | Marketing URL | https://get-arete.com |
@@ -100,9 +102,18 @@ back above NO ACCOUNT NEEDED:
 
 ## Screenshots
 
-`store-assets-ios/`, 1320x2868: the 6.9" iPhone size, which is the only
-iPhone size App Store Connect requires. No alpha channel, which Apple rejects.
-Made by `native/store-shots/store.js ios` from the real app (demo user "Alex").
+Two sets, the same eight screens. No alpha channel, which Apple rejects.
+
+- `store-assets-ios-6.3/`, 1206x2622: **required**. Since late 2026 App Store
+  Connect's required slot is "iPhone with Dynamic Island (medium display)",
+  and it only accepts 1206x2622 or 1179x2556; 1320x2868 is refused there as
+  "File dimensions are invalid". Made by `store.js ios63`.
+- `store-assets-ios/`, 1320x2868: the optional "Dynamic Island (large display)"
+  slot (6.9"), under View All Sizes. Made by `store.js ios`.
+- iPhone Duo screenshots become required in April 2027 for builds on the
+  iOS 27.1 SDK or later (outer 1398x2034, inner 2007x2853).
+
+Both come from the real app via `native/store-shots/store.js` (demo user "Alex").
 Log anything leads because the subtitle is "Your whole day, one sentence";
 it is shown as the store apps show it, without a mic button.
 
