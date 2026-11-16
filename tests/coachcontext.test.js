@@ -124,6 +124,8 @@ module.exports = async function () {
     r.check('plain: no headings, bold labels, tables or emoji', /No headings, no bold labels, no tables, no emoji/.test(p));
     r.check('no judging the day before it is over', /Judge eating by the 7-day average/.test(p));
     r.check('a settings change is just confirmed', /unless they asked you to change something in the app; then just confirm it/.test(p));
+    r.check('pain, illness and medication go to a doctor, never a diagnosis', /You are not a doctor/.test(p) && /never diagnose, treat or prescribe/.test(p));
+    r.check('an emergency gets sent for urgent help, and nothing else', /Chest pain, fainting, trouble breathing or thoughts of harming themselves: tell them to get urgent help now/.test(p));
     const src = fs.readFileSync(path.join(APP, 'coach.js'), 'utf8');
     r.check('and a reply cannot run on and on', /buildCoachSystemPrompt\(\) \},\s*\.\.\._coachHistory,\s*\], \{ maxTokens: 800 \}\)/.test(src));
   }
