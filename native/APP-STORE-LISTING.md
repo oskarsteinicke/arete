@@ -129,6 +129,8 @@ Answer per data type. This mirrors what the app actually sends.
 | Email address | Yes, accounts only | Yes | No | App functionality |
 | Name | Yes, accounts only | Yes | No | App functionality |
 | User ID | Yes, accounts only | Yes | No | App functionality, Analytics |
+| Device ID | Yes, when usage analytics is on | Yes, with an account | No | Analytics |
+| Coarse location | Yes, when usage analytics is on | Yes, with an account | No | Analytics |
 | Health & Fitness | Yes | Yes, with an account | No | App functionality |
 | Photos | Yes, meal and progress photos | Yes, with an account | No | App functionality |
 | Other user content | Yes, journal entries and coach messages | Yes, with an account | No | App functionality |
@@ -136,8 +138,14 @@ Answer per data type. This mirrors what the app actually sends.
 | Crash data / other diagnostics | Yes | Yes, with an account | No | Analytics |
 
 Why "linked" on the analytics rows: for someone signed in, the app sends
-Google Analytics a pseudonymous account identifier (the privacy policy says
-so). Without an account none of it is linked. Answer for the linked case.
+Google Analytics and PostHog a pseudonymous account identifier (the privacy
+policy says so). Without an account none of it is linked. Answer for the
+linked case.
+
+Device ID and coarse location came with PostHog (November 2026): it keeps a
+random identifier per install, and estimates a city or country from the
+connection's IP address. Both only while usage analytics is on; in the EU,
+EEA, UK and Switzerland that is after the person says yes.
 
 - **Third-party AI:** the coach, the daily focus, meal descriptions, meal
   photos and the program builder's goal text are sent through the app's own Cloudflare Worker to **Google Gemini**
