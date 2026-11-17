@@ -35,6 +35,8 @@ function sb(opts = {}) {
   run(s, `
     Intl = { DateTimeFormat: function () { return { resolvedOptions: function () { return { timeZone: ${JSON.stringify(opts.tz === undefined ? 'America/New_York' : opts.tz)} }; } }; } };
     navigator.globalPrivacyControl = ${opts.gpc ? 'true' : 'undefined'};
+    navigator.webdriver = ${opts.webdriver ? 'true' : 'false'};
+    ${opts.ua ? `navigator.userAgent = ${JSON.stringify(opts.ua)};` : ''}
     _ga = []; gtag = function () { _ga.push(Array.prototype.slice.call(arguments)); };
     window.dataLayer = [];
     _appended = [];
@@ -86,6 +88,24 @@ module.exports = async function () {
     const gpc = sb({ gpc: true });
     r.check('Global Privacy Control counts as a no, without asking', run(gpc, 'analyticsAllowed()') === false && run(gpc, 'analyticsNeedsAnswer()') === false);
     r.check('unless they turn it on themselves', run(sb({ gpc: true, store: { hvi_analytics: 'granted' } }), 'analyticsAllowed()') === true);
+  }
+
+  r.section('crawlers are not counted as people');
+  {
+    const bot = sb({ tz: 'Etc/Unknown' });
+    r.check('Google\'s renderer, with no real time zone, sends nothing', run(bot, 'analyticsAllowed()') === false);
+    r.check('and nothing starts for it', run(bot, 'analyticsStart()') === false && calls(bot, 'init').length === 0);
+    r.check('a crawler named in the user agent sends nothing',
+      ['Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+       'Mozilla/5.0 (compatible; bingbot/2.0)',
+       'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 HeadlessChrome/120.0.0.0 Safari/537.36',
+      ].every(ua => run(sb({ ua }), 'analyticsAllowed()') === false));
+    r.check('an automated browser sends nothing', run(sb({ webdriver: true }), 'analyticsAllowed()') === false);
+    r.check('even with a yes stored', run(sb({ webdriver: true, store: { hvi_analytics: 'granted' } }), 'analyticsAllowed()') === false);
+    r.check('a real phone still counts',
+      run(sb({ ua: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1' }), 'analyticsAllowed()') === true);
+    r.check('so does a Cubot phone, whose name ends in "bot"',
+      run(sb({ ua: 'Mozilla/5.0 (Linux; Android 12; CUBOT X50) AppleWebKit/537.36 Chrome/120.0 Mobile Safari/537.36' }), 'analyticsAllowed()') === true);
   }
 
   r.section('without a yes, nothing loads and nothing is sent');

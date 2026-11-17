@@ -46,7 +46,20 @@ function _gpcOn() {
   try { return navigator.globalPrivacyControl === true; } catch { return false; }
 }
 
+// Crawlers and automated browsers are not people. Google's renderer was most
+// of the first week's "users": headless, with no real time zone (Etc/Unknown),
+// and outside the consent check because of it. Nothing is sent for them.
+const _BOT_UA = /Googlebot|Google-InspectionTool|AdsBot|Mediapartners-Google|APIs-Google|bingbot|BingPreview|YandexBot|DuckDuckBot|Baiduspider|Applebot|AhrefsBot|SemrushBot|PetalBot|HeadlessChrome|Chrome-Lighthouse|crawler|spider/i;
+function analyticsIsBot() {
+  try {
+    if (navigator.webdriver === true) return true;
+    if (_BOT_UA.test(navigator.userAgent || '')) return true;
+    return Intl.DateTimeFormat().resolvedOptions().timeZone === 'Etc/Unknown';
+  } catch { return false; }
+}
+
 function analyticsAllowed() {
+  if (analyticsIsBot()) return false;
   const c = analyticsChoice();
   if (c === 'granted') return true;
   if (c === 'denied') return false;
