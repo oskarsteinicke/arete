@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calorie and Macro Calculator: TDEE, Protein, Carbs, Fat | Arete</title>
+  <meta name="description" content="Free calorie calculator. Get your maintenance calories (TDEE), a daily target for losing or gaining weight, and grams of protein, carbs and fat. No sign-up.">
+  <meta name="theme-color" content="#0B0B0B">
+  <link rel="canonical" href="https://get-arete.com/calorie-calculator">
+  <meta property="og:title" content="Calorie and Macro Calculator | Arete">
+  <meta property="og:description" content="Your daily calories, protein, carbs and fat from your height, weight, age and activity. Free.">
+  <meta property="og:image" content="https://get-arete.com/assets/arete_og_image.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:url" content="https://get-arete.com/calorie-calculator">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Arete">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap">
+  <link rel="stylesheet" href="/tokens.css?v=209">
+  <link rel="stylesheet" href="/calc.css?v=3">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Calorie and Macro Calculator",
+    "url": "https://get-arete.com/calorie-calculator",
+    "description": "Daily calories, maintenance (TDEE), and grams of protein, carbs and fat, from the Mifflin-St Jeor equation.",
+    "applicationCategory": "HealthApplication",
+    "operatingSystem": "Any",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "publisher": { "@type": "Organization", "name": "Arete", "url": "https://get-arete.com" }
+  }
+  </script>
+</head>
+<body>
+
+<header class="wrap top">
+  <a class="brand" href="/landing.html" aria-label="Arete"><img src="/icon-192.png" alt="" width="32" height="32"><span>Arete</span></a>
+  <a class="open" href="/" onclick="localStorage.setItem('hvi_from_landing','1')">Open app</a>
+</header>
+
+<main>
+  <section class="wrap calc">
+    <div>
+      <h1>Calorie calculator<span class="dot">.</span></h1>
+      <p class="lede">Your daily calories, protein, carbs and fat from your height, weight, age and activity. The same formula the Arete app uses.</p>
+
+      <form id="f" novalidate onsubmit="return false">
+        <fieldset class="field">
+          <legend>Units</legend>
+          <div class="seg">
+            <label><input type="radio" name="units" value="metric" checked><span>kg and cm</span></label>
+            <label><input type="radio" name="units" value="imperial"><span>lb and ft</span></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend>Sex</legend>
+          <div class="seg">
+            <label><input type="radio" name="sex" value="male" checked><span>Male</span></label>
+            <label><input type="radio" name="sex" value="female"><span>Female</span></label>
+          </div>
+        </fieldset>
+
+        <div class="field nums">
+          <label>
+            <span class="label">Age</span>
+            <span class="num"><input name="age" type="number" inputmode="numeric" min="18" max="100" placeholder="30"><span class="u">years</span></span>
+          </label>
+          <label data-u="metric">
+            <span class="label">Height</span>
+            <span class="num"><input name="cm" type="number" inputmode="decimal" min="100" max="250" placeholder="178"><span class="u">cm</span></span>
+          </label>
+          <div data-u="imperial" hidden>
+            <span class="label" id="h-imp">Height</span>
+            <span class="num" role="group" aria-labelledby="h-imp">
+              <input name="ft" class="half" type="number" inputmode="numeric" min="3" max="8" placeholder="5" aria-label="Feet"><span class="u">ft</span>
+              <input name="in" class="half" type="number" inputmode="numeric" min="0" max="11" placeholder="10" aria-label="Inches"><span class="u">in</span>
+            </span>
+          </div>
+          <label data-u="metric">
+            <span class="label">Weight</span>
+            <span class="num"><input name="kg" type="number" inputmode="decimal" min="30" max="300" placeholder="78"><span class="u">kg</span></span>
+          </label>
+          <label data-u="imperial" hidden>
+            <span class="label">Weight</span>
+            <span class="num"><input name="lb" type="number" inputmode="decimal" min="66" max="660" placeholder="172"><span class="u">lb</span></span>
+          </label>
+        </div>
+
+        <fieldset class="field">
+          <legend>How active you are</legend>
+          <div class="options">
+            <label><input type="radio" name="activity" value="sedentary"><span class="row"><span class="t">Mostly sitting</span><span class="s">Desk job, little exercise</span></span></label>
+            <label><input type="radio" name="activity" value="light"><span class="row"><span class="t">Lightly active</span><span class="s">Exercise 1 to 3 days a week</span></span></label>
+            <label><input type="radio" name="activity" value="moderate" checked><span class="row"><span class="t">Moderately active</span><span class="s">Exercise 3 to 5 days a week</span></span></label>
+            <label><input type="radio" name="activity" value="active"><span class="row"><span class="t">Very active</span><span class="s">Hard training 6 to 7 days a week</span></span></label>
+            <label><input type="radio" name="activity" value="very_active"><span class="row"><span class="t">Extremely active</span><span class="s">Physical job and hard training</span></span></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend>Your goal</legend>
+          <div class="options">
+            <label><input type="radio" name="goal" value="cut"><span class="row"><span class="t">Lose weight</span><span class="s">500 under maintenance</span></span></label>
+            <label><input type="radio" name="goal" value="cut_mild"><span class="row"><span class="t">Lose weight slowly</span><span class="s">250 under maintenance</span></span></label>
+            <label><input type="radio" name="goal" value="maintain" checked><span class="row"><span class="t">Stay where I am</span><span class="s">Maintenance</span></span></label>
+            <label><input type="radio" name="goal" value="bulk_lean"><span class="row"><span class="t">Gain slowly</span><span class="s">250 over maintenance</span></span></label>
+            <label><input type="radio" name="goal" value="bulk"><span class="row"><span class="t">Gain weight</span><span class="s">500 over maintenance</span></span></label>
+          </div>
+        </fieldset>
+      </form>
+    </div>
+
+    <aside class="result" aria-live="polite">
+      <p class="empty" id="empty">Fill in your age, height and weight, and your numbers appear here.</p>
+      <p class="empty" id="young" hidden>This formula is made for adults. Under 18, a doctor or dietitian can tell you what you need.</p>
+      <div id="out" hidden>
+        <div class="big" id="kcal">0</div>
+        <p class="big-unit" id="kcal-unit">calories a day</p>
+        <div class="stats">
+          <div><b id="p">0 g</b><span>Protein</span></div>
+          <div><b id="c">0 g</b><span>Carbs</span></div>
+          <div><b id="fat">0 g</b><span>Fat</span></div>
+        </div>
+        <div class="pairs">
+          <div><span>Maintenance (TDEE)</span><b id="tdee">0</b></div>
+          <div><span>Resting burn (BMR)</span><b id="bmr">0</b></div>
+        </div>
+        <p class="note">An estimate to start from. Eat this for two or three weeks, watch your weight, and adjust.</p>
+      </div>
+    </aside>
+  </section>
+
+  <section class="wrap prose">
+    <h2>How it's worked out</h2>
+    <p>Three steps, the same ones the Arete app uses when it sets your targets.</p>
+
+    <p><strong>1. Your resting burn (BMR).</strong> This is the Mifflin-St Jeor equation, the one most dietitians start from. It estimates what your body burns lying still for a day.</p>
+    <p class="formula">Men: 10 × weight in kg + 6.25 × height in cm − 5 × age + 5<br>Women: 10 × weight in kg + 6.25 × height in cm − 5 × age − 161</p>
+
+    <p><strong>2. Your daily burn (TDEE).</strong> Your resting burn times how active you are. This is maintenance: eat this much and your weight should hold.</p>
+    <table>
+      <thead><tr><th>Activity</th><th>Multiply by</th></tr></thead>
+      <tbody>
+        <tr><td>Mostly sitting</td><td>1.2</td></tr>
+        <tr><td>Lightly active</td><td>1.375</td></tr>
+        <tr><td>Moderately active</td><td>1.55</td></tr>
+        <tr><td>Very active</td><td>1.725</td></tr>
+        <tr><td>Extremely active</td><td>1.9</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>3. Your target and macros.</strong> Maintenance plus or minus your goal, then split into protein, carbs and fat. Protein and carbs have 4 calories per gram, fat has 9.</p>
+    <table>
+      <thead><tr><th>Goal</th><th>Calories</th><th>Protein</th><th>Carbs</th><th>Fat</th></tr></thead>
+      <tbody>
+        <tr><td>Lose weight</td><td>−500</td><td>35%</td><td>35%</td><td>30%</td></tr>
+        <tr><td>Lose weight slowly</td><td>−250</td><td>35%</td><td>35%</td><td>30%</td></tr>
+        <tr><td>Stay where I am</td><td>0</td><td>30%</td><td>40%</td><td>30%</td></tr>
+        <tr><td>Gain slowly</td><td>+250</td><td>30%</td><td>45%</td><td>25%</td></tr>
+        <tr><td>Gain weight</td><td>+500</td><td>25%</td><td>50%</td><td>25%</td></tr>
+      </tbody>
+    </table>
+    <p>Protein stays higher while you lose weight, to help hold on to muscle. Carbs go up when you gain, to fuel training. Many lifters aim for 1.6 to 2.2 g of protein per kg of bodyweight (about 0.7 to 1 g per lb).</p>
+
+    <h2>Why your real number is different</h2>
+    <p>Any formula is an estimate. Two people with the same height, weight and age can burn a few hundred calories apart. Treat the result as a starting point: eat at it for two or three weeks, watch the trend on the scale, and move it by 100 to 200 calories if your weight goes the wrong way.</p>
+    <p>A 500-calorie daily gap is roughly 0.5 kg (1 lb) a week. Expect the first week to jump around with water.</p>
+
+    <h2>When to ask a doctor instead</h2>
+    <p>If you're pregnant or breastfeeding, under 18, have a medical condition, or have a history of disordered eating, talk to a doctor or dietitian before you set a calorie target.</p>
+  </section>
+
+  <section class="wrap app">
+    <h2>Arete sets these for you<span class="dot">.</span></h2>
+    <p>Log a meal in one sentence and Arete counts the calories and macros. Your targets move with your training day, and after a week of weigh-ins and meals it works out what you really burn. Free, no account needed.</p>
+    <a class="btn-start" href="/" onclick="localStorage.setItem('hvi_from_landing','1')">Start free</a>
+  </section>
+</main>
+
+<footer class="wrap foot">
+  <a class="brand" href="/landing.html"><img src="/icon-192.png" alt="" width="24" height="24" loading="lazy"><span>get-arete.com</span></a>
+  <nav aria-label="Calculators">
+    <a href="/calorie-calculator" aria-current="page">Calorie calculator</a>
+    <a href="/one-rep-max-calculator">One rep max calculator</a>
+    <a href="/sleep-calculator">Sleep calculator</a>
+    <a href="/privacy.html">Privacy</a>
+  </nav>
+</footer>
+
+<script src="/calc.js?v=2"></script>
+<script>
+(function () {
+  var f = document.getElementById('f');
+  var $ = function (id) { return document.getElementById(id); };
+  var fmt = function (n) { return Math.round(n).toLocaleString('en-US'); };
+  var val = function (name) { var v = parseFloat(f.elements[name].value); return isFinite(v) ? v : NaN; };
+  var GOAL_WORDS = {
+    cut: 'calories a day to lose about 0.5 kg (1 lb) a week',
+    cut_mild: 'calories a day to lose about 0.25 kg (half a pound) a week',
+    maintain: 'calories a day to stay at your weight',
+    bulk_lean: 'calories a day to gain slowly',
+    bulk: 'calories a day to gain weight',
+  };
+
+  function imperial() { return f.elements.units.value === 'imperial'; }
+  function showUnits() {
+    var u = imperial() ? 'imperial' : 'metric';
+    [].forEach.call(document.querySelectorAll('[data-u]'), function (el) { el.hidden = el.getAttribute('data-u') !== u; });
+  }
+
+  // Switching units carries what was typed across.
+  function convert() {
+    var e = f.elements;
+    if (imperial()) {
+      var cm = val('cm'), kg = val('kg');
+      if (cm > 0) { var inches = Math.round(cm / 2.54); e.ft.value = Math.floor(inches / 12); e['in'].value = inches % 12; }
+      if (kg > 0) e.lb.value = Math.round(kg * 2.2046226218);
+    } else {
+      var ft = val('ft'), inch = val('in'), lb = val('lb');
+      if (ft > 0) e.cm.value = Math.round(AreteCalc.inToCm(ft * 12 + (inch > 0 ? inch : 0)));
+      if (lb > 0) e.kg.value = Math.round(AreteCalc.lbToKg(lb) * 10) / 10;
+    }
+  }
+
+  function update() {
+    AreteCalc.fitInputs(f);
+    var imp = imperial();
+    var ft = val('ft'), inch = val('in');
+    var cm = imp ? (ft > 0 ? AreteCalc.inToCm(ft * 12 + (inch > 0 ? inch : 0)) : NaN) : val('cm');
+    var kg = imp ? AreteCalc.lbToKg(val('lb')) : val('kg');
+    var age = val('age');
+    var young = age > 0 && age < 18;
+    var ok = age >= 18 && age <= 100 && cm >= 100 && cm <= 250 && kg >= 30 && kg <= 300;
+    var r = ok ? AreteCalc.calories({ weightKg: kg, heightCm: cm, age: age, sex: f.elements.sex.value, activity: f.elements.activity.value, goal: f.elements.goal.value }) : null;
+    $('young').hidden = !young;
+    $('empty').hidden = !!r || young;
+    $('out').hidden = !r;
+    if (!r) return;
+    $('kcal').textContent = fmt(r.target);
+    $('kcal-unit').textContent = GOAL_WORDS[f.elements.goal.value] || 'calories a day';
+    $('p').textContent = r.protein + ' g';
+    $('c').textContent = r.carbs + ' g';
+    $('fat').textContent = r.fat + ' g';
+    $('tdee').textContent = fmt(r.tdee);
+    $('bmr').textContent = fmt(r.bmr);
+  }
+
+  f.addEventListener('input', update);
+  f.addEventListener('change', function (e) {
+    if (e.target.name === 'units') { convert(); showUnits(); }
+    update();
+  });
+  // In the US, start in pounds and feet.
+  if (/^en-US$/i.test(navigator.language || '')) { f.elements.units.value = 'imperial'; showUnits(); }
+  update();
+})();
+</script>
+<!-- Carries where the visitor came from onto the links into the app. -->
+<script src="/source.js"></script>
+</body>
+</html>

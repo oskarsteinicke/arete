@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sleep Calculator: What Time to Go to Bed or Wake Up | Arete</title>
+  <meta name="description" content="Free sleep calculator. Pick when you need to wake up and see when to fall asleep, or start from your bedtime, using 90-minute sleep cycles.">
+  <meta name="theme-color" content="#0B0B0B">
+  <link rel="canonical" href="https://get-arete.com/sleep-calculator">
+  <meta property="og:title" content="Sleep Calculator | Arete">
+  <meta property="og:description" content="When to go to bed for the time you need to wake up, in whole sleep cycles. Free.">
+  <meta property="og:image" content="https://get-arete.com/assets/arete_og_image.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:url" content="https://get-arete.com/sleep-calculator">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Arete">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap">
+  <link rel="stylesheet" href="/tokens.css?v=209">
+  <link rel="stylesheet" href="/calc.css?v=3">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Sleep Calculator",
+    "url": "https://get-arete.com/sleep-calculator",
+    "description": "Bedtimes for a chosen wake-up time, or wake-up times for a chosen bedtime, in whole 90-minute sleep cycles.",
+    "applicationCategory": "HealthApplication",
+    "operatingSystem": "Any",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "publisher": { "@type": "Organization", "name": "Arete", "url": "https://get-arete.com" }
+  }
+  </script>
+</head>
+<body>
+
+<header class="wrap top">
+  <a class="brand" href="/landing.html" aria-label="Arete"><img src="/icon-192.png" alt="" width="32" height="32"><span>Arete</span></a>
+  <a class="open" href="/" onclick="localStorage.setItem('hvi_from_landing','1')">Open app</a>
+</header>
+
+<main>
+  <section class="wrap calc">
+    <div>
+      <h1>Sleep calculator<span class="dot">.</span></h1>
+      <p class="lede">Find a bedtime that lines up with your sleep cycles, so the alarm is more likely to catch you between them instead of in deep sleep.</p>
+
+      <form id="f" novalidate onsubmit="return false">
+        <fieldset class="field">
+          <legend>Start from</legend>
+          <div class="seg">
+            <label><input type="radio" name="mode" value="wake" checked><span>When I wake up</span></label>
+            <label><input type="radio" name="mode" value="bed"><span>When I go to bed</span></label>
+          </div>
+        </fieldset>
+
+        <div class="field nums">
+          <label>
+            <span class="label" id="time-label">I need to wake up at</span>
+            <span class="num"><input name="t" type="time" value="07:00" step="300"></span>
+          </label>
+        </div>
+        <p class="hint">Includes about 15 minutes to fall asleep.</p>
+      </form>
+    </div>
+
+    <aside class="result" aria-live="polite">
+      <p class="big-unit" id="head" style="margin-top:0">Fall asleep at one of these</p>
+      <ul class="times" id="times"></ul>
+      <p class="note">7.5 to 9 hours suits most adults. 6 hours is the one to use only now and then.</p>
+    </aside>
+  </section>
+
+  <section class="wrap prose">
+    <h2>How it works</h2>
+    <p>Through the night you go round a cycle of light sleep, deep sleep and dream (REM) sleep, about 90 minutes at a time. Waking at the end of a cycle tends to feel easier than being pulled out of deep sleep, which is where the groggy, heavy feeling comes from.</p>
+    <p>So the calculator counts whole cycles back from your alarm, or forward from your bedtime, and adds about 15 minutes to fall asleep. Six cycles is 9 hours, five is 7.5 hours, and four is 6 hours.</p>
+
+    <h2>A rule of thumb, not a stopwatch</h2>
+    <p>Cycles aren't exactly 90 minutes. They differ from person to person and change through the night, with more deep sleep early and more dream sleep towards morning. No calculator can hit the exact minute, so treat the times as a guide.</p>
+    <p>How long you sleep matters more than when the alarm goes off. Most adults need at least 7 hours a night. If you're short, an earlier bedtime does more than timing your cycles.</p>
+
+    <h2>Sleeping better</h2>
+    <ul>
+      <li><strong>Wake at the same time every day,</strong> weekends included. It anchors everything else.</li>
+      <li><strong>Get daylight soon after waking,</strong> and keep the evening dim.</li>
+      <li><strong>Stop caffeine about 8 hours before bed.</strong> It lingers longer than it feels like it does.</li>
+      <li><strong>Keep the room cool and dark.</strong></li>
+    </ul>
+    <p>If you're often exhausted however long you sleep, or someone says you stop breathing in your sleep, see a doctor.</p>
+  </section>
+
+  <section class="wrap app">
+    <h2>See what your sleep does to your day<span class="dot">.</span></h2>
+    <p>Arete asks when you went to bed and when you woke up. Then it shows what your nights do to the rest of your day, like how many of your habits you finish after 7 hours or more compared with under 6. After a short night, today's workout gets lighter on its own. Free, no account needed.</p>
+    <a class="btn-start" href="/" onclick="localStorage.setItem('hvi_from_landing','1')">Start free</a>
+  </section>
+</main>
+
+<footer class="wrap foot">
+  <a class="brand" href="/landing.html"><img src="/icon-192.png" alt="" width="24" height="24" loading="lazy"><span>get-arete.com</span></a>
+  <nav aria-label="Calculators">
+    <a href="/calorie-calculator">Calorie calculator</a>
+    <a href="/one-rep-max-calculator">One rep max calculator</a>
+    <a href="/sleep-calculator" aria-current="page">Sleep calculator</a>
+    <a href="/privacy.html">Privacy</a>
+  </nav>
+</footer>
+
+<script src="/calc.js?v=2"></script>
+<script>
+(function () {
+  var f = document.getElementById('f');
+  var $ = function (id) { return document.getElementById(id); };
+  var DEFAULTS = { wake: '07:00', bed: '23:00' };
+  var shown = 'wake';
+
+  // In the visitor's own clock: 7:00 AM in the US, 07:00 in most of Europe.
+  // AM and PM are set smaller than the time itself.
+  function clock(min) {
+    var d = new Date(2000, 0, 1, Math.floor(min / 60), min % 60);
+    try {
+      return new Intl.DateTimeFormat([], { hour: 'numeric', minute: '2-digit' }).formatToParts(d).map(function (p) {
+        return p.type === 'dayPeriod' ? '<small>' + p.value + '</small>' : p.type === 'literal' && /^\s+$/.test(p.value) ? '' : p.value;
+      }).join('');
+    } catch (e) { return String(Math.floor(min / 60)).padStart(2, '0') + ':' + String(min % 60).padStart(2, '0'); }
+  }
+  var hours = function (h) { return (h % 1 ? h.toFixed(1) : String(h)) + ' hours'; };
+
+  function update() {
+    var mode = f.elements.mode.value;
+    if (mode !== shown) { f.elements.t.value = DEFAULTS[mode]; shown = mode; }
+    $('time-label').textContent = mode === 'wake' ? 'I need to wake up at' : "I'm going to bed at";
+    $('head').textContent = mode === 'wake' ? 'Fall asleep at one of these' : 'Set your alarm for one of these';
+    var m = /^(\d{1,2}):(\d{2})/.exec(f.elements.t.value || '');
+    if (!m) { $('times').innerHTML = ''; return; }
+    var min = (+m[1]) * 60 + (+m[2]);
+    var list = mode === 'wake' ? AreteCalc.bedtimesFor(min) : AreteCalc.wakeTimesFor(min);
+    // The two longest nights first: they are the ones worth aiming for.
+    list.sort(function (a, b) { return b.cycles - a.cycles; });
+    $('times').innerHTML = list.map(function (x) {
+      return '<li><span class="when">' + clock(x.time) + '</span><span class="why"><b>' + hours(x.hours) + '</b>' + x.cycles + ' cycles</span></li>';
+    }).join('');
+  }
+
+  f.addEventListener('input', update);
+  f.addEventListener('change', update);
+  update();
+})();
+</script>
+<!-- Carries where the visitor came from onto the links into the app. -->
+<script src="/source.js"></script>
+</body>
+</html>

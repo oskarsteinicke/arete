@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>One Rep Max Calculator: Your 1RM and Training Weights | Arete</title>
+  <meta name="description" content="Free one rep max calculator. Enter a weight and the reps you did to estimate your 1RM, with the weights to use from 65% to 100% of your max.">
+  <meta name="theme-color" content="#0B0B0B">
+  <link rel="canonical" href="https://get-arete.com/one-rep-max-calculator">
+  <meta property="og:title" content="One Rep Max Calculator | Arete">
+  <meta property="og:description" content="Estimate your 1RM from any set, with training weights for every rep range. Free.">
+  <meta property="og:image" content="https://get-arete.com/assets/arete_og_image.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:url" content="https://get-arete.com/one-rep-max-calculator">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Arete">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap">
+  <link rel="stylesheet" href="/tokens.css?v=209">
+  <link rel="stylesheet" href="/calc.css?v=3">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "One Rep Max Calculator",
+    "url": "https://get-arete.com/one-rep-max-calculator",
+    "description": "Estimates a one rep max from any set with the Epley formula, and lists training weights from 65% to 100%.",
+    "applicationCategory": "HealthApplication",
+    "operatingSystem": "Any",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "publisher": { "@type": "Organization", "name": "Arete", "url": "https://get-arete.com" }
+  }
+  </script>
+</head>
+<body>
+
+<header class="wrap top">
+  <a class="brand" href="/landing.html" aria-label="Arete"><img src="/icon-192.png" alt="" width="32" height="32"><span>Arete</span></a>
+  <a class="open" href="/" onclick="localStorage.setItem('hvi_from_landing','1')">Open app</a>
+</header>
+
+<main>
+  <section class="wrap calc">
+    <div>
+      <h1>One rep max calculator<span class="dot">.</span></h1>
+      <p class="lede">Enter a set you've done. Get your estimated max and the weight for every rep range. The same formula the Arete app runs on every set you log.</p>
+
+      <form id="f" novalidate onsubmit="return false">
+        <fieldset class="field">
+          <legend>Units</legend>
+          <div class="seg">
+            <label><input type="radio" name="units" value="kg" checked><span>kg</span></label>
+            <label><input type="radio" name="units" value="lb"><span>lb</span></label>
+          </div>
+        </fieldset>
+
+        <div class="field nums">
+          <label>
+            <span class="label">Weight lifted</span>
+            <span class="num"><input name="w" type="number" inputmode="decimal" min="1" max="1000" step="0.5" placeholder="100"><span class="u" data-unit>kg</span></span>
+          </label>
+          <label>
+            <span class="label">Reps done</span>
+            <span class="num"><input name="r" type="number" inputmode="numeric" min="1" max="30" placeholder="5"><span class="u">reps</span></span>
+          </label>
+        </div>
+        <p class="hint" id="loose" hidden>Above 12 reps the estimate gets loose. A heavier set of 3 to 10 gives a better number.</p>
+      </form>
+    </div>
+
+    <aside class="result" aria-live="polite">
+      <p class="empty" id="empty">Type the weight and reps of a recent set, and your estimated max appears here.</p>
+      <div id="out" hidden>
+        <div class="big" id="orm">0</div>
+        <p class="big-unit" id="orm-unit">kg, estimated one rep max</p>
+        <table class="rtable">
+          <thead><tr><th>Of your max</th><th>Weight</th><th>Reps you can do</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </aside>
+  </section>
+
+  <section class="wrap prose">
+    <h2>How it's worked out</h2>
+    <p>This uses the Epley formula, one of the most common ways to estimate a max from a set of several reps:</p>
+    <p class="formula">One rep max = weight × (1 + reps ÷ 30)</p>
+    <p>A single rep counts as itself. So 100 kg for 5 reps estimates a max of about 117 kg, and 80 kg for 10 estimates about 107 kg.</p>
+    <p>The table under your result works backwards: each percentage of your max, and roughly how many reps you could do with it.</p>
+
+    <h2>How accurate is it</h2>
+    <p>It's closest for sets of about 2 to 10 reps, done close to failure. The more reps, the looser it gets, because how many reps people can do at a given percentage varies a lot. Someone built for endurance gets more reps out of 80% than someone built for power. Expect a real max test to land a few percent either side of the estimate.</p>
+
+    <h2>Using the percentages</h2>
+    <ul>
+      <li><strong>85% and up, 1 to 5 reps:</strong> the usual range for building maximum strength.</li>
+      <li><strong>65% to 85%, 6 to 12 reps:</strong> the usual range for building muscle.</li>
+      <li><strong>Below 65%:</strong> warm-up sets, technique work and higher-rep sets.</li>
+    </ul>
+    <p>Most programs, like 5/3/1 or a percentage-based powerlifting block, are written as percentages of your max. An estimate is a safe way to get that number without testing a true max.</p>
+
+    <h2>Should you test a real max</h2>
+    <p>Not often. A true one rep max is hard on the body and needs a spotter or safety bars. For tracking progress, an estimate from your normal working sets tells you just as much. If a lift starts to hurt, stop and get it looked at by a doctor or physio.</p>
+  </section>
+
+  <section class="wrap app">
+    <h2>Arete does this on every set<span class="dot">.</span></h2>
+    <p>Log a set and Arete estimates your max from it, so a heavy five and a lighter eight count on the same scale. It flags new records, adds weight when you hit every rep, and its muscle map shows where you're strongest for your bodyweight. Free, no account needed.</p>
+    <a class="btn-start" href="/" onclick="localStorage.setItem('hvi_from_landing','1')">Start free</a>
+  </section>
+</main>
+
+<footer class="wrap foot">
+  <a class="brand" href="/landing.html"><img src="/icon-192.png" alt="" width="24" height="24" loading="lazy"><span>get-arete.com</span></a>
+  <nav aria-label="Calculators">
+    <a href="/calorie-calculator">Calorie calculator</a>
+    <a href="/one-rep-max-calculator" aria-current="page">One rep max calculator</a>
+    <a href="/sleep-calculator">Sleep calculator</a>
+    <a href="/privacy.html">Privacy</a>
+  </nav>
+</footer>
+
+<script src="/calc.js?v=2"></script>
+<script>
+(function () {
+  var f = document.getElementById('f');
+  var $ = function (id) { return document.getElementById(id); };
+  var val = function (name) { var v = parseFloat(f.elements[name].value); return isFinite(v) ? v : NaN; };
+
+  function update() {
+    AreteCalc.fitInputs(f);
+    var unit = f.elements.units.value;
+    [].forEach.call(document.querySelectorAll('[data-unit]'), function (el) { el.textContent = unit; });
+    var reps = val('r');
+    var res = reps <= 30 ? AreteCalc.oneRepMax(val('w'), reps) : null;
+    $('loose').hidden = !(reps > 12);
+    $('empty').hidden = !!res;
+    $('out').hidden = !res;
+    if (!res) return;
+    $('orm').textContent = res.orm.toLocaleString('en-US');
+    $('orm-unit').textContent = unit + ', estimated one rep max';
+    $('rows').innerHTML = res.table.map(function (t) {
+      return '<tr' + (t.pct === 100 ? ' class="max"' : '') + '><td>' + t.pct + '%</td><td>' + t.weight + ' ' + unit + '</td><td>' + (t.reps === 1 ? '1' : 'about ' + t.reps) + '</td></tr>';
+    }).join('');
+  }
+
+  f.addEventListener('input', update);
+  f.addEventListener('change', update);
+  if (/^en-US$/i.test(navigator.language || '')) f.elements.units.value = 'lb';
+  update();
+})();
+</script>
+<!-- Carries where the visitor came from onto the links into the app. -->
+<script src="/source.js"></script>
+</body>
+</html>

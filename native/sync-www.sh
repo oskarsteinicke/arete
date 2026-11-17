@@ -14,6 +14,7 @@ cp "$APP/index.html" "$WWW/"
 cp "$APP"/*.css "$WWW/"
 cp "$APP"/*.js "$WWW/" 2>/dev/null || true
 rm -f "$WWW/service-worker.js"   # native app bundles assets; no SW
+rm -f "$WWW/calc.js" "$WWW/calc.css"   # the website's calculator pages, not part of the app
 
 # Assets
 cp "$APP/manifest.json" "$WWW/" 2>/dev/null || true
