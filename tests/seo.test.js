@@ -189,6 +189,23 @@ module.exports = function () {
   // ships exactly that, so the adoption here is hand-written and a regenerated
   // project would quietly drop it — and the symptom is the app dying at launch
   // on a real device, which nothing in the web test suite would otherwise see.
+  r.section('the site publishes the website, not the repo');
+  {
+    const cfg = read('_config.yml');
+    const list = key => ((cfg.match(new RegExp('^' + key + ':\\n((?:\\s+- .+\\n?)+)', 'm')) || [])[1] || '')
+      .split('\n').map(l => l.replace(/^\s+- /, '').trim()).filter(Boolean);
+    const ex = list('exclude'), inc = list('include');
+    r.check('the store listings and app projects stay off it', ex.includes('native'));
+    r.check('so do the tests and the Worker source', ex.includes('tests') && ex.includes('worker'));
+    r.check('the app links file is served', inc.includes('.well-known') && fs.existsSync(path.join(APP, '.well-known/assetlinks.json')));
+    const pages = fs.readdirSync(APP).filter(f => /\.html$/.test(f));
+    r.check('no page is excluded', pages.every(p => !ex.includes(p)));
+    r.check('and nothing a page loads is', pages.every(p => {
+      const html = read(p);
+      return ex.every(e => !new RegExp(`(?:src|href)=["']/?${e.replace(/\./g, '\\.')}(?:/|["'])`).test(html));
+    }));
+  }
+
   r.section('iOS adopts the scene lifecycle');
   {
     const fs = require('fs'), path = require('path');

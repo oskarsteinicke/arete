@@ -1,0 +1,24 @@
+# GitHub Pages builds get-arete.com from this repo with Jekyll, which publishes
+# every file it finds. These are the app's tooling and notes, not the website,
+# so they stay off the site: the store listings, the iOS and Android projects,
+# the tests, the Worker's source, logo drafts, scripts and SQL.
+exclude:
+  - native
+  - tests
+  - worker
+  - twa
+  - variants
+  - upscale.py
+  - split.py
+  - recolor.py
+  - recolor_all.py
+  - supabase-founders.sql
+  - supabase-leaderboard.sql
+  - supabase-leaderboard-fix.sql
+  - supabase-photos.sql
+  - arete-avatar-set-greek.zip
+
+# Jekyll skips folders that start with a dot unless told. Android's app links
+# file (assetlinks.json) has to be served from this one.
+include:
+  - .well-known
