@@ -78,6 +78,40 @@ window.render = async o => {
   return Promise.all([...root.querySelectorAll('img')].map(i => i.decode().catch(() => {})));
 };
 
+// Product Hunt's gallery is landscape (1270x760): the caption on the left,
+// set flush left, and the phone on the right running off the bottom edge, so
+// the top of the screen, where the point of each shot is, sits large.
+window.renderWide = async o => {
+  await fontsIn();
+  const { W, H } = o, dark = o.bg === 'ink';
+  root.innerHTML = '';
+  root.style.cssText = `width:${W}px;height:${H}px;background:${dark ? C.ink : C.cream}`;
+  const pad = 0.064 * W, colW = 0.5 * W - pad;
+  const size = Math.min(96, Math.floor(Math.min(...o.caption.map(l => colW / textWidth(l + '.', 100))) * 100));
+  const capH = o.caption.length * size * 0.95;
+  const cap = document.createElement('div');
+  cap.className = 'cap';
+  cap.style.cssText = `left:${pad}px;right:auto;text-align:left;top:${(H - capH) / 2 - 0.02 * H}px;font-size:${size}px;color:${dark ? C.white : C.ink}`;
+  cap.innerHTML = o.caption.map((l, i) => `<div>${l}${i === o.caption.length - 1 ? '<span class="dot">.</span>' : ''}</div>`).join('');
+  root.appendChild(cap);
+  // the phone, as in render() but placed on the right and cut by the bottom edge
+  const devW = 0.33 * W, b = devW * 0.026, scrW = devW - 2 * b, s = scrW / o.vw, scrH = o.vh * s;
+  const scrR = 62 * s, devR = scrR + b;
+  const devTop = 0.085 * H, devLeft = W - pad - devW - 0.02 * W;
+  const dev = document.createElement('div');
+  dev.className = 'dev';
+  dev.style.cssText = `left:${devLeft}px;top:${devTop}px;width:${devW}px;height:${scrH + 2 * b}px;border-radius:${devR}px;` +
+    `box-shadow:inset 0 0 0 ${0.004 * devW}px #6e6862, inset 0 0 0 ${0.008 * devW}px #2b2927` + (dark ? '' : `, 0 ${0.03 * H}px ${0.06 * H}px rgba(40,30,20,0.28)`);
+  const scr = document.createElement('div');
+  scr.className = 'scr';
+  scr.style.cssText = `left:${b}px;top:${b}px;width:${scrW}px;height:${scrH}px;border-radius:${scrR}px`;
+  scr.innerHTML = `<img src="${o.img}" style="top:${o.statusH * s}px;height:${(o.vh - o.statusH - o.bottomH) * s}px">` +
+    statusIOS(scrW, s) + `<div style="position:absolute;left:${(scrW - 126 * s) / 2}px;top:${11 * s}px;width:${126 * s}px;height:${37 * s}px;border-radius:${19 * s}px;background:#000"></div>`;
+  dev.appendChild(scr);
+  root.appendChild(dev);
+  return Promise.all([...root.querySelectorAll('img')].map(i => i.decode().catch(() => {})));
+};
+
 // Play's 1024x500 feature graphic: the mark, the name, the promise.
 window.featureGraphic = async () => {
   await fontsIn();

@@ -4,6 +4,7 @@
 //   node --experimental-websocket native/store-shots/store.js ios      -> native/store-assets-ios/
 //   node --experimental-websocket native/store-shots/store.js play     -> native/store-assets/
 //   node --experimental-websocket native/store-shots/store.js graphic  -> native/store-assets/00-feature-graphic.png
+//   node --experimental-websocket native/store-shots/store.js ph       -> native/store-assets-ph/ (Product Hunt, 1270x760)
 //
 // The app runs on a virtual clock (vclock.js): timers and animations only move
 // when the script advances them, so every capture is a settled, repeatable
@@ -27,6 +28,8 @@ const TARGETS = {
   // 6.9" set above goes in the optional large-display slot.
   ios63: { out: 'store-assets-ios-6.3', vw: 402, vh: 874, statusH: 62, bottomH: 34, W: 1206, H: 2622, device: 'ios' },
   play: { out: 'store-assets',     vw: 412, vh: 915, statusH: 30, bottomH: 20, W: 1440, H: 2880, device: 'android' },
+  // Product Hunt's gallery: landscape, the same eight shots from the iPhone.
+  ph:   { out: 'store-assets-ph',  vw: 440, vh: 956, statusH: 62, bottomH: 34, W: 1270, H: 760, device: 'ios', wide: true },
 };
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
   '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.webp': 'image/webp' };
@@ -190,7 +193,7 @@ async function compose(c, t, which) {
   await c.eval('document.fonts.ready.then(() => 1)');
   const out = path.join(NATIVE, t.out); fs.mkdirSync(out, { recursive: true });
   for (const [file, caption, bg] of SHOTS) {
-    await c.eval(`render(${JSON.stringify({ W: t.W, H: t.H, device: t.device, vw: t.vw, vh: t.vh, statusH: t.statusH, bottomH: t.bottomH, caption, bg, img: `/__raw/${file}.png` })})`);
+    await c.eval(`${t.wide ? 'renderWide' : 'render'}(${JSON.stringify({ W: t.W, H: t.H, device: t.device, vw: t.vw, vh: t.vh, statusH: t.statusH, bottomH: t.bottomH, caption, bg, img: `/__raw/${file}.png` })})`);
     const f = path.join(out, `${file}.png`);
     await c.shot(f); flatten(f);
     console.log('  wrote', path.relative(APP, f));
@@ -209,7 +212,7 @@ async function graphic(c) {
 
 server.listen(PORT, async () => {
   const which = process.argv[2];
-  if (!TARGETS[which] && which !== 'graphic') { console.error('usage: store.js ios|ios63|play|graphic'); process.exit(1); }
+  if (!TARGETS[which] && which !== 'graphic') { console.error('usage: store.js ios|ios63|play|ph|graphic'); process.exit(1); }
   const c = await chrome();
   try {
     if (which === 'graphic') await graphic(c);

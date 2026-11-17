@@ -94,6 +94,7 @@ back above NO ACCOUNT NEEDED:
 | Age rating | 9+, as submitted 2026-11-16. Contests: Infrequent (friend challenges and private leaderboards). Health or Wellness Topics: Yes. Everything else None or No, including alcohol (beer and wine are only calorie entries in the food list) and User-Generated Content (leaderboards are invite-code groups showing display names, not broad distribution). Apple then leaves out Afghanistan and Morocco. |
 | Content rights | Yes, third-party content with the rights to use it: Whoop, Strava and Google Fit data, and Gemini and Groq replies, all under their developer terms |
 | Regulated medical device | No: general fitness and wellness, no medical claims (EU/EEA, UK and US ask) |
+| EU trader status (DSA) | Not a trader, set 2026-11-16: free, no ads, no purchases. **Switch to trader before the paywall goes on** (Apps, Arete, App Compliance, Edit). Trader shows an address, phone and email on the EU product page and needs a document proving the address |
 | Price | Free |
 | Support URL | https://get-arete.com |
 | Marketing URL | https://get-arete.com |
@@ -205,6 +206,9 @@ There are no in-app purchases and nothing is for sale.
 - `ITSAppUsesNonExemptEncryption = false` in Info.plist — the app uses nothing
   beyond HTTPS. Without this key App Store Connect asks the export compliance
   question on every single upload.
-- Bundle identifier `com.getarete.app`, version 1.0, build 1. **The build
-  number has to increase on every upload**, even for a build that is rejected
-  or never released.
+- Bundle identifier `com.getarete.app`. **The build number has to increase on
+  every upload**, even for a build that is rejected or never released.
+  - 1.0 (1): submitted for review 2026-11-16.
+  - 1.0.1 (2): archived 2026-11-17, for TestFlight and the first update. Adds
+    the coach sending medical questions to a doctor, and keeps crawlers out of
+    analytics.
