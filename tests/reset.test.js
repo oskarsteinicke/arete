@@ -60,10 +60,11 @@ module.exports = async function () {
       return json(404, {});
     }, "_resetEmail='her@example.com'; _authMode='reset';");
     run(s, 'renderAuth()');
-    set(s, 'auth-code', '123 456'); set(s, 'auth-password', 'newpass123'); set(s, 'auth-confirm', 'newpass123');
+    // The project sends 8 digits; typed with a space, as people copy them
+    set(s, 'auth-code', '1234 5678'); set(s, 'auth-password', 'newpass123'); set(s, 'auth-confirm', 'newpass123');
     await run(s, 'submitNewPassword()');
     const v = calls(s, '/auth/v1/verify')[0];
-    r.check('the code is checked as a recovery code for her email', v && body(v).type === 'recovery' && body(v).email === 'her@example.com' && body(v).token === '123456', JSON.stringify(v && body(v)));
+    r.check('the code is checked as a recovery code for her email', v && body(v).type === 'recovery' && body(v).email === 'her@example.com' && body(v).token === '12345678', JSON.stringify(v && body(v)));
     const put = calls(s, '/auth/v1/user').find(f => f.opts.method === 'PUT');
     r.check('the new password is saved with the session the code gave', put && body(put).password === 'newpass123' && put.opts.headers.Authorization === 'Bearer AT1');
     r.check('she is signed in', JSON.parse(s.localStorage._d.hvi_session || '{}').user?.id === 'u1');
@@ -86,8 +87,9 @@ module.exports = async function () {
     run(t, 'renderAuth()');
     set(t, 'auth-code', '12'); set(t, 'auth-password', 'newpass123'); set(t, 'auth-confirm', 'newpass123');
     await run(t, 'submitNewPassword()');
-    r.check('a code that is not 6 digits never leaves the phone', /6 digits/.test(err(t)) && t._fetches.length === 0);
-    set(t, 'auth-code', '123456'); set(t, 'auth-confirm', 'different1');
+    r.check('a code too short to be one never leaves the phone', /whole code/.test(err(t)) && t._fetches.length === 0);
+    r.check('and the message claims no length (the project sends 8 digits)', !/\d digits/.test(err(t)));
+    set(t, 'auth-code', '12345678'); set(t, 'auth-password', 'newpass123'); set(t, 'auth-confirm', 'different1');
     await run(t, 'submitNewPassword()');
     r.check('nor do passwords that do not match', /do not match/.test(err(t)) && t._fetches.length === 0);
   }

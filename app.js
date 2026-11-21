@@ -1565,7 +1565,9 @@ async function submitNewPassword() {
   const confirm = document.getElementById('auth-confirm')?.value || '';
   const errEl = document.getElementById('auth-error'), btn = document.getElementById('auth-btn');
   const fail = t => { errEl.style.color = 'var(--danger)'; errEl.textContent = t; btn.disabled = false; btn.textContent = 'SAVE NEW PASSWORD'; };
-  if (withCode && !_resetVerified && !/^\d{6,10}$/.test(code)) return fail('Enter the code from the email. It is 6 digits.');
+  // Supabase sets the length (6 to 10 digits; this project sends 8), so the
+  // message names none.
+  if (withCode && !_resetVerified && !/^\d{6,10}$/.test(code)) return fail('Enter the whole code from the email.');
   if (pw.length < 6) return fail('Password must be at least 6 characters.');
   if (pw !== confirm) return fail('Passwords do not match.');
   btn.disabled = true; btn.textContent = 'SAVING...'; errEl.textContent = '';
