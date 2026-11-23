@@ -717,7 +717,7 @@ function toggleSet(ei, si) {
   // for squats too. Off arms nothing.
   if (set.completed) {
     const sec = restFor(wl.exercises[ei].exerciseId);
-    if (sec > 0) startRestTimer(sec);
+    if (sec > 0) startRestTimer(sec, ei);
   }
 }
 
@@ -1004,7 +1004,85 @@ function pickRest(ei, sec) {
   toggleRestPicker(ei);
   haptic(8);
 }
-function startRestTimer(dur) {
+// ── On the lock screen (the iPhone app) ──
+// Each rest also runs as a Live Activity on the lock screen and in the Dynamic
+// Island (RestTimerPlugin.swift), which counts down by itself while the phone
+// is locked, so nobody has to open the app every minute to check. A
+// notification sounds when the rest is over, but only while the app is not
+// open (`silent` keeps it quiet in front). The web has neither: there the bar
+// under the session is the timer.
+let _restPlugin;
+function _restNative() {
+  if (_restPlugin !== undefined) return _restPlugin;
+  _restPlugin = null;
+  try {
+    const C = window.Capacitor;
+    if (C && typeof C.getPlatform === 'function' && C.getPlatform() === 'ios') {
+      _restPlugin = typeof C.registerPlugin === 'function' ? C.registerPlugin('RestTimer') : ((C.Plugins && C.Plugins.RestTimer) || null);
+    }
+  } catch { _restPlugin = null; }
+  return _restPlugin;
+}
+
+// What the lock screen says: the exercise, and what comes after this rest.
+function _restLabel(ei) {
+  const wl = workoutLog[today()];
+  const we = wl && ei != null ? wl.exercises[ei] : null;
+  if (!we) return { title: 'Rest', detail: '' };
+  const ex = lookupExercise(we.exerciseId);
+  const sets = we.sets || [];
+  const next = sets.findIndex(s => !s.completed);
+  let detail = next >= 0 ? `Set ${next + 1} of ${sets.length} next` : '';
+  if (!detail) {
+    const after = wl.exercises.slice(ei + 1).find(w => (w.sets || []).some(s => !s.completed));
+    const ax = after && lookupExercise(after.exerciseId);
+    detail = ax && ax.name ? `Next: ${ax.name}` : 'Last set done';
+  }
+  return { title: (ex && ex.name) || 'Rest', detail };
+}
+
+const REST_ALERT_ID = 1201;
+function _restOnLockScreen(ei) {
+  const P = _restNative();
+  if (!P) return;
+  const label = _restLabel(ei);
+  try { Promise.resolve(P.start({ endsAt: restTimerEnd, duration: restTimerDur, title: label.title, detail: label.detail })).catch(() => {}); } catch {}
+  _armRestAlert(label);
+}
+function _restOffLockScreen() {
+  const P = _restNative();
+  if (!P) return;
+  try { Promise.resolve(P.stop()).catch(() => {}); } catch {}
+  const N = typeof _nativeNotifier === 'function' ? _nativeNotifier() : null;
+  if (N) Promise.resolve(N.cancel({ notifications: [{ id: REST_ALERT_ID }] })).catch(() => {});
+}
+// Asks for notifications once, at the first rest, when the reason is plain.
+// A no is never asked again; the lock screen countdown works either way.
+async function _armRestAlert(label) {
+  const N = typeof _nativeNotifier === 'function' ? _nativeNotifier() : null;
+  if (!N) return;
+  const end = restTimerEnd;
+  try {
+    let perm = await N.checkPermissions();
+    if (/^prompt/.test(perm.display) && !LS.get('hvi_rest_alert_asked', false)) {
+      LS.set('hvi_rest_alert_asked', true);
+      perm = await N.requestPermissions();
+    }
+    if (perm.display !== 'granted') return;
+    await N.cancel({ notifications: [{ id: REST_ALERT_ID }] }).catch(() => {});
+    // Skipped or replaced while the question was open: nothing to arm.
+    if (!restTimer || restTimerEnd !== end || end <= Date.now()) return;
+    await N.schedule({ notifications: [{
+      id: REST_ALERT_ID,
+      title: 'Rest over',
+      body: label.title === 'Rest' ? 'Time for the next set.' : `${label.title}. ${label.detail || 'Time for the next set'}.`,
+      schedule: { at: new Date(end), allowWhileIdle: true },
+      silent: true,
+    }] });
+  } catch (e) { if (typeof reportError === 'function') reportError('rest-alert', e); }
+}
+
+function startRestTimer(dur, ei) {
   const wasResting = !!restTimer;
   restTimerDur = dur || DEFAULT_REST_SEC;
   restTimerEnd = Date.now() + restTimerDur * 1000;
@@ -1014,27 +1092,34 @@ function startRestTimer(dur) {
   if (bar && !wasResting) { bar.classList.remove('rt-in'); void bar.offsetWidth; bar.classList.add('rt-in'); }
   if (restTimer) clearInterval(restTimer);
   restTimer = setInterval(_updateRestTimer, 250);
+  _restOnLockScreen(ei);
   haptic(12);
 }
 function stopRestTimer() {
   if (restTimer) { clearInterval(restTimer); restTimer = null; }
   const el = document.getElementById('rest-timer-bar');
   if (el) el.style.display = 'none';
+  _restOffLockScreen();
 }
 function _updateRestTimer() {
   const el = document.getElementById('rest-timer-bar');
-  if (!el) return;
   const left = Math.max(0, restTimerEnd - Date.now());
   const secs = Math.ceil(left / 1000);
   const pct = restTimerDur > 0 ? (1 - left / (restTimerDur * 1000)) : 1;
   if (secs <= 0) {
+    // Over, on whatever screen: the lock screen shows "Rest over" until the
+    // bar here has said so too, then both go. Off the workout screen the
+    // interval used to run on forever, since it stopped only here.
     clearInterval(restTimer); restTimer = null;
+    setTimeout(() => { if (!restTimer) _restOffLockScreen(); }, 2500);
+    if (!el) return;
     el.innerHTML = '<div class="rt-done">REST COMPLETE</div>';
     haptic([100, 50, 100, 50, 100]);
     playSound('complete');
     setTimeout(() => { if (el) el.style.display = 'none'; }, 2500);
     return;
   }
+  if (!el) return;
   el.style.display = 'block';
   const m = Math.floor(secs / 60), s = secs % 60;
   el.innerHTML = `<div class="rt-row">
@@ -1045,6 +1130,8 @@ function _updateRestTimer() {
 }
 
 function finishWorkout() {
+  // A rest still running when the session ends leaves the lock screen with it.
+  if (restTimer) stopRestTimer();
   if (typeof track === 'function') track('workout_complete', { program: workoutMeta?.activeProgram || 'custom' });
   // Today's targets as planned, before this session counts and before the day
   // index moves on below — the card on the workout screen compares against it.
@@ -2508,3 +2595,7 @@ function buildExerciseSparkline(exerciseId) {
     <polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`;
 }
+
+// A rest from before the app was closed or reloaded has no timer behind it any
+// more, so whatever it left on the lock screen goes.
+try { const P = _restNative(); if (P) Promise.resolve(P.stop()).catch(() => {}); } catch {}
