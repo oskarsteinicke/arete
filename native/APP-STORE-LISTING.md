@@ -91,10 +91,11 @@ back above NO ACCOUNT NEEDED:
 |---|---|
 | Primary category | Health & Fitness |
 | Secondary category | Productivity |
-| Age rating | 9+, as submitted 2026-11-16. Contests: Infrequent (friend challenges and private leaderboards). Health or Wellness Topics: Yes. Everything else None or No, including alcohol (beer and wine are only calorie entries in the food list) and User-Generated Content (leaderboards are invite-code groups showing display names, not broad distribution). Apple then leaves out Afghanistan and Morocco. |
+| Age rating | 9+, as submitted 2026-11-16. Contests: Infrequent (friend challenges and private leaderboards). Health or Wellness Topics: Yes. Shared Location: No and Dating and Relationships: No (both added by Apple, answered 2026-11-23; the rating stayed 9+). Everything else None or No, including alcohol (beer and wine are only calorie entries in the food list) and User-Generated Content (leaderboards are invite-code groups showing display names, not broad distribution). Apple then leaves out Afghanistan and Morocco. |
 | Content rights | Yes, third-party content with the rights to use it: Whoop, Strava and Google Fit data, and Gemini and Groq replies, all under their developer terms |
 | Regulated medical device | No: general fitness and wellness, no medical claims (EU/EEA, UK and US ask) |
 | EU trader status (DSA) | Not a trader, set 2026-11-16: free, no ads, no purchases. **Switch to trader before the paywall goes on** (Apps, Arete, App Compliance, Edit). Trader shows an address, phone and email on the EU product page and needs a document proving the address |
+| Availability | 174 countries and regions: everywhere except China mainland, removed 2026-11-23. China now asks for a security assessment and an AI-generated content (AIGC) filing, both needing a Chinese business registration, and Gemini and Groq cannot be reached from there anyway. Hong Kong, Macau and Taiwan stay |
 | Price | Free |
 | Support URL | https://get-arete.com |
 | Marketing URL | https://get-arete.com |
