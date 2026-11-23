@@ -1,0 +1,14 @@
+<!--
+  Supabase: Authentication > Emails > Templates > invite-user.
+  Subject: You're invited to Arete
+  Only sent when someone is invited from the Supabase dashboard.
+-->
+<div style="margin:0;padding:40px 20px;background:#0B0B0B;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Arial,sans-serif;color:#F8F8F8">
+  <div style="max-width:440px;margin:0 auto">
+    <p style="margin:0 0 32px;font-size:13px;font-weight:500;letter-spacing:0.25em;text-transform:uppercase;color:#8A8580">Arete</p>
+    <h1 style="margin:0 0 16px;font-size:30px;line-height:1.05;font-weight:900;text-transform:uppercase;letter-spacing:-0.02em;color:#F8F8F8">You're invited<span style="color:#FF561E">.</span></h1>
+    <p style="margin:0 0 28px;font-size:16px;line-height:1.5;color:#B8B3AD">You were invited to Arete: habits, training, food and sleep in one app. Tap the button to accept and set up your account.</p>
+    <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:14px 26px;border-radius:12px;background:#FF561E;color:#0B0B0B;font-size:16px;font-weight:700;text-decoration:none">Accept the invite</a>
+    <p style="margin:36px 0 0;font-size:13px;line-height:1.5;color:#8A8580">If you weren't expecting this, ignore this email.</p>
+  </div>
+</div>
