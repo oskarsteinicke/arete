@@ -122,12 +122,18 @@ module.exports = function () {
     r.check('all three, from the footer', PAGES.every(q => landing.includes(`href="/${q.replace('.html', '')}"`)));
   }
 
-  r.section('the brand\'s Instagram is linked, and nobody personal');
+  r.section('the brand\'s social accounts are linked, and nobody personal');
   {
     for (const p of ['landing.html', ...PAGES]) {
       const html = read(p);
-      r.check(`${p} links to @arete_habits`, /href="https:\/\/www\.instagram\.com\/arete_habits\/"/.test(html));
-      r.check(`${p} links to no other Instagram account`, (html.match(/instagram\.com\/[a-z0-9_.]+/gi) || []).every(u => /arete_habits/.test(u)));
+      r.check(`${p} links to Instagram, TikTok and YouTube`,
+        /href="https:\/\/www\.instagram\.com\/arete_habits\/"/.test(html) &&
+        /href="https:\/\/www\.tiktok\.com\/@arete_habits1"/.test(html) &&
+        /href="https:\/\/www\.youtube\.com\/@ARETE_Habits"/.test(html));
+      r.check(`${p} links to no other Instagram, TikTok or YouTube account`,
+        (html.match(/instagram\.com\/[a-z0-9_.]+/gi) || []).every(u => /\/arete_habits$/i.test(u)) &&
+        (html.match(/tiktok\.com\/@[a-z0-9_.]+/gi) || []).every(u => /@arete_habits1$/i.test(u)) &&
+        (html.match(/youtube\.com\/@[a-z0-9_.-]+/gi) || []).every(u => /@ARETE_Habits$/i.test(u)));
     }
   }
 
