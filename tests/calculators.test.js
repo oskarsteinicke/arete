@@ -122,5 +122,14 @@ module.exports = function () {
     r.check('all three, from the footer', PAGES.every(q => landing.includes(`href="/${q.replace('.html', '')}"`)));
   }
 
+  r.section('the brand\'s Instagram is linked, and nobody personal');
+  {
+    for (const p of ['landing.html', ...PAGES]) {
+      const html = read(p);
+      r.check(`${p} links to @arete_habits`, /href="https:\/\/www\.instagram\.com\/arete_habits\/"/.test(html));
+      r.check(`${p} links to no other Instagram account`, (html.match(/instagram\.com\/[a-z0-9_.]+/gi) || []).every(u => /arete_habits/.test(u)));
+    }
+  }
+
   return r.finish();
 };
